@@ -21,3 +21,5 @@ erl_crash.dump
 
 # Always include lib
 !/lib
+
+*.swp

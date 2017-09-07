@@ -1,4 +1,5 @@
 defmodule Mqtt.Client do
+  use GenServer
   use GenMQTT
 
   def start_link(pid, opts \\ []) do
