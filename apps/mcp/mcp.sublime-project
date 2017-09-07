@@ -1,0 +1,17 @@
+{
+	"folders":
+	[
+		{
+			"path": "/Users/thughey/devel/wiss-mcp"
+		}
+	],
+	
+	
+    "SublimeLinter": {
+      "linters": {
+         "elixirc": {
+            "chdir": "/Users/thughey/devel/wiss-mcp"
+         }
+      }
+   }
+}

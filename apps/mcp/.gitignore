@@ -1,0 +1,13 @@
+/_build
+/cover
+/deps
+erl_crash.dump
+*.ez
+!/lib
+priv/proxr
+priv/*.o
+src/*.o
+*.swp
+.deliver/releases/
+rel/mcp
+ttb_last_config
