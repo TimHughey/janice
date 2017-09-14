@@ -1,0 +1,1 @@
+import_if_available Mercurial.Foo.IExHelpers
