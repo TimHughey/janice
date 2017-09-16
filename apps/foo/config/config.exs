@@ -4,7 +4,10 @@ use Mix.Config
 
 config :foo, :level1, key1: "value1", key2: "value2"
 config :foo, :level2, key3: "value1", key3: "value2"
-config :foo, Mercurial.Foo, genserver: [name: "server1", opts: [max_restarts: 1, max_seconds: 2]]
+config :foo, Mercurial.Foo,
+              genserver: [name: "server1", opts: [max_restarts: 1, max_seconds: 2]],
+              autostart: true
+
 
 # This configuration is loaded before any dependency and is restricted
 # to this project. If another project depends on this project, this
