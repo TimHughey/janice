@@ -23,7 +23,7 @@
     https://www.wisslanding.com
 */
 
-#define VERBOSE 1
+// #define VERBOSE 1
 
 #if ARDUINO >= 100
 #include <Arduino.h>
@@ -39,9 +39,8 @@
 #include "reading.hpp"
 
 mcrI2C::mcrI2C(mcrMQTT *mqtt) : mcrEngine(mqtt) {
-  for (uint8_t i = 0; i < max_devices; i++) {
-    this->known_devs[i] = NULL;
-  }
+  known_devs = new i2cDev *[maxDevices()];
+  memset(known_devs, 0x00, sizeof(i2cDev *) * maxDevices());
 }
 
 boolean mcrI2C::init() {
@@ -104,7 +103,7 @@ boolean mcrI2C::discover() {
         use_multiplexer = true;
         bus = 0;
 #ifdef VERBOSE
-        Serial.print("    searching bus 0x");
+        Serial.print("    searching i2c bus 0x");
         Serial.println(bus, HEX);
 #endif
       }
@@ -122,16 +121,17 @@ boolean mcrI2C::discover() {
     // noting the bus will already be selected if
     // a multiplexer is being used
     if (detectDev(search_dev->addr(), false)) {
-#ifdef VERBOSE
-      Serial.print("    found i2c dev with addr=0x");
-      Serial.print(search_dev->addr(), HEX);
-      Serial.print(" desc=");
-      Serial.println(search_dev->desc());
-#endif
+      addDevice(search_dev->addr(), use_multiplexer, bus);
 
-      known_devs[devCount()] =
-          new i2cDev(search_dev->addr(), use_multiplexer, bus);
-      mcrEngine::addDevice();
+#ifdef VERBOSE
+      Serial.print("    i2c bus 0x");
+      Serial.print(bus, HEX);
+      Serial.print(" hosts 0x");
+      Serial.print(search_dev->addr(), HEX);
+      Serial.print(",");
+      Serial.print(search_dev->desc());
+      Serial.println("");
+#endif
     }
 
     boolean more_buses = (bus < (max_buses - 1));
@@ -144,7 +144,7 @@ boolean mcrI2C::discover() {
       bus += 1;
       dev_index = 0;
 #ifdef VERBOSE
-      Serial.print("    searching bus 0x");
+      Serial.print("    searching i2c bus 0x");
       Serial.println(bus, HEX);
 #endif
     } else if (use_multiplexer && more_devs) {
@@ -214,10 +214,12 @@ boolean mcrI2C::deviceReport() {
       switch (dev->addr()) {
       case 0x5C:
         rc = readAM2315(dev, &reading);
+        dev->setReading(reading);
         break;
 
       case 0x44:
         rc = readSHT31(dev, &reading);
+        dev->setReading(reading);
         break;
 
       default:
@@ -235,7 +237,6 @@ boolean mcrI2C::deviceReport() {
 
       if (reading != NULL) {
         mqtt->publish(reading);
-        delete reading;
       }
 
       dev_index += 1;

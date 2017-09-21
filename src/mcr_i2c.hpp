@@ -34,6 +34,7 @@
 #include "mcr_engine.hpp"
 #include "mcr_mqtt.hpp"
 #include "mcr_util.hpp"
+#include "reading.hpp"
 
 #define mcr_i2c_version_1 1
 
@@ -51,6 +52,7 @@ private:
   boolean _use_multiplexer;
   byte _bus;
   char _desc[15];
+  Reading *_reading = NULL;
 
 public:
   i2cDev(byte addr, boolean use_multiplexer = false, uint8_t bus = 0) {
@@ -73,6 +75,18 @@ public:
     }
   };
 
+  // destructor necessary because of possibly embedded reading
+  ~i2cDev() {
+    if (_reading != NULL)
+      delete _reading;
+  };
+
+  void setReading(Reading *reading) {
+    if (_reading != NULL)
+      delete _reading;
+    _reading = reading;
+  };
+
   byte addr() { return _addr; };
   char *desc() { return _desc; };
 
@@ -92,7 +106,7 @@ public:
 class mcrI2C : public mcrEngine {
 
 private:
-  i2cDev *known_devs[max_devices] = {NULL};
+  i2cDev **known_devs;
   boolean use_multiplexer = false;
 
 public:
@@ -104,7 +118,23 @@ private:
   i2cDev *search_devs() { return _search_devs; };
   inline uint8_t search_devs_count() {
     return sizeof(_search_devs) / sizeof(i2cDev);
-  }
+  };
+
+  i2cDev *addDevice(byte addr, bool use_multiplexer, byte bus) {
+    i2cDev *dev = NULL;
+
+    if (devCount() < maxDevices()) {
+      dev = new i2cDev(addr, use_multiplexer, bus);
+      known_devs[devCount()] = dev;
+      mcrEngine::addDevice();
+    } else {
+      Serial.print("    ");
+      Serial.print(__PRETTY_FUNCTION__);
+      Serial.println(" attempt to exceed maximum devices");
+    }
+
+    return dev;
+  };
 
   boolean discover();
   boolean deviceReport();
@@ -119,9 +149,10 @@ private:
                     uint8_t bus = 0x00);
 
   void clearKnownDevices() {
-    for (uint8_t i = 0; i < max_devices; i++) {
+    for (uint8_t i = 0; i < maxDevices(); i++) {
       if (known_devs[i] != NULL) {
         delete known_devs[i];
+        known_devs[i] = NULL;
       }
     }
 

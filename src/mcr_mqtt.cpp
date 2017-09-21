@@ -124,7 +124,7 @@ void mcrMQTT::publish(Reading *reading) {
     return;
   }
 
-  reading->json();
+  json = reading->json();
 
   String msg = String();
 

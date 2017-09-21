@@ -48,7 +48,7 @@
 #define MAX_DEVICES_PER_ENGINE 30
 #endif
 
-#define LOOP_TIMESLICE_MILLIS (time_t)30
+#define LOOP_TIMESLICE_MILLIS (time_t)20
 
 #define DISCOVER_INTERVAL_MILLIS (time_t)30000
 #define MAX_DISCOVER_RUN_MILLIS (time_t)100
@@ -91,6 +91,7 @@ protected:
   virtual boolean convert();
   virtual boolean deviceReport();
 
+  // static const uint8_t max_devices = MAX_DEVICES_PER_ENGINE;
   void addDevice() { _dev_count += 1; };
   uint16_t devCount() { return _dev_count; };
   virtual void clearKnownDevices() { _dev_count = 0; };
@@ -125,8 +126,6 @@ protected:
 
   time_t convert_timestamp;
   elapsedMillis convert_elapsed;
-
-  static const uint8_t max_devices = MAX_DEVICES_PER_ENGINE;
 };
 
 #endif // __cplusplus

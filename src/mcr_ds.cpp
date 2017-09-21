@@ -35,10 +35,10 @@
 Queue cmdQueue(512, 25, FIFO); // Instantiate queue
 
 mcrDS::mcrDS(mcrMQTT *mqtt) : mcrEngine(mqtt) {
+  ds = new OneWire(W1_PIN);
+  _devs = new dsDev *[maxDevices()];
 
-  this->ds = new OneWire(W1_PIN);
-
-  memset(_devs, 0x00, sizeof(_devs));
+  memset(_devs, 0x00, sizeof(dsDev *) * maxDevices());
 }
 
 boolean mcrDS::init() {
@@ -154,7 +154,7 @@ boolean mcrDS::deviceReport() {
 
     dev_index += 1; // increment to dev_index for next loop invocation
 
-    if (dev_index == (max_devices - 1)) {
+    if (dev_index == (maxDevices() - 1)) {
       dev_index = 0;
       idle();
       last_device_report = 0;

@@ -58,16 +58,16 @@ boolean mcrEngine::loop() {
   // delays in the overall loop
   loop_runtime = 0;
 
-  // while (timesliceRemaining()) {
-  discover();
-  convert();
-  deviceReport();
-  //}
+  do {
+    if (timesliceRemaining())
+      discover();
 
-  //  if (state != IDLE) {
-  //    Serial.print("  mcrEngine::loop end state = ");
-  //    Serial.println(state);
-  //  }
+    if (timesliceRemaining())
+      convert();
+
+    if (timesliceRemaining())
+      deviceReport();
+  } while (timesliceRemaining());
 
   return true;
 }

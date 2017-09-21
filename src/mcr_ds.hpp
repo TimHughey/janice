@@ -145,7 +145,7 @@ class mcrDS : public mcrEngine {
 private:
   OneWire *ds;
 
-  dsDev *_devs[max_devices] = {NULL};
+  dsDev **_devs;
 
 public:
   mcrDS(mcrMQTT *mqtt);
@@ -153,9 +153,17 @@ public:
 
 private:
   dsDev *addDevice(byte *addr, boolean pwr) {
-    dsDev *dev = new dsDev(addr, pwr);
-    _devs[devCount()] = dev;
-    mcrEngine::addDevice();
+    dsDev *dev = NULL;
+
+    if (devCount() < maxDevices()) {
+      dev = new dsDev(addr, pwr);
+      _devs[devCount()] = dev;
+      mcrEngine::addDevice();
+    } else {
+      Serial.print("    ");
+      Serial.print(__PRETTY_FUNCTION__);
+      Serial.println(" attempt to exceed maximum devices");
+    }
 
     return dev;
   };
@@ -164,10 +172,11 @@ private:
     for (uint8_t i = 0; i < devCount(); i++) {
       if (_devs[i] != NULL) {
         delete _devs[i];
+        _devs[i] = NULL;
       }
     }
 
-    memset(_devs, 0x00, sizeof(_devs));
+    mcrEngine::clearKnownDevices();
   };
 
   boolean discover();
