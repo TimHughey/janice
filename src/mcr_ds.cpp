@@ -32,7 +32,7 @@
 #include "mcr_engine.hpp"
 #include "reading.hpp"
 
-Queue cmdQueue(512, 25, FIFO); // Instantiate queue
+// Queue cmdQueue(dsDev::idSize(), 25, FIFO); // Instantiate queue
 
 mcrDS::mcrDS(mcrMQTT *mqtt) : mcrEngine(mqtt) {
   ds = new OneWire(W1_PIN);

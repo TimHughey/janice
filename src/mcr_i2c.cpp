@@ -1,27 +1,27 @@
 /*
-    mcpr_i2c.cpp - Master Control Remote I2C
-    Copyright (C) 2017  Tim Hughey
+     mcpr_i2c.cpp - Master Control Remote I2C
+     Copyright (C) 2017  Tim Hughey
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+     This program is free software: you can redistribute it and/or modify
+     it under the terms of the GNU General Public License as published by
+     the Free Software Foundation, either version 3 of the License, or
+     (at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+     This program is distributed in the hope that it will be useful,
+     but WITHOUT ANY WARRANTY; without even the implied warranty of
+     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+     GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+     You should have received a copy of the GNU General Public License
+     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-    AM2315 code was based on Matt Heitzenroder's Arduino library
-    with portions of his code inspired by Joehrg Ehrsam's am2315-python-api
-    code (http://code.google.com/p/am2315-python-api/) and
-    Sopwith's library (http://sopwith.ismellsmoke.net/?p=104).
+     AM2315 code was based on Matt Heitzenroder's Arduino library
+     with portions of his code inspired by Joehrg Ehrsam's am2315-python-api
+     code (http://code.google.com/p/am2315-python-api/) and
+     Sopwith's library (http://sopwith.ismellsmoke.net/?p=104).
 
-    https://www.wisslanding.com
-*/
+     https://www.wisslanding.com
+ */
 
 // #define VERBOSE 1
 
@@ -205,7 +205,7 @@ boolean mcrI2C::deviceReport() {
     if (dev_index < devCount()) {
       i2cDev *dev = known_devs[dev_index];
 
-      if (dev->use_multiplexer()) {
+      if (dev->useMultiplexer()) {
         Wire.beginTransmission(0x70);
         Wire.write(0x01 << dev->bus());
         Wire.endTransmission();
@@ -228,7 +228,7 @@ boolean mcrI2C::deviceReport() {
         Serial.print(" desc: ");
         Serial.print(dev->desc());
         Serial.print(" use_multiplexer: ");
-        Serial.print(dev->use_multiplexer());
+        Serial.print(dev->useMultiplexer());
         Serial.print(" bus: ");
         Serial.print(dev->bus());
         Serial.println();
@@ -254,7 +254,7 @@ boolean mcrI2C::readAM2315(i2cDev *dev, Reading **reading) {
   elapsedMillis read_elapsed;
   static uint8_t error_count = 0;
   auto rc = true;
-  const char *name = dev->name();
+  const char *name = dev->id();
 
   uint8_t cmd[] = {0x03, 0x00, 0x04};
   uint8_t buff[] = {
@@ -355,7 +355,7 @@ boolean mcrI2C::readAM2315(i2cDev *dev, Reading **reading) {
     Serial.println(msg);
 #endif
 
-    *reading = new Reading(dev->name(), reading_ts, tc, rh);
+    *reading = new Reading(dev->id(), reading_ts, tc, rh);
     error_count = 0;
   } else { // crc did not match
     error_count += 1;
@@ -378,7 +378,7 @@ boolean mcrI2C::readSHT31(i2cDev *dev, Reading **reading) {
   elapsedMillis read_elapsed;
   static uint8_t error_count = 0;
   auto rc = true;
-  const char *name = dev->name();
+  const char *name = dev->id();
 
   uint8_t cmd[] = {0x24, 0x00};
   uint8_t buff[] = {
@@ -468,7 +468,7 @@ boolean mcrI2C::readSHT31(i2cDev *dev, Reading **reading) {
     Serial.println(msg);
 #endif
 
-    *reading = new Reading(dev->name(), reading_ts, tc, rh);
+    *reading = new Reading(dev->id(), reading_ts, tc, rh);
 
     error_count = 0;
   } else { // crc did not match

@@ -1,5 +1,5 @@
 /*
-    mcpr_i2c.h - Master Control Remote I2C
+    mcr_i2c.h - Master Control Remote I2C
     Copyright (C) 2017  Tim Hughey
 
     This program is free software: you can redistribute it and/or modify
@@ -31,6 +31,7 @@
 
 #include <Wire.h>
 
+#include "i2c_dev.hpp"
 #include "mcr_engine.hpp"
 #include "mcr_mqtt.hpp"
 #include "mcr_util.hpp"
@@ -45,63 +46,6 @@
 
 #define I2C_PWR_PIN 12
 #define MAX_DEV_NAME 20
-
-class i2cDev {
-private:
-  byte _addr;
-  boolean _use_multiplexer;
-  byte _bus;
-  char _desc[15];
-  Reading *_reading = NULL;
-
-public:
-  i2cDev(byte addr, boolean use_multiplexer = false, uint8_t bus = 0) {
-    this->_addr = addr;
-    this->_use_multiplexer = use_multiplexer;
-    this->_bus = bus;
-
-    switch (addr) {
-    case 0x5C:
-      strcpy(this->_desc, "am2315");
-      break;
-
-    case 0x44:
-      strcpy(this->_desc, "sht31");
-      break;
-
-    default:
-      strcpy(this->_desc, "unknown");
-      break;
-    }
-  };
-
-  // destructor necessary because of possibly embedded reading
-  ~i2cDev() {
-    if (_reading != NULL)
-      delete _reading;
-  };
-
-  void setReading(Reading *reading) {
-    if (_reading != NULL)
-      delete _reading;
-    _reading = reading;
-  };
-
-  byte addr() { return _addr; };
-  char *desc() { return _desc; };
-
-  boolean use_multiplexer() { return _use_multiplexer; };
-  uint8_t bus() { return _bus; };
-
-  const char *name() {
-    static char _name[30];
-
-    memset(_name, 0x00, sizeof(_name));
-    sprintf(_name, "i2c/%s.%02x.%s", mcrUtil::macAddress(), _bus, desc());
-
-    return _name;
-  }
-};
 
 class mcrI2C : public mcrEngine {
 
@@ -161,4 +105,4 @@ private:
 };
 
 #endif // __cplusplus
-#endif // mcp_i2c_h
+#endif // mcr_i2c_h
