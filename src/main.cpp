@@ -6,10 +6,10 @@
 // #include <Adafruit_SleepyDog.h>
 #include <ArduinoJson.h>
 
-#include "mcr_ds.h"
-#include "mcr_i2c.h"
-#include "mcr_mqtt.h"
-#include "mcr_util.h"
+#include "mcr_ds.hpp"
+#include "mcr_i2c.hpp"
+#include "mcr_mqtt.hpp"
+#include "mcr_util.hpp"
 
 // boards 32u4, M0, and 328p
 #define LED 13
@@ -24,6 +24,7 @@
 //#endif
 
 // prototypes
+void printFreeMem(uint8_t secs);
 void printWiFiData();
 void printCurrentNet();
 
@@ -65,16 +66,16 @@ int debugMode = 0;
 
 void setup() {
   WiFi.setPins(8, 7, 4, 2);
-  Serial.begin(9600);
+  Serial.begin(115200);
   while (!Serial && millis() < 5000) {
     ;
   }
 
   if (WiFi.status() == WL_NO_SHIELD) {
-    Serial.println("setup(): wifi shield not detected.");
+    Serial.println("main::setup(): wifi shield not detected.");
   } else {
 
-    Serial.print("setup(): connecting to WPA SSID ");
+    Serial.print("main::setup(): connecting to WPA SSID ");
     Serial.print(ssid);
     Serial.print("...");
     while (wifiStatus != WL_CONNECTED) {
@@ -99,29 +100,27 @@ void setup() {
   setSyncInterval(120); // setting a high time sync interval since we rely on
                         // updates via MQTT
 
-  Serial.print("setup(): mcrMQTT");
+  Serial.print("main::setup(): mcrMQTT");
   mqtt = new mcrMQTT(wifi, broker, 1883);
-  mqtt->debugOn();
   Serial.println(" created");
 
-  Serial.print("setup(): mcrDS");
+  Serial.print("main::setup(): mcrDS");
   ds = new mcrDS(mqtt);
   Serial.print(" created,");
   ds->init();
   Serial.println(" initialized");
 
-  Serial.print("setup(): mcrI2C");
+  Serial.print("main::setup(): mcrI2C");
   i2c = new mcrI2C(mqtt);
   Serial.print(" created, ");
   i2c->init();
   Serial.println("initialized");
 
-  Serial.println("setup(): completed, main loop() beginning...");
+  Serial.println("mmain::setup(): completed, transition to main::loop()");
 }
 
 elapsedMillis loop_duration;
 void loop() {
-  static elapsedMillis freeMemReport;
   elapsedMillis loop_elapsed;
 
   mqtt->loop(true);
@@ -129,6 +128,7 @@ void loop() {
   i2c->loop();
 
   statusIndicator();
+  printFreeMem(15);
 
   // Watchdog.reset();
 
@@ -137,18 +137,6 @@ void loop() {
     Serial.print("  [WARNING] main loop took ");
     Serial.print(loop_elapsed);
     Serial.println("ms");
-  }
-
-  if (freeMemReport > 25000) {
-    int percentFree = ((float)mcrUtil::freeRAM() / (float)32000) * 100;
-    int freeK = mcrUtil::freeRAM() / 1000;
-    Serial.print("  free SRAM = ");
-    Serial.print(percentFree);
-    Serial.print("% (");
-    Serial.print(freeK);
-    Serial.print("k of 32k)");
-    Serial.println();
-    freeMemReport = 0;
   }
 }
 
@@ -159,6 +147,47 @@ void printWiFiData() {
   Serial.println(ip);
 
   Serial.println(mcrUtil::macAddress());
+}
+
+void printFreeMem(uint8_t secs) {
+  static int first_free = 0;
+  static int prev_free = 0;
+  static elapsedMillis freeMemReport;
+  int delta = prev_free - mcrUtil::freeRAM();
+  int delta_since_first = first_free - mcrUtil::freeRAM();
+
+  if (first_free == 0) {
+    first_free = mcrUtil::freeRAM();
+    delta_since_first = 0;
+  }
+
+  if (freeMemReport > (secs * 1000)) {
+    char _dt[30] = {0x00};
+    time_t t = now() - (4 * 60 * 60); // rough conversion to EDT
+    int percentFree = ((float)mcrUtil::freeRAM() / (float)32000) * 100;
+    int freeK = mcrUtil::freeRAM() / 1000;
+
+    sprintf(_dt, "%02d/%02d/%02d %02d:%02d:%02d ", month(t), day(t), year(t),
+            hour(t), minute(t), second(t));
+
+    Serial.println();
+    Serial.print(_dt);
+    Serial.print(" ");
+    Serial.print(__PRETTY_FUNCTION__);
+    Serial.print(" free SRAM: ");
+    Serial.print(percentFree);
+    Serial.print("% (");
+    Serial.print(freeK);
+    Serial.print("k of 32k) delta: ");
+    Serial.print(delta);
+    Serial.print(" delta since first report: ");
+    Serial.print(delta_since_first);
+    Serial.println();
+    Serial.println();
+
+    freeMemReport = 0;
+    prev_free = mcrUtil::freeRAM();
+  }
 }
 
 void printCurrentNet() {

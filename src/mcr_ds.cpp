@@ -28,9 +28,9 @@
 #include <OneWire.h>
 #include <cppQueue.h>
 
-#include "mcr_ds.h"
-#include "mcr_engine.h"
-#include "reading.h"
+#include "mcr_ds.hpp"
+#include "mcr_engine.hpp"
+#include "reading.hpp"
 
 Queue cmdQueue(512, 25, FIFO); // Instantiate queue
 
@@ -39,8 +39,6 @@ mcrDS::mcrDS(mcrMQTT *mqtt) : mcrEngine(mqtt) {
   this->ds = new OneWire(W1_PIN);
 
   memset(_devs, 0x00, sizeof(_devs));
-
-  dev_count = 0;
 }
 
 boolean mcrDS::init() {
@@ -62,7 +60,9 @@ boolean mcrDS::discover() {
 
   if (needDiscover()) {
     if (isIdle()) {
-      Serial.print("  mcrDS::discover started, ");
+      Serial.print("  ");
+      Serial.print(__PRETTY_FUNCTION__);
+      Serial.print(" started, ");
       Serial.print(last_discover);
       Serial.println("ms since last discover");
 
@@ -95,17 +95,19 @@ boolean mcrDS::discover() {
         rc = false;
       }
     } else { // search did not find a device
-      state = IDLE;
+      idle();
       last_discover_millis = discover_elapsed;
       last_discover = 0;
-      if (numKnownDevices() == 0) {
+      if (devCount() == 0) {
         Serial.println("  WARNING: no devices found on bus.");
         discover_interval_millis = 3000;
       } else {
         discover_interval_millis = DISCOVER_INTERVAL_MILLIS;
       }
-      Serial.print("  mcrDS::discover() found ");
-      Serial.print(numKnownDevices());
+      Serial.print("  ");
+      Serial.print(__PRETTY_FUNCTION__);
+      Serial.print(" found ");
+      Serial.print(devCount());
       Serial.print(" device(s) in ");
       Serial.print(last_discover_millis);
       Serial.println("ms");
@@ -154,7 +156,7 @@ boolean mcrDS::deviceReport() {
 
     if (dev_index == (max_devices - 1)) {
       dev_index = 0;
-      state = IDLE;
+      idle();
       last_device_report = 0;
     }
   }
@@ -206,12 +208,12 @@ boolean mcrDS::convert() {
       Serial.println("ms");
       Serial.println();
 
-      state = IDLE;
+      idle();
       last_convert = 0;
       convert_timestamp = now();
     } else if (convert_elapsed > CONVERT_TIMEOUT) {
       Serial.println("  WARNING: mcrDS::convert() time out");
-      state = IDLE;
+      idle();
       last_convert = 0;
       convert_timestamp = now();
     }
@@ -320,13 +322,14 @@ boolean mcrDS::readDS2406(dsDev *dev, Reading **reading) {
 
   if (present > 0x00) {
     elapsedMillis read_state_elapsed;
-    uint8_t buff[]{0xAA,       // byte 0:     Read Status
-                   0x00, 0x00, // byte 1-2:   Address (start a beginning)
-                   0x00, 0x00, 0x00, 0x00, 0x00, // byte 3-7:   EPROM Bitmaps
-                   0x00, // byte 8:     EPROM Factory Test Byte
-                   0x00, // byte 9:     Don't care (always reads 0x00)
-                   0x00, // byte 10:    SRAM (channel flip-flops, power, etc.)
-                   0x00, 0x00}; // byte 11-12: CRC16
+    uint8_t buff[] = {
+        0xAA,                         // byte 0:     Read Status
+        0x00, 0x00,                   // byte 1-2:   Address (start a beginning)
+        0x00, 0x00, 0x00, 0x00, 0x00, // byte 3-7:   EPROM Bitmaps
+        0x00,                         // byte 8:     EPROM Factory Test Byte
+        0x00,        // byte 9:     Don't care (always reads 0x00)
+        0x00,        // byte 10:    SRAM (channel flip-flops, power, etc.)
+        0x00, 0x00}; // byte 11-12: CRC16
 
     ds->select(dev->addr());
     ds->write_bytes(buff, 3); // Read Status cmd and two address bytes

@@ -36,7 +36,7 @@
 #include <WiFi101.h>
 #include <elapsedMillis.h>
 
-#include "reading.h"
+#include "reading.hpp"
 
 #define mcr_mqtt_version_1 1
 
@@ -54,13 +54,20 @@
 
 typedef bool (*cmdCallback_t)(JsonObject &root);
 
+typedef enum {
+  UNKNOWN,
+  NONE,
+  TIME_SYNC,
+  SET_SWITCH,
+  HEARTBEAT
+} remoteCommand_t;
+
 class mcrMQTT {
 private:
   IPAddress broker;
   uint16_t port;
   PubSubClient mqtt;
   elapsedMillis lastLoop;
-  boolean debugMode;
 
 public:
   mcrMQTT();
@@ -71,11 +78,6 @@ public:
   boolean loop(boolean fullreport);
 
   void publish(Reading *reading);
-  void publish(float temp, float rh, int soil_val, time_t readtime,
-               time_t loop_duration);
-  void setDebug(boolean mode);
-  void debugOn();
-  void debugOff();
 
   static void registerCmdCallback(cmdCallback_t cmdCallback);
 
@@ -83,9 +85,20 @@ private:
   boolean connect();
   char *clientId();
 
-  void debug(const char *msg);
-  void debug(const String &msg);
-  static void callback(char *topic, uint8_t *payload, unsigned int length);
+  // callback invoked when a message arrives on any subscribed feed
+  static void incomingMsg(char *topic, uint8_t *payload, unsigned int length);
+
+  // command message helpers
+  static remoteCommand_t parseCmd(JsonObject &root);
+  static bool handleTimeSyncCmd(JsonObject &root);
+  static bool handleSetSwitchCmd(JsonObject &root);
+
+  static void setDebug(boolean mode);
+  static void debugOn();
+  static void debugOff();
+  static void debug(const char *msg);
+  static void debug(const String &msg);
+  static void debug(elapsedMicros e);
 };
 
 #endif // __cplusplus

@@ -24,9 +24,10 @@
 #include <WProgram.h>
 #endif
 
-#include "mcr_engine.h"
-#include "reading.h"
 #include <OneWire.h>
+
+#include "mcr_engine.hpp"
+#include "reading.hpp"
 
 mcrEngine::mcrEngine(mcrMQTT *mqtt) {
 
@@ -40,7 +41,7 @@ mcrEngine::mcrEngine(mcrMQTT *mqtt) {
   discover_interval_millis = DISCOVER_INTERVAL_MILLIS;
   last_device_report = 0;
   last_convert = 0;
-  dev_count = 0;
+  _dev_count = 0;
   state = IDLE;
 }
 
@@ -203,6 +204,4 @@ boolean mcrEngine::isDeviceReportActive() {
   return state == DEVICE_REPORT ? true : false;
 }
 
-boolean mcrEngine::isConvertActive() {
-  return state == CONVERT ? true : false;
-}
+boolean mcrEngine::isConvertActive() { return state == CONVERT ? true : false; }

@@ -34,8 +34,8 @@
 #include <TimeLib.h>
 #include <elapsedMillis.h>
 
-#include "mcr_engine.h"
-#include "mcr_mqtt.h"
+#include "mcr_engine.hpp"
+#include "mcr_mqtt.hpp"
 
 #define mcr_ds_version_1 1
 
@@ -151,25 +151,22 @@ public:
   mcrDS(mcrMQTT *mqtt);
   bool init();
 
-  uint8_t numKnownDevices() { return dev_count; };
-
 private:
   dsDev *addDevice(byte *addr, boolean pwr) {
     dsDev *dev = new dsDev(addr, pwr);
-    _devs[dev_count] = dev;
-    dev_count += 1;
+    _devs[devCount()] = dev;
+    mcrEngine::addDevice();
 
     return dev;
   };
 
   void clearKnownDevices() {
-    for (uint8_t i = 0; i < dev_count; i++) {
+    for (uint8_t i = 0; i < devCount(); i++) {
       if (_devs[i] != NULL) {
         delete _devs[i];
       }
     }
 
-    dev_count = 0;
     memset(_devs, 0x00, sizeof(_devs));
   };
 

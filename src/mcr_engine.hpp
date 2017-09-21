@@ -33,7 +33,7 @@
 #include <TimeLib.h>
 #include <elapsedMillis.h>
 
-#include "mcr_mqtt.h"
+#include "mcr_mqtt.hpp"
 
 #define mcr_engine_version_1 1
 
@@ -84,10 +84,18 @@ public:
   } state_t;
 
 private:
+  uint16_t _dev_count = 0;
+
 protected:
   virtual boolean discover();
   virtual boolean convert();
   virtual boolean deviceReport();
+
+  void addDevice() { _dev_count += 1; };
+  uint16_t devCount() { return _dev_count; };
+  virtual void clearKnownDevices() { _dev_count = 0; };
+
+  inline void idle() { state = IDLE; }
 
   // timeslice methoengine
   boolean timesliceRemaining();
@@ -119,7 +127,6 @@ protected:
   elapsedMillis convert_elapsed;
 
   static const uint8_t max_devices = MAX_DEVICES_PER_ENGINE;
-  uint16_t dev_count = 0;
 };
 
 #endif // __cplusplus

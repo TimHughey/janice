@@ -24,9 +24,10 @@
 #include <WProgram.h>
 #endif
 
-#include "mcr_util.h"
-#include "reading.h"
 #include <ArduinoJson.h>
+
+#include "mcr_util.hpp"
+#include "reading.hpp"
 
 #define VERSION ((uint8_t)1)
 

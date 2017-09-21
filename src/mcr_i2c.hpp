@@ -29,10 +29,11 @@
 #include <WProgram.h>
 #endif
 
-#include "mcr_engine.h"
-#include "mcr_mqtt.h"
-#include "mcr_util.h"
 #include <Wire.h>
+
+#include "mcr_engine.hpp"
+#include "mcr_mqtt.hpp"
+#include "mcr_util.hpp"
 
 #define mcr_i2c_version_1 1
 
@@ -124,7 +125,7 @@ private:
       }
     }
 
-    dev_count = 0;
+    mcrEngine::clearKnownDevices();
   }
 };
 

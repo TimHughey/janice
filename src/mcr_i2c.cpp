@@ -23,17 +23,20 @@
     https://www.wisslanding.com
 */
 
+#define VERBOSE 1
+
 #if ARDUINO >= 100
 #include <Arduino.h>
 #else
 #include <WProgram.h>
 #endif
 
-#include "mcr_i2c.h"
-#include "mcr_mqtt.h"
-#include "reading.h"
 #include <WiFi101.h>
 #include <Wire.h>
+
+#include "mcr_i2c.hpp"
+#include "mcr_mqtt.hpp"
+#include "reading.hpp"
 
 mcrI2C::mcrI2C(mcrMQTT *mqtt) : mcrEngine(mqtt) {
   for (uint8_t i = 0; i < max_devices; i++) {
@@ -126,9 +129,9 @@ boolean mcrI2C::discover() {
       Serial.println(search_dev->desc());
 #endif
 
-      known_devs[dev_count] =
+      known_devs[devCount()] =
           new i2cDev(search_dev->addr(), use_multiplexer, bus);
-      dev_count += 1;
+      mcrEngine::addDevice();
     }
 
     boolean more_buses = (bus < (max_buses - 1));
@@ -166,7 +169,7 @@ boolean mcrI2C::discover() {
       state = IDLE;
       last_discover_millis = discover_elapsed;
       last_discover = 0;
-      if (dev_count == 0) {
+      if (devCount() == 0) {
         Serial.print("    [WARNING] no devices found on i2c bus in ");
         Serial.print(last_discover_millis);
         Serial.println("ms");
@@ -174,7 +177,7 @@ boolean mcrI2C::discover() {
         discover_interval_millis = 3000;
       } else {
         Serial.print("  mrcI2c::discover() found ");
-        Serial.print(dev_count);
+        Serial.print(devCount());
         Serial.print(" device(s) in ");
         Serial.print(last_discover_millis);
         Serial.println("ms");
@@ -199,7 +202,7 @@ boolean mcrI2C::deviceReport() {
     state = DEVICE_REPORT;
     Reading *reading = NULL;
 
-    if (dev_index < dev_count) {
+    if (dev_index < devCount()) {
       i2cDev *dev = known_devs[dev_index];
 
       if (dev->use_multiplexer()) {
@@ -366,6 +369,7 @@ boolean mcrI2C::readAM2315(i2cDev *dev, Reading **reading) {
 #endif
   }
 
+  Serial.println();
   return rc;
 }
 
@@ -480,6 +484,7 @@ boolean mcrI2C::readSHT31(i2cDev *dev, Reading **reading) {
 #endif
   }
 
+  Serial.println();
   return rc;
 }
 
