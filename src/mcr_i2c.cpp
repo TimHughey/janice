@@ -120,8 +120,8 @@ boolean mcrI2C::discover() {
     // attempt to detect the device
     // noting the bus will already be selected if
     // a multiplexer is being used
-    if (detectDev(search_dev->addr(), false)) {
-      addDevice(search_dev->addr(), use_multiplexer, bus);
+    if (detectDev(search_dev->devAddr(), false)) {
+      addDevice(search_dev->devAddr(), use_multiplexer, bus);
 
 #ifdef VERBOSE
       Serial.print("    i2c bus 0x");
@@ -211,7 +211,7 @@ boolean mcrI2C::deviceReport() {
         Wire.endTransmission();
       }
 
-      switch (dev->addr()) {
+      switch (dev->devAddr()) {
       case 0x5C:
         rc = readAM2315(dev, &reading);
         dev->setReading(reading);
@@ -224,7 +224,7 @@ boolean mcrI2C::deviceReport() {
 
       default:
         Serial.print("  mcrI2C::deviceReport unhandled dev addr: ");
-        Serial.print(dev->addr());
+        Serial.print(dev->devAddr());
         Serial.print(" desc: ");
         Serial.print(dev->desc());
         Serial.print(" use_multiplexer: ");
@@ -268,14 +268,14 @@ boolean mcrI2C::readAM2315(i2cDev *dev, Reading **reading) {
   memset(buff, 0x00, sizeof(buff));
 
   // wake up the device from builtin power save mode
-  Wire.beginTransmission(dev->addr());
+  Wire.beginTransmission(dev->devAddr());
   delay(2);
   Wire.endTransmission();
 
   time_t reading_ts = now();
 
   // get the device data
-  Wire.beginTransmission(dev->addr());
+  Wire.beginTransmission(dev->devAddr());
   Wire.write(cmd, sizeof(cmd));
   Wire.endTransmission();
   delay(10);
@@ -390,7 +390,7 @@ boolean mcrI2C::readSHT31(i2cDev *dev, Reading **reading) {
 
   memset(buff, 0x00, sizeof(buff));
 
-  Wire.beginTransmission(dev->addr());
+  Wire.beginTransmission(dev->devAddr());
   Wire.write(cmd, sizeof(cmd));
   Wire.endTransmission(true);
 

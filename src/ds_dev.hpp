@@ -29,92 +29,90 @@
 #include <WProgram.h>
 #endif
 
+#include "common_dev.hpp"
 #include "reading.hpp"
 
-class dsDev {
+class dsDev : public commonDev {
 private:
-  byte _rom[8] = {0x00,             // byte 0: 8-bit famly code
-                  0x00, 0x00, 0x00, // byte 1-3: 48-bit serial number
-                  0x00, 0x00, 0x00, // byte 4-6: 48-bit serial number
-                  0x00};            // byte 7: 8-bit crc
-  boolean _power = false;
-  Reading *_reading = NULL;
-  //                 00000000001111111
-  //       byte num: 01234567890123456
-  // format of name: ds/01020304050607
-  //      total len: 18 bytes (id + string terminator)
-  char _id[18] = {0x00};
+  static const uint8_t _ds_max_addr_len = 8;
+  static const uint8_t _ds_max_id_len = 18;
+  static const uint8_t _crc_byte = 7;
+
+  boolean _power = false; // is the device powered?
+
+  static const char *familyDesc(uint8_t family) {
+    switch (family) {
+    case 0x10:
+    case 0x22:
+    case 0x28:
+      return (const char *)"DS18x20";
+      break;
+
+    case 0x29:
+      return (const char *)"DS2408";
+      break;
+
+    case 0x12:
+      return (const char *)"DS2406";
+      break;
+
+    default:
+      return (const char *)"unknown";
+      break;
+    }
+  };
 
 public:
-  dsDev() {
-    memset(_rom, 0x00, 8);
+  dsDev() : commonDev() {
     _power = false;
     _reading = NULL;
-    strcpy(_id, "ds/unknown");
   };
 
-  dsDev(byte *rom, boolean power, Reading *reading = NULL) {
-    memcpy(this->_rom, rom, 8);
+  dsDev(byte *addr, boolean power, Reading *reading = NULL)
+      : commonDev(reading) {
+    // byte   0: 8-bit family code
+    // byte 1-6: 48-bit unique serial number
+    // byte   7: crc
+    memcpy(_addr, addr, _ds_max_addr_len);
     _power = power;
-    _reading = reading;
 
-    memset(_id, 0x00, sizeof(_id));
+    setDesc(familyDesc(family()));
+
+    memset(_id, 0x00, _max_id_len);
+    //                 00000000001111111
+    //       byte num: 01234567890123456
+    //     exmaple id: ds/28ffa442711604
+    // format of name: ds/famil code + 48-bit serial (without the crc)
+    //      total len: 18 bytes (id + string terminator)
     sprintf(_id, "ds/%02x%02x%02x%02x%02x%02x%02x",
-            _rom[0],                    // byte 0: family code
-            _rom[1], _rom[2], _rom[3],  // byte 1-3: serial number
-            _rom[4], _rom[5], _rom[6]); // byte 4-6: serial number
+            _addr[0],                      // byte 0: family code
+            _addr[1], _addr[2], _addr[3],  // byte 1-3: serial number
+            _addr[4], _addr[5], _addr[6]); // byte 4-6: serial number
   };
 
-  // do not allow copy constructor
-  dsDev(const dsDev &);
-
-  // destructor necessary because of possibly embedded reading
-  ~dsDev() {
-    if (_reading != NULL)
-      delete _reading;
-  };
-
-  // updaters
-  void setReading(Reading *reading) {
-    if (_reading != NULL)
-      delete _reading;
-    _reading = reading;
-  };
-
-  // operators
-  inline bool operator==(const dsDev &rhs) {
-    return (memcmp(_rom, rhs._rom, 8) == 0) ? true : false;
-  };
-
-  byte family() { return _rom[0]; };
-  byte *addr() { return _rom; };
-  byte crc() { return _rom[7]; };
-  char *id() { return _id; };
-  static const uint8_t idSize() { return 8; }
+  uint8_t family() { return firstAddressByte(); };
+  uint8_t crc() { return _addr[_crc_byte]; };
   boolean isPowered() { return _power; };
-  boolean isValid() { return _rom[0] != 0x00 ? true : false; };
 
-  static byte *parseId(char *name) {
-    static byte _addr[7] = {0x00};
+  static uint8_t *parseId(char *name) {
+    static byte addr[_max_addr_len - 1] = {0x00};
 
     //                 00000000001111111
     //       byte num: 01234567890123456
     // format of name: ds/01020304050607
     //      total len: 18 bytes (id + string terminator)
     if ((name[0] == 'd') && (name[1] == 's') && (name[2] == '/') &&
-        (name[17] == 0x00)) {
-      for (uint8_t i = 3, j = 0; i < 17; i = i + 2, j++) {
+        (name[_ds_max_id_len - 1] == 0x00)) {
+      for (uint8_t i = 3, j = 0; i < _ds_max_addr_len; i = i + 2, j++) {
         char digit[3] = {name[i], name[i + 1], 0x00};
-        _addr[j] = (byte)(atoi(digit) & 0xFF);
+        addr[j] = (byte)(atoi(digit) & 0xFF);
       }
     }
 
-    return _addr;
+    return addr;
   };
 
-  static bool validAddress(byte *addr) {
-    return (addr[0] != 0x00) ? true : false;
-  }
+  static bool validROM(uint8_t *rom) { return (rom[0] != 0x00) ? true : false; }
 };
 
 #endif // __cplusplus

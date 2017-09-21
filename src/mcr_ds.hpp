@@ -60,7 +60,6 @@ class mcrDS : public mcrEngine {
 
 private:
   OneWire *ds;
-
   dsDev **_devs;
 
 public:
