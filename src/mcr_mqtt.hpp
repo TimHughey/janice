@@ -45,13 +45,6 @@
 #define mcr_mqtt_version mcr_mqtt_version_1
 #endif
 
-#define MIN_LOOP_INTERVAL_MILLIS 10
-
-#define MQTT_SERVER "jophiel.wisslanding.com"
-#define MQTT_PORT 1883
-#define MQTT_USER "mqtt"
-#define MQTT_PASS "mqtt"
-
 typedef bool (*cmdCallback_t)(JsonObject &root);
 
 typedef enum {
@@ -69,21 +62,32 @@ private:
   PubSubClient mqtt;
   elapsedMillis lastLoop;
 
+  const char *_user = "mqtt";
+  const char *_pass = "mqtt";
+  const char *_rpt_feed = "mcr/f/report";
+  const char *_cmd_feed = "mcr/f/command";
+  const int _msg_version = 1;
+
+  uint8_t _min_loop_ms = 10;
+  uint8_t _timeslice_ms = 10;
+
 public:
   mcrMQTT();
   mcrMQTT(Client &client, IPAddress broker, uint16_t port);
 
-  boolean init();
+  boolean connect();
   boolean loop();
   boolean loop(boolean fullreport);
 
+  void announceStartup();
   void publish(Reading *reading);
 
   static void registerCmdCallback(cmdCallback_t cmdCallback);
 
 private:
-  boolean connect();
   char *clientId();
+
+  void publish(char *json);
 
   // callback invoked when a message arrives on any subscribed feed
   static void incomingMsg(char *topic, uint8_t *payload, unsigned int length);
@@ -98,6 +102,8 @@ private:
   static void debugOff();
   static void debug(const char *msg);
   static void debug(const String &msg);
+  static void debug2(const String &msg);
+  static void debug4(const String &msg);
   static void debug(elapsedMicros e);
 };
 

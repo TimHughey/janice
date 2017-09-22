@@ -38,13 +38,24 @@
 #include "mcr_mqtt.hpp"
 #include "reading.hpp"
 
-mcrI2C::mcrI2C(mcrMQTT *mqtt) : mcrEngine(mqtt) {
-  known_devs = new i2cDev *[maxDevices()];
-  memset(known_devs, 0x00, sizeof(i2cDev *) * maxDevices());
-}
+mcrI2C::mcrI2C(mcrMQTT *mqtt) : mcrEngine(mqtt) {}
 
 boolean mcrI2C::init() {
   boolean rc = true;
+
+  Serial.println();
+  Serial.print(__PRETTY_FUNCTION__);
+  Serial.println(" entered");
+
+  mcrEngine::init();
+
+  Serial.print(__PRETTY_FUNCTION__);
+  Serial.println(" allocating known_devs");
+  known_devs = new i2cDev *[maxDevices()];
+
+  Serial.print(__PRETTY_FUNCTION__);
+  Serial.println(" clearing known_devs memory");
+  memset(known_devs, 0x00, sizeof(i2cDev *) * maxDevices());
 
   // power up the i2c devices
   pinMode(I2C_PWR_PIN, OUTPUT);
@@ -53,6 +64,10 @@ boolean mcrI2C::init() {
   // Appears Wire.begin() must be called outside of a
   // constructor
   Wire.begin();
+
+  Serial.println();
+  Serial.print(__PRETTY_FUNCTION__);
+  Serial.println(" exited");
 
   return rc;
 }
@@ -75,11 +90,10 @@ boolean mcrI2C::discover() {
   if (needDiscover()) {
     if (isIdle()) {
       Serial.print("  mcrI2C::discover started, ");
-      Serial.print(last_discover);
+      Serial.print(lastDiscoverRunMS());
       Serial.println("ms since last discover");
 
-      state = DISCOVER;
-      discover_elapsed = 0;
+      startDisover();
 
       // set-up static control variables for start of discover
       use_multiplexer = false;
@@ -166,24 +180,21 @@ boolean mcrI2C::discover() {
     else if (((!use_multiplexer) && (!more_devs)) ||
              (use_multiplexer && (!more_buses))) {
 
-      state = IDLE;
-      last_discover_millis = discover_elapsed;
-      last_discover = 0;
+      idle();
+
       if (devCount() == 0) {
         Serial.print("    [WARNING] no devices found on i2c bus in ");
-        Serial.print(last_discover_millis);
+        Serial.print(lastDiscoverRunMS());
         Serial.println("ms");
         Serial.println();
-        discover_interval_millis = 3000;
+        // discover_interval_millis = 3000;
       } else {
         Serial.print("  mrcI2c::discover() found ");
         Serial.print(devCount());
         Serial.print(" device(s) in ");
-        Serial.print(last_discover_millis);
+        Serial.print(lastDiscoverRunMS());
         Serial.println("ms");
         Serial.println();
-
-        discover_interval_millis = DISCOVER_INTERVAL_MILLIS;
       }
     } else {
       // TODO: remove after testing, shouldn't be needed
@@ -194,13 +205,14 @@ boolean mcrI2C::discover() {
   return rc;
 }
 
-boolean mcrI2C::deviceReport() {
+boolean mcrI2C::report() {
   boolean rc = true;
   static uint8_t dev_index = 0;
 
-  if (needDeviceReport()) {
-    state = DEVICE_REPORT;
+  if (needReport()) {
     Reading *reading = NULL;
+
+    startReport();
 
     if (dev_index < devCount()) {
       i2cDev *dev = known_devs[dev_index];
@@ -242,8 +254,7 @@ boolean mcrI2C::deviceReport() {
       dev_index += 1;
     } else {
       dev_index = 0;
-      state = IDLE;
-      last_device_report = 0;
+      idle();
     }
   }
 

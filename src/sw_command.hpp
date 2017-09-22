@@ -1,5 +1,5 @@
 /*
-    reading.h - Readings used within Master Control Remote
+    sw_command.h - Master Control Remote Switch Command
     Copyright (C) 2017  Tim Hughey
 
     This program is free software: you can redistribute it and/or modify
@@ -18,8 +18,8 @@
     https://www.wisslanding.com
 */
 
-#ifndef mcr_util_h
-#define mcr_util_h
+#ifndef switchCommand_h
+#define switchCommand_h
 
 #ifdef __cplusplus
 
@@ -29,46 +29,33 @@
 #include <WProgram.h>
 #endif
 
-#include <TimeLib.h>
-#include <WiFi101.h>
-#include <elapsedMillis.h>
+#include "mcr_dev.hpp"
 
-extern "C" char *sbrk(int i);
+class switchCommand {
+private:
+  mcrDevID _dev_id;
+  char _name[30] = {0x00};
+  uint8_t _state = 0x00;
+  uint8_t _mask = 0x00;
 
-class mcrUtil {
 public:
-  static char *macAddress() {
-    static char _mac[13] = {0x00};
-
-    if (_mac[0] == 0x00) {
-      byte mac[6];
-
-      WiFi.macAddress(mac);
-
-      sprintf(_mac, "%02x%02x%02x%02x%02x%02x", mac[5], mac[4], mac[3], mac[2],
-              mac[1], mac[0]);
-    }
-
-    return _mac;
+  switchCommand() {
+    _name[0] = 0x00;
+    _mask = 0x00;
+    _state = 0x00;
   };
 
-  static const char *hostID() {
-    static char _host_id[17] = {0x00};
+  switchCommand(const char *name, uint8_t mask, uint8_t state) {
+    strcpy(_name, name);
 
-    if (_host_id[0] == 0x00) {
-      char *macAddress = mcrUtil::macAddress();
-
-      sprintf(_host_id, "mcr.%s", macAddress);
-    }
-
-    return _host_id;
-  }
-
-  static int freeRAM() {
-    char stack_dummy = 0;
-    return &stack_dummy - sbrk(0);
+    _mask = mask;
+    _state = state;
   };
+
+  char *name() { return _name; };
+  uint8_t state() { return _state; };
+  uint8_t mask() { return _mask; };
 };
 
 #endif // __cplusplus
-#endif // reading_h
+#endif // sw_command.h

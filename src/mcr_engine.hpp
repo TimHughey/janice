@@ -31,8 +31,10 @@
 
 #include <OneWire.h>
 #include <TimeLib.h>
+#include <cppQueue.h>
 #include <elapsedMillis.h>
 
+#include "mcr_dev.hpp"
 #include "mcr_mqtt.hpp"
 
 #define mcr_engine_version_1 1
@@ -42,24 +44,59 @@
 #define mcr_engine_version mcr_engine_version_1
 #endif
 
-#ifndef MAX_DEVICES_PER_ENGINE
 // max devices supported by all mcrEngine
 // implementation
+// define this prior to the first include of this header
+// to increase
+#ifndef MAX_DEVICES_PER_ENGINE
 #define MAX_DEVICES_PER_ENGINE 30
 #endif
 
-#define LOOP_TIMESLICE_MILLIS (time_t)20
-
-#define DISCOVER_INTERVAL_MILLIS (time_t)30000
-#define MAX_DISCOVER_RUN_MILLIS (time_t)100
-
-#define CONVERT_INTERVAL_MILLIS (time_t)7000
-#define CONVERT_RUN_MILLIS (time_t)20
-#define CONVERT_TIMEOUT (time_t)800
-
-#define DEVICE_REPORT_INTERVAL_MILLIS (time_t)11000
+typedef enum {
+  IDLE,
+  INIT,
+  DISCOVER,
+  CONVERT,
+  REPORT,
+  CMD_ACK,
+  STATS
+} dsEngineState_t;
 
 class mcrEngine {
+private:
+  dsEngineState_t _state;
+  uint16_t _dev_count = 0;
+  Queue *_pending_ack_q = NULL;
+
+  // Engine runtime controls
+  ulong _loop_timeslice_ms = 20;
+  ulong _discover_interval_ms = 30000;
+  ulong _convert_interval_ms = 7000;
+  ulong _report_interval_ms = 11000;
+  ulong _stats_inverval_ms = 20000;
+
+  ulong _discover_timeout_ms = 10000;
+  ulong _convert_timeout_ms = 10000;
+  ulong _report_timeout_ms = 10000;
+
+  // Engine state tracking
+  elapsedMillis _loop_runtime;
+  elapsedMillis _last_idle;
+  elapsedMillis _last_discover;
+  elapsedMillis _last_convert;
+  elapsedMillis _last_report;
+  elapsedMillis _last_ackcmd;
+  elapsedMillis _last_stats;
+
+  // Engine runtime tracking by state
+  ulong _last_idle_ms = 0;
+  ulong _last_discover_ms = 0;
+  ulong _last_convert_ms = 0;
+  time_t _last_convert_timestamp = 0;
+  ulong _last_report_ms = 0;
+  ulong _last_ackcmd_ms = 0;
+  ulong _last_stats_ms = 0;
+
 public:
   mcrEngine(mcrMQTT *mqtt);
 
@@ -68,64 +105,188 @@ public:
 
   const static uint16_t maxDevices() { return MAX_DEVICES_PER_ENGINE; };
 
-  boolean isIdle();
-  boolean isDiscoveryActive();
-  boolean isConvertActive();
-  boolean isDeviceReportActive();
+  // state helper methods (grouped together for readability)
+  bool isDiscoveryActive() { return _state == DISCOVER ? true : false; }
+  bool isIdle() { return _state == IDLE ? true : false; }
+  bool isReportActive() { return _state == REPORT ? true : false; }
+  bool isConvertActive() { return _state == CONVERT ? true : false; }
+  bool isCmdAckActive() { return _state == CMD_ACK ? true : false; }
 
-  typedef enum {
-    IDLE,
-    INIT,
-    DISCOVER,
-    CONVERT,
-    DEVICE_REPORT,
-    SET_SWITCHES,
-    STATS_REPORT
-  } state_t;
+  bool pendingCmdAcks() {
+    if (_pending_ack_q == NULL)
+      return false;
 
-private:
-  uint16_t _dev_count = 0;
+    return (_pending_ack_q->nbRecs() > 0) ? true : false;
+  };
+
+  bool popPendingCmdAck(mcrDevID *id) {
+    if (_pending_ack_q == NULL)
+      return false;
+    return _pending_ack_q->pop(id);
+  }
+
+  bool pushPendingCmdAck(char *name) {
+    bool rc = false;
+    mcrDevID_t id(name);
+
+    rc = pushPendingCmdAck(&id);
+
+    return rc;
+  }
+
+  bool pushPendingCmdAck(mcrDevID_t *id) {
+    if (_pending_ack_q == NULL)
+      return false;
+
+    return _pending_ack_q->push(id);
+  }
+
+  // public methods for managing state tracking time metrics
+  ulong lastDiscover() { return _last_discover; }
+  ulong lastConvert() { return _last_convert; }
+  ulong lastReport() { return _last_report; }
+  ulong lastAckCmd() { return _last_ackcmd; }
+
+  ulong lastDiscoverRunMS() { return _last_discover_ms; }
+  ulong lastConvertRunMS() { return _last_convert_ms; }
+  ulong lastReportRunMS() { return _last_report_ms; }
+  ulong lastAckCmdMS() { return _last_ackcmd_ms; }
 
 protected:
-  virtual boolean discover();
-  virtual boolean convert();
-  virtual boolean deviceReport();
+  mcrMQTT *mqtt;
+  boolean debugMode;
+
+  virtual bool discover();
+  virtual bool convert();
+  virtual bool report();
+  virtual bool cmdAck();
+
+  // subclasses should override this function and do something useful
+  virtual bool handleCmdAck(mcrDevID &id) { return true; }
 
   // static const uint8_t max_devices = MAX_DEVICES_PER_ENGINE;
   void addDevice() { _dev_count += 1; };
   uint16_t devCount() { return _dev_count; };
   virtual void clearKnownDevices() { _dev_count = 0; };
 
-  inline void idle() { state = IDLE; }
+  inline void idle() {
+    switch (_state) {
+    case IDLE:
+      // do nothing if already IDLE
+      break;
 
-  // timeslice methoengine
-  boolean timesliceRemaining();
-  boolean timesliceExpired();
+    case INIT:
+      _last_idle = 0;
+      break;
 
-  // state helper methods
-  boolean needDiscover();
-  boolean needConvert();
-  boolean needDeviceReport();
+    case DISCOVER:
+      _last_discover_ms = _last_discover;
+      _last_discover = 0;
+      _last_idle = 0;
+      break;
 
-  time_t loopRunTime() { return loop_runtime; };
+    case CONVERT:
+      _last_convert_ms = _last_convert;
+      _last_convert = 0;
+      _last_idle = 0;
+      _last_convert_timestamp = now();
+      break;
 
-  mcrMQTT *mqtt;
-  boolean debugMode;
+    case REPORT:
+      _last_report_ms = _last_report;
+      _last_report = 0;
+      _last_idle = 0;
+      break;
 
-  state_t state;
-  elapsedMillis last_convert;
-  elapsedMillis last_device_report;
+    case CMD_ACK:
+      _last_ackcmd_ms = _last_ackcmd;
+      _last_ackcmd = 0;
+      _last_idle = 0;
+      break;
 
-  elapsedMillis loop_runtime;
-  elapsedMillis last_discover;
-  elapsedMillis discover_elapsed;
+    case STATS:
+      _last_stats_ms = _last_stats;
+      _last_stats = 0;
+      _last_idle = 0;
+      break;
+    }
+    _state = IDLE;
+  };
 
-  unsigned long last_discover_millis;
-  unsigned long last_convert_millis;
-  unsigned long discover_interval_millis;
+  inline void startDisover() {
+    _last_idle_ms = _last_idle;
+    _state = DISCOVER;
+    _last_discover = 0;
+  };
 
-  time_t convert_timestamp;
-  elapsedMillis convert_elapsed;
+  inline void startConvert() {
+    _last_idle_ms = _last_idle;
+    _state = CONVERT;
+    _last_convert = 0;
+  };
+
+  inline void startReport() {
+    _last_idle_ms = _last_idle;
+    _state = REPORT;
+    _last_report = 0;
+  };
+
+  inline void startCmdAck() {
+    _last_idle_ms = _last_idle;
+    _state = CMD_ACK;
+    _last_ackcmd = 0;
+  }
+
+  inline bool convertTimeout() {
+    return (_last_convert > _convert_timeout_ms) ? true : false;
+  };
+
+  inline time_t lastConvertTimestamp() { return _last_convert_timestamp; };
+
+  bool needDiscover() {
+    // case 1: if discover is active we must return true since the
+    //          implementation of discover knows when to declare it is finished
+    //          by calling idle
+    // case 2:  if enough millis have elapsed that it is time to do another
+    //          discovery
+    if (isDiscoveryActive() || (_last_discover >= _discover_interval_ms))
+      return true;
+
+    return false;
+  }
+
+  bool needConvert() {
+    if (isConvertActive() || (_last_convert >= _convert_interval_ms))
+      return true;
+
+    return false;
+  }
+
+  bool needReport() {
+    if (isReportActive() || (_last_report >= _last_convert))
+      return true;
+
+    return false;
+  }
+
+  bool needCmdAck() {
+    if (isCmdAckActive() || pendingCmdAcks())
+      return true;
+
+    return true;
+  }
+
+  // timeslice helper methods
+  inline bool timesliceRemaining() {
+    return (_loop_runtime < _loop_timeslice_ms) ? true : false;
+  }
+
+  inline bool timesliceExpired() {
+    return (_loop_runtime >= _loop_timeslice_ms) ? true : false;
+  }
+
+  void resetLoopRuntime() { _loop_runtime = 0; }
+  time_t loopRunTime() { return _loop_runtime; };
 };
 
 #endif // __cplusplus

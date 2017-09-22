@@ -81,7 +81,7 @@ private:
   };
 
   boolean discover();
-  boolean deviceReport();
+  boolean report();
 
   // specific methods to read devices
   boolean readAM2315(i2cDev *dev, Reading **reading);

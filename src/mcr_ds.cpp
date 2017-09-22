@@ -31,19 +31,49 @@
 #include "mcr_ds.hpp"
 #include "mcr_engine.hpp"
 #include "reading.hpp"
+#include "sw_command.hpp"
 
-// Queue cmdQueue(dsDev::idSize(), 25, FIFO); // Instantiate queue
+Queue cmd_queue(sizeof(switchCommand), 25, FIFO); // Instantiate queue
 
 mcrDS::mcrDS(mcrMQTT *mqtt) : mcrEngine(mqtt) {
   ds = new OneWire(W1_PIN);
+  // _devs = (dsDev **)malloc(sizeof(dsDev *) * maxDevices());
   _devs = new dsDev *[maxDevices()];
 
-  memset(_devs, 0x00, sizeof(dsDev *) * maxDevices());
+  // memset(_devs, 0x00, sizeof(dsDev *) * maxDevices());
 }
 
 boolean mcrDS::init() {
   mcrMQTT::registerCmdCallback(&cmdCallback);
+  mcrEngine::init();
   return true;
+}
+
+boolean mcrDS::loop() {
+  int nbrecs = cmd_queue.nbRecs();
+
+  if ((nbrecs > 0) && isIdle()) {
+    Serial.print("  ");
+    Serial.print(__PRETTY_FUNCTION__);
+    Serial.print(" cmds in queue = ");
+    Serial.println(nbrecs);
+
+    switchCommand cmd;
+    cmd_queue.pop(&cmd);
+
+    Serial.print("  ");
+    Serial.print(__PRETTY_FUNCTION__);
+    Serial.print(" popped: name=");
+    Serial.print(cmd.name());
+    Serial.print(" new_state: ");
+    Serial.println(cmd.state());
+
+    if (setDS2408(cmd)) {
+      pushPendingCmdAck(cmd.name());
+    }
+  }
+
+  return mcrEngine::loop();
 }
 
 // mcrDS::discover()
@@ -63,11 +93,10 @@ boolean mcrDS::discover() {
       Serial.print("  ");
       Serial.print(__PRETTY_FUNCTION__);
       Serial.print(" started, ");
-      Serial.print(last_discover);
+      Serial.print(lastDiscover());
       Serial.println("ms since last discover");
 
-      state = DISCOVER;
-      discover_elapsed = 0;
+      startDisover();
       ds->reset_search();
       clearKnownDevices();
     }
@@ -96,20 +125,19 @@ boolean mcrDS::discover() {
       }
     } else { // search did not find a device
       idle();
-      last_discover_millis = discover_elapsed;
-      last_discover = 0;
+
       if (devCount() == 0) {
         Serial.println("  WARNING: no devices found on bus.");
-        discover_interval_millis = 3000;
+        // discover_interval_millis = 3000;
       } else {
-        discover_interval_millis = DISCOVER_INTERVAL_MILLIS;
+        // discover_interval_millis = DISCOVER_INTERVAL_MILLIS;
       }
       Serial.print("  ");
       Serial.print(__PRETTY_FUNCTION__);
       Serial.print(" found ");
       Serial.print(devCount());
       Serial.print(" device(s) in ");
-      Serial.print(last_discover_millis);
+      Serial.print(lastDiscoverRunMS());
       Serial.println("ms");
       Serial.println();
     }
@@ -118,12 +146,12 @@ boolean mcrDS::discover() {
   return rc;
 }
 
-boolean mcrDS::deviceReport() {
+boolean mcrDS::report() {
   boolean rc = true;
   static uint8_t dev_index = 0;
 
-  if (needDeviceReport()) {
-    state = DEVICE_REPORT;
+  if (needReport()) {
+    startReport();
     dsDev *dev = _devs[dev_index];
     Reading *reading = NULL;
 
@@ -157,7 +185,6 @@ boolean mcrDS::deviceReport() {
     if (dev_index == (maxDevices() - 1)) {
       dev_index = 0;
       idle();
-      last_device_report = 0;
     }
   }
 
@@ -178,52 +205,56 @@ boolean mcrDS::convert() {
 
   if (needConvert()) {
     // start a temperature conversion if one isn't already in-progress
-    // TODO - only handles powered devices as of 2017-09-11
+    // TODO only handles powered devices as of 2017-09-11
     if (isIdle()) {
+      startConvert();
+
       Serial.print("  mcrDS::convert() initiated, ");
-      Serial.print(last_convert);
+      Serial.print(lastConvertRunMS());
       Serial.println("ms since last convert");
 
       ds->reset();
       ds->skip();         // address all devices
       ds->write(0x44, 1); // start conversion
-
-      // reset the temperature conversion elapsed millis
-      convert_elapsed = 0;
-
-      state = CONVERT;
     }
 
     // bus is held low during temp convert
     // so if the bus reads high then temp convert is complete
     if (isConvertActive() && (ds->read_bit() > 0x00)) {
-
       // note:  there will be some extra millis recorded due to
       //        time slicing and execution of other methods in between
       //        checks.  in other words, the elapsed millis for temp
       //        convert will not be precise.
-      last_convert_millis = convert_elapsed;
+      idle();
+
       Serial.print("  mcrDS::convert() took ");
-      Serial.print(convert_elapsed);
+      Serial.print(lastConvertRunMS());
       Serial.println("ms");
       Serial.println();
 
-      idle();
-      last_convert = 0;
-      convert_timestamp = now();
-    } else if (convert_elapsed > CONVERT_TIMEOUT) {
+    } else if (convertTimeout()) {
       Serial.println("  WARNING: mcrDS::convert() time out");
       idle();
-      last_convert = 0;
-      convert_timestamp = now();
     }
   }
 
   return rc;
 }
 
+bool mcrDS::handleCmdAck(mcrDevID &id) {
+  bool rc = true;
+
+  Serial.print("  ");
+  Serial.print(__PRETTY_FUNCTION__);
+  Serial.print(" handling CmdAck for: ");
+  Serial.print(id);
+  Serial.println();
+
+  return rc;
+}
+
 // specific device scratchpad methods
-boolean mcrDS::readDS1820(dsDev *dev, Reading **reading) {
+bool mcrDS::readDS1820(dsDev *dev, Reading **reading) {
   byte data[9];
   boolean type_s = false;
   boolean rc = true;
@@ -296,7 +327,7 @@ boolean mcrDS::readDS1820(dsDev *dev, Reading **reading) {
       }
       float celsius = (float)raw / 16.0;
 
-      *reading = new Reading(dev->id(), convert_timestamp, celsius);
+      *reading = new Reading(dev->id(), lastConvertTimestamp(), celsius);
     } else {
 
 #ifdef VERBOSE
@@ -499,49 +530,15 @@ boolean mcrDS::readDS2408(dsDev *dev, Reading **reading) {
       Serial.println(state, HEX);
 #endif
 
-      *reading = new Reading(dev->id(), now(), positions, (uint8_t)8);
+      if (reading != NULL) {
+        *reading = new Reading(dev->id(), now(), positions, (uint8_t)8);
+      }
     } else {
 #ifdef VERBOSE
       Serial.println("bad");
 #endif
       rc = false;
     }
-
-#ifdef VERBOSE
-    uint8_t new_state = state ^ 0x01;
-
-    Serial.print("    testing write, new state = 0x");
-    Serial.print(new_state, HEX);
-    Serial.println();
-
-    ds->reset();
-    ds->select(addr);
-    ds->write(0x5A, 1);
-    ds->write(new_state, 1);
-    ds->write(~new_state, 1);
-
-    uint8_t check[2];
-    check[0] = ds->read();
-    check[1] = ds->read();
-
-    if (check[0] == 0xAA) {
-
-      Serial.print("    write received 0xAA, ");
-
-      if (check[1] == new_state) {
-        Serial.println("state = success");
-      } else {
-        Serial.print("state 0x");
-        Serial.print(check[1], HEX);
-        Serial.print(" != 0x");
-        Serial.print(new_state, HEX);
-        Serial.println(" = failure");
-      }
-    } else {
-      Serial.println("    write DID NOT receive 0xAA, failure");
-    }
-#endif
-
   } else {
     Serial.print("  DS2408 ");
     Serial.print(dev->id());
@@ -552,11 +549,99 @@ boolean mcrDS::readDS2408(dsDev *dev, Reading **reading) {
   return rc;
 }
 
+bool mcrDS::setDS2408(switchCommand &cmd) {
+  bool rc = true;
+  // mcrDevID id = cmd.name();
+  dsDev *dev = getDevice(cmd.name());
+
+  if (dev == NULL) {
+    return false;
+  }
+  Reading *reading = dev->reading();
+
+  uint8_t mask = cmd.mask();
+  uint8_t tobe_state = 0x00;
+  uint8_t asis_state = 0x00;
+  uint8_t new_state = 0x00;
+
+  // by applying the negated mask (what to change) to the requested state
+  // we end up with ony the bits that should be set in the new state
+  // since the actual device uses 0 for on and 1 for off
+  tobe_state = ~cmd.state() & mask;
+
+  // by applying the negated mask to the current state we get the
+  // bits that should be kept
+  asis_state = reading->state() & ~mask;
+
+  // now, the new state is simply the OR of the tobe and asis states
+  new_state = asis_state | tobe_state;
+
+  ds->reset();
+  ds->select(dev->addr());
+  ds->write(0x5A, 1);
+  ds->write(new_state, 1);
+  ds->write(~new_state, 1);
+
+  uint8_t check[2];
+  check[0] = ds->read();
+  check[1] = ds->read();
+
+  // check what the device returned to determine success or failure
+  if (check[0] == 0xAA) {
+// #define VERBOSE
+#ifdef VERBOSE
+    Serial.print("    ");
+    Serial.println("received 0xAA, success");
+    Serial.print("    ");
+#endif
+
+  } else {
+    Serial.println("    set device failure");
+    rc = false;
+  }
+
+  return rc;
+}
 bool mcrDS::cmdCallback(JsonObject &root) {
+
+  // json format of pio state key/value pairs
+  // {"pio":[{"1":false}]}
   const char *sw = root["switch"];
+  uint8_t pio_count = root["pio_count"];
+  const JsonVariant &variant = root.get<JsonVariant>("pio");
+  const JsonArray &pio = variant.as<JsonArray>();
+  uint8_t mask = 0x00;
+  uint8_t state = 0x00;
+
+  // iterate through the array of pio values
+  for (auto value : pio) {
+    // get a reference to the object from the array
+    const JsonObject &object = value.as<JsonObject>();
+
+    // use ArduionJson ability to iterate through the key/value pairs
+    for (auto kv : object) {
+      uint8_t bit = atoi(kv.key);
+      const bool position = kv.value.as<bool>();
+
+      // set the mask with each bit that should be adjusted
+      mask |= (0x01 << bit);
+
+      // set the tobe state with the values those bits should be
+      if (position) {
+        state |= (0x01 << bit);
+      }
+    }
+  }
+  switchCommand cmd(sw, mask, state);
+  cmd_queue.push(&cmd);
+
   // process json
   Serial.print("  mcrDS::cmdCallback() invoked for switch: ");
   Serial.print(sw);
+  Serial.print(" pio_count=");
+  Serial.print(pio_count);
+  Serial.print(" requested_state=");
+  Serial.print(state, HEX);
   Serial.println();
 
   return true;

@@ -37,6 +37,7 @@
 #include "ds_dev.hpp"
 #include "mcr_engine.hpp"
 #include "mcr_mqtt.hpp"
+#include "sw_command.hpp"
 
 #define mcr_ds_version_1 1
 
@@ -65,9 +66,10 @@ private:
 public:
   mcrDS(mcrMQTT *mqtt);
   bool init();
+  bool loop();
 
 private:
-  dsDev *addDevice(byte *addr, boolean pwr) {
+  dsDev *addDevice(byte *addr, boolean pwr = false) {
     dsDev *dev = NULL;
 
     if (devCount() < maxDevices()) {
@@ -83,6 +85,28 @@ private:
     return dev;
   };
 
+  dsDev *getDevice(char *name) {
+    uint8_t *addr = dsDev::parseId(name);
+    dsDev *dev = NULL;
+
+    if (addr != NULL) {
+      dev = getDevice(addr);
+    }
+    return dev;
+  }
+
+  dsDev *getDevice(byte *addr) {
+    dsDev search_dev = dsDev(addr);
+    dsDev *found_dev = NULL;
+
+    for (uint8_t i = 0; i < devCount() && found_dev == NULL; i++) {
+      if (search_dev == *_devs[i])
+        found_dev = _devs[i];
+    }
+
+    return found_dev;
+  }
+
   void clearKnownDevices() {
     for (uint8_t i = 0; i < devCount(); i++) {
       if (_devs[i] != NULL) {
@@ -96,12 +120,16 @@ private:
 
   boolean discover();
   boolean convert();
-  boolean deviceReport();
+  boolean report();
+
+  bool handleCmdAck(mcrDevID &id);
 
   // specific methods to read devices
   boolean readDS1820(dsDev *dev, Reading **reading);
-  boolean readDS2408(dsDev *dev, Reading **reading);
+  boolean readDS2408(dsDev *dev, Reading **reading = NULL);
   boolean readDS2406(dsDev *dev, Reading **reading);
+
+  boolean setDS2408(switchCommand &cmd);
 
   // static method for accepting cmds
   static bool cmdCallback(JsonObject &root);

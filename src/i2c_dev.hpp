@@ -29,11 +29,11 @@
 #include <WProgram.h>
 #endif
 
-#include "common_dev.hpp"
+#include "mcr_dev.hpp"
 #include "mcr_util.hpp"
 #include "reading.hpp"
 
-class i2cDev : public commonDev {
+class i2cDev : public mcrDev {
 private:
   static const uint8_t _i2c_max_addr_len = 1;
   static const uint8_t _i2c_max_id_len = 30;
@@ -59,14 +59,14 @@ private:
   }
 
 public:
-  i2cDev() : commonDev() {
+  i2cDev() : mcrDev() {
     _use_multiplexer = false;
     _bus = 0;
   };
 
   i2cDev(uint8_t addr, boolean use_multiplexer = false, uint8_t bus = 0,
          Reading *reading = NULL)
-      : commonDev(reading) {
+      : mcrDev(reading) {
     _addr[_i2c_addr_byte] = addr;
     _use_multiplexer = use_multiplexer;
     _bus = bus;
@@ -82,7 +82,7 @@ public:
     sprintf(_id, "i2c/%s.%02x.%s", mcrUtil::macAddress(), this->bus(), desc());
   };
 
-  uint8_t devAddr() { return commonDev::addr()[_i2c_addr_byte]; };
+  uint8_t devAddr() { return mcrDev::addr()[_i2c_addr_byte]; };
   boolean useMultiplexer() { return _use_multiplexer; };
   uint8_t bus() { return _bus; };
 };

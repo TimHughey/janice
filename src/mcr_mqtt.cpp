@@ -29,11 +29,6 @@
 #include "mcr_mqtt.hpp"
 #include "mcr_util.hpp"
 
-// feeds to publish and subscribe
-const char *MQTT_RPT_FEED = "mcr/f/report";  // published device reports
-const char *MQTT_CMD_FEED = "mcr/f/command"; // subscribed command messages
-const char *MQTT_MSG_VERSION = "1";
-
 static uint8_t cmd_callback_count = 0;
 static cmdCallback_t cmd_callback[10] = {NULL};
 static boolean debugMode = false;
@@ -77,33 +72,93 @@ boolean mcrMQTT::loop(boolean fullreport) {
 }
 
 boolean mcrMQTT::loop() {
+  elapsedMillis timeslice;
   boolean rc = 0;
 
   // safety mechanism to all loop() to be called as frequently as desired
   // without creating unnecessary load
-  if (lastLoop < MIN_LOOP_INTERVAL_MILLIS) {
+  if (lastLoop < _min_loop_ms) {
     return true;
   }
 
-  if (connect() == 1) {
-    rc = mqtt.loop();
+  while (timeslice < _timeslice_ms) {
+    if (connect() == 1) {
+      rc = mqtt.loop();
+    }
   }
 
   lastLoop = 0;
   return rc;
 }
 
+void mcrMQTT::announceStartup() {
+  const int json_buffer_max = 256;
+  const int json_max = 384;
+
+  DynamicJsonBuffer jsonBuffer(json_buffer_max);
+  char *buffer = new char[json_max];
+
+  JsonObject &root = jsonBuffer.createObject();
+  root["version"] = 1;
+  root["host"] = mcrUtil::hostID();
+  root["startup"] = true;
+
+  root.printTo(buffer, json_max);
+  publish(buffer);
+
+  delete buffer;
+}
+
+void mcrMQTT::publish(Reading *reading) {
+  elapsedMicros eus;
+
+  if (reading == NULL) {
+    Serial.print("    ");
+    Serial.print(__PRETTY_FUNCTION__);
+    Serial.print(" invoked with reading == NULL\n\r");
+    return;
+  }
+
+  if (timeStatus() != timeSet) {
+    debug2(__PRETTY_FUNCTION__);
+    debug(" time not set, skipping publish\r\n");
+    return;
+  }
+
+  if (!mqtt.connected()) {
+    debug2(__PRETTY_FUNCTION__);
+    debug(" MQTT not connected, skipping publish\r\n");
+    return;
+  }
+
+  char *json = reading->json();
+
+  debug2(__PRETTY_FUNCTION__);
+  debug("\r\n");
+  debug4(json);
+  debug("\r\n");
+
+  publish(json);
+
+  debug2(__PRETTY_FUNCTION__);
+  debug(" took ");
+  debug(eus);
+  debug("\r\n");
+}
+
 boolean mcrMQTT::connect() {
   int rc;
 
   if (!mqtt.connected()) {
-    rc = mqtt.connect(clientId(), MQTT_USER, MQTT_PASS);
+    rc = mqtt.connect(clientId(), _user, _pass);
     if (rc == 1) {
-      debug("  mcrMQTT connected\r\n");
+      debug2(__PRETTY_FUNCTION__);
+      debug(" success\r\n");
       mqtt.setCallback(&incomingMsg);
-      mqtt.subscribe(MQTT_CMD_FEED);
+      mqtt.subscribe(_cmd_feed);
     } else {
-      debug("  mcrMQTT connect failed\r\n");
+      debug2(__PRETTY_FUNCTION__);
+      debug(" failed\r\n");
       mqtt.disconnect();
     }
   } else {
@@ -113,37 +168,29 @@ boolean mcrMQTT::connect() {
   return rc == 1 ? true : false;
 }
 
-void mcrMQTT::publish(Reading *reading) {
-  elapsedMicros publish_elapsed;
-  char *json = NULL;
+void mcrMQTT::publish(char *json) {
+  elapsedMicros eus;
 
-  if (reading == NULL) {
-    Serial.print("    ");
-    Serial.print(__PRETTY_FUNCTION__);
-    Serial.print(" invoked with reading == NULL\n\r");
+  if (mqtt.connected()) {
+    if (mqtt.publish(_rpt_feed, json)) {
+      debug2(__PRETTY_FUNCTION__);
+      debug("  ");
+      debug(json);
+      debug("\r\n");
+    } else {
+      debug2(__PRETTY_FUNCTION__);
+      debug(" failed\r\n");
+    }
+  } else {
+    debug2(__PRETTY_FUNCTION__);
+    debug(" MQTT not connected, skipping publish\r\n");
     return;
   }
 
-  json = reading->json();
-
-  String msg = String();
-
-  if ((timeStatus() == timeSet) && mqtt.connected()) {
-    if (mqtt.publish(MQTT_RPT_FEED, json)) {
-      msg = String("    mcrMQTT::publish(") + String(MQTT_RPT_FEED) + "," +
-            String(json) + ")\r\n";
-    } else {
-      msg = String("    mcrMQTT:publish failed\r\n");
-    }
-  } else {
-    msg = String("    ** mcrMQTT::publish - time not set or MQTT not "
-                 "connected, will not publish\r\n");
-  }
-
-  debug(msg);
-
-  msg = "    mcrMQTT::publish() took " + String(publish_elapsed) + "us\r\n\r\n";
-  debug(msg);
+  debug2(__PRETTY_FUNCTION__);
+  debug(" took ");
+  debug(eus);
+  debug("\r\n");
 }
 
 char *mcrMQTT::clientId() {
@@ -291,6 +338,18 @@ void mcrMQTT::debug(const String &msg) {
   if (debugMode) {
     Serial.print(msg);
   }
+}
+void mcrMQTT::debug2(const String &msg) {
+  if (debugMode) {
+  }
+  String indent = "  " + msg;
+  debug(indent);
+}
+void mcrMQTT::debug4(const String &msg) {
+  if (debugMode) {
+  }
+  String indent = "    " + msg;
+  debug(indent);
 }
 void mcrMQTT::debug(elapsedMicros e) {
   if (debugMode) {

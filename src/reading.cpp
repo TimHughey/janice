@@ -31,28 +31,23 @@
 
 #define VERSION ((uint8_t)1)
 
-char *hostID();
-StaticJsonBuffer<512> _jsonBuffer;
-char _buffer[512];
-
-JsonObject &Reading::json_root() {
-  _jsonBuffer.clear();
-
-  JsonObject &root = _jsonBuffer.createObject();
+void Reading::jsonCommon(JsonObject &root) {
   root["version"] = VERSION;
-  root["host"] = hostID();
+  root["host"] = mcrUtil::hostID();
   root["device"] = _id;
   root["mtime"] = _mtime;
   root["type"] = typeAsString();
-
-  return root;
 }
 
 char *Reading::json() {
+  StaticJsonBuffer<512> jsonBuffer;
+  static char buffer[768];
   elapsedMicros json_elapsed;
-  memset(_buffer, 0x00, sizeof(_buffer));
 
-  JsonObject &root = json_root();
+  memset(buffer, 0x00, sizeof(buffer));
+
+  JsonObject &root = jsonBuffer.createObject();
+  jsonCommon(root);
 
   if (_type == SWITCH) {
 #ifdef VERBOSE
@@ -128,14 +123,14 @@ char *Reading::json() {
     break;
   }
 
-  root.printTo(_buffer, sizeof(_buffer));
+  root.printTo(buffer, sizeof(buffer));
 #ifdef VERBOSE
   Serial.print("in ");
   Serial.print(json_elapsed);
   Serial.println("us");
 #endif
 
-  return _buffer;
+  return buffer;
 }
 
 const char *Reading::typeAsString() {
@@ -162,16 +157,4 @@ const char *Reading::typeAsString() {
   }
 
   return _s1;
-}
-
-char *Reading::hostID() {
-  static char _host_id[17] = {0x00};
-
-  if (_host_id[0] == 0x00) {
-    char *macAddress = mcrUtil::macAddress();
-
-    sprintf(_host_id, "mcr.%s", macAddress);
-  }
-
-  return _host_id;
 }

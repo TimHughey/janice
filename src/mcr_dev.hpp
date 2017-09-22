@@ -1,5 +1,5 @@
 /*
-    commonDev.h - Master Control Common Device for Engines
+    mcrDev.h - Master Control Common Device for Engines
     Copyright (C) 2017  Tim Hughey
 
     This program is free software: you can redistribute it and/or modify
@@ -18,8 +18,8 @@
     https://www.wisslanding.com
 */
 
-#ifndef common_dev_h
-#define common_dev_h
+#ifndef mcrDev_h
+#define mcrDev_h
 
 #ifdef __cplusplus
 
@@ -31,7 +31,34 @@
 
 #include "reading.hpp"
 
-class commonDev {
+class mcrDevID {
+private:
+  static const uint8_t _max_len = 30;
+  char _id[_max_len];
+
+public:
+  mcrDevID() { memset(_id, 0x00, _max_len); };
+
+  mcrDevID(char *id) { this->initAndCopy(id); };
+
+  // allow a mcrDevID to be assigned to a regular char *
+  operator char *() { return _id; };
+  bool operator==(char *rhs) { return (strcmp(_id, rhs)); };
+  mcrDevID &operator=(char *id) {
+    this->initAndCopy(id);
+    return *this;
+  };
+
+private:
+  void initAndCopy(char *id) {
+    memset(_id, 0x00, _max_len);
+    strcpy(_id, id);
+  }
+};
+
+typedef class mcrDevID mcrDevID_t;
+
+class mcrDev {
 protected:
   static const uint8_t _max_addr_len = 8;  // max length of address
   static const uint8_t _max_id_len = 30;   // max length of the id
@@ -44,17 +71,17 @@ protected:
   char _desc[_max_desc_len];      // desciption of the device
 
 public:
-  commonDev() {
+  mcrDev() {
     memset(_addr, 0x00, _max_addr_len);
     memset(_id, 0x00, _max_id_len);
     strcpy(_id, "new/00000000000000");
   }
 
-  commonDev(Reading *reading) { _reading = reading; };
-  commonDev(const commonDev &);
+  mcrDev(Reading *reading) { _reading = reading; };
+  mcrDev(const mcrDev &);
 
   // base class will handle deleteing the reading, if needed
-  ~commonDev() {
+  ~mcrDev() {
     if (_reading != NULL)
       delete _reading;
   }
@@ -72,7 +99,12 @@ public:
   }
 
   // operators
-  inline int operator==(const commonDev &rhs) { return strcmp(_id, rhs._id); };
+  inline int operator==(const mcrDev &rhs) {
+    if (strcmp(_id, rhs._id) == 0)
+      return true;
+
+    return false;
+  };
 
   uint8_t firstAddressByte() { return _addr[0]; };
   uint8_t *addr() { return _addr; };
@@ -83,4 +115,4 @@ public:
 };
 
 #endif // __cplusplus
-#endif // common_dev_h
+#endif // mcrDev_h

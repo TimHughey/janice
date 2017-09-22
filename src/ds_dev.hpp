@@ -29,13 +29,16 @@
 #include <WProgram.h>
 #endif
 
-#include "common_dev.hpp"
+#include <OneWire.h>
+
+#include "mcr_dev.hpp"
 #include "reading.hpp"
 
-class dsDev : public commonDev {
+class dsDev : public mcrDev {
 private:
   static const uint8_t _ds_max_addr_len = 8;
   static const uint8_t _ds_max_id_len = 18;
+  static const uint8_t _family_byte = 0;
   static const uint8_t _crc_byte = 7;
 
   boolean _power = false; // is the device powered?
@@ -63,13 +66,13 @@ private:
   };
 
 public:
-  dsDev() : commonDev() {
+  dsDev() : mcrDev() {
     _power = false;
     _reading = NULL;
   };
 
-  dsDev(byte *addr, boolean power, Reading *reading = NULL)
-      : commonDev(reading) {
+  dsDev(byte *addr, boolean power = false, Reading *reading = NULL)
+      : mcrDev(reading) {
     // byte   0: 8-bit family code
     // byte 1-6: 48-bit unique serial number
     // byte   7: crc
@@ -88,31 +91,51 @@ public:
             _addr[0],                      // byte 0: family code
             _addr[1], _addr[2], _addr[3],  // byte 1-3: serial number
             _addr[4], _addr[5], _addr[6]); // byte 4-6: serial number
+
+    // always calculate the crc8 and tack onto the end of the address
+    // reminder the crc8 is of the first seven bytes
+    //_addr[_crc_byte] = OneWire::crc8(_addr, _ds_max_addr_len - 1);
   };
 
   uint8_t family() { return firstAddressByte(); };
   uint8_t crc() { return _addr[_crc_byte]; };
   boolean isPowered() { return _power; };
+  Reading *reading() { return _reading; };
 
   static uint8_t *parseId(char *name) {
-    static byte addr[_max_addr_len - 1] = {0x00};
-
+    static uint8_t addr[_max_addr_len] = {0x00};
     //                 00000000001111111
     //       byte num: 01234567890123456
     // format of name: ds/01020304050607
     //      total len: 18 bytes (id + string terminator)
     if ((name[0] == 'd') && (name[1] == 's') && (name[2] == '/') &&
         (name[_ds_max_id_len - 1] == 0x00)) {
-      for (uint8_t i = 3, j = 0; i < _ds_max_addr_len; i = i + 2, j++) {
+      for (uint8_t i = 3, j = 0; i < _ds_max_id_len; i = i + 2, j++) {
         char digit[3] = {name[i], name[i + 1], 0x00};
-        addr[j] = (byte)(atoi(digit) & 0xFF);
+        char *end_ptr;
+        unsigned long val = strtoul(digit, &end_ptr, 16); // convert from hex
+
+        addr[j] = (uint8_t)val;
       }
     }
 
+    // calculate the crc8 and store as the last byte of the address
+    addr[_crc_byte] = OneWire::crc8(addr, 7);
     return addr;
   };
 
-  static bool validROM(uint8_t *rom) { return (rom[0] != 0x00) ? true : false; }
+  static bool validAddress(uint8_t *addr) {
+    bool rc = true;
+
+    if (addr[_family_byte] == 0x00)
+      rc = false;
+
+    // reminder crc8 is only first seven bytes
+    if (OneWire::crc8(addr, _max_addr_len - 1) != addr[_crc_byte])
+      rc = false;
+
+    return rc;
+  };
 };
 
 #endif // __cplusplus

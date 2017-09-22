@@ -44,9 +44,6 @@ char mcrID[25];
 
 #define MQTT_SERVER "jophiel.wisslanding.com"
 #define MQTT_PORT 1883
-#define MQTT_USER "mqtt"
-#define MQTT_PASS "mqtt"
-#define MQTT_FEED "mqtt/f/feather"
 
 void statusIndicator();
 
@@ -101,8 +98,10 @@ void setup() {
                         // updates via MQTT
 
   Serial.print("main::setup(): mcrMQTT");
-  mqtt = new mcrMQTT(wifi, broker, 1883);
-  Serial.println(" created");
+  mqtt = new mcrMQTT(wifi, broker, MQTT_PORT);
+  Serial.print(" created, ");
+  mqtt->connect();
+  Serial.println("connected");
 
   Serial.print("main::setup(): mcrDS");
   ds = new mcrDS(mqtt);
@@ -116,14 +115,16 @@ void setup() {
   i2c->init();
   Serial.println("initialized");
 
-  Serial.println("mmain::setup(): completed, transition to main::loop()");
+  mqtt->announceStartup();
+
+  Serial.println("main::setup(): completed, transition to main::loop()");
 }
 
 elapsedMillis loop_duration;
 void loop() {
   elapsedMillis loop_elapsed;
 
-  mqtt->loop(true);
+  mqtt->loop();
   ds->loop();
   i2c->loop();
 
@@ -143,9 +144,10 @@ void loop() {
 void printWiFiData() {
   // print your WiFi shield's IP address:
   IPAddress ip = WiFi.localIP();
-  Serial.print("IP Address: ");
+  Serial.print("IP address: ");
   Serial.println(ip);
 
+  Serial.print("MAC address: ");
   Serial.println(mcrUtil::macAddress());
 }
 

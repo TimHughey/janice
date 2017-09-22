@@ -32,33 +32,34 @@
 mcrEngine::mcrEngine(mcrMQTT *mqtt) {
 
   this->mqtt = mqtt;
-  this->debugMode = false;
+  debugMode = false;
 
-  // setting last_discover to the discover interval will
+  // setting  to the discover interval will
   // prevent a delay for first discovery cycle at startup
-  last_discover = DISCOVER_INTERVAL_MILLIS;
+  _last_discover = _discover_interval_ms;
 
-  discover_interval_millis = DISCOVER_INTERVAL_MILLIS;
-  last_device_report = 0;
-  last_convert = 0;
+  _last_report = 0;
+  _last_convert = 0;
   _dev_count = 0;
-  state = IDLE;
+  _state = IDLE;
 }
 
-boolean mcrEngine::init() {
-  boolean rc = true;
+bool mcrEngine::init() {
+  bool rc = true;
+
+  _pending_ack_q = new Queue(sizeof(mcrDevID), 10, FIFO);
+
+  if (_pending_ack_q == NULL) {
+    rc = false;
+  }
 
   return rc;
 }
 
-boolean mcrEngine::loop() {
-  // reset the overall loop runtime
-  // this is used across methods to constrain mcrEngine::loop
-  // within the time slice defined to prevent unacceptable
-  // delays in the overall loop
-  loop_runtime = 0;
+bool mcrEngine::loop() {
+  resetLoopRuntime();
 
-  do {
+  while (timesliceRemaining()) {
     if (timesliceRemaining())
       discover();
 
@@ -66,8 +67,14 @@ boolean mcrEngine::loop() {
       convert();
 
     if (timesliceRemaining())
-      deviceReport();
-  } while (timesliceRemaining());
+      report();
+
+    // give handing CmdAcks a higher priority by allowing processing of
+    // items in the queue for the remainder of the timeslice
+    while (timesliceRemaining()) {
+      cmdAck();
+    }
+  }
 
   return true;
 }
@@ -80,28 +87,25 @@ boolean mcrEngine::loop() {
 //  2. if a discovery cycle is in-progress this method will execute
 //     a single search
 
-boolean mcrEngine::discover() {
+bool mcrEngine::discover() {
   auto rc = true;
 
   if (needDiscover()) {
     if (isIdle()) {
-      state = DISCOVER;
-      discover_elapsed = 0;
+      startDisover();
     } else {
-      state = IDLE;
-      last_discover_millis = discover_elapsed;
-      last_discover = 0;
+      idle();
     }
   }
 
   return rc;
 }
 
-boolean mcrEngine::deviceReport() {
+bool mcrEngine::report() {
   boolean rc = true;
 
-  if (needDeviceReport()) {
-    last_device_report = 0;
+  if (needReport()) {
+    _last_report = 0;
   }
 
   return rc;
@@ -116,92 +120,41 @@ boolean mcrEngine::deviceReport() {
 //  2. if a temperature conversion is in-progress this method will
 //     do a single check to determine if conversion is finished
 
-boolean mcrEngine::convert() {
+bool mcrEngine::convert() {
   boolean rc = true;
 
   if (needConvert()) {
     // start a temperature conversion if one isn't already in-progress
     // TODO - only handles powered devices as of 2017-09-11
     if (isIdle()) {
-      // reset the temperature conversion elapsed millis
-      convert_elapsed = 0;
-
-      state = CONVERT;
+      startConvert();
     } else {
-      state = IDLE;
-      last_convert = 0;
-      convert_timestamp = now();
+      idle();
     }
   }
   return rc;
 }
 
-boolean mcrEngine::needDiscover() {
-  boolean rc = false;
+bool mcrEngine::cmdAck() {
+  bool rc = true;
+  if (needCmdAck()) {
 
-  if (timesliceExpired()) {
-    return false;
+    if (isIdle())
+      startCmdAck();
+
+    if (pendingCmdAcks()) {
+      mcrDevID id;
+
+      if (popPendingCmdAck(&id)) {
+        handleCmdAck(id);
+      } else {
+        Serial.println();
+        Serial.print(__PRETTY_FUNCTION__);
+        Serial.println(" popPendingCmdAck() returned false");
+      }
+
+    } else
+      idle();
   }
-
-  if (isDiscoveryActive()) {
-    rc = true;
-  } else if (isIdle() && (last_discover >= discover_interval_millis)) {
-    rc = true;
-  }
-
   return rc;
 }
-
-boolean mcrEngine::needDeviceReport() {
-  boolean rc = false;
-
-  if (timesliceExpired()) {
-    return false;
-  }
-
-  if (isDeviceReportActive()) {
-    rc = true;
-  } else if (isIdle() && (last_device_report >= last_convert)) {
-    rc = true;
-  }
-
-  return rc;
-}
-
-boolean mcrEngine::needConvert() {
-  boolean rc = false;
-
-  if (timesliceExpired()) {
-    return false;
-  }
-
-  if (isConvertActive()) {
-    rc = true;
-  } else if (isIdle() && (last_convert >= CONVERT_INTERVAL_MILLIS)) {
-    rc = true;
-  }
-
-  return rc;
-}
-
-// timeslice helper methods
-boolean mcrEngine::timesliceRemaining() {
-  return (loop_runtime <= LOOP_TIMESLICE_MILLIS) ? true : false;
-}
-
-boolean mcrEngine::timesliceExpired() {
-  return (loop_runtime > LOOP_TIMESLICE_MILLIS) ? true : false;
-}
-
-// state helper methods (grouped together for readability)
-boolean mcrEngine::isDiscoveryActive() {
-  return state == DISCOVER ? true : false;
-}
-
-boolean mcrEngine::isIdle() { return state == IDLE ? true : false; }
-
-boolean mcrEngine::isDeviceReportActive() {
-  return state == DEVICE_REPORT ? true : false;
-}
-
-boolean mcrEngine::isConvertActive() { return state == CONVERT ? true : false; }

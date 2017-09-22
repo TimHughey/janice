@@ -52,7 +52,7 @@ private:
   uint8_t _state;
   uint8_t _bits;
 
-  JsonObject &json_root();
+  void jsonCommon(JsonObject &root);
   const char *typeAsString();
 
 public:
@@ -113,8 +113,8 @@ public:
     _bits = bits;
   }
 
+  uint8_t state() { return _state; };
   char *json();
-  char *hostID();
 };
 
 #endif // __cplusplus
