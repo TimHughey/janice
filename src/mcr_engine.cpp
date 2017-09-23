@@ -60,20 +60,14 @@ bool mcrEngine::loop() {
   resetLoopRuntime();
 
   while (timesliceRemaining()) {
-    if (timesliceRemaining())
-      discover();
-
-    if (timesliceRemaining())
-      convert();
-
-    if (timesliceRemaining())
-      report();
+    discover();
+    convert();
+    report();
 
     // give handing CmdAcks a higher priority by allowing processing of
     // items in the queue for the remainder of the timeslice
-    while (timesliceRemaining()) {
-      cmdAck();
-    }
+    // while (timesliceRemaining() && isIdle()) {
+    cmdAck();
   }
 
   return true;
@@ -90,13 +84,12 @@ bool mcrEngine::loop() {
 bool mcrEngine::discover() {
   auto rc = true;
 
-  if (needDiscover()) {
-    if (isIdle()) {
-      startDisover();
-    } else {
-      idle();
-    }
-  }
+  // if (needDiscover()) {
+  //  if (isIdle()) {
+  //    startDiscover();
+  //  } else {
+  //    idle(__PRETTY_FUNCTION__);
+  //  }
 
   return rc;
 }
@@ -129,7 +122,8 @@ bool mcrEngine::convert() {
     if (isIdle()) {
       startConvert();
     } else {
-      idle();
+      if (isConvertActive())
+        idle(__PRETTY_FUNCTION__);
     }
   }
   return rc;
@@ -137,24 +131,17 @@ bool mcrEngine::convert() {
 
 bool mcrEngine::cmdAck() {
   bool rc = true;
-  if (needCmdAck()) {
 
-    if (isIdle())
-      startCmdAck();
+  if (isIdle() && pendingCmdAcks()) {
+    mcrDevID id;
 
-    if (pendingCmdAcks()) {
-      mcrDevID id;
-
-      if (popPendingCmdAck(&id)) {
-        handleCmdAck(id);
-      } else {
-        Serial.println();
-        Serial.print(__PRETTY_FUNCTION__);
-        Serial.println(" popPendingCmdAck() returned false");
-      }
-
-    } else
-      idle();
+    if (popPendingCmdAck(&id)) {
+      handleCmdAck(id);
+    } else {
+      Serial.println();
+      Serial.print(__PRETTY_FUNCTION__);
+      Serial.println(" popPendingCmdAck() returned false");
+    }
   }
   return rc;
 }

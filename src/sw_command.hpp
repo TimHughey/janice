@@ -33,8 +33,9 @@
 
 class switchCommand {
 private:
+  static const uint8_t _max_len = 30;
   mcrDevID _dev_id;
-  char _name[30] = {0x00};
+  char _name[_max_len] = {0x00};
   uint8_t _state = 0x00;
   uint8_t _mask = 0x00;
 
@@ -46,7 +47,9 @@ public:
   };
 
   switchCommand(const char *name, uint8_t mask, uint8_t state) {
-    strcpy(_name, name);
+    _name[0] = 0x00;
+
+    strncat(_name, name, _max_len - 1);
 
     _mask = mask;
     _state = state;

@@ -73,7 +73,7 @@ public:
 
     setDesc(i2cDevDesc(firstAddressByte()));
 
-    memset(_id, 0x00, _max_id_len);
+    memset(_id, 0x00, _id_len);
     //                 0000000000111111111122222222223
     //       byte num: 0123456789012345678901234567890
     //      example id: i2c/f8f005f73b53.04.am2315

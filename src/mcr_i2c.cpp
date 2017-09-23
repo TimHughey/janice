@@ -38,23 +38,9 @@
 #include "mcr_mqtt.hpp"
 #include "reading.hpp"
 
-mcrI2C::mcrI2C(mcrMQTT *mqtt) : mcrEngine(mqtt) {}
-
-boolean mcrI2C::init() {
-  boolean rc = true;
-
-  Serial.println();
-  Serial.print(__PRETTY_FUNCTION__);
-  Serial.println(" entered");
-
-  mcrEngine::init();
-
-  Serial.print(__PRETTY_FUNCTION__);
-  Serial.println(" allocating known_devs");
+mcrI2C::mcrI2C(mcrMQTT *mqtt) : mcrEngine(mqtt) {
   known_devs = new i2cDev *[maxDevices()];
 
-  Serial.print(__PRETTY_FUNCTION__);
-  Serial.println(" clearing known_devs memory");
   memset(known_devs, 0x00, sizeof(i2cDev *) * maxDevices());
 
   // power up the i2c devices
@@ -64,10 +50,10 @@ boolean mcrI2C::init() {
   // Appears Wire.begin() must be called outside of a
   // constructor
   Wire.begin();
+}
 
-  Serial.println();
-  Serial.print(__PRETTY_FUNCTION__);
-  Serial.println(" exited");
+boolean mcrI2C::init() {
+  boolean rc = true;
 
   return rc;
 }
@@ -93,7 +79,7 @@ boolean mcrI2C::discover() {
       Serial.print(lastDiscoverRunMS());
       Serial.println("ms since last discover");
 
-      startDisover();
+      startDiscover();
 
       // set-up static control variables for start of discover
       use_multiplexer = false;
@@ -180,7 +166,7 @@ boolean mcrI2C::discover() {
     else if (((!use_multiplexer) && (!more_devs)) ||
              (use_multiplexer && (!more_buses))) {
 
-      idle();
+      idle(__PRETTY_FUNCTION__);
 
       if (devCount() == 0) {
         Serial.print("    [WARNING] no devices found on i2c bus in ");
@@ -209,7 +195,7 @@ boolean mcrI2C::report() {
   boolean rc = true;
   static uint8_t dev_index = 0;
 
-  if (needReport()) {
+  if (isIdle() && needReport()) {
     Reading *reading = NULL;
 
     startReport();
@@ -254,7 +240,7 @@ boolean mcrI2C::report() {
       dev_index += 1;
     } else {
       dev_index = 0;
-      idle();
+      idle(__PRETTY_FUNCTION__);
     }
   }
 

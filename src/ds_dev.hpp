@@ -36,8 +36,8 @@
 
 class dsDev : public mcrDev {
 private:
-  static const uint8_t _ds_max_addr_len = 8;
-  static const uint8_t _ds_max_id_len = 18;
+  // static const uint8_t _addr_len = 8;
+  // static const uint8_t _id_len = 18;
   static const uint8_t _family_byte = 0;
   static const uint8_t _crc_byte = 7;
 
@@ -76,12 +76,12 @@ public:
     // byte   0: 8-bit family code
     // byte 1-6: 48-bit unique serial number
     // byte   7: crc
-    memcpy(_addr, addr, _ds_max_addr_len);
+    memcpy(_addr, addr, _addr_len);
     _power = power;
 
     setDesc(familyDesc(family()));
 
-    memset(_id, 0x00, _max_id_len);
+    memset(_id, 0x00, _id_len);
     //                 00000000001111111
     //       byte num: 01234567890123456
     //     exmaple id: ds/28ffa442711604
@@ -94,7 +94,7 @@ public:
 
     // always calculate the crc8 and tack onto the end of the address
     // reminder the crc8 is of the first seven bytes
-    //_addr[_crc_byte] = OneWire::crc8(_addr, _ds_max_addr_len - 1);
+    //_addr[_crc_byte] = OneWire::crc8(_addr, _addr_len - 1);
   };
 
   uint8_t family() { return firstAddressByte(); };
@@ -103,14 +103,14 @@ public:
   Reading *reading() { return _reading; };
 
   static uint8_t *parseId(char *name) {
-    static uint8_t addr[_max_addr_len] = {0x00};
+    static uint8_t addr[_addr_len] = {0x00};
     //                 00000000001111111
     //       byte num: 01234567890123456
     // format of name: ds/01020304050607
     //      total len: 18 bytes (id + string terminator)
     if ((name[0] == 'd') && (name[1] == 's') && (name[2] == '/') &&
-        (name[_ds_max_id_len - 1] == 0x00)) {
-      for (uint8_t i = 3, j = 0; i < _ds_max_id_len; i = i + 2, j++) {
+        (name[_id_len - 1] == 0x00)) {
+      for (uint8_t i = 3, j = 0; j < _addr_len; i = i + 2, j++) {
         char digit[3] = {name[i], name[i + 1], 0x00};
         char *end_ptr;
         unsigned long val = strtoul(digit, &end_ptr, 16); // convert from hex
@@ -131,7 +131,7 @@ public:
       rc = false;
 
     // reminder crc8 is only first seven bytes
-    if (OneWire::crc8(addr, _max_addr_len - 1) != addr[_crc_byte])
+    if (OneWire::crc8(addr, _addr_len - 2) != addr[_crc_byte])
       rc = false;
 
     return rc;

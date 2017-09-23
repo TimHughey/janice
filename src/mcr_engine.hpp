@@ -60,11 +60,11 @@ typedef enum {
   REPORT,
   CMD_ACK,
   STATS
-} dsEngineState_t;
+} mcrEngineState_t;
 
 class mcrEngine {
 private:
-  dsEngineState_t _state;
+  mcrEngineState_t _state = IDLE;
   uint16_t _dev_count = 0;
   Queue *_pending_ack_q = NULL;
 
@@ -76,7 +76,7 @@ private:
   ulong _stats_inverval_ms = 20000;
 
   ulong _discover_timeout_ms = 10000;
-  ulong _convert_timeout_ms = 10000;
+  ulong _convert_timeout_ms = 1000;
   ulong _report_timeout_ms = 10000;
 
   // Engine state tracking
@@ -107,10 +107,17 @@ public:
 
   // state helper methods (grouped together for readability)
   bool isDiscoveryActive() { return _state == DISCOVER ? true : false; }
-  bool isIdle() { return _state == IDLE ? true : false; }
+  bool isIdle() { return (_state == IDLE) ? true : false; }
   bool isReportActive() { return _state == REPORT ? true : false; }
   bool isConvertActive() { return _state == CONVERT ? true : false; }
   bool isCmdAckActive() { return _state == CMD_ACK ? true : false; }
+
+  bool isCmdAckQueueEmpty() {
+    if (_pending_ack_q != NULL) {
+      return _pending_ack_q->isEmpty();
+    }
+    return true;
+  }
 
   bool pendingCmdAcks() {
     if (_pending_ack_q == NULL)
@@ -169,7 +176,14 @@ protected:
   uint16_t devCount() { return _dev_count; };
   virtual void clearKnownDevices() { _dev_count = 0; };
 
-  inline void idle() {
+  void idle(const char *f) {
+
+    // Serial.println();
+    // Serial.print(f);
+    // Serial.print(" called idle() _state = ");
+    // Serial.print(_state);
+    // Serial.println();
+
     switch (_state) {
     case IDLE:
       // do nothing if already IDLE
@@ -213,31 +227,42 @@ protected:
     _state = IDLE;
   };
 
-  inline void startDisover() {
+  void debugIdle(const char *c, mcrEngineState_t s) {
+    // Serial.println();
+    // Serial.print(c);
+    // Serial.print(" called and _state != IDLE ");
+    // Serial.println();
+  }
+
+  void startDiscover() {
+    debugIdle(__PRETTY_FUNCTION__, DISCOVER);
     _last_idle_ms = _last_idle;
     _state = DISCOVER;
     _last_discover = 0;
   };
 
-  inline void startConvert() {
+  void startConvert() {
+    debugIdle(__PRETTY_FUNCTION__, CONVERT);
     _last_idle_ms = _last_idle;
     _state = CONVERT;
     _last_convert = 0;
   };
 
-  inline void startReport() {
+  void startReport() {
+    debugIdle(__PRETTY_FUNCTION__, REPORT);
     _last_idle_ms = _last_idle;
     _state = REPORT;
     _last_report = 0;
   };
 
-  inline void startCmdAck() {
+  void startCmdAck() {
+    debugIdle(__PRETTY_FUNCTION__, CMD_ACK);
     _last_idle_ms = _last_idle;
     _state = CMD_ACK;
     _last_ackcmd = 0;
   }
 
-  inline bool convertTimeout() {
+  bool convertTimeout() {
     return (_last_convert > _convert_timeout_ms) ? true : false;
   };
 
@@ -278,11 +303,11 @@ protected:
 
   // timeslice helper methods
   inline bool timesliceRemaining() {
-    return (_loop_runtime < _loop_timeslice_ms) ? true : false;
+    return (_loop_runtime <= _loop_timeslice_ms) ? true : false;
   }
 
   inline bool timesliceExpired() {
-    return (_loop_runtime >= _loop_timeslice_ms) ? true : false;
+    return (_loop_runtime > _loop_timeslice_ms) ? true : false;
   }
 
   void resetLoopRuntime() { _loop_runtime = 0; }

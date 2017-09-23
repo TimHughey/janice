@@ -51,8 +51,8 @@ public:
 
 private:
   void initAndCopy(char *id) {
-    memset(_id, 0x00, _max_len);
-    strcpy(_id, id);
+    _id[0] = 0x00;
+    strncat(_id, id, _max_len - 1);
   }
 };
 
@@ -60,20 +60,20 @@ typedef class mcrDevID mcrDevID_t;
 
 class mcrDev {
 protected:
-  static const uint8_t _max_addr_len = 8;  // max length of address
-  static const uint8_t _max_id_len = 30;   // max length of the id
-  static const uint8_t _max_desc_len = 15; // max length of desciption
+  static const uint8_t _addr_len = 8;  // max length of address
+  static const uint8_t _id_len = 30;   // max length of the id
+  static const uint8_t _desc_len = 15; // max length of desciption
 
-  uint8_t _addr[_max_addr_len] = {0x00}; // address of the device
+  uint8_t _addr[_addr_len] = {0x00}; // address of the device
   Reading *_reading = NULL;
 
-  char _id[_max_id_len] = {0x00}; // unique identifier of this device
-  char _desc[_max_desc_len];      // desciption of the device
+  char _id[_id_len] = {0x00}; // unique identifier of this device
+  char _desc[_desc_len];      // desciption of the device
 
 public:
   mcrDev() {
-    memset(_addr, 0x00, _max_addr_len);
-    memset(_id, 0x00, _max_id_len);
+    memset(_addr, 0x00, _addr_len);
+    memset(_id, 0x00, _id_len);
     strcpy(_id, "new/00000000000000");
   }
 
@@ -94,8 +94,8 @@ public:
   };
 
   void setDesc(const char *desc) {
-    memset(_desc, 0x00, _max_desc_len);
-    strcpy(_desc, desc);
+    _desc[0] = 0x00;
+    strncat(_desc, desc, _desc_len - 1);
   }
 
   // operators
@@ -110,7 +110,7 @@ public:
   uint8_t *addr() { return _addr; };
   const char *id() { return _id; };
   const char *desc() { return _desc; };
-  static const uint8_t idMaxLen() { return _max_id_len; };
+  static const uint8_t idMaxLen() { return _id_len; };
   boolean isValid() { return firstAddressByte() != 0x00 ? true : false; };
 };
 

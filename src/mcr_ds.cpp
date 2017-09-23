@@ -1,22 +1,24 @@
 /*
-    mcpr_ds.cpp - Master Control Remote Dallas Semiconductor
-    Copyright (C) 2017  Tim Hughey
+     mcpr_ds.cpp - Master Control Remote Dallas Semiconductor
+     Copyright (C) 2017  Tim Hughey
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+     This program is free software: you can redistribute it and/or modify
+     it under the terms of the GNU General Public License as published by
+     the Free Software Foundation, either version 3 of the License, or
+     (at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+     This program is distributed in the hope that it will be useful,
+     but WITHOUT ANY WARRANTY; without even the implied warranty of
+     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+     GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+     You should have received a copy of the GNU General Public License
+     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-    https://www.wisslanding.com
-*/
+     https://www.wisslanding.com
+ */
+
+#define VERBOSE 1
 
 #if ARDUINO >= 100
 #include <Arduino.h>
@@ -37,10 +39,9 @@ Queue cmd_queue(sizeof(switchCommand), 25, FIFO); // Instantiate queue
 
 mcrDS::mcrDS(mcrMQTT *mqtt) : mcrEngine(mqtt) {
   ds = new OneWire(W1_PIN);
-  // _devs = (dsDev **)malloc(sizeof(dsDev *) * maxDevices());
   _devs = new dsDev *[maxDevices()];
 
-  // memset(_devs, 0x00, sizeof(dsDev *) * maxDevices());
+  memset(_devs, 0x00, sizeof(dsDev *) * maxDevices());
 }
 
 boolean mcrDS::init() {
@@ -53,26 +54,31 @@ boolean mcrDS::loop() {
   int nbrecs = cmd_queue.nbRecs();
 
   if ((nbrecs > 0) && isIdle()) {
+#ifdef VERBOSE
     Serial.print("  ");
     Serial.print(__PRETTY_FUNCTION__);
     Serial.print(" cmds in queue = ");
     Serial.println(nbrecs);
+#endif
 
     switchCommand cmd;
     cmd_queue.pop(&cmd);
 
+#ifdef VERBSOE
     Serial.print("  ");
     Serial.print(__PRETTY_FUNCTION__);
     Serial.print(" popped: name=");
     Serial.print(cmd.name());
     Serial.print(" new_state: ");
     Serial.println(cmd.state());
+#endif
 
     if (setDS2408(cmd)) {
       pushPendingCmdAck(cmd.name());
     }
   }
 
+  // must call the base case to ensure remaining work is done
   return mcrEngine::loop();
 }
 
@@ -96,7 +102,7 @@ boolean mcrDS::discover() {
       Serial.print(lastDiscover());
       Serial.println("ms since last discover");
 
-      startDisover();
+      startDiscover();
       ds->reset_search();
       clearKnownDevices();
     }
@@ -115,8 +121,8 @@ boolean mcrDS::discover() {
 
         addDevice(addr, pwr);
 #ifdef VERBOSE
-        Serial.print("  mcrDS::discover() found dev = ");
-        Serial.print(deviceID(addr));
+        Serial.print("  mcrDS::discover() found dev ");
+        // Serial.print(deviceID(addr));
         Serial.println();
 #endif
       } else { // crc check failed
@@ -124,7 +130,7 @@ boolean mcrDS::discover() {
         rc = false;
       }
     } else { // search did not find a device
-      idle();
+      idle(__PRETTY_FUNCTION__);
 
       if (devCount() == 0) {
         Serial.println("  WARNING: no devices found on bus.");
@@ -150,8 +156,12 @@ boolean mcrDS::report() {
   boolean rc = true;
   static uint8_t dev_index = 0;
 
-  if (needReport()) {
+  if (isIdle() && needReport()) {
     startReport();
+    dev_index = 0;
+  }
+
+  if (isReportActive()) {
     dsDev *dev = _devs[dev_index];
     Reading *reading = NULL;
 
@@ -183,8 +193,7 @@ boolean mcrDS::report() {
     dev_index += 1; // increment to dev_index for next loop invocation
 
     if (dev_index == (maxDevices() - 1)) {
-      dev_index = 0;
-      idle();
+      idle(__PRETTY_FUNCTION__);
     }
   }
 
@@ -207,15 +216,15 @@ boolean mcrDS::convert() {
     // start a temperature conversion if one isn't already in-progress
     // TODO only handles powered devices as of 2017-09-11
     if (isIdle()) {
-      startConvert();
-
       Serial.print("  mcrDS::convert() initiated, ");
-      Serial.print(lastConvertRunMS());
+      Serial.print(lastConvert());
       Serial.println("ms since last convert");
 
       ds->reset();
       ds->skip();         // address all devices
       ds->write(0x44, 1); // start conversion
+      delay(5);           // give the sensors an opportunity to start conversion
+      startConvert();
     }
 
     // bus is held low during temp convert
@@ -225,7 +234,7 @@ boolean mcrDS::convert() {
       //        time slicing and execution of other methods in between
       //        checks.  in other words, the elapsed millis for temp
       //        convert will not be precise.
-      idle();
+      idle(__PRETTY_FUNCTION__);
 
       Serial.print("  mcrDS::convert() took ");
       Serial.print(lastConvertRunMS());
@@ -234,7 +243,7 @@ boolean mcrDS::convert() {
 
     } else if (convertTimeout()) {
       Serial.println("  WARNING: mcrDS::convert() time out");
-      idle();
+      idle(__PRETTY_FUNCTION__);
     }
   }
 
@@ -407,9 +416,6 @@ boolean mcrDS::readDS2406(dsDev *dev, Reading **reading) {
 
 #ifdef VERBOSE
       Serial.println("good");
-
-      Serial.print("    state = 0x");
-      Serial.println(state, HEX);
 #endif
 
       *reading = new Reading(dev->id(), now(), positions, (uint8_t)2);
@@ -526,8 +532,6 @@ boolean mcrDS::readDS2408(dsDev *dev, Reading **reading) {
 
 #ifdef VERBOSE
       Serial.println("good");
-      Serial.print("    state = 0x");
-      Serial.println(state, HEX);
 #endif
 
       if (reading != NULL) {
@@ -607,7 +611,6 @@ bool mcrDS::cmdCallback(JsonObject &root) {
   // json format of pio state key/value pairs
   // {"pio":[{"1":false}]}
   const char *sw = root["switch"];
-  uint8_t pio_count = root["pio_count"];
   const JsonVariant &variant = root.get<JsonVariant>("pio");
   const JsonArray &pio = variant.as<JsonArray>();
   uint8_t mask = 0x00;
@@ -635,7 +638,8 @@ bool mcrDS::cmdCallback(JsonObject &root) {
   switchCommand cmd(sw, mask, state);
   cmd_queue.push(&cmd);
 
-  // process json
+#ifdef VERBOSE
+  uint8_t pio_count = root["pio_count"];
   Serial.print("  mcrDS::cmdCallback() invoked for switch: ");
   Serial.print(sw);
   Serial.print(" pio_count=");
@@ -643,6 +647,7 @@ bool mcrDS::cmdCallback(JsonObject &root) {
   Serial.print(" requested_state=");
   Serial.print(state, HEX);
   Serial.println();
+#endif
 
   return true;
 }

@@ -115,7 +115,7 @@ void setup() {
   i2c->init();
   Serial.println("initialized");
 
-  mqtt->announceStartup();
+  // mqtt->announceStartup();
 
   Serial.println("main::setup(): completed, transition to main::loop()");
 }
