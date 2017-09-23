@@ -195,13 +195,13 @@ protected:
 
     case DISCOVER:
       _last_discover_ms = _last_discover;
-      _last_discover = 0;
+      //_last_discover = 0;
       _last_idle = 0;
       break;
 
     case CONVERT:
       _last_convert_ms = _last_convert;
-      _last_convert = 0;
+      //_last_convert = 0;
       _last_idle = 0;
       _last_convert_timestamp = now();
       break;

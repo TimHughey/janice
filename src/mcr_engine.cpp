@@ -60,14 +60,20 @@ bool mcrEngine::loop() {
   resetLoopRuntime();
 
   while (timesliceRemaining()) {
-    discover();
-    convert();
-    report();
+    if (timesliceRemaining())
+      discover();
+
+    if (timesliceRemaining())
+      convert();
+
+    if (timesliceRemaining())
+      report();
 
     // give handing CmdAcks a higher priority by allowing processing of
     // items in the queue for the remainder of the timeslice
-    // while (timesliceRemaining() && isIdle()) {
-    cmdAck();
+    while (timesliceRemaining() && isIdle() && pendingCmdAcks()) {
+      cmdAck();
+    }
   }
 
   return true;
