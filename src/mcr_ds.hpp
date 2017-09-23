@@ -48,15 +48,6 @@
 
 #define W1_PIN 10
 
-// TODO: implement actual types for dev address and id
-// typedef struct {
-//   byte b[8];
-// } dsDevAddr_t;
-//
-// typedef struct {
-//   char n[17];
-// } dsDevId_t;
-
 class mcrDS : public mcrEngine {
 
 private:

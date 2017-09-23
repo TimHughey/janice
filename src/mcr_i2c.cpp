@@ -79,14 +79,13 @@ boolean mcrI2C::discover() {
       Serial.print(lastDiscoverRunMS());
       Serial.println("ms since last discover");
 
-      startDiscover();
-
       // set-up static control variables for start of discover
       use_multiplexer = false;
       dev_index = 0;
       bus = 0;
 
       clearKnownDevices();
+      startDiscover();
     }
 
     i2cDev *search_dev = &(devs[dev_index]);

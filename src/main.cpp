@@ -69,10 +69,11 @@ void setup() {
   }
 
   if (WiFi.status() == WL_NO_SHIELD) {
-    Serial.println("main::setup(): wifi shield not detected.");
+    Serial.print(__PRETTY_FUNCTION__);
+    Serial.println(" wifi shield not detected.");
   } else {
-
-    Serial.print("main::setup(): connecting to WPA SSID ");
+    Serial.print(__PRETTY_FUNCTION__);
+    Serial.print(" connecting to WPA SSID ");
     Serial.print(ssid);
     Serial.print("...");
     while (wifiStatus != WL_CONNECTED) {
@@ -97,27 +98,30 @@ void setup() {
   setSyncInterval(120); // setting a high time sync interval since we rely on
                         // updates via MQTT
 
-  Serial.print("main::setup(): mcrMQTT");
+  Serial.print(__PRETTY_FUNCTION__);
+  Serial.print(" mcrMQTT");
   mqtt = new mcrMQTT(wifi, broker, MQTT_PORT);
   Serial.print(" created, ");
   mqtt->connect();
   Serial.println("connected");
 
-  Serial.print("main::setup(): mcrDS");
+  Serial.print(__PRETTY_FUNCTION__);
+  Serial.print(" mcrDS");
   ds = new mcrDS(mqtt);
   Serial.print(" created,");
   ds->init();
   Serial.println(" initialized");
 
-  Serial.print("main::setup(): mcrI2C");
+  Serial.print(__PRETTY_FUNCTION__);
+  Serial.print(" mcrI2C");
   i2c = new mcrI2C(mqtt);
   Serial.print(" created, ");
   i2c->init();
   Serial.println("initialized");
 
   // mqtt->announceStartup();
-
-  Serial.println("main::setup(): completed, transition to main::loop()");
+  Serial.print(__PRETTY_FUNCTION__);
+  Serial.println(" completed, transition to main::loop()");
 }
 
 elapsedMillis loop_duration;
@@ -135,7 +139,9 @@ void loop() {
 
   if (loop_elapsed > 150) {
     Serial.print("\r\n");
-    Serial.print("  [WARNING] main loop took ");
+    Serial.print("[WARNING] ");
+    Serial.print(__PRETTY_FUNCTION__);
+    Serial.print(" took ");
     Serial.print(loop_elapsed);
     Serial.println("ms");
   }

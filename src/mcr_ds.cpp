@@ -18,7 +18,7 @@
      https://www.wisslanding.com
  */
 
-#define VERBOSE 1
+// #define VERBOSE 1
 
 #if ARDUINO >= 100
 #include <Arduino.h>
@@ -35,6 +35,8 @@
 #include "reading.hpp"
 #include "sw_command.hpp"
 
+// this must be a global (at least to this file) due to the MQTT callback
+// is a static
 Queue cmd_queue(sizeof(switchCommand), 25, FIFO); // Instantiate queue
 
 mcrDS::mcrDS(mcrMQTT *mqtt) : mcrEngine(mqtt) {
@@ -216,9 +218,11 @@ boolean mcrDS::convert() {
     // start a temperature conversion if one isn't already in-progress
     // TODO only handles powered devices as of 2017-09-11
     if (isIdle()) {
+#ifdef VERBOSE
       Serial.print("  mcrDS::convert() initiated, ");
       Serial.print(lastConvert());
       Serial.println("ms since last convert");
+#endif
 
       ds->reset();
       ds->skip();         // address all devices
@@ -236,10 +240,12 @@ boolean mcrDS::convert() {
       //        convert will not be precise.
       idle(__PRETTY_FUNCTION__);
 
+#ifdef VERBOSE
       Serial.print("  mcrDS::convert() took ");
       Serial.print(lastConvertRunMS());
       Serial.println("ms");
       Serial.println();
+#endif
 
     } else if (convertTimeout()) {
       Serial.println("  WARNING: mcrDS::convert() time out");
@@ -253,11 +259,13 @@ boolean mcrDS::convert() {
 bool mcrDS::handleCmdAck(mcrDevID &id) {
   bool rc = true;
 
+#ifdef VERBOSE
   Serial.print("  ");
   Serial.print(__PRETTY_FUNCTION__);
   Serial.print(" handling CmdAck for: ");
   Serial.print(id);
   Serial.println();
+#endif
 
   return rc;
 }
