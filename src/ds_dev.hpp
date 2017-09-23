@@ -53,19 +53,19 @@ private:
     case 0x22:
     case 0x28:
       // return (const char *)"DS18x20";
-      return (const char *)"DS1820";
+      return (const char *)"ds1820";
       break;
 
     case 0x29:
-      return (const char *)"DS2408";
+      return (const char *)"ds2408";
       break;
 
     case 0x12:
-      return (const char *)"DS2406";
+      return (const char *)"ds2406";
       break;
 
     default:
-      return (const char *)"unknown";
+      return (const char *)"dsUNDEF";
       break;
     }
   };
@@ -135,8 +135,8 @@ public:
   };
 
   // info / debugg functions
-  void printReadMS(uint8_t indent = 2) {
-    Serial.print(mcrUtil::indentString(indent));
+  void printReadMS(const char *func, uint8_t indent = 2) {
+    mcrUtil::printDateTime(func);
     Serial.print(familyDesc());
     Serial.print(" ");
     Serial.print(id());
@@ -145,18 +145,16 @@ public:
     Serial.println("ms");
   }
 
-  void printWriteMS(uint8_t indent = 2) {
-    Serial.print(mcrUtil::indentString(indent));
-    Serial.print(familyDesc());
-    Serial.print(" ");
+  void printWriteMS(const char *func, uint8_t indent = 2) {
+    mcrUtil::printDateTime(func);
     Serial.print(id());
     Serial.print(" write took ");
     Serial.print(writeMS());
     Serial.println("ms");
   }
 
-  void printPresenceFailed(uint8_t indent = 2) {
-    Serial.print(mcrUtil::indentString(indent));
+  void printPresenceFailed(const char *func, uint8_t indent = 2) {
+    mcrUtil::printDateTime(func);
     Serial.print("presence failure while trying to access ");
     Serial.println(familyDesc());
   }

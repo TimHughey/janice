@@ -69,11 +69,11 @@ void setup() {
   }
 
   if (WiFi.status() == WL_NO_SHIELD) {
-    Serial.print(__PRETTY_FUNCTION__);
-    Serial.println(" wifi shield not detected.");
+    mcrUtil::printDateTime(__PRETTY_FUNCTION__);
+    Serial.println("wifi shield not detected");
   } else {
-    Serial.print(__PRETTY_FUNCTION__);
-    Serial.print(" connecting to WPA SSID ");
+    mcrUtil::printDateTime(__PRETTY_FUNCTION__);
+    Serial.print("connecting to WPA SSID ");
     Serial.print(ssid);
     Serial.print("...");
     while (wifiStatus != WL_CONNECTED) {
@@ -84,151 +84,70 @@ void setup() {
     }
   }
 
-  // you're connected now, so print out the data:
   Serial.println();
 
-  printWiFiData();
-  printCurrentNet();
+  mcrUtil::printNet(__PRETTY_FUNCTION__);
 
-  sprintf(mcrID, "mcr-%s", mcrUtil::macAddress());
+  mcrUtil::printDateTime(__PRETTY_FUNCTION__);
   Serial.print("mcrID: ");
-  Serial.println(mcrID);
+  Serial.println(mcrUtil::hostID());
 
   // Watchdog.enable(5000);
   setSyncInterval(120); // setting a high time sync interval since we rely on
                         // updates via MQTT
 
-  Serial.print(__PRETTY_FUNCTION__);
-  Serial.print(" mcrMQTT");
+  mcrUtil::printDateTime(__PRETTY_FUNCTION__);
+  Serial.print("mcrMQTT");
   mqtt = new mcrMQTT(wifi, broker, MQTT_PORT);
   Serial.print(" created, ");
   mqtt->connect();
-  Serial.println("connected");
+  Serial.print("connected, ");
+  mqtt->announceStartup();
+  Serial.println("announced startup");
 
-  Serial.print(__PRETTY_FUNCTION__);
-  Serial.print(" mcrDS");
+  mcrUtil::printDateTime(__PRETTY_FUNCTION__);
+  Serial.print("mcrDS");
   ds = new mcrDS(mqtt);
   Serial.print(" created,");
   ds->init();
   Serial.println(" initialized");
 
-  Serial.print(__PRETTY_FUNCTION__);
-  Serial.print(" mcrI2C");
+  mcrUtil::printDateTime(__PRETTY_FUNCTION__);
+  Serial.print("mcrI2C");
   i2c = new mcrI2C(mqtt);
   Serial.print(" created, ");
   i2c->init();
   Serial.println("initialized");
 
-  // mqtt->announceStartup();
-  Serial.print(__PRETTY_FUNCTION__);
-  Serial.println(" completed, transition to main::loop()");
+  mcrUtil::printDateTime(__PRETTY_FUNCTION__);
+  Serial.println("completed, transition to main::loop()");
 }
 
 elapsedMillis loop_duration;
 void loop() {
+  static bool first_entry = true;
   elapsedMillis loop_elapsed;
+
+  if (first_entry) {
+    mcrUtil::printDateTime(__PRETTY_FUNCTION__);
+    Serial.println("first invocation");
+    first_entry = false;
+  }
 
   mqtt->loop();
   ds->loop();
   i2c->loop();
 
   statusIndicator();
-  printFreeMem(15);
+  mcrUtil::printFreeMem(__PRETTY_FUNCTION__, 15);
 
   // Watchdog.reset();
 
   if (loop_elapsed > 150) {
-    Serial.print("\r\n");
-    Serial.print("[WARNING] ");
-    Serial.print(__PRETTY_FUNCTION__);
-    Serial.print(" took ");
-    Serial.print(loop_elapsed);
-    Serial.println("ms");
+    mcrUtil::printDateTime(__PRETTY_FUNCTION__);
+    Serial.print("[WARNING] elapsed time ");
+    mcrUtil::printElapsed(loop_elapsed);
   }
-}
-
-void printWiFiData() {
-  // print your WiFi shield's IP address:
-  IPAddress ip = WiFi.localIP();
-  Serial.print("IP address: ");
-  Serial.println(ip);
-
-  Serial.print("MAC address: ");
-  Serial.println(mcrUtil::macAddress());
-}
-
-void printFreeMem(uint8_t secs) {
-  static int first_free = 0;
-  static int prev_free = 0;
-  static elapsedMillis freeMemReport;
-  int delta = prev_free - mcrUtil::freeRAM();
-  int delta_since_first = first_free - mcrUtil::freeRAM();
-
-  if (first_free == 0) {
-    first_free = mcrUtil::freeRAM();
-    delta_since_first = 0;
-  }
-
-  if (freeMemReport > (secs * 1000)) {
-    char _dt[30] = {0x00};
-    time_t t = now() - (4 * 60 * 60); // rough conversion to EDT
-    int percentFree = ((float)mcrUtil::freeRAM() / (float)32000) * 100;
-    int freeK = mcrUtil::freeRAM() / 1000;
-
-    sprintf(_dt, "%02d/%02d/%02d %02d:%02d:%02d ", month(t), day(t), year(t),
-            hour(t), minute(t), second(t));
-
-    Serial.println();
-    Serial.print(_dt);
-    Serial.print(" ");
-    Serial.print(__PRETTY_FUNCTION__);
-    Serial.print(" free SRAM: ");
-    Serial.print(percentFree);
-    Serial.print("% (");
-    Serial.print(freeK);
-    Serial.print("k of 32k) delta: ");
-    Serial.print(delta);
-    Serial.print(" delta since first report: ");
-    Serial.print(delta_since_first);
-    Serial.println();
-    Serial.println();
-
-    freeMemReport = 0;
-    prev_free = mcrUtil::freeRAM();
-  }
-}
-
-void printCurrentNet() {
-  // print the SSID of the network you're attached to:
-  Serial.print("SSID: ");
-  Serial.println(WiFi.SSID());
-
-  // print the MAC address of the router you're attached to:
-  byte bssid[6];
-  WiFi.BSSID(bssid);
-  Serial.print("BSSID: ");
-  Serial.print(bssid[5], HEX);
-  Serial.print(":");
-  Serial.print(bssid[4], HEX);
-  Serial.print(":");
-  Serial.print(bssid[3], HEX);
-  Serial.print(":");
-  Serial.print(bssid[2], HEX);
-  Serial.print(":");
-  Serial.print(bssid[1], HEX);
-  Serial.print(":");
-  Serial.println(bssid[0], HEX);
-
-  // print the received signal strength:
-  long rssi = WiFi.RSSI();
-  Serial.print("signal strength (RSSI):");
-  Serial.println(rssi);
-
-  // print the encryption type:
-  byte encryption = WiFi.encryptionType();
-  Serial.print("Encryption Type:");
-  Serial.println(encryption, HEX);
-  Serial.println();
 }
 
 void statusIndicator() {

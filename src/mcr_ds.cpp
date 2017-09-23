@@ -98,15 +98,11 @@ bool mcrDS::discover() {
 
   if (needDiscover()) {
     if (isIdle()) {
-      Serial.print("  ");
-      Serial.print(__PRETTY_FUNCTION__);
-      Serial.print(" started, ");
-      Serial.print(lastDiscover());
-      Serial.println("ms since last discover");
+      printStartDiscover(__PRETTY_FUNCTION__);
 
-      startDiscover();
       ds->reset_search();
       clearKnownDevices();
+      startDiscover();
     }
 
     if (ds->search(addr)) {
@@ -133,21 +129,7 @@ bool mcrDS::discover() {
       }
     } else { // search did not find a device
       idle(__PRETTY_FUNCTION__);
-
-      if (devCount() == 0) {
-        Serial.println("  WARNING: no devices found on bus.");
-        // discover_interval_millis = 3000;
-      } else {
-        // discover_interval_millis = DISCOVER_INTERVAL_MILLIS;
-      }
-      Serial.print("  ");
-      Serial.print(__PRETTY_FUNCTION__);
-      Serial.print(" found ");
-      Serial.print(devCount());
-      Serial.print(" device(s) in ");
-      Serial.print(lastDiscoverRunMS());
-      Serial.println("ms");
-      Serial.println();
+      printStopDiscover(__PRETTY_FUNCTION__);
     }
   }
 
@@ -277,7 +259,7 @@ bool mcrDS::readDS1820(dsDev *dev, Reading **reading) {
   bool rc = true;
 
   if (ds->reset() == 0x00) {
-    dev->printPresenceFailed();
+    dev->printPresenceFailed(__PRETTY_FUNCTION__);
     return false;
   };
 
@@ -300,7 +282,7 @@ bool mcrDS::readDS1820(dsDev *dev, Reading **reading) {
   }
   ds->reset();
   dev->stopRead();
-  dev->printReadMS();
+  dev->printReadMS(__PRETTY_FUNCTION__);
 
 #ifdef VERBOSE
   Serial.print("    Read Scratchpad + received bytes = ");
@@ -360,7 +342,7 @@ bool mcrDS::readDS2406(dsDev *dev, Reading **reading) {
   bool rc = true;
 
   if (ds->reset() == 0x00) {
-    dev->printPresenceFailed();
+    dev->printPresenceFailed(__PRETTY_FUNCTION__);
     return false;
   };
 
@@ -381,7 +363,7 @@ bool mcrDS::readDS2406(dsDev *dev, Reading **reading) {
   ds->read_bytes(buff + 3, sizeof(buff) - 3);
   ds->reset();
   dev->stopRead();
-  dev->printReadMS();
+  dev->printReadMS(__PRETTY_FUNCTION__);
 
 #ifdef VERBOSE
   Serial.print("    Read Status + received bytes = ");
@@ -427,7 +409,7 @@ bool mcrDS::readDS2408(dsDev *dev, Reading **reading) {
   // byte data[12]
 
   if (ds->reset() == 0x00) {
-    dev->printPresenceFailed();
+    dev->printPresenceFailed(__PRETTY_FUNCTION__);
     return false;
   };
 
@@ -450,7 +432,7 @@ bool mcrDS::readDS2408(dsDev *dev, Reading **reading) {
   ds->read_bytes(buff + 1, sizeof(buff) - 1);
   ds->reset();
   dev->stopRead();
-  dev->printReadMS();
+  dev->printReadMS(__PRETTY_FUNCTION__);
 
 #ifdef VERBOSE
   Serial.print("  DS2408 Channel-Access Read + received bytes = ");
@@ -512,7 +494,7 @@ bool mcrDS::setDS2406(mcrCmd &cmd) {
   }
 
   if (ds->reset() == 0x00) {
-    dev->printPresenceFailed();
+    dev->printPresenceFailed(__PRETTY_FUNCTION__);
     return false;
   };
 
@@ -552,7 +534,7 @@ bool mcrDS::setDS2406(mcrCmd &cmd) {
     ds->write(0xFF, 1); // writing 0xFF will copy scratchpad to status
     ds->reset();
     dev->stopWrite();
-    dev->printWriteMS();
+    dev->printWriteMS(__PRETTY_FUNCTION__);
   } else {
 #ifdef VERBOSE
     Serial.print("bad");
@@ -573,7 +555,7 @@ bool mcrDS::setDS2408(mcrCmd &cmd) {
   }
 
   if (ds->reset() == 0x00) {
-    dev->printPresenceFailed();
+    dev->printPresenceFailed(__PRETTY_FUNCTION__);
     return false;
   };
 
@@ -608,7 +590,7 @@ bool mcrDS::setDS2408(mcrCmd &cmd) {
   check[1] = ds->read();
   ds->reset();
   dev->stopWrite();
-  dev->printWriteMS();
+  dev->printWriteMS(__PRETTY_FUNCTION__);
 
   // check what the device returned to determine success or failure
   if (check[0] == 0xAA) {

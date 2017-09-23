@@ -52,161 +52,72 @@ mcrI2C::mcrI2C(mcrMQTT *mqtt) : mcrEngine(mqtt) {
   Wire.begin();
 }
 
-boolean mcrI2C::init() {
-  boolean rc = true;
-
-  return rc;
-}
+bool mcrI2C::init() { return true; }
 
 // mcrI2C::discover()
 // this method should be called often to ensure proper operator.
-//
-//  1. if the enough millis have elapsed since the last full discovery
-//     this method then it will start a new discovery.
-//  2. if a discovery cycle is in-progress this method will execute
-//     a single search
-
-boolean mcrI2C::discover() {
+bool mcrI2C::discover() {
   i2cDev *devs = search_devs();
   static uint8_t dev_index = 0;
   static uint8_t bus = 0;
-  const uint8_t max_buses = 8;
   auto rc = true;
 
   if (needDiscover()) {
     if (isIdle()) {
-      Serial.print("  mcrI2C::discover started, ");
-      Serial.print(lastDiscoverRunMS());
-      Serial.println("ms since last discover");
+      printStartDiscover(__PRETTY_FUNCTION__);
 
-      // set-up static control variables for start of discover
-      use_multiplexer = false;
-      dev_index = 0;
-      bus = 0;
+      dev_index = 0; // reset discover control variables
+      bus = 0;       // since we are starting discover
 
       clearKnownDevices();
+      detectMultiplexer();
       startDiscover();
     }
 
-    i2cDev *search_dev = &(devs[dev_index]);
+    bool more_buses = useMultiplexer() ? (bus < (maxBuses())) : (bus == 0);
+    // bool more_devs = ((dev_index) < search_devs_count());
 
-    // before searching for any devices let's see if there's
-    // a multiplexer available
-    if ((use_multiplexer == false) && (dev_index == 0)) {
+    if (isDiscoveryActive())
 
-      // let's see if there's a multiplexer available
-      if (detectDev(0x70)) {
-#ifdef VERBOSE
-        Serial.println("    detected TCA9514B i2c multiplexer");
-#endif
-        use_multiplexer = true;
-        bus = 0;
-#ifdef VERBOSE
-        Serial.print("    searching i2c bus 0x");
-        Serial.println(bus, HEX);
-#endif
+      if (!more_buses) {           // reached the
+        idle(__PRETTY_FUNCTION__); // end of the discover cycle
+        printStopDiscover(__PRETTY_FUNCTION__);
+        return rc;
       }
-    }
 
-    // always select the bus if a multiplexer is available
-    if ((use_multiplexer == true) && (bus < max_buses)) {
-      // we are using a multiplexer so select the bus
-      Wire.beginTransmission(0x70);
-      Wire.write(0x01 << bus);
-      Wire.endTransmission(true);
-    }
-
-    // attempt to detect the device
-    // noting the bus will already be selected if
-    // a multiplexer is being used
+    i2cDev *search_dev = &(devs[dev_index]); // detect the next device
+    selectBus(bus);
     if (detectDev(search_dev->devAddr(), false)) {
-      addDevice(search_dev->devAddr(), use_multiplexer, bus);
-
-#ifdef VERBOSE
-      Serial.print("    i2c bus 0x");
-      Serial.print(bus, HEX);
-      Serial.print(" hosts 0x");
-      Serial.print(search_dev->addr(), HEX);
-      Serial.print(",");
-      Serial.print(search_dev->desc());
-      Serial.println("");
-#endif
+      addDevice(search_dev->devAddr(), useMultiplexer(), bus);
     }
 
-    boolean more_buses = (bus < (max_buses - 1));
-    boolean more_devs = ((dev_index + 1) < search_devs_count());
+    dev_index += 1; // increment to next search dev
 
-    // when we've searched all the possible devices and are using a
-    // multiplexer we increment the bus by 1 (to search the next)
-    // and reset dev_index to 0 (to search for all devices on the next bus)
-    if (use_multiplexer && more_buses && (!more_devs)) {
-      bus += 1;
-      dev_index = 0;
-#ifdef VERBOSE
-      Serial.print("    searching i2c bus 0x");
-      Serial.println(bus, HEX);
-#endif
-    } else if (use_multiplexer && more_devs) {
-      dev_index += 1;
+    if (dev_index >= search_devs_count()) { // if next dev exceeds
+      bus += 1;                             // the count of search devs
+      dev_index = 0;                        // move to next bus
     }
-    // only increment the dev_index if there are more devs to search
-    else if (use_multiplexer && more_buses && more_devs) {
-      dev_index += 1;
-    }
-    // if there isn't a multiplexer but there are more search devs
-    // increment the dev_index
-    else if ((!use_multiplexer) && more_devs) {
-      dev_index += 1;
-    }
-    // discover is complete when:
-    //  1. if there isn't a multiplexer and there aren't more
-    //     search devs
-    //  2. there is a multiplexer and we've searched all buses
-    else if (((!use_multiplexer) && (!more_devs)) ||
-             (use_multiplexer && (!more_buses))) {
-
-      idle(__PRETTY_FUNCTION__);
-
-      if (devCount() == 0) {
-        Serial.print("    [WARNING] no devices found on i2c bus in ");
-        Serial.print(lastDiscoverRunMS());
-        Serial.println("ms");
-        Serial.println();
-        // discover_interval_millis = 3000;
-      } else {
-        Serial.print("  mrcI2c::discover() found ");
-        Serial.print(devCount());
-        Serial.print(" device(s) in ");
-        Serial.print(lastDiscoverRunMS());
-        Serial.println("ms");
-        Serial.println();
-      }
-    } else {
-      // TODO: remove after testing, shouldn't be needed
-      Serial.println("    uh-oh, logic error in mcrI2c::discover()");
-    }
-  }
+  } // needDiscover
 
   return rc;
 }
 
-boolean mcrI2C::report() {
-  boolean rc = true;
+bool mcrI2C::report() {
+  bool rc = true;
   static uint8_t dev_index = 0;
 
-  if (isIdle() && needReport()) {
-    Reading *reading = NULL;
+  if (needReport()) {
+    if (isIdle()) {
+      dev_index = 0;
+      startReport();
+    }
 
-    startReport();
+    Reading *reading = NULL;
 
     if (dev_index < devCount()) {
       i2cDev *dev = known_devs[dev_index];
 
-      if (dev->useMultiplexer()) {
-        Wire.beginTransmission(0x70);
-        Wire.write(0x01 << dev->bus());
-        Wire.endTransmission();
-      }
+      selectBus(dev->bus());
 
       switch (dev->devAddr()) {
       case 0x5C:
@@ -237,8 +148,9 @@ boolean mcrI2C::report() {
       }
 
       dev_index += 1;
-    } else {
-      dev_index = 0;
+    }
+
+    if (isReportActive() && (dev_index >= devCount())) {
       idle(__PRETTY_FUNCTION__);
     }
   }
@@ -246,11 +158,10 @@ boolean mcrI2C::report() {
   return rc;
 }
 
-boolean mcrI2C::readAM2315(i2cDev *dev, Reading **reading) {
+bool mcrI2C::readAM2315(i2cDev *dev, Reading **reading) {
   elapsedMillis read_elapsed;
   static uint8_t error_count = 0;
   auto rc = true;
-  const char *name = dev->id();
 
   uint8_t cmd[] = {0x03, 0x00, 0x04};
   uint8_t buff[] = {
@@ -263,12 +174,11 @@ boolean mcrI2C::readAM2315(i2cDev *dev, Reading **reading) {
 
   memset(buff, 0x00, sizeof(buff));
 
+  dev->startRead();
   // wake up the device from builtin power save mode
   Wire.beginTransmission(dev->devAddr());
   delay(2);
   Wire.endTransmission();
-
-  time_t reading_ts = now();
 
   // get the device data
   Wire.beginTransmission(dev->devAddr());
@@ -276,12 +186,8 @@ boolean mcrI2C::readAM2315(i2cDev *dev, Reading **reading) {
   Wire.endTransmission();
   delay(10);
   Wire.requestFrom(0x5c, 8);
-
-  Serial.print("  AM2315 ");
-  Serial.print(name);
-  Serial.print(" read in ");
-  Serial.print(read_elapsed);
-  Serial.println("ms");
+  dev->stopRead();
+  dev->printReadMS(__PRETTY_FUNCTION__);
 
 #ifdef VERBOSE
   Serial.print("    Read Device bytes = ");
@@ -351,7 +257,7 @@ boolean mcrI2C::readAM2315(i2cDev *dev, Reading **reading) {
     Serial.println(msg);
 #endif
 
-    *reading = new Reading(dev->id(), reading_ts, tc, rh);
+    *reading = new Reading(dev->id(), dev->readTimestamp(), tc, rh);
     error_count = 0;
   } else { // crc did not match
     error_count += 1;
@@ -365,16 +271,13 @@ boolean mcrI2C::readAM2315(i2cDev *dev, Reading **reading) {
     Serial.println("ms)");
 #endif
   }
-
-  Serial.println();
   return rc;
 }
 
-boolean mcrI2C::readSHT31(i2cDev *dev, Reading **reading) {
+bool mcrI2C::readSHT31(i2cDev *dev, Reading **reading) {
   elapsedMillis read_elapsed;
   static uint8_t error_count = 0;
   auto rc = true;
-  const char *name = dev->id();
 
   uint8_t cmd[] = {0x24, 0x00};
   uint8_t buff[] = {
@@ -386,20 +289,16 @@ boolean mcrI2C::readSHT31(i2cDev *dev, Reading **reading) {
 
   memset(buff, 0x00, sizeof(buff));
 
+  dev->startRead();
   Wire.beginTransmission(dev->devAddr());
   Wire.write(cmd, sizeof(cmd));
   Wire.endTransmission(true);
 
   delay(15);
 
-  time_t reading_ts = now();
   Wire.requestFrom(0x44, sizeof(buff));
-
-  Serial.print("  SHT-31 ");
-  Serial.print(name);
-  Serial.print(" read in ");
-  Serial.print(read_elapsed);
-  Serial.println("ms");
+  dev->stopRead();
+  dev->printReadMS(__PRETTY_FUNCTION__);
 
 #ifdef VERBOSE
   Serial.print("    Read Device bytes = ");
@@ -464,7 +363,7 @@ boolean mcrI2C::readSHT31(i2cDev *dev, Reading **reading) {
     Serial.println(msg);
 #endif
 
-    *reading = new Reading(dev->id(), reading_ts, tc, rh);
+    *reading = new Reading(dev->id(), dev->readTimestamp(), tc, rh);
 
     error_count = 0;
   } else { // crc did not match
@@ -481,7 +380,6 @@ boolean mcrI2C::readSHT31(i2cDev *dev, Reading **reading) {
 #endif
   }
 
-  Serial.println();
   return rc;
 }
 
@@ -498,8 +396,8 @@ uint8_t mcrI2C::crcSHT31(const uint8_t *data, uint8_t len) {
   return crc;
 }
 
-boolean mcrI2C::detectDev(uint8_t addr, boolean use_multiplexer, uint8_t bus) {
-  boolean rc = false;
+bool mcrI2C::detectDev(uint8_t addr, bool use_multiplexer, uint8_t bus) {
+  bool rc = false;
 
   Wire.beginTransmission(addr);
 

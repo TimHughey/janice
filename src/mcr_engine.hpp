@@ -36,6 +36,7 @@
 
 #include "mcr_dev.hpp"
 #include "mcr_mqtt.hpp"
+#include "mcr_util.hpp"
 
 #define mcr_engine_version_1 1
 
@@ -159,9 +160,30 @@ public:
   ulong lastReportRunMS() { return _last_report_ms; }
   ulong lastAckCmdMS() { return _last_ackcmd_ms; }
 
+  void printStartDiscover(const char *func_name = NULL, uint8_t indent = 2) {
+    mcrUtil::printDateTime(func_name);
+
+    Serial.print("started, ");
+    mcrUtil::printElapsed(lastDiscover(), false);
+    Serial.println(" ms since last discover");
+  }
+
+  void printStopDiscover(const char *func_name = NULL, uint8_t indent = 2) {
+    mcrUtil::printDateTime(func_name);
+
+    if (devCount() == 0)
+      Serial.print("[WARNING] ");
+
+    Serial.print("finsihed, ");
+    Serial.print(devCount());
+    Serial.print(" devices discovered in ");
+    Serial.print(lastDiscoverRunMS());
+    Serial.println("ms");
+  }
+
 protected:
   mcrMQTT *mqtt;
-  boolean debugMode;
+  bool debugMode;
 
   virtual bool discover();
   virtual bool convert();

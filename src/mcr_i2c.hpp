@@ -50,8 +50,9 @@
 class mcrI2C : public mcrEngine {
 
 private:
+  static const uint8_t _max_buses = 8;
   i2cDev **known_devs;
-  boolean use_multiplexer = false;
+  boolean _use_multiplexer = false;
 
 public:
   mcrI2C(mcrMQTT *mqtt);
@@ -69,6 +70,7 @@ private:
 
     if (devCount() < maxDevices()) {
       dev = new i2cDev(addr, use_multiplexer, bus);
+      dev->setDesc(i2cDev::i2cDevDesc(addr));
       known_devs[devCount()] = dev;
       mcrEngine::addDevice();
     } else {
@@ -91,6 +93,38 @@ private:
   uint8_t crcSHT31(const uint8_t *data, uint8_t len);
   boolean detectDev(uint8_t addr, boolean use_multiplexer = false,
                     uint8_t bus = 0x00);
+
+  bool detectMultiplexer() {
+    _use_multiplexer = false;
+
+    if (debugMode) {
+      Serial.print(mcrUtil::indentString(4));
+      Serial.print(" detecting TCA9514B i2c bus multiplexer...");
+    }
+    // let's see if there's a multiplexer available
+    if (detectDev(0x70)) {
+      if (debugMode)
+        Serial.println(" found");
+
+      _use_multiplexer = true;
+    } else {
+      if (debugMode)
+        Serial.println(" not found");
+    }
+
+    return _use_multiplexer;
+  }
+
+  uint8_t maxBuses() { return _max_buses; }
+  bool useMultiplexer() { return _use_multiplexer; }
+
+  void selectBus(uint8_t bus) {
+    if (useMultiplexer() && (bus < _max_buses)) {
+      Wire.beginTransmission(0x70);
+      Wire.write(0x01 << bus);
+      Wire.endTransmission(true);
+    }
+  }
 
   void clearKnownDevices() {
     for (uint8_t i = 0; i < maxDevices(); i++) {

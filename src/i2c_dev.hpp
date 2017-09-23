@@ -34,14 +34,7 @@
 #include "reading.hpp"
 
 class i2cDev : public mcrDev {
-private:
-  static const uint8_t _i2c_max_addr_len = 1;
-  static const uint8_t _i2c_max_id_len = 30;
-  static const uint8_t _i2c_addr_byte = 0;
-  boolean _use_multiplexer; // is the multiplexer is needed to reach device
-  uint8_t _bus;             // if using multiplexer then this is the bus number
-                            // where the device is hosted
-
+public:
   static const char *i2cDevDesc(uint8_t addr) {
     switch (addr) {
     case 0x5C:
@@ -58,6 +51,13 @@ private:
     }
   }
 
+private:
+  static const uint8_t _i2c_max_addr_len = 1;
+  static const uint8_t _i2c_max_id_len = 30;
+  static const uint8_t _i2c_addr_byte = 0;
+  boolean _use_multiplexer; // is the multiplexer is needed to reach device
+  uint8_t _bus;             // if using multiplexer then this is the bus number
+                            // where the device is hoste
 public:
   i2cDev() : mcrDev() {
     _use_multiplexer = false;
@@ -85,6 +85,17 @@ public:
   uint8_t devAddr() { return mcrDev::addr()[_i2c_addr_byte]; };
   boolean useMultiplexer() { return _use_multiplexer; };
   uint8_t bus() { return _bus; };
+
+  // info / debugg functions
+  void printReadMS(const char *func, uint8_t indent = 2) {
+    mcrUtil::printDateTime(func);
+    Serial.print(desc());
+    Serial.print(" ");
+    Serial.print(id());
+    Serial.print(" read took ");
+    Serial.print(readMS());
+    Serial.println("ms");
+  }
 };
 
 #endif // __cplusplus
