@@ -1,5 +1,5 @@
 /*
-    sw_command.h - Master Control Remote Switch Command
+    mcr_cmd.h - Master Control Remote Switch Command
     Copyright (C) 2017  Tim Hughey
 
     This program is free software: you can redistribute it and/or modify
@@ -18,8 +18,8 @@
     https://www.wisslanding.com
 */
 
-#ifndef switchCommand_h
-#define switchCommand_h
+#ifndef mcr_cmd_h
+#define mcr_cmd_h
 
 #ifdef __cplusplus
 
@@ -31,7 +31,7 @@
 
 #include "mcr_dev.hpp"
 
-class switchCommand {
+class mcrCmd {
 private:
   static const uint8_t _max_len = 30;
   mcrDevID _dev_id;
@@ -40,13 +40,13 @@ private:
   uint8_t _mask = 0x00;
 
 public:
-  switchCommand() {
+  mcrCmd() {
     _name[0] = 0x00;
     _mask = 0x00;
     _state = 0x00;
   };
 
-  switchCommand(const char *name, uint8_t mask, uint8_t state) {
+  mcrCmd(const char *name, uint8_t mask, uint8_t state) {
     _name[0] = 0x00;
 
     strncat(_name, name, _max_len - 1);
@@ -58,7 +58,9 @@ public:
   char *name() { return _name; };
   uint8_t state() { return _state; };
   uint8_t mask() { return _mask; };
+
+  static const uint8_t size() { return sizeof(mcrCmd); }
 };
 
 #endif // __cplusplus
-#endif // sw_command.h
+#endif // mcr_cmd_h

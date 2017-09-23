@@ -35,9 +35,9 @@
 #include <elapsedMillis.h>
 
 #include "ds_dev.hpp"
+#include "mcr_cmd.hpp"
 #include "mcr_engine.hpp"
 #include "mcr_mqtt.hpp"
-#include "sw_command.hpp"
 
 #define mcr_ds_version_1 1
 
@@ -60,7 +60,7 @@ public:
   bool loop();
 
 private:
-  dsDev *addDevice(byte *addr, boolean pwr = false) {
+  dsDev *addDevice(byte *addr, bool pwr = false) {
     dsDev *dev = NULL;
 
     if (devCount() < maxDevices()) {
@@ -109,18 +109,20 @@ private:
     mcrEngine::clearKnownDevices();
   };
 
-  boolean discover();
-  boolean convert();
-  boolean report();
+  bool discover();
+  bool convert();
+  bool report();
 
   bool handleCmdAck(mcrDevID &id);
 
   // specific methods to read devices
-  boolean readDS1820(dsDev *dev, Reading **reading);
-  boolean readDS2408(dsDev *dev, Reading **reading = NULL);
-  boolean readDS2406(dsDev *dev, Reading **reading);
+  bool readDS1820(dsDev *dev, Reading **reading);
+  bool readDS2408(dsDev *dev, Reading **reading = NULL);
+  bool readDS2406(dsDev *dev, Reading **reading);
 
-  boolean setDS2408(switchCommand &cmd);
+  bool setSwitch(mcrCmd &cmd);
+  bool setDS2406(mcrCmd &cmd);
+  bool setDS2408(mcrCmd &cmd);
 
   // static method for accepting cmds
   static bool cmdCallback(JsonObject &root);

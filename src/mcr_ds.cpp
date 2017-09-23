@@ -30,14 +30,14 @@
 #include <OneWire.h>
 #include <cppQueue.h>
 
+#include "mcr_cmd.hpp"
 #include "mcr_ds.hpp"
 #include "mcr_engine.hpp"
 #include "reading.hpp"
-#include "sw_command.hpp"
 
 // this must be a global (at least to this file) due to the MQTT callback
 // is a static
-Queue cmd_queue(sizeof(switchCommand), 25, FIFO); // Instantiate queue
+Queue cmd_queue(sizeof(mcrCmd), 25, FIFO); // Instantiate queue
 
 mcrDS::mcrDS(mcrMQTT *mqtt) : mcrEngine(mqtt) {
   ds = new OneWire(W1_PIN);
@@ -46,13 +46,13 @@ mcrDS::mcrDS(mcrMQTT *mqtt) : mcrEngine(mqtt) {
   memset(_devs, 0x00, sizeof(dsDev *) * maxDevices());
 }
 
-boolean mcrDS::init() {
+bool mcrDS::init() {
   mcrMQTT::registerCmdCallback(&cmdCallback);
   mcrEngine::init();
   return true;
 }
 
-boolean mcrDS::loop() {
+bool mcrDS::loop() {
   int nbrecs = cmd_queue.nbRecs();
 
   if ((nbrecs > 0) && isIdle()) {
@@ -63,7 +63,7 @@ boolean mcrDS::loop() {
     Serial.println(nbrecs);
 #endif
 
-    switchCommand cmd;
+    mcrCmd cmd;
     cmd_queue.pop(&cmd);
 
 #ifdef VERBSOE
@@ -75,7 +75,7 @@ boolean mcrDS::loop() {
     Serial.println(cmd.state());
 #endif
 
-    if (setDS2408(cmd)) {
+    if (setSwitch(cmd)) {
       pushPendingCmdAck(cmd.name());
     }
   }
@@ -92,7 +92,7 @@ boolean mcrDS::loop() {
 //  2. if a discovery cycle is in-progress this method will execute
 //     a single search
 
-boolean mcrDS::discover() {
+bool mcrDS::discover() {
   byte addr[8];
   auto rc = true;
 
@@ -154,8 +154,8 @@ boolean mcrDS::discover() {
   return rc;
 }
 
-boolean mcrDS::report() {
-  boolean rc = true;
+bool mcrDS::report() {
+  bool rc = true;
   static uint8_t dev_index = 0;
 
   if (isIdle() && needReport()) {
@@ -211,8 +211,8 @@ boolean mcrDS::report() {
 //  2. if a temperature conversion is in-progress this method will
 //     do a single check to determine if conversion is finished
 
-boolean mcrDS::convert() {
-  boolean rc = true;
+bool mcrDS::convert() {
+  bool rc = true;
 
   if (needConvert()) {
     // start a temperature conversion if one isn't already in-progress
@@ -273,8 +273,8 @@ bool mcrDS::handleCmdAck(mcrDevID &id) {
 // specific device scratchpad methods
 bool mcrDS::readDS1820(dsDev *dev, Reading **reading) {
   byte data[9];
-  boolean type_s = false;
-  boolean rc = true;
+  bool type_s = false;
+  bool rc = true;
 
   memset(data, 0x00, sizeof(data));
 
@@ -363,8 +363,8 @@ bool mcrDS::readDS1820(dsDev *dev, Reading **reading) {
   return rc;
 }
 
-boolean mcrDS::readDS2406(dsDev *dev, Reading **reading) {
-  boolean rc = true;
+bool mcrDS::readDS2406(dsDev *dev, Reading **reading) {
+  bool rc = true;
 
   byte present = ds->reset();
 
@@ -438,10 +438,10 @@ boolean mcrDS::readDS2406(dsDev *dev, Reading **reading) {
     }
 
     // temporary test of changing state
-    // boolean pio_a = !(state & 0x01);
-    // boolean pio_b = !(state & 0x02);
-    boolean pio_a = false;
-    boolean pio_b = false;
+    // bool pio_a = !(state & 0x01);
+    // bool pio_b = !(state & 0x02);
+    bool pio_a = false;
+    bool pio_b = false;
     uint8_t new_state = (!pio_a << 5) | (!pio_b << 6) | 0xf;
 
 #ifdef VERBOSE
@@ -491,8 +491,8 @@ boolean mcrDS::readDS2406(dsDev *dev, Reading **reading) {
   return rc;
 }
 
-boolean mcrDS::readDS2408(dsDev *dev, Reading **reading) {
-  boolean rc = true;
+bool mcrDS::readDS2408(dsDev *dev, Reading **reading) {
+  bool rc = true;
   // byte data[12]
 
   byte present = ds->reset();
@@ -561,7 +561,32 @@ boolean mcrDS::readDS2408(dsDev *dev, Reading **reading) {
   return rc;
 }
 
-bool mcrDS::setDS2408(switchCommand &cmd) {
+bool mcrDS::setSwitch(mcrCmd &cmd) {
+  bool rc = true;
+
+  // mcrDevID id = cmd.name();
+  dsDev *dev = getDevice(cmd.name());
+
+  if (dev == NULL) {
+    return false;
+  }
+
+  if (dev->isDS2406())
+    rc = setDS2406(cmd);
+
+  if (dev->isDS2408())
+    rc = setDS2408(cmd);
+
+  return rc;
+}
+
+bool mcrDS::setDS2406(mcrCmd &cmd) {
+  bool rc = true;
+
+  return rc;
+}
+
+bool mcrDS::setDS2408(mcrCmd &cmd) {
   bool rc = true;
   // mcrDevID id = cmd.name();
   dsDev *dev = getDevice(cmd.name());
@@ -643,7 +668,7 @@ bool mcrDS::cmdCallback(JsonObject &root) {
       }
     }
   }
-  switchCommand cmd(sw, mask, state);
+  mcrCmd cmd(sw, mask, state);
   cmd_queue.push(&cmd);
 
 #ifdef VERBOSE

@@ -41,6 +41,9 @@ private:
   static const uint8_t _family_byte = 0;
   static const uint8_t _crc_byte = 7;
 
+  static const uint8_t _family_DS2408 = 0x29;
+  static const uint8_t _family_DS2406 = 0x12;
+
   boolean _power = false; // is the device powered?
 
   static const char *familyDesc(uint8_t family) {
@@ -101,6 +104,9 @@ public:
   uint8_t crc() { return _addr[_crc_byte]; };
   boolean isPowered() { return _power; };
   Reading *reading() { return _reading; };
+
+  bool isDS2406() { return (family() == _family_DS2406) ? true : false; };
+  bool isDS2408() { return (family() == _family_DS2408) ? true : false; };
 
   static uint8_t *parseId(char *name) {
     static uint8_t addr[_addr_len] = {0x00};
