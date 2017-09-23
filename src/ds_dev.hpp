@@ -32,6 +32,7 @@
 #include <OneWire.h>
 
 #include "mcr_dev.hpp"
+#include "mcr_util.hpp"
 #include "reading.hpp"
 
 class dsDev : public mcrDev {
@@ -51,7 +52,8 @@ private:
     case 0x10:
     case 0x22:
     case 0x28:
-      return (const char *)"DS18x20";
+      // return (const char *)"DS18x20";
+      return (const char *)"DS1820";
       break;
 
     case 0x29:
@@ -67,6 +69,8 @@ private:
       break;
     }
   };
+
+  const char *familyDesc() { return familyDesc(family()); }
 
 public:
   dsDev() : mcrDev() {
@@ -130,6 +134,34 @@ public:
     return addr;
   };
 
+  // info / debugg functions
+  void printReadMS(uint8_t indent = 2) {
+    Serial.print(mcrUtil::indentString(indent));
+    Serial.print(familyDesc());
+    Serial.print(" ");
+    Serial.print(id());
+    Serial.print(" read took ");
+    Serial.print(readMS());
+    Serial.println("ms");
+  }
+
+  void printWriteMS(uint8_t indent = 2) {
+    Serial.print(mcrUtil::indentString(indent));
+    Serial.print(familyDesc());
+    Serial.print(" ");
+    Serial.print(id());
+    Serial.print(" write took ");
+    Serial.print(writeMS());
+    Serial.println("ms");
+  }
+
+  void printPresenceFailed(uint8_t indent = 2) {
+    Serial.print(mcrUtil::indentString(indent));
+    Serial.print("presence failure while trying to access ");
+    Serial.println(familyDesc());
+  }
+
+  // static member function for validating an address (ROM) is validAddress
   static bool validAddress(uint8_t *addr) {
     bool rc = true;
 

@@ -38,12 +38,15 @@ private:
 
 public:
   mcrDevID() { memset(_id, 0x00, _max_len); };
-
   mcrDevID(char *id) { this->initAndCopy(id); };
+
+  static const uint8_t max_len() { return _max_len; };
 
   // allow a mcrDevID to be assigned to a regular char *
   operator char *() { return _id; };
-  bool operator==(char *rhs) { return (strcmp(_id, rhs)); };
+
+  // the == operator replicates the return vales from a standard strcmp
+  bool operator==(char *rhs) { return (strncmp(_id, rhs, _max_len)); };
   mcrDevID &operator=(char *id) {
     this->initAndCopy(id);
     return *this;
@@ -70,6 +73,14 @@ protected:
   char _id[_id_len] = {0x00}; // unique identifier of this device
   char _desc[_desc_len];      // desciption of the device
 
+  elapsedMillis _read_elapsed;
+  time_t _read_ms = 0;
+
+  elapsedMillis _write_elapsed;
+  time_t _write_ms = 0;
+
+  time_t _read_timestamp = 0;
+
 public:
   mcrDev() {
     memset(_addr, 0x00, _addr_len);
@@ -86,6 +97,16 @@ public:
       delete _reading;
   }
 
+  // operators
+  // although the == operator uses strcmp to check for equality the
+  // value returns is boolean
+  inline int operator==(const mcrDev &rhs) {
+    if (strcmp(_id, rhs._id) == 0)
+      return true;
+
+    return false;
+  };
+
   // updaters
   void setReading(Reading *reading) {
     if (_reading != NULL)
@@ -98,20 +119,33 @@ public:
     strncat(_desc, desc, _desc_len - 1);
   }
 
-  // operators
-  inline int operator==(const mcrDev &rhs) {
-    if (strcmp(_id, rhs._id) == 0)
-      return true;
-
-    return false;
-  };
-
   uint8_t firstAddressByte() { return _addr[0]; };
   uint8_t *addr() { return _addr; };
   const char *id() { return _id; };
   const char *desc() { return _desc; };
   static const uint8_t idMaxLen() { return _id_len; };
   boolean isValid() { return firstAddressByte() != 0x00 ? true : false; };
+
+  // metrics functions
+  void startRead() { _read_elapsed = 0; }
+  time_t stopRead() {
+    _read_ms = _read_elapsed;
+    _read_elapsed = 0;
+    _read_timestamp = now();
+
+    return _read_ms;
+  }
+  time_t readMS() { return _read_ms; }
+  time_t readTimestamp() { return _read_timestamp; }
+
+  void startWrite() { _write_elapsed = 0; }
+  time_t stopWrite() {
+    _write_ms = _write_elapsed;
+    _write_elapsed = 0;
+
+    return _write_ms;
+  }
+  time_t writeMS() { return _write_ms; }
 };
 
 #endif // __cplusplus

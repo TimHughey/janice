@@ -68,6 +68,20 @@ public:
     char stack_dummy = 0;
     return &stack_dummy - sbrk(0);
   };
+
+  static const char *indentString(uint8_t indent = 2) {
+    static char indent_str[10] = {0x00}; // used for indenting
+
+    if (indent > 9)
+      indent = 9;
+
+    for (uint8_t i = 0; i < indent; i++) {
+      indent_str[i] = ' '; // this is just a space
+    }
+    indent_str[indent] = 0x00; // null terminate the string
+
+    return indent_str;
+  }
 };
 
 #endif // __cplusplus

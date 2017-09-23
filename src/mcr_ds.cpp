@@ -276,6 +276,11 @@ bool mcrDS::readDS1820(dsDev *dev, Reading **reading) {
   bool type_s = false;
   bool rc = true;
 
+  if (ds->reset() == 0x00) {
+    dev->printPresenceFailed();
+    return false;
+  };
+
   memset(data, 0x00, sizeof(data));
 
   switch (dev->family()) {
@@ -286,77 +291,65 @@ bool mcrDS::readDS1820(dsDev *dev, Reading **reading) {
     type_s = false;
   }
 
-  byte present = ds->reset();
+  dev->startRead();
+  ds->select(dev->addr());
+  ds->write(0xBE); // Read Scratchpad
 
-  if (present > 0x00) {
-    elapsedMillis read_elapsed;
-
-    ds->select(dev->addr());
-    ds->write(0xBE); // Read Scratchpad
-
-    for (uint8_t i = 0; i < 9; i++) { // we need 9 bytes
-      data[i] = ds->read();
-    }
-
-    Serial.print("  DS1820 ");
-    Serial.print(dev->id());
-    Serial.print(" read in ");
-    Serial.print(read_elapsed);
-    Serial.println("ms");
-#ifdef VERBOSE
-    Serial.print("    Read Scratchpad + received bytes = ");
-    for (uint8_t i = 0; i < sizeof(data); i++) {
-      Serial.print("0x");
-      Serial.print(data[i], HEX);
-      Serial.print(" ");
-    }
-    Serial.println();
-
-    Serial.print("    Read Scratchpad CRC8 = ");
-#endif
-    if (OneWire::crc8(data, 8) == data[8]) {
+  for (uint8_t i = 0; i < 9; i++) { // we need 9 bytes
+    data[i] = ds->read();
+  }
+  ds->reset();
+  dev->stopRead();
+  dev->printReadMS();
 
 #ifdef VERBOSE
-      Serial.println("good");
+  Serial.print("    Read Scratchpad + received bytes = ");
+  for (uint8_t i = 0; i < sizeof(data); i++) {
+    Serial.print("0x");
+    Serial.print(data[i], HEX);
+    Serial.print(" ");
+  }
+  Serial.println();
+
+  Serial.print("    Read Scratchpad CRC8 = ");
+#endif
+  if (OneWire::crc8(data, 8) == data[8]) {
+
+#ifdef VERBOSE
+    Serial.println("good");
 #endif
 
-      // Convert the data to actual temperature
-      // because the result is a 16 bit signed integer, it should
-      // be stored to an "int16_t" type, which is always 16 bits
-      // even when compiled on a 32 bit processor.
-      int16_t raw = (data[1] << 8) | data[0];
-      if (type_s) {
-        raw = raw << 3; // 9 bit resolution default
-        if (data[7] == 0x10) {
-          // "count remain" gives full 12 bit resolution
-          raw = (raw & 0xFFF0) + 12 - data[6];
-        }
-      } else {
-        byte cfg = (data[4] & 0x60);
-        // at lower res, the low bits are undefined, so let's zero them
-        if (cfg == 0x00)
-          raw = raw & ~7; // 9 bit resolution, 93.75 ms
-        else if (cfg == 0x20)
-          raw = raw & ~3; // 10 bit res, 187.5 ms
-        else if (cfg == 0x40)
-          raw = raw & ~1; // 11 bit res, 375 ms
-        //// default is 12 bit resolution, 750 ms conversion time
+    // Convert the data to actual temperature
+    // because the result is a 16 bit signed integer, it should
+    // be stored to an "int16_t" type, which is always 16 bits
+    // even when compiled on a 32 bit processor.
+    int16_t raw = (data[1] << 8) | data[0];
+    if (type_s) {
+      raw = raw << 3; // 9 bit resolution default
+      if (data[7] == 0x10) {
+        // "count remain" gives full 12 bit resolution
+        raw = (raw & 0xFFF0) + 12 - data[6];
       }
-      float celsius = (float)raw / 16.0;
-
-      *reading = new Reading(dev->id(), lastConvertTimestamp(), celsius);
     } else {
+      byte cfg = (data[4] & 0x60);
+      // at lower res, the low bits are undefined, so let's zero them
+      if (cfg == 0x00)
+        raw = raw & ~7; // 9 bit resolution, 93.75 ms
+      else if (cfg == 0x20)
+        raw = raw & ~3; // 10 bit res, 187.5 ms
+      else if (cfg == 0x40)
+        raw = raw & ~1; // 11 bit res, 375 ms
+      //// default is 12 bit resolution, 750 ms conversion time
+    }
+    float celsius = (float)raw / 16.0;
+
+    *reading = new Reading(dev->id(), lastConvertTimestamp(), celsius);
+  } else {
 
 #ifdef VERBOSE
-      Serial.println("  bad");
+    Serial.println("  bad");
 #endif
 
-      rc = false;
-    }
-  } else {
-    Serial.print("  DS18x20 ");
-    Serial.print(dev->id());
-    Serial.println(" presence failed.");
     rc = false;
   }
 
@@ -366,125 +359,63 @@ bool mcrDS::readDS1820(dsDev *dev, Reading **reading) {
 bool mcrDS::readDS2406(dsDev *dev, Reading **reading) {
   bool rc = true;
 
-  byte present = ds->reset();
+  if (ds->reset() == 0x00) {
+    dev->printPresenceFailed();
+    return false;
+  };
 
-  if (present > 0x00) {
-    elapsedMillis read_state_elapsed;
-    uint8_t buff[] = {
-        0xAA,                         // byte 0:     Read Status
-        0x00, 0x00,                   // byte 1-2:   Address (start a beginning)
-        0x00, 0x00, 0x00, 0x00, 0x00, // byte 3-7:   EPROM Bitmaps
-        0x00,                         // byte 8:     EPROM Factory Test Byte
-        0x00,        // byte 9:     Don't care (always reads 0x00)
-        0x00,        // byte 10:    SRAM (channel flip-flops, power, etc.)
-        0x00, 0x00}; // byte 11-12: CRC16
-
-    ds->select(dev->addr());
-    ds->write_bytes(buff, 3); // Read Status cmd and two address bytes
-
-    // fill buffer with bytes from DS2406, skipping the first byte
-    // since the first byte is included in the CRC16
-    ds->read_bytes(buff + 3, sizeof(buff) - 3);
-    ds->reset();
-
-    Serial.print("  DS2406 ");
-    Serial.print(dev->id());
-    Serial.print(" read in ");
-    Serial.print(read_state_elapsed);
-    Serial.println("ms");
-
-#ifdef VERBOSE
-    Serial.print("    Read Status + received bytes = ");
-    for (uint8_t i = 0; i < sizeof(buff); i++) {
-      Serial.print(buff[i], HEX);
-      Serial.print(" ");
-    }
-    Serial.println();
-
-    Serial.print("    Read Status CRC16 = ");
-#endif
-
-    if (OneWire::check_crc16(buff, (sizeof(buff) - 2),
-                             &buff[sizeof(buff) - 2])) {
-      uint8_t raw_status = 0x00;
-
-      raw_status = buff[sizeof(buff) - 3];
-
-      uint8_t positions = 0x00;
-
-      // translate raw status to 0b000000xx
-      // to represent PIO.A as bit 0 and PIO.B as bit 1
-      if ((raw_status & 0x20) == 0) {
-        positions = 0x01;
-      }
-
-      if ((raw_status & 0x40) == 0) {
-        positions = (positions | 0x02);
-      }
-
-#ifdef VERBOSE
-      Serial.println("good");
-#endif
-
-      *reading = new Reading(dev->id(), now(), positions, (uint8_t)2);
-
-    } else {
-
-#ifdef VERBOSE
-      Serial.println("bad");
-#endif
-
-      rc = false;
-    }
-
-    // temporary test of changing state
-    // bool pio_a = !(state & 0x01);
-    // bool pio_b = !(state & 0x02);
-    bool pio_a = false;
-    bool pio_b = false;
-    uint8_t new_state = (!pio_a << 5) | (!pio_b << 6) | 0xf;
-
-#ifdef VERBOSE
-    Serial.print("    testing write, new state = 0x");
-    Serial.print(new_state, HEX);
-    Serial.println();
-#endif
-
-    uint8_t buff2[]{0x55,        // byte 0:     Write Status
-                    0x07, 0x00,  // byte 1-2:   Address of Status byte
-                    0x00,        // byte 3-7:   Status byte to send
+  uint8_t buff[] = {0xAA,       // byte 0:     Read Status
+                    0x00, 0x00, // byte 1-2:   Address (start a beginning)
+                    0x00, 0x00, 0x00, 0x00, 0x00, // byte 3-7:   EPROM Bitmaps
+                    0x00, // byte 8:     EPROM Factory Test Byte
+                    0x00, // byte 9:     Don't care (always reads 0x00)
+                    0x00, // byte 10:    SRAM (channel flip-flops, power, etc.)
                     0x00, 0x00}; // byte 11-12: CRC16
 
-    buff2[3] = new_state;
+  dev->startRead();
+  ds->select(dev->addr());
+  ds->write_bytes(buff, 3); // Read Status cmd and two address bytes
 
-    ds->reset();
-    ds->select(dev->addr());
-    ds->write_bytes(buff2, sizeof(buff2) - 2);
-    ds->read_bytes(buff2 + 4, sizeof(buff2) - 4);
+  // fill buffer with bytes from DS2406, skipping the first byte
+  // since the first byte is included in the CRC16
+  ds->read_bytes(buff + 3, sizeof(buff) - 3);
+  ds->reset();
+  dev->stopRead();
+  dev->printReadMS();
 
 #ifdef VERBOSE
-    Serial.print("    Write Status CRC16 = ");
+  Serial.print("    Read Status + received bytes = ");
+  for (uint8_t i = 0; i < sizeof(buff); i++) {
+    Serial.print(buff[i], HEX);
+    Serial.print(" ");
+  }
+  Serial.println();
+
+  Serial.print("    Read Status CRC16 = ");
 #endif
 
-    if (OneWire::check_crc16(buff2, (sizeof(buff2) - 2),
-                             &buff2[sizeof(buff2) - 2])) {
-#ifdef VERBOSE
-      Serial.print("good");
-      Serial.println();
-#endif
+  if (OneWire::check_crc16(buff, (sizeof(buff) - 2), &buff[sizeof(buff) - 2])) {
+    uint8_t raw_status = 0x00;
 
-      ds->write(0xFF, 1); // writing 0xFF will copy scratchpad to status
-      ds->reset();
-    } else {
-#ifdef VERBOSE
-      Serial.print("bad");
-      Serial.println();
-#endif
+    raw_status = buff[sizeof(buff) - 3];
+
+    uint8_t positions = 0x00;       // translate raw status to 0b000000xx
+    if ((raw_status & 0x20) == 0) { // to represent PIO.A as bit 0
+      positions = 0x01;             // and PIO.B as bit 1
     }
+
+    if ((raw_status & 0x40) == 0) {
+      positions = (positions | 0x02);
+    }
+
+#ifdef VERBOSE
+    Serial.println("good");
+#endif
+    *reading = new Reading(dev->id(), now(), positions, (uint8_t)2);
   } else {
-    Serial.print("  DS2406 ");
-    Serial.print(dev->id());
-    Serial.println(" presence failed.");
+#ifdef VERBOSE
+    Serial.println("bad");
+#endif
     rc = false;
   }
 
@@ -495,66 +426,57 @@ bool mcrDS::readDS2408(dsDev *dev, Reading **reading) {
   bool rc = true;
   // byte data[12]
 
-  byte present = ds->reset();
+  if (ds->reset() == 0x00) {
+    dev->printPresenceFailed();
+    return false;
+  };
 
-  if (present > 0x00) {
-    elapsedMillis read_state_elapsed;
-    uint8_t buff[] = {0xF5, // byte 0:      Channel-Access Read 0xF5
-                      0x00, 0x00, 0x00, 0x00, // bytes 1-4:   channel state data
-                      0x00, 0x00, 0x00, 0x00, // bytes 5-8:   channel state data
-                      0x00, 0x00, 0x00, 0x00, // bytes 9-12:  channel state data
-                      0x00, 0x00, 0x00, 0x00, // bytes 13-16: channel state data
-                      0x00, 0x00, 0x00, 0x00, // bytes 17-20: channel state data
-                      0x00, 0x00, 0x00, 0x00, // bytes 21-24: channel state data
-                      0x00, 0x00, 0x00, 0x00, // bytes 25-28: channel state data
-                      0x00, 0x00, 0x00, 0x00, // bytes 29-32: channel state data
-                      0x00, 0x00};            // bytes 33-34: CRC16
+  uint8_t buff[] = {0xF5, // byte 0:      Channel-Access Read 0xF5
+                    0x00, 0x00, 0x00, 0x00, // bytes 1-4:   channel state data
+                    0x00, 0x00, 0x00, 0x00, // bytes 5-8:   channel state data
+                    0x00, 0x00, 0x00, 0x00, // bytes 9-12:  channel state data
+                    0x00, 0x00, 0x00, 0x00, // bytes 13-16: channel state data
+                    0x00, 0x00, 0x00, 0x00, // bytes 17-20: channel state data
+                    0x00, 0x00, 0x00, 0x00, // bytes 21-24: channel state data
+                    0x00, 0x00, 0x00, 0x00, // bytes 25-28: channel state data
+                    0x00, 0x00, 0x00, 0x00, // bytes 29-32: channel state data
+                    0x00, 0x00};            // bytes 33-34: CRC16
 
-    ds->select(dev->addr());
-    ds->write_bytes(buff, 1);
+  dev->startRead();
+  ds->select(dev->addr());
+  ds->write_bytes(buff, 1);
 
-    // read 32 bytes of channel state data + 16 bits of CRC
-    ds->read_bytes(buff + 1, sizeof(buff) - 1);
-    ds->reset();
-
-    Serial.print("  DS2408 ");
-    Serial.print(dev->id());
-    Serial.print(" read in ");
-    Serial.print(read_state_elapsed);
-    Serial.println("ms");
+  // read 32 bytes of channel state data + 16 bits of CRC
+  ds->read_bytes(buff + 1, sizeof(buff) - 1);
+  ds->reset();
+  dev->stopRead();
+  dev->printReadMS();
 
 #ifdef VERBOSE
-    Serial.print("  DS2408 Channel-Access Read + received bytes = ");
-    for (uint8_t i = 0; i < sizeof(buff); i++) {
-      Serial.print(buff[i], HEX);
-      Serial.print(" ");
-    }
-    Serial.println();
+  Serial.print("  DS2408 Channel-Access Read + received bytes = ");
+  for (uint8_t i = 0; i < sizeof(buff); i++) {
+    Serial.print(buff[i], HEX);
+    Serial.print(" ");
+  }
+  Serial.println();
 
-    Serial.print("    Channel-Access Read CRC16 = ");
+  Serial.print("    Channel-Access Read CRC16 = ");
 #endif
 
-    if (OneWire::check_crc16(buff, (sizeof(buff) - 2),
-                             &buff[sizeof(buff) - 2])) {
-      uint8_t positions = buff[sizeof(buff) - 3];
+  if (OneWire::check_crc16(buff, (sizeof(buff) - 2), &buff[sizeof(buff) - 2])) {
+    uint8_t positions = buff[sizeof(buff) - 3];
 
 #ifdef VERBOSE
-      Serial.println("good");
+    Serial.println("good");
 #endif
 
-      if (reading != NULL) {
-        *reading = new Reading(dev->id(), now(), positions, (uint8_t)8);
-      }
-    } else {
-#ifdef VERBOSE
-      Serial.println("bad");
-#endif
-      rc = false;
+    if (reading != NULL) {
+      *reading = new Reading(dev->id(), now(), positions, (uint8_t)8);
     }
   } else {
-    Serial.print("  DS2408 ");
-    Serial.print(dev->id());
-    Serial.println(" presence failed.");
+#ifdef VERBOSE
+    Serial.println("bad");
+#endif
     rc = false;
   }
 
@@ -582,7 +504,62 @@ bool mcrDS::setSwitch(mcrCmd &cmd) {
 
 bool mcrDS::setDS2406(mcrCmd &cmd) {
   bool rc = true;
+  // mcrDevID id = cmd.name();
+  dsDev *dev = getDevice(cmd.name());
 
+  if (dev == NULL) {
+    return false;
+  }
+
+  if (ds->reset() == 0x00) {
+    dev->printPresenceFailed();
+    return false;
+  };
+
+  Reading *reading = dev->reading();
+  uint8_t mask = cmd.mask();
+  uint8_t tobe_state = cmd.state();
+  uint8_t asis_state = reading->state();
+
+  bool pio_a = (mask & 0x01) ? (tobe_state & 0x01) : (asis_state & 0x01);
+  bool pio_b = (mask & 0x02) ? (tobe_state & 0x02) : (asis_state & 0x02);
+
+  uint8_t new_state = (!pio_a << 5) | (!pio_b << 6) | 0xf;
+
+  uint8_t buff[]{0x55,        // byte 0:     Write Status
+                 0x07, 0x00,  // byte 1-2:   Address of Status byte
+                 0x00,        // byte 3-7:   Status byte to send
+                 0x00, 0x00}; // byte 11-12: CRC16
+
+  buff[3] = new_state;
+
+  ds->reset();
+  dev->startWrite();
+  ds->select(dev->addr());
+  ds->write_bytes(buff, sizeof(buff) - 2);
+  ds->read_bytes(buff + 4, sizeof(buff) - 4);
+
+#ifdef VERBOSE
+  Serial.print("    Write Status CRC16 = ");
+#endif
+
+  if (OneWire::check_crc16(buff, (sizeof(buff) - 2), &buff[sizeof(buff) - 2])) {
+#ifdef VERBOSE
+    Serial.print("good");
+    Serial.println();
+#endif
+
+    ds->write(0xFF, 1); // writing 0xFF will copy scratchpad to status
+    ds->reset();
+    dev->stopWrite();
+    dev->printWriteMS();
+  } else {
+#ifdef VERBOSE
+    Serial.print("bad");
+    Serial.println();
+#endif
+    rc = false;
+  }
   return rc;
 }
 
@@ -594,6 +571,12 @@ bool mcrDS::setDS2408(mcrCmd &cmd) {
   if (dev == NULL) {
     return false;
   }
+
+  if (ds->reset() == 0x00) {
+    dev->printPresenceFailed();
+    return false;
+  };
+
   Reading *reading = dev->reading();
 
   uint8_t mask = cmd.mask();
@@ -614,6 +597,7 @@ bool mcrDS::setDS2408(mcrCmd &cmd) {
   new_state = asis_state | tobe_state;
 
   ds->reset();
+  dev->startWrite();
   ds->select(dev->addr());
   ds->write(0x5A, 1);
   ds->write(new_state, 1);
@@ -622,6 +606,9 @@ bool mcrDS::setDS2408(mcrCmd &cmd) {
   uint8_t check[2];
   check[0] = ds->read();
   check[1] = ds->read();
+  ds->reset();
+  dev->stopWrite();
+  dev->printWriteMS();
 
   // check what the device returned to determine success or failure
   if (check[0] == 0xAA) {
