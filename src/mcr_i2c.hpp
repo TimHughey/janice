@@ -98,18 +98,18 @@ private:
     _use_multiplexer = false;
 
     if (debugMode) {
-      Serial.print(mcrUtil::indentString(4));
-      Serial.print(" detecting TCA9514B i2c bus multiplexer...");
+      logDateTime(__PRETTY_FUNCTION__);
+      log("detecting TCA9514B i2c bus multiplexer...");
     }
     // let's see if there's a multiplexer available
     if (detectDev(0x70)) {
       if (debugMode)
-        Serial.println(" found");
+        log(" found", true);
 
       _use_multiplexer = true;
     } else {
       if (debugMode)
-        Serial.println(" not found");
+        log(" not found");
     }
 
     return _use_multiplexer;

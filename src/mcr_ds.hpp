@@ -57,7 +57,6 @@ private:
 public:
   mcrDS(mcrMQTT *mqtt);
   bool init();
-  bool loop();
 
 private:
   dsDev *addDevice(byte *addr, bool pwr = false) {
@@ -76,6 +75,17 @@ private:
     return dev;
   };
 
+  dsDev *getDevice(mcrDevID_t &id) {
+    uint8_t *addr = dsDev::parseId(id);
+    dsDev *dev = NULL;
+
+    if (addr != NULL) {
+      dev = getDevice(addr);
+    }
+    return dev;
+  }
+
+  // TODO: deprecated -- replace with mcrDevID_t
   dsDev *getDevice(char *name) {
     uint8_t *addr = dsDev::parseId(name);
     dsDev *dev = NULL;
@@ -112,8 +122,14 @@ private:
   bool discover();
   bool convert();
   bool report();
-
+  bool handleCmd();
   bool handleCmdAck(mcrDevID &id);
+
+  bool isCmdQueueEmpty();
+  bool pendingCmd();
+
+  bool reportDevice(mcrDevID &id) { return reportDevice(getDevice(id)); }
+  bool reportDevice(dsDev *dev);
 
   // specific methods to read devices
   bool readDS1820(dsDev *dev, Reading **reading);
@@ -123,6 +139,24 @@ private:
   bool setSwitch(mcrCmd &cmd);
   bool setDS2406(mcrCmd &cmd);
   bool setDS2408(mcrCmd &cmd);
+
+  void printInvalidDev(dsDev *dev) {
+    logDateTime(__PRETTY_FUNCTION__);
+    log("[WARNING] device ");
+    if (dev == NULL) {
+      log("is NULL", true);
+    } else {
+      log(dev->id());
+      log(" crc8 is ");
+      switch (dev->isValid()) {
+      case true:
+        log("valid", true);
+        break;
+      case false:
+        log("invalid", true);
+      }
+    }
+  }
 
   // static method for accepting cmds
   static bool cmdCallback(JsonObject &root);

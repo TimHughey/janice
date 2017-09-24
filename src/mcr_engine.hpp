@@ -1,5 +1,5 @@
 /*
-    mcpr_engine.h - Master Control Remote Dallas Semiconductor
+    mcr_engine.hpp - Master Control Remote Dallas Semiconductor
     Copyright (C) 2017  Tim Hughey
 
     This program is free software: you can redistribute it and/or modify
@@ -36,6 +36,7 @@
 
 #include "mcr_dev.hpp"
 #include "mcr_mqtt.hpp"
+#include "mcr_type.hpp"
 #include "mcr_util.hpp"
 
 #define mcr_engine_version_1 1
@@ -53,31 +54,22 @@
 #define MAX_DEVICES_PER_ENGINE 30
 #endif
 
-typedef enum {
-  IDLE,
-  INIT,
-  DISCOVER,
-  CONVERT,
-  REPORT,
-  CMD_ACK,
-  STATS
-} mcrEngineState_t;
-
 class mcrEngine {
 private:
   mcrEngineState_t _state = IDLE;
   uint16_t _dev_count = 0;
   Queue *_pending_ack_q = NULL;
+  bool _savedDebugMode = false;
 
   // Engine runtime controls
-  ulong _loop_timeslice_ms = 20;
+  ulong _loop_timeslice_ms = 50;
   ulong _discover_interval_ms = 30000;
   ulong _convert_interval_ms = 7000;
   ulong _report_interval_ms = 11000;
   ulong _stats_inverval_ms = 20000;
 
   ulong _discover_timeout_ms = 10000;
-  ulong _convert_timeout_ms = 1000;
+  ulong _convert_timeout_ms = 3000;
   ulong _report_timeout_ms = 10000;
 
   // Engine state tracking
@@ -86,6 +78,7 @@ private:
   elapsedMillis _last_discover;
   elapsedMillis _last_convert;
   elapsedMillis _last_report;
+  elapsedMillis _last_cmd;
   elapsedMillis _last_ackcmd;
   elapsedMillis _last_stats;
 
@@ -95,6 +88,7 @@ private:
   ulong _last_convert_ms = 0;
   time_t _last_convert_timestamp = 0;
   ulong _last_report_ms = 0;
+  ulong _last_cmd_ms = 0;
   ulong _last_ackcmd_ms = 0;
   ulong _last_stats_ms = 0;
 
@@ -111,7 +105,11 @@ public:
   bool isIdle() { return (_state == IDLE) ? true : false; }
   bool isReportActive() { return _state == REPORT ? true : false; }
   bool isConvertActive() { return _state == CONVERT ? true : false; }
+  bool isCmdActive() { return _state == CMD ? true : false; }
   bool isCmdAckActive() { return _state == CMD_ACK ? true : false; }
+
+  virtual bool isCmdQueueEmpty() { return true; }
+  virtual bool pendingCmd() { return false; }
 
   bool isCmdAckQueueEmpty() {
     if (_pending_ack_q != NULL) {
@@ -188,66 +186,24 @@ protected:
   virtual bool discover();
   virtual bool convert();
   virtual bool report();
+  virtual bool cmd();
   virtual bool cmdAck();
+  void idle(const char *func = NULL);
 
-  // subclasses should override this function and do something useful
+  // subclasses should override these functions and do something useful
+  virtual bool handleCmd() { return true; }
   virtual bool handleCmdAck(mcrDevID &id) { return true; }
 
-  // static const uint8_t max_devices = MAX_DEVICES_PER_ENGINE;
-  void addDevice() { _dev_count += 1; };
   uint16_t devCount() { return _dev_count; };
   virtual void clearKnownDevices() { _dev_count = 0; };
+  void addDevice() { _dev_count += 1; };
 
-  void idle(const char *f) {
+  void tempDebugOn() {
+    _savedDebugMode = debugMode;
+    debugMode = true;
+  }
 
-    // Serial.println();
-    // Serial.print(f);
-    // Serial.print(" called idle() _state = ");
-    // Serial.print(_state);
-    // Serial.println();
-
-    switch (_state) {
-    case IDLE:
-      // do nothing if already IDLE
-      break;
-
-    case INIT:
-      _last_idle = 0;
-      break;
-
-    case DISCOVER:
-      _last_discover_ms = _last_discover;
-      //_last_discover = 0;
-      _last_idle = 0;
-      break;
-
-    case CONVERT:
-      _last_convert_ms = _last_convert;
-      //_last_convert = 0;
-      _last_idle = 0;
-      _last_convert_timestamp = now();
-      break;
-
-    case REPORT:
-      _last_report_ms = _last_report;
-      _last_report = 0;
-      _last_idle = 0;
-      break;
-
-    case CMD_ACK:
-      _last_ackcmd_ms = _last_ackcmd;
-      _last_ackcmd = 0;
-      _last_idle = 0;
-      break;
-
-    case STATS:
-      _last_stats_ms = _last_stats;
-      _last_stats = 0;
-      _last_idle = 0;
-      break;
-    }
-    _state = IDLE;
-  };
+  void tempDebugOff() { debugMode = _savedDebugMode; }
 
   void debugIdle(const char *c, mcrEngineState_t s) {
     // Serial.println();
@@ -256,30 +212,39 @@ protected:
     // Serial.println();
   }
 
+  void endIdle() { _last_idle_ms = _last_idle; }
+
   void startDiscover() {
     debugIdle(__PRETTY_FUNCTION__, DISCOVER);
-    _last_idle_ms = _last_idle;
+    endIdle();
     _state = DISCOVER;
     _last_discover = 0;
   };
 
   void startConvert() {
     debugIdle(__PRETTY_FUNCTION__, CONVERT);
-    _last_idle_ms = _last_idle;
+    endIdle();
     _state = CONVERT;
     _last_convert = 0;
   };
 
   void startReport() {
     debugIdle(__PRETTY_FUNCTION__, REPORT);
-    _last_idle_ms = _last_idle;
+    endIdle();
     _state = REPORT;
     _last_report = 0;
   };
 
+  void startCmd() {
+    debugIdle(__PRETTY_FUNCTION__, CMD);
+    endIdle();
+    _state = CMD;
+    _last_cmd = 0;
+  }
+
   void startCmdAck() {
     debugIdle(__PRETTY_FUNCTION__, CMD_ACK);
-    _last_idle_ms = _last_idle;
+    endIdle();
     _state = CMD_ACK;
     _last_ackcmd = 0;
   }
@@ -316,11 +281,18 @@ protected:
     return false;
   }
 
+  bool needCmd() {
+    if (isCmdActive() || pendingCmd())
+      return true;
+
+    return false;
+  }
+
   bool needCmdAck() {
     if (isCmdAckActive() || pendingCmdAcks())
       return true;
 
-    return true;
+    return false;
   }
 
   // timeslice helper methods

@@ -35,6 +35,11 @@
 
 extern "C" char *sbrk(int i);
 
+#ifndef log
+#define log mcrUtil::printLog
+#define logDateTime mcrUtil::printDateTime
+#endif
+
 class mcrUtil {
 public:
   static char *macAddress() {
@@ -100,7 +105,7 @@ public:
       sprintf(dt, "%02d/%02d/%02d %02d:%02d:%02d ", month(t), day(t), year(t),
               hour(t), minute(t), second(t));
     } else {
-      sprintf(dt, "%17lums ", millis());
+      sprintf(dt, "%17lu ms ", millis());
     }
 
     return dt;
@@ -201,6 +206,20 @@ public:
       freeMemReport = 0;
       prev_free = mcrUtil::freeRAM();
     }
+  }
+
+  static void printLog(const char *string, bool newline = false) {
+    if (newline)
+      Serial.println(string);
+    else
+      Serial.print(string);
+  }
+
+  static void printLog(int value, bool newline = false) {
+    if (newline)
+      Serial.println(value);
+    else
+      Serial.print(value);
   }
 };
 

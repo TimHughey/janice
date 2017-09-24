@@ -74,13 +74,13 @@ public:
   }
 
   // temperature only
-  Reading(char *id, float celsius) {
-    strcpy(_id, id);
-    _mtime = now();
-    _type = TEMP;
-    _celsius = celsius;
-  }
-  Reading(char *id, time_t mtime, float celsius) {
+  // Reading(char *id, float celsius) {
+  //  strcpy(_id, id);
+  //  _mtime = now();
+  //  _type = TEMP;
+  //  _celsius = celsius;
+  //  }
+  Reading(const char *id, time_t mtime, float celsius) {
     strcpy(_id, id);
     _mtime = mtime;
     _type = TEMP;
@@ -88,13 +88,13 @@ public:
   }
 
   // relative humidity
-  Reading(const char *id, float celsius, float relhum) {
-    strcpy(_id, id);
-    _mtime = now();
-    _type = RH;
-    _celsius = celsius;
-    _relhum = relhum;
-  }
+  // Reading(const char *id, float celsius, float relhum) {
+  //  strcpy(_id, id);
+  //  _mtime = now();
+  //  _type = RH;
+  //  _celsius = celsius;
+  //  _relhum = relhum;
+  //  }
 
   Reading(const char *id, time_t mtime, float celsius, float relhum) {
     strcpy(_id, id);
@@ -105,7 +105,7 @@ public:
   }
 
   // switch states
-  Reading(char *id, time_t mtime, uint8_t state, uint8_t bits) {
+  Reading(const char *id, time_t mtime, uint8_t state, uint8_t bits) {
     strcpy(_id, id);
     _mtime = mtime;
     _type = SWITCH;

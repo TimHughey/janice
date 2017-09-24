@@ -36,8 +36,8 @@
 #include "reading.hpp"
 
 // this must be a global (at least to this file) due to the MQTT callback
-// is a static
-Queue cmd_queue(sizeof(mcrCmd), 25, FIFO); // Instantiate queue
+// static.  i really don't like this.  TODO fix MQTT library
+static Queue cmd_queue(sizeof(mcrCmd), 25, FIFO); // Instantiate queue
 
 mcrDS::mcrDS(mcrMQTT *mqtt) : mcrEngine(mqtt) {
   ds = new OneWire(W1_PIN);
@@ -50,38 +50,6 @@ bool mcrDS::init() {
   mcrMQTT::registerCmdCallback(&cmdCallback);
   mcrEngine::init();
   return true;
-}
-
-bool mcrDS::loop() {
-  int nbrecs = cmd_queue.nbRecs();
-
-  if ((nbrecs > 0) && isIdle()) {
-#ifdef VERBOSE
-    Serial.print("  ");
-    Serial.print(__PRETTY_FUNCTION__);
-    Serial.print(" cmds in queue = ");
-    Serial.println(nbrecs);
-#endif
-
-    mcrCmd cmd;
-    cmd_queue.pop(&cmd);
-
-#ifdef VERBSOE
-    Serial.print("  ");
-    Serial.print(__PRETTY_FUNCTION__);
-    Serial.print(" popped: name=");
-    Serial.print(cmd.name());
-    Serial.print(" new_state: ");
-    Serial.println(cmd.state());
-#endif
-
-    if (setSwitch(cmd)) {
-      pushPendingCmdAck(cmd.name());
-    }
-  }
-
-  // must call the base case to ensure remaining work is done
-  return mcrEngine::loop();
 }
 
 // mcrDS::discover()
@@ -147,38 +115,47 @@ bool mcrDS::report() {
 
   if (isReportActive()) {
     dsDev *dev = _devs[dev_index];
-    Reading *reading = NULL;
-
-    if ((dev != NULL) && (dev->isValid())) {
-      switch (dev->family()) {
-      case 0x10: // DS1820 (temperature sensors)
-      case 0x22:
-      case 0x28:
-        rc = readDS1820(dev, &reading);
-        dev->setReading(reading);
-        break;
-
-      case 0x29: // DS2408 (8-channel switch)
-        rc = readDS2408(dev, &reading);
-        dev->setReading(reading);
-        break;
-
-      case 0x12: // DS2406 (2-channel switch with 1k EPROM)
-        rc = readDS2406(dev, &reading);
-        dev->setReading(reading);
-        break;
-      }
-
-      if (reading != NULL) {
-        mqtt->publish(reading);
-      }
-    }
+    rc = reportDevice(dev);
 
     dev_index += 1; // increment to dev_index for next loop invocation
-
-    if (dev_index == (maxDevices() - 1)) {
+    if (dev_index >= (devCount() - 1)) {
       idle(__PRETTY_FUNCTION__);
     }
+  }
+
+  return rc;
+}
+
+bool mcrDS::reportDevice(dsDev *dev) {
+  auto rc = true;
+  Reading *reading = NULL;
+
+  if ((dev == NULL) || (dev->isNotValid())) {
+    printInvalidDev(dev);
+    return false;
+  }
+
+  switch (dev->family()) {
+  case 0x10: // DS1820 (temperature sensors)
+  case 0x22:
+  case 0x28:
+    rc = readDS1820(dev, &reading);
+    dev->setReading(reading);
+    break;
+
+  case 0x29: // DS2408 (8-channel switch)
+    rc = readDS2408(dev, &reading);
+    dev->setReading(reading);
+    break;
+
+  case 0x12: // DS2406 (2-channel switch with 1k EPROM)
+    rc = readDS2406(dev, &reading);
+    dev->setReading(reading);
+    break;
+  }
+
+  if ((reading != NULL) && rc) {
+    mqtt->publish(reading);
   }
 
   return rc;
@@ -216,10 +193,6 @@ bool mcrDS::convert() {
     // bus is held low during temp convert
     // so if the bus reads high then temp convert is complete
     if (isConvertActive() && (ds->read_bit() > 0x00)) {
-      // note:  there will be some extra millis recorded due to
-      //        time slicing and execution of other methods in between
-      //        checks.  in other words, the elapsed millis for temp
-      //        convert will not be precise.
       idle(__PRETTY_FUNCTION__);
 
 #ifdef VERBOSE
@@ -238,16 +211,47 @@ bool mcrDS::convert() {
   return rc;
 }
 
+bool mcrDS::handleCmd() {
+  int recs = cmd_queue.nbRecs();
+
+  if (recs > 0) {
+    mcrCmd cmd;
+    cmd_queue.pop(&cmd);
+
+    if (debugMode) {
+      logDateTime(__PRETTY_FUNCTION__);
+      log("qdepth=");
+      log(recs);
+      log(" popped: name=");
+      log(cmd.name());
+      log(" new_state=");
+      log(cmd.state(), true);
+    }
+
+    if (setSwitch(cmd)) {
+      pushPendingCmdAck(cmd.name());
+    }
+  }
+
+  // must call the base case to ensure remaining work is done
+  return mcrEngine::loop();
+}
+
+bool mcrDS::isCmdQueueEmpty() { return cmd_queue.isEmpty(); }
+bool mcrDS::pendingCmd() { return !cmd_queue.isEmpty(); }
+
 bool mcrDS::handleCmdAck(mcrDevID &id) {
   bool rc = true;
 
-#ifdef VERBOSE
-  Serial.print("  ");
-  Serial.print(__PRETTY_FUNCTION__);
-  Serial.print(" handling CmdAck for: ");
-  Serial.print(id);
-  Serial.println();
-#endif
+  // tempDebugOn();
+  if (debugMode) {
+    logDateTime(__PRETTY_FUNCTION__);
+    log("handling CmdAck for: ");
+    log(id, true);
+  }
+
+  rc = reportDevice(id);
+  // tempDebugOff();
 
   return rc;
 }
@@ -377,16 +381,14 @@ bool mcrDS::readDS2406(dsDev *dev, Reading **reading) {
 #endif
 
   if (OneWire::check_crc16(buff, (sizeof(buff) - 2), &buff[sizeof(buff) - 2])) {
-    uint8_t raw_status = 0x00;
+    uint8_t raw = buff[sizeof(buff) - 3];
 
-    raw_status = buff[sizeof(buff) - 3];
-
-    uint8_t positions = 0x00;       // translate raw status to 0b000000xx
-    if ((raw_status & 0x20) == 0) { // to represent PIO.A as bit 0
-      positions = 0x01;             // and PIO.B as bit 1
-    }
-
-    if ((raw_status & 0x40) == 0) {
+    uint8_t positions = 0x00;  // translate raw status to 0b000000xx
+    if ((raw & 0x20) > 0x00) { // to represent PIO.A as bit 0
+      positions = 0x01;        // and PIO.B as bit 1
+    }                          // reminder to invert the bits since the device
+                               // represents on/off opposite of true/false
+    if ((raw & 0x40) > 0x00) {
       positions = (positions | 0x02);
     }
 
@@ -446,7 +448,8 @@ bool mcrDS::readDS2408(dsDev *dev, Reading **reading) {
 #endif
 
   if (OneWire::check_crc16(buff, (sizeof(buff) - 2), &buff[sizeof(buff) - 2])) {
-    uint8_t positions = buff[sizeof(buff) - 3];
+    // negate positions since device sees on/off opposite of true/false
+    uint8_t positions = ~buff[sizeof(buff) - 3];
 
 #ifdef VERBOSE
     Serial.println("good");
@@ -508,10 +511,10 @@ bool mcrDS::setDS2406(mcrCmd &cmd) {
 
   uint8_t new_state = (!pio_a << 5) | (!pio_b << 6) | 0xf;
 
-  uint8_t buff[]{0x55,        // byte 0:     Write Status
-                 0x07, 0x00,  // byte 1-2:   Address of Status byte
-                 0x00,        // byte 3-7:   Status byte to send
-                 0x00, 0x00}; // byte 11-12: CRC16
+  uint8_t buff[] = {0x55,        // byte 0:     Write Status
+                    0x07, 0x00,  // byte 1-2:   Address of Status byte
+                    0x00,        // byte 3-7:   Status byte to send
+                    0x00, 0x00}; // byte 11-12: CRC16
 
   buff[3] = new_state;
 

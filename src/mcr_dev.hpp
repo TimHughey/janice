@@ -124,7 +124,8 @@ public:
   const char *id() { return _id; };
   const char *desc() { return _desc; };
   static const uint8_t idMaxLen() { return _id_len; };
-  boolean isValid() { return firstAddressByte() != 0x00 ? true : false; };
+  bool isValid() { return firstAddressByte() != 0x00 ? true : false; };
+  bool isNotValid() { return !isValid(); }
 
   // metrics functions
   void startRead() { _read_elapsed = 0; }
@@ -147,6 +148,8 @@ public:
   }
   time_t writeMS() { return _write_ms; }
 };
+
+typedef class mcrDev mcrDev_t;
 
 #endif // __cplusplus
 #endif // mcrDev_h

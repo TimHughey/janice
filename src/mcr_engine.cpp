@@ -59,23 +59,30 @@ bool mcrEngine::init() {
 bool mcrEngine::loop() {
   resetLoopRuntime();
 
-  while (timesliceRemaining()) {
-    if (timesliceRemaining())
-      discover();
+  // while (timesliceRemaining()) {
 
-    if (timesliceRemaining())
-      convert();
+  if (timesliceRemaining())
+    cmd();
 
-    if (timesliceRemaining())
-      report();
+  if (timesliceRemaining())
+    cmdAck();
 
-    // give handing CmdAcks a higher priority by allowing processing of
-    // items in the queue for the remainder of the timeslice
-    while (timesliceRemaining() && isIdle() && pendingCmdAcks()) {
-      cmdAck();
-    }
-  }
+  if (timesliceRemaining())
+    discover();
 
+  if (timesliceRemaining())
+    convert();
+
+  if (timesliceRemaining())
+    report();
+
+  //   while (timesliceRemaining() && isIdle() &&   // give Cmd and CmdAcks
+  //          (pendingCmd() || pendingCmdAcks())) { // a "higher" priority
+  //     cmd();                                     // by allowing processing
+  //     cmdAck();                                  // of the pending queues
+  //   }                                            // for the remainder of
+  // }                                              // the timeslice
+  //  }
   return true;
 }
 
@@ -88,23 +95,26 @@ bool mcrEngine::loop() {
 //     a single search
 
 bool mcrEngine::discover() {
-  auto rc = true;
+  if (needDiscover()) {
+    if (isIdle())
+      startDiscover();
 
-  // if (needDiscover()) {
-  //  if (isIdle()) {
-  //    startDiscover();
-  //  } else {
-  //    idle(__PRETTY_FUNCTION__);
-  //  }
+    if (isDiscoveryActive())
+      idle(__PRETTY_FUNCTION__);
+  }
 
-  return rc;
+  return true;
 }
 
 bool mcrEngine::report() {
   boolean rc = true;
 
   if (needReport()) {
-    _last_report = 0;
+    if (isIdle())
+      startReport();
+
+    if (isReportActive())
+      idle(__PRETTY_FUNCTION__);
   }
 
   return rc;
@@ -135,6 +145,15 @@ bool mcrEngine::convert() {
   return rc;
 }
 
+bool mcrEngine::cmd() {
+  if (isIdle() && pendingCmd()) {
+    // startCmd();
+    handleCmd();
+    // idle(__PRETTY_FUNCTION__);
+  }
+  return true;
+}
+
 bool mcrEngine::cmdAck() {
   bool rc = true;
 
@@ -151,3 +170,58 @@ bool mcrEngine::cmdAck() {
   }
   return rc;
 }
+
+void mcrEngine::idle(const char *func) {
+
+  if (debugMode) {
+    if (func)
+      logDateTime(func);
+    else
+      logDateTime(__PRETTY_FUNCTION__);
+
+    log("invoked idle() with state = ");
+    log(_state, true);
+  }
+
+  switch (_state) {
+  case IDLE: // specifying this case to avoid compiler warning
+    break;
+
+  case INIT:
+    break;
+
+  case DISCOVER:
+    _last_discover_ms = _last_discover;
+    break;
+
+  case CONVERT:
+    _last_convert_ms = _last_convert;
+    _last_convert_timestamp = now();
+    break;
+
+  case REPORT:
+    _last_report_ms = _last_report;
+    _last_report = 0;
+    break;
+
+  case CMD:
+    _last_cmd_ms = _last_cmd;
+    _last_cmd = 0;
+    break;
+
+  case CMD_ACK:
+    _last_ackcmd_ms = _last_ackcmd;
+    _last_ackcmd = 0;
+    break;
+
+  case STATS:
+    _last_stats_ms = _last_stats;
+    _last_stats = 0;
+    break;
+  }
+
+  if (_state != IDLE)
+    _last_idle = 0;
+
+  _state = IDLE;
+};
