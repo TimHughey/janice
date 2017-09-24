@@ -1,5 +1,5 @@
 /*
-    reading.h - Readings used within Master Control Remote
+    mcr_util.hpp - Master Control Remote Utility Functions
     Copyright (C) 2017  Tim Hughey
 
     This program is free software: you can redistribute it and/or modify
@@ -38,6 +38,7 @@ extern "C" char *sbrk(int i);
 #ifndef log
 #define log mcrUtil::printLog
 #define logDateTime mcrUtil::printDateTime
+#define logElapsed mcrUtil::printElapsed
 #endif
 
 class mcrUtil {
@@ -105,7 +106,7 @@ public:
       sprintf(dt, "%02d/%02d/%02d %02d:%02d:%02d ", month(t), day(t), year(t),
               hour(t), minute(t), second(t));
     } else {
-      sprintf(dt, "%17lu ms ", millis());
+      sprintf(dt, "%16lu ms ", millis());
     }
 
     return dt;

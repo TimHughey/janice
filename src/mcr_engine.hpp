@@ -159,24 +159,47 @@ public:
   ulong lastAckCmdMS() { return _last_ackcmd_ms; }
 
   void printStartDiscover(const char *func_name = NULL, uint8_t indent = 2) {
-    mcrUtil::printDateTime(func_name);
+    logDateTime(func_name);
 
-    Serial.print("started, ");
-    mcrUtil::printElapsed(lastDiscover(), false);
-    Serial.println(" ms since last discover");
+    log("started, ");
+    logElapsed(lastDiscover(), false);
+    log(" since last discover", true);
   }
 
   void printStopDiscover(const char *func_name = NULL, uint8_t indent = 2) {
-    mcrUtil::printDateTime(func_name);
+    logDateTime(func_name);
 
     if (devCount() == 0)
-      Serial.print("[WARNING] ");
+      log("[WARNING] ");
 
-    Serial.print("finsihed, ");
-    Serial.print(devCount());
-    Serial.print(" devices discovered in ");
-    Serial.print(lastDiscoverRunMS());
-    Serial.println("ms");
+    log("finished, found ");
+    log(devCount());
+    log(" devices in ");
+    logElapsed(lastDiscoverRunMS());
+  }
+
+  void printStartConvert(const char *func_name = NULL, uint8_t indent = 2) {
+    logDateTime(func_name);
+
+    log("started, ");
+    logElapsed(lastConvert(), false);
+    log(" ms since last since", true);
+  }
+
+  void printStopConvert(const char *func_name = NULL, uint8_t indent = 2) {
+    logDateTime(func_name);
+
+    if (convertTimeout())
+      log("[WARNING] ");
+
+    log("finished, took ");
+
+    if (convertTimeout()) {
+      logElapsed(lastConvertRunMS(), false);
+      log("*timeout*", true);
+    } else {
+      logElapsed(lastConvertRunMS());
+    }
   }
 
 protected:
@@ -261,21 +284,21 @@ protected:
     //          by calling idle
     // case 2:  if enough millis have elapsed that it is time to do another
     //          discovery
-    if (isDiscoveryActive() || (_last_discover >= _discover_interval_ms))
+    if (isDiscoveryActive() || (_last_discover > _discover_interval_ms))
       return true;
 
     return false;
   }
 
   bool needConvert() {
-    if (isConvertActive() || (_last_convert >= _convert_interval_ms))
+    if (isConvertActive() || (_last_convert > _convert_interval_ms))
       return true;
 
     return false;
   }
 
   bool needReport() {
-    if (isReportActive() || (_last_report >= _last_convert))
+    if (isReportActive() || (_last_report > _last_convert))
       return true;
 
     return false;

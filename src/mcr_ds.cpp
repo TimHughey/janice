@@ -177,17 +177,15 @@ bool mcrDS::convert() {
     // start a temperature conversion if one isn't already in-progress
     // TODO only handles powered devices as of 2017-09-11
     if (isIdle()) {
-#ifdef VERBOSE
-      Serial.print("  mcrDS::convert() initiated, ");
-      Serial.print(lastConvert());
-      Serial.println("ms since last convert");
-#endif
+      tempDebugOn();
 
       ds->reset();
       ds->skip();         // address all devices
       ds->write(0x44, 1); // start conversion
-      delay(5);           // give the sensors an opportunity to start conversion
+      delay(1);           // give the sensors an opportunity to start conversion
+      printStartConvert(__PRETTY_FUNCTION__);
       startConvert();
+      tempDebugOff();
     }
 
     // bus is held low during temp convert
@@ -195,19 +193,17 @@ bool mcrDS::convert() {
     if (isConvertActive() && (ds->read_bit() > 0x00)) {
       idle(__PRETTY_FUNCTION__);
 
-#ifdef VERBOSE
-      Serial.print("  mcrDS::convert() took ");
-      Serial.print(lastConvertRunMS());
-      Serial.println("ms");
-      Serial.println();
-#endif
-
+      tempDebugOn();
+      printStopConvert(__PRETTY_FUNCTION__);
+      tempDebugOff();
     } else if (convertTimeout()) {
-      Serial.println("  WARNING: mcrDS::convert() time out");
       idle(__PRETTY_FUNCTION__);
+
+      tempDebugOn();
+      printStopConvert(__PRETTY_FUNCTION__);
+      tempDebugOff();
     }
   }
-
   return rc;
 }
 
@@ -286,7 +282,8 @@ bool mcrDS::readDS1820(dsDev *dev, Reading **reading) {
   }
   ds->reset();
   dev->stopRead();
-  dev->printReadMS(__PRETTY_FUNCTION__);
+  if (debugMode)
+    dev->printReadMS(__PRETTY_FUNCTION__);
 
 #ifdef VERBOSE
   Serial.print("    Read Scratchpad + received bytes = ");
@@ -367,7 +364,8 @@ bool mcrDS::readDS2406(dsDev *dev, Reading **reading) {
   ds->read_bytes(buff + 3, sizeof(buff) - 3);
   ds->reset();
   dev->stopRead();
-  dev->printReadMS(__PRETTY_FUNCTION__);
+  if (debugMode)
+    dev->printReadMS(__PRETTY_FUNCTION__);
 
 #ifdef VERBOSE
   Serial.print("    Read Status + received bytes = ");
@@ -434,7 +432,8 @@ bool mcrDS::readDS2408(dsDev *dev, Reading **reading) {
   ds->read_bytes(buff + 1, sizeof(buff) - 1);
   ds->reset();
   dev->stopRead();
-  dev->printReadMS(__PRETTY_FUNCTION__);
+  if (debugMode)
+    dev->printReadMS(__PRETTY_FUNCTION__);
 
 #ifdef VERBOSE
   Serial.print("  DS2408 Channel-Access Read + received bytes = ");
@@ -537,7 +536,8 @@ bool mcrDS::setDS2406(mcrCmd &cmd) {
     ds->write(0xFF, 1); // writing 0xFF will copy scratchpad to status
     ds->reset();
     dev->stopWrite();
-    dev->printWriteMS(__PRETTY_FUNCTION__);
+    if (debugMode)
+      dev->printWriteMS(__PRETTY_FUNCTION__);
   } else {
 #ifdef VERBOSE
     Serial.print("bad");
@@ -593,7 +593,8 @@ bool mcrDS::setDS2408(mcrCmd &cmd) {
   check[1] = ds->read();
   ds->reset();
   dev->stopWrite();
-  dev->printWriteMS(__PRETTY_FUNCTION__);
+  if (debugMode)
+    dev->printWriteMS(__PRETTY_FUNCTION__);
 
   // check what the device returned to determine success or failure
   if (check[0] == 0xAA) {

@@ -187,7 +187,8 @@ bool mcrI2C::readAM2315(i2cDev *dev, Reading **reading) {
   delay(10);
   Wire.requestFrom(0x5c, 8);
   dev->stopRead();
-  dev->printReadMS(__PRETTY_FUNCTION__);
+  if (debugMode)
+    dev->printReadMS(__PRETTY_FUNCTION__);
 
 #ifdef VERBOSE
   Serial.print("    Read Device bytes = ");
@@ -298,7 +299,8 @@ bool mcrI2C::readSHT31(i2cDev *dev, Reading **reading) {
 
   Wire.requestFrom(0x44, sizeof(buff));
   dev->stopRead();
-  dev->printReadMS(__PRETTY_FUNCTION__);
+  if (debugMode)
+    dev->printReadMS(__PRETTY_FUNCTION__);
 
 #ifdef VERBOSE
   Serial.print("    Read Device bytes = ");

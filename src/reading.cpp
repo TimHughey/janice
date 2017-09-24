@@ -50,11 +50,16 @@ char *Reading::json() {
   jsonCommon(root);
 
   if (_type == SWITCH) {
+    static char pio_id[8][2] = {0x00};
+    memset(pio_id, 0x00, sizeof(pio_id));
+
 #ifdef VERBOSE
-    Serial.print("    Reading creating switch json: state=0x");
-    Serial.print(_state, HEX);
-    Serial.print(" ");
+    logDateTime(__PRETTY_FUNCTION__);
+    log("switch: ");
+    log("sizeof(pio_id)=");
+    log(sizeof(pio_id));
 #endif
+
     JsonArray &pio = root.createNestedArray("pio");
 
     for (uint8_t i = 0, k = 7; i < _bits; i++, k--) {
@@ -62,16 +67,18 @@ char *Reading::json() {
       boolean pio_state = (_state & ((uint8_t)0x01 << i));
       JsonObject &item = pio.createNestedObject();
 
-      String pio_id(i);
-      item.set(pio_id, pio_state);
-
+      itoa(i, &(pio_id[i][0]), 10);
+      item.set(&(pio_id[i][0]), pio_state);
 #ifdef VERBOSE
-      Serial.print(pio_id);
-      Serial.print("=");
-      Serial.print(pio_state);
-      Serial.print(" ");
+      log(" pio=");
+      log(&(pio_id[i][0]));
+      log(",");
+      log(pio_state);
 #endif
     }
+#ifdef VERBOSE
+    log("", true);
+#endif
   }
 
   switch (_type) {
