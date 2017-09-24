@@ -41,16 +41,23 @@ private:
   uint8_t _mask = 0x00;
   elapsedMicros _latency = 0;
   time_t _mtime = now();
+  char _cid[39] = {0x00}; // example: 2d931510-d99f-494a-8c67-87feb05e1594
 
 public:
   mcrCmd() {}
 
-  mcrCmd(const char *name, uint8_t mask, uint8_t state) {
+  mcrCmd(const char *name, uint8_t mask, uint8_t state,
+         const char *cid = NULL) {
     _dev_id = name;
     _mask = mask;
     _state = state;
     _latency = 0;
     _mtime = now();
+
+    if (cid) {
+      _cid[0] = 0x00;
+      strncat(_cid, cid, 38);
+    }
   };
 
   mcrDevID_t &dev_id() { return _dev_id; }
@@ -59,6 +66,7 @@ public:
   uint8_t state() { return _state; }
   uint8_t mask() { return _mask; }
   time_t latency() { return _latency; }
+  const char *cid() { return _cid; }
 
   static const uint8_t size() { return sizeof(mcrCmd); }
 };

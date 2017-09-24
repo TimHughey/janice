@@ -41,6 +41,7 @@ void Reading::jsonCommon(JsonObject &root) {
   if (_cmd_ack) {
     root["cmdack"] = _cmd_ack;
     root["latency"] = _latency;
+    root["cid"] = _cid;
   }
 }
 

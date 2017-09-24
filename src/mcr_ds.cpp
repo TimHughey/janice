@@ -631,6 +631,7 @@ bool mcrDS::cmdCallback(JsonObject &root) {
   // json format of pio state key/value pairs
   // {"pio":[{"1":false}]}
   const char *sw = root["switch"];
+  const char *cid = root["cid"];
   const JsonVariant &variant = root.get<JsonVariant>("pio");
   const JsonArray &pio = variant.as<JsonArray>();
   uint8_t mask = 0x00;
@@ -655,7 +656,7 @@ bool mcrDS::cmdCallback(JsonObject &root) {
       }
     }
   }
-  mcrCmd cmd(sw, mask, state);
+  mcrCmd_t cmd(sw, mask, state, cid);
   cmd_queue.push(&cmd);
 
 #ifdef VERBOSE

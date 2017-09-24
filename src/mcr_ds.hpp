@@ -114,7 +114,7 @@ private:
 
     dev = getDevice(dev_id);
     if (dev != NULL) {
-      dev->setReadingCmdAck(cmd.latency());
+      dev->setReadingCmdAck(cmd.latency(), cmd.cid());
     }
   }
 

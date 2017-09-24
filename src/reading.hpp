@@ -53,6 +53,7 @@ private:
   uint8_t _bits;
   bool _cmd_ack = false;
   time_t _latency = 0;
+  char _cid[39] = {0x00};
 
   void jsonCommon(JsonObject &root);
   const char *typeAsString();
@@ -115,9 +116,14 @@ public:
     _bits = bits;
   }
 
-  void setCmdAck(time_t latency) {
+  void setCmdAck(time_t latency, const char *cid = NULL) {
     _cmd_ack = true;
     _latency = latency;
+
+    if (cid) {
+      _cid[0] = 0x00;
+      strncat(_cid, cid, 38);
+    }
   }
 
   uint8_t state() { return _state; };

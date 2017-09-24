@@ -107,9 +107,9 @@ public:
   uint8_t family() { return firstAddressByte(); };
   uint8_t crc() { return _addr[_crc_byte]; };
   boolean isPowered() { return _power; };
-  void setReadingCmdAck(time_t latency) {
+  void setReadingCmdAck(time_t latency, const char *cid = NULL) {
     if (_reading != NULL) {
-      _reading->setCmdAck(latency);
+      _reading->setCmdAck(latency, cid);
     }
   }
   Reading *reading() { return _reading; };
