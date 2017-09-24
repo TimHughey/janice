@@ -107,6 +107,8 @@ public:
     return false;
   };
 
+  Reading_t *reading() { return _reading; }
+
   // updaters
   void setReading(Reading *reading) {
     if (_reading != NULL)

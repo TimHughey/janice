@@ -40,6 +40,7 @@ void Reading::jsonCommon(JsonObject &root) {
 
   if (_cmd_ack) {
     root["cmdack"] = _cmd_ack;
+    root["latency"] = _latency;
   }
 }
 
@@ -80,9 +81,6 @@ char *Reading::json() {
       log(pio_state);
 #endif
     }
-#ifdef VERBOSE
-    log("", true);
-#endif
   }
 
   switch (_type) {
@@ -136,9 +134,8 @@ char *Reading::json() {
 
   root.printTo(buffer, sizeof(buffer));
 #ifdef VERBOSE
-  Serial.print("in ");
-  Serial.print(json_elapsed);
-  Serial.println("us");
+  log("in ");
+  logElapsed(json_elapsed, true);
 #endif
 
   return buffer;

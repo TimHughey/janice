@@ -107,6 +107,11 @@ public:
   uint8_t family() { return firstAddressByte(); };
   uint8_t crc() { return _addr[_crc_byte]; };
   boolean isPowered() { return _power; };
+  void setReadingCmdAck(time_t latency) {
+    if (_reading != NULL) {
+      _reading->setCmdAck(latency);
+    }
+  }
   Reading *reading() { return _reading; };
 
   bool isDS2406() { return (family() == _family_DS2406) ? true : false; };
@@ -173,6 +178,8 @@ public:
     return rc;
   };
 };
+
+typedef class dsDev dsDev_t;
 
 #endif // __cplusplus
 #endif // ds_dev_h

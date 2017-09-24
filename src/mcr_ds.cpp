@@ -114,8 +114,11 @@ bool mcrDS::report() {
   }
 
   if (isReportActive()) {
-    dsDev *dev = _devs[dev_index];
-    rc = reportDevice(dev);
+    dsDev_t *dev = _devs[dev_index];
+    rc = readDevice(dev);
+
+    if (rc)
+      publishDevice(dev);
 
     dev_index += 1; // increment to dev_index for next loop invocation
     if (dev_index >= (devCount() - 1)) {
@@ -126,7 +129,7 @@ bool mcrDS::report() {
   return rc;
 }
 
-bool mcrDS::reportDevice(dsDev *dev, bool cmd_ack) {
+bool mcrDS::readDevice(dsDev *dev) {
   auto rc = true;
   Reading *reading = NULL;
 
@@ -154,16 +157,20 @@ bool mcrDS::reportDevice(dsDev *dev, bool cmd_ack) {
     break;
   }
 
-  if ((reading != NULL) && rc) {
-    if (cmd_ack) {
-      reading->setCmdAck();
-    }
-    mqtt->publish(reading);
-  }
-
   return rc;
 }
 
+bool mcrDS::publishDevice(dsDev_t *dev) {
+  bool rc = true;
+
+  Reading_t *reading = dev->reading();
+
+  if (reading != NULL) {
+
+    mqtt->publish(reading);
+  }
+  return rc;
+}
 // mcrDS::temp_convert()
 // this method should be called often to ensure proper operator.
 //
@@ -249,7 +256,11 @@ bool mcrDS::handleCmdAck(mcrCmd_t &cmd) {
     log(cmd, true);
   }
 
-  rc = reportDevice(cmd);
+  rc = readDevice(cmd);
+  if (rc == true) {
+    setCmdAck(cmd);
+    publishDevice(cmd);
+  }
   tempDebugOff();
 
   return rc;

@@ -108,6 +108,16 @@ private:
     return found_dev;
   }
 
+  void setCmdAck(mcrCmd_t &cmd) {
+    mcrDevID_t &dev_id = cmd.dev_id();
+    dsDev_t *dev = NULL;
+
+    dev = getDevice(dev_id);
+    if (dev != NULL) {
+      dev->setReadingCmdAck(cmd.latency());
+    }
+  }
+
   void clearKnownDevices() {
     for (uint8_t i = 0; i < devCount(); i++) {
       if (_devs[i] != NULL) {
@@ -129,15 +139,23 @@ private:
   bool pendingCmd();
 
   // accept a mcrCmd_t as input to reportDevice
-  bool reportDevice(mcrCmd_t &cmd) {
+  bool readDevice(mcrCmd_t &cmd) {
     mcrDevID_t &dev_id = cmd.dev_id();
 
-    return reportDevice(dev_id, true);
+    return readDevice(dev_id);
   }
-  bool reportDevice(mcrDevID_t &id, bool cmd_ack = false) {
-    return reportDevice(getDevice(id), cmd_ack);
+  bool readDevice(mcrDevID_t &id) { return readDevice(getDevice(id)); }
+  bool readDevice(dsDev *dev);
+
+  // publish a device
+  bool publishDevice(mcrCmd_t &cmd) {
+    mcrDevID_t &dev_id = cmd.dev_id();
+
+    return publishDevice(dev_id);
   }
-  bool reportDevice(dsDev *dev, bool cmd_ack = false);
+
+  bool publishDevice(mcrDevID_t &id) { return publishDevice(getDevice(id)); }
+  bool publishDevice(dsDev_t *dev);
 
   // specific methods to read devices
   bool readDS1820(dsDev *dev, Reading **reading);
@@ -170,5 +188,6 @@ private:
   static bool cmdCallback(JsonObject &root);
 };
 
+typedef class dsDev dsDev_t;
 #endif // __cplusplus
 #endif // mcr_ds_h
