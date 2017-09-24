@@ -62,11 +62,11 @@ bool mcrEngine::loop() {
 
   // while (timesliceRemaining()) {
 
-  if (timesliceRemaining())
+  while (isIdle() && timesliceRemaining() &&
+         (pendingCmd() || pendingCmdAcks())) {
     cmd();
-
-  if (timesliceRemaining())
     cmdAck();
+  }
 
   if (timesliceRemaining())
     discover();

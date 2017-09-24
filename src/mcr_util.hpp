@@ -41,6 +41,7 @@ extern "C" char *sbrk(int i);
 #define log mcrUtil::printLog
 #define logDateTime mcrUtil::printDateTime
 #define logElapsed mcrUtil::printElapsed
+#define logElapsedMicros mcrUtil::printElapsedMicros
 #endif
 
 class mcrUtil {

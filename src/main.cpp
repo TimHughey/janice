@@ -68,11 +68,14 @@ void setup() {
     ;
   }
 
+  logDateTime(__PRETTY_FUNCTION__);
+  log("serial initialized", true);
+
   if (WiFi.status() == WL_NO_SHIELD) {
-    mcrUtil::printDateTime(__PRETTY_FUNCTION__);
+    logDateTime(__PRETTY_FUNCTION__);
     Serial.println("wifi shield not detected");
   } else {
-    mcrUtil::printDateTime(__PRETTY_FUNCTION__);
+    logDateTime(__PRETTY_FUNCTION__);
     Serial.print("connecting to WPA SSID ");
     Serial.print(ssid);
     Serial.print("...");
@@ -88,7 +91,7 @@ void setup() {
 
   mcrUtil::printNet(__PRETTY_FUNCTION__);
 
-  mcrUtil::printDateTime(__PRETTY_FUNCTION__);
+  logDateTime(__PRETTY_FUNCTION__);
   Serial.print("mcrID: ");
   Serial.println(mcrUtil::hostID());
 
@@ -96,7 +99,7 @@ void setup() {
   setSyncInterval(120); // setting a high time sync interval since we rely on
                         // updates via MQTT
 
-  mcrUtil::printDateTime(__PRETTY_FUNCTION__);
+  logDateTime(__PRETTY_FUNCTION__);
   Serial.print("mcrMQTT");
   mqtt = new mcrMQTT(wifi, broker, MQTT_PORT);
   Serial.print(" created, ");
@@ -105,32 +108,33 @@ void setup() {
   mqtt->announceStartup();
   Serial.println("announced startup");
 
-  mcrUtil::printDateTime(__PRETTY_FUNCTION__);
+  logDateTime(__PRETTY_FUNCTION__);
   Serial.print("mcrDS");
   ds = new mcrDS(mqtt);
   Serial.print(" created,");
   ds->init();
   Serial.println(" initialized");
 
-  mcrUtil::printDateTime(__PRETTY_FUNCTION__);
+  logDateTime(__PRETTY_FUNCTION__);
   Serial.print("mcrI2C");
   i2c = new mcrI2C(mqtt);
   Serial.print(" created, ");
   i2c->init();
   Serial.println("initialized");
 
-  mcrUtil::printDateTime(__PRETTY_FUNCTION__);
+  logDateTime(__PRETTY_FUNCTION__);
   Serial.println("completed, transition to main::loop()");
 }
 
 elapsedMillis loop_duration;
 void loop() {
   static bool first_entry = true;
-  elapsedMillis loop_elapsed;
+  static const time_t _loop_run_warning = (150 * 1000); // 150ms
+  elapsedMicros loop_elapsed;
 
   if (first_entry) {
-    mcrUtil::printDateTime(__PRETTY_FUNCTION__);
-    Serial.println("first invocation");
+    logDateTime(__PRETTY_FUNCTION__);
+    log("first invocation", true);
     first_entry = false;
   }
 
@@ -143,10 +147,10 @@ void loop() {
 
   // Watchdog.reset();
 
-  if (loop_elapsed > 150) {
-    mcrUtil::printDateTime(__PRETTY_FUNCTION__);
-    Serial.print("[WARNING] elapsed time ");
-    mcrUtil::printElapsed(loop_elapsed);
+  if (loop_elapsed > (_loop_run_warning)) {
+    logDateTime(__PRETTY_FUNCTION__);
+    log("[WARNING] elapsed time ");
+    logElapsedMicros(loop_elapsed, true);
   }
 }
 
