@@ -37,6 +37,10 @@ void Reading::jsonCommon(JsonObject &root) {
   root["device"] = _id;
   root["mtime"] = _mtime;
   root["type"] = typeAsString();
+
+  if (_cmd_ack) {
+    root["cmdack"] = _cmd_ack;
+  }
 }
 
 char *Reading::json() {

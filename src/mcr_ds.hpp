@@ -128,8 +128,10 @@ private:
   bool isCmdQueueEmpty();
   bool pendingCmd();
 
-  bool reportDevice(mcrDevID &id) { return reportDevice(getDevice(id)); }
-  bool reportDevice(dsDev *dev);
+  bool reportDevice(mcrDevID &id, bool cmd_ack = false) {
+    return reportDevice(getDevice(id), cmd_ack);
+  }
+  bool reportDevice(dsDev *dev, bool cmd_ack = false);
 
   // specific methods to read devices
   bool readDS1820(dsDev *dev, Reading **reading);

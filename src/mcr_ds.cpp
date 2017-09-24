@@ -126,7 +126,7 @@ bool mcrDS::report() {
   return rc;
 }
 
-bool mcrDS::reportDevice(dsDev *dev) {
+bool mcrDS::reportDevice(dsDev *dev, bool cmd_ack) {
   auto rc = true;
   Reading *reading = NULL;
 
@@ -155,6 +155,9 @@ bool mcrDS::reportDevice(dsDev *dev) {
   }
 
   if ((reading != NULL) && rc) {
+    if (cmd_ack) {
+      reading->setCmdAck();
+    }
     mqtt->publish(reading);
   }
 
@@ -246,7 +249,7 @@ bool mcrDS::handleCmdAck(mcrDevID &id) {
     log(id, true);
   }
 
-  rc = reportDevice(id);
+  rc = reportDevice(id, true);
   // tempDebugOff();
 
   return rc;
@@ -381,12 +384,12 @@ bool mcrDS::readDS2406(dsDev *dev, Reading **reading) {
   if (OneWire::check_crc16(buff, (sizeof(buff) - 2), &buff[sizeof(buff) - 2])) {
     uint8_t raw = buff[sizeof(buff) - 3];
 
-    uint8_t positions = 0x00;  // translate raw status to 0b000000xx
-    if ((raw & 0x20) > 0x00) { // to represent PIO.A as bit 0
-      positions = 0x01;        // and PIO.B as bit 1
-    }                          // reminder to invert the bits since the device
-                               // represents on/off opposite of true/false
-    if ((raw & 0x40) > 0x00) {
+    uint8_t positions = 0x00;   // translate raw status to 0b000000xx
+    if ((raw & 0x20) == 0x00) { // to represent PIO.A as bit 0
+      positions = 0x01;         // and PIO.B as bit 1
+    }                           // reminder to invert the bits since the device
+                                // represents on/off opposite of true/false
+    if ((raw & 0x40) == 0x00) {
       positions = (positions | 0x02);
     }
 

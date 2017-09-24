@@ -183,7 +183,7 @@ public:
 
     log("started, ");
     logElapsed(lastConvert(), false);
-    log(" ms since last since", true);
+    log(" ms since last convert", true);
   }
 
   void printStopConvert(const char *func_name = NULL, uint8_t indent = 2) {

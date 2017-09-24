@@ -51,6 +51,7 @@ private:
   float _ph;
   uint8_t _state;
   uint8_t _bits;
+  bool _cmd_ack = false;
 
   void jsonCommon(JsonObject &root);
   const char *typeAsString();
@@ -112,6 +113,8 @@ public:
     _state = state;
     _bits = bits;
   }
+
+  void setCmdAck() { _cmd_ack = true; }
 
   uint8_t state() { return _state; };
   char *json();
