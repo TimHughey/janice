@@ -34,6 +34,7 @@
 #include <cppQueue.h>
 #include <elapsedMillis.h>
 
+#include "mcr_cmd.hpp"
 #include "mcr_dev.hpp"
 #include "mcr_mqtt.hpp"
 #include "mcr_type.hpp"
@@ -125,26 +126,18 @@ public:
     return (_pending_ack_q->nbRecs() > 0) ? true : false;
   };
 
-  bool popPendingCmdAck(mcrDevID *id) {
+  bool popPendingCmdAck(mcrCmd_t *cmd) {
     if (_pending_ack_q == NULL)
       return false;
-    return _pending_ack_q->pop(id);
+    return _pending_ack_q->pop(cmd);
   }
 
-  bool pushPendingCmdAck(char *name) {
+  bool pushPendingCmdAck(mcrCmd_t *cmd) {
     bool rc = false;
-    mcrDevID_t id(name);
 
-    rc = pushPendingCmdAck(&id);
+    rc = _pending_ack_q->push(cmd);
 
     return rc;
-  }
-
-  bool pushPendingCmdAck(mcrDevID_t *id) {
-    if (_pending_ack_q == NULL)
-      return false;
-
-    return _pending_ack_q->push(id);
   }
 
   // public methods for managing state tracking time metrics
@@ -162,7 +155,7 @@ public:
     logDateTime(func_name);
 
     log("started, ");
-    logElapsed(lastDiscover(), false);
+    logElapsed(lastDiscover());
     log(" since last discover", true);
   }
 
@@ -175,14 +168,14 @@ public:
     log("finished, found ");
     log(devCount());
     log(" devices in ");
-    logElapsed(lastDiscoverRunMS());
+    logElapsed(lastDiscoverRunMS(), true);
   }
 
   void printStartConvert(const char *func_name = NULL, uint8_t indent = 2) {
     logDateTime(func_name);
 
     log("started, ");
-    logElapsed(lastConvert(), false);
+    logElapsed(lastConvert());
     log(" ms since last convert", true);
   }
 
@@ -195,10 +188,10 @@ public:
     log("finished, took ");
 
     if (convertTimeout()) {
-      logElapsed(lastConvertRunMS(), false);
+      logElapsed(lastConvertRunMS());
       log("*timeout*", true);
     } else {
-      logElapsed(lastConvertRunMS());
+      logElapsed(lastConvertRunMS(), true);
     }
   }
 
@@ -215,7 +208,7 @@ protected:
 
   // subclasses should override these functions and do something useful
   virtual bool handleCmd() { return true; }
-  virtual bool handleCmdAck(mcrDevID &id) { return true; }
+  virtual bool handleCmdAck(mcrCmd_t &cmd) { return true; }
 
   uint16_t devCount() { return _dev_count; };
   virtual void clearKnownDevices() { _dev_count = 0; };

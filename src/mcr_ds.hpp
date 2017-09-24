@@ -123,12 +123,18 @@ private:
   bool convert();
   bool report();
   bool handleCmd();
-  bool handleCmdAck(mcrDevID &id);
+  bool handleCmdAck(mcrCmd_t &cmd);
 
   bool isCmdQueueEmpty();
   bool pendingCmd();
 
-  bool reportDevice(mcrDevID &id, bool cmd_ack = false) {
+  // accept a mcrCmd_t as input to reportDevice
+  bool reportDevice(mcrCmd_t &cmd) {
+    mcrDevID_t &dev_id = cmd.dev_id();
+
+    return reportDevice(dev_id, true);
+  }
+  bool reportDevice(mcrDevID_t &id, bool cmd_ack = false) {
     return reportDevice(getDevice(id), cmd_ack);
   }
   bool reportDevice(dsDev *dev, bool cmd_ack = false);

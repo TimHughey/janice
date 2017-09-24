@@ -26,6 +26,7 @@
 
 #include <OneWire.h>
 
+#include "mcr_cmd.hpp"
 #include "mcr_engine.hpp"
 #include "reading.hpp"
 
@@ -47,7 +48,7 @@ mcrEngine::mcrEngine(mcrMQTT *mqtt) {
 bool mcrEngine::init() {
   bool rc = true;
 
-  _pending_ack_q = new Queue(sizeof(mcrDevID), 10, FIFO);
+  _pending_ack_q = new Queue(sizeof(mcrCmd_t), 10, FIFO);
 
   if (_pending_ack_q == NULL) {
     rc = false;
@@ -158,10 +159,10 @@ bool mcrEngine::cmdAck() {
   bool rc = true;
 
   if (isIdle() && pendingCmdAcks()) {
-    mcrDevID id;
+    mcrCmd_t cmd;
 
-    if (popPendingCmdAck(&id)) {
-      handleCmdAck(id);
+    if (popPendingCmdAck(&cmd)) {
+      handleCmdAck(cmd);
     } else {
       Serial.println();
       Serial.print(__PRETTY_FUNCTION__);

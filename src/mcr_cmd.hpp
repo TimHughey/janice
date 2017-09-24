@@ -29,38 +29,41 @@
 #include <WProgram.h>
 #endif
 
+#include <TimeLib.h>
+
 #include "mcr_dev.hpp"
 
 class mcrCmd {
 private:
   static const uint8_t _max_len = 30;
   mcrDevID _dev_id;
-  char _name[_max_len] = {0x00};
   uint8_t _state = 0x00;
   uint8_t _mask = 0x00;
+  elapsedMicros _latency = 0;
+  time_t _mtime = now();
 
 public:
-  mcrCmd() {
-    _name[0] = 0x00;
-    _mask = 0x00;
-    _state = 0x00;
-  };
+  mcrCmd() {}
 
   mcrCmd(const char *name, uint8_t mask, uint8_t state) {
-    _name[0] = 0x00;
-
-    strncat(_name, name, _max_len - 1);
-
+    _dev_id = name;
     _mask = mask;
     _state = state;
+    _latency = 0;
+    _mtime = now();
   };
 
-  char *name() { return _name; };
-  uint8_t state() { return _state; };
-  uint8_t mask() { return _mask; };
+  mcrDevID_t &dev_id() { return _dev_id; }
+  mcrDevID_t &name() { return _dev_id; }
+  // char *name() { return _dev_id; }
+  uint8_t state() { return _state; }
+  uint8_t mask() { return _mask; }
+  time_t latency() { return _latency; }
 
   static const uint8_t size() { return sizeof(mcrCmd); }
 };
+
+typedef class mcrCmd mcrCmd_t;
 
 #endif // __cplusplus
 #endif // mcr_cmd_h

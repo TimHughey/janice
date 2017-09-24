@@ -214,7 +214,7 @@ bool mcrDS::handleCmd() {
   int recs = cmd_queue.nbRecs();
 
   if (recs > 0) {
-    mcrCmd cmd;
+    mcrCmd_t cmd;
     cmd_queue.pop(&cmd);
 
     if (debugMode) {
@@ -228,7 +228,7 @@ bool mcrDS::handleCmd() {
     }
 
     if (setSwitch(cmd)) {
-      pushPendingCmdAck(cmd.name());
+      pushPendingCmdAck(&cmd);
     }
   }
 
@@ -239,18 +239,18 @@ bool mcrDS::handleCmd() {
 bool mcrDS::isCmdQueueEmpty() { return cmd_queue.isEmpty(); }
 bool mcrDS::pendingCmd() { return !cmd_queue.isEmpty(); }
 
-bool mcrDS::handleCmdAck(mcrDevID &id) {
+bool mcrDS::handleCmdAck(mcrCmd_t &cmd) {
   bool rc = true;
 
-  // tempDebugOn();
+  tempDebugOn();
   if (debugMode) {
     logDateTime(__PRETTY_FUNCTION__);
     log("handling CmdAck for: ");
-    log(id, true);
+    log(cmd, true);
   }
 
-  rc = reportDevice(id, true);
-  // tempDebugOff();
+  rc = reportDevice(cmd);
+  tempDebugOff();
 
   return rc;
 }

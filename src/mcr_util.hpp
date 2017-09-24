@@ -33,6 +33,8 @@
 #include <WiFi101.h>
 #include <elapsedMillis.h>
 
+#include "mcr_cmd.hpp"
+
 extern "C" char *sbrk(int i);
 
 #ifndef log
@@ -116,9 +118,18 @@ public:
     Serial.print(dateTimeString(t));
   }
 
-  static void printElapsed(elapsedMillis e, bool newline = true) {
-    Serial.print(e);
-    Serial.print("ms");
+  static void printElapsed(elapsedMillis e, bool newline = false) {
+    const char *units = "ms";
+    float val = e;
+
+    if (e > 1000) {          // if needed, convert to secs for human
+      val = (float)e / 1000; // readability.  yes, this is a bit much but
+      units = "s";           // it's my software
+    }
+
+    Serial.print(val);
+    Serial.print(units);
+
     if (newline)
       Serial.println();
   }
@@ -221,6 +232,32 @@ public:
       Serial.println(value);
     else
       Serial.print(value);
+  }
+
+  static void printLog(mcrCmd_t &cmd, bool newline = false) {
+    Serial.print("dev_id=");
+    Serial.print(cmd.dev_id());
+    Serial.print(" ");
+    Serial.print("latency=");
+    printElapsedMicros(cmd.latency());
+
+    if (newline)
+      Serial.println();
+  }
+
+  static void printElapsedMicros(elapsedMicros e, bool newline = false) {
+    const char *units = "us";
+    float val = e;
+
+    if (e > 1000) {          // if needed, convert to ms for human
+      val = (float)e / 1000; // readability.  yes, this is a bit much but
+      units = "ms";          // it's my software
+    }
+
+    Serial.print(val);
+    Serial.print(units);
+    if (newline)
+      Serial.println();
   }
 };
 

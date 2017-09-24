@@ -47,13 +47,13 @@ public:
 
   // the == operator replicates the return vales from a standard strcmp
   bool operator==(char *rhs) { return (strncmp(_id, rhs, _max_len)); };
-  mcrDevID &operator=(char *id) {
+  mcrDevID &operator=(const char *id) {
     this->initAndCopy(id);
     return *this;
   };
 
 private:
-  void initAndCopy(char *id) {
+  void initAndCopy(const char *id) {
     _id[0] = 0x00;
     strncat(_id, id, _max_len - 1);
   }

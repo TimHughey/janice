@@ -52,6 +52,7 @@ private:
   uint8_t _state;
   uint8_t _bits;
   bool _cmd_ack = false;
+  time_t _latency = 0;
 
   void jsonCommon(JsonObject &root);
   const char *typeAsString();
@@ -114,11 +115,16 @@ public:
     _bits = bits;
   }
 
-  void setCmdAck() { _cmd_ack = true; }
+  void setCmdAck(time_t latency) {
+    _cmd_ack = true;
+    _latency = latency;
+  }
 
   uint8_t state() { return _state; };
   char *json();
 };
+
+typedef class Reading Reading_t;
 
 #endif // __cplusplus
 #endif // reading_h
