@@ -127,7 +127,7 @@ private:
   }
 
   void clearKnownDevices() {
-    for (uint8_t i = 0; i < maxDevices(); i++) {
+    for (uint8_t i = 0; i < devCount(); i++) {
       if (known_devs[i] != NULL) {
         delete known_devs[i];
         known_devs[i] = NULL;

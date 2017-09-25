@@ -188,8 +188,8 @@ public:
     log("finished, took ");
 
     if (convertTimeout()) {
-      logElapsed(lastConvertRunMS());
-      log("*timeout*", true);
+      logElapsed(lastConvert());
+      log(" *TIMEOUT*", true);
     } else {
       logElapsed(lastConvertRunMS(), true);
     }

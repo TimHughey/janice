@@ -122,6 +122,7 @@ void setup() {
   i2c->init();
   Serial.println("initialized");
 
+  mcrUtil::printFreeMem(__PRETTY_FUNCTION__, 0);
   logDateTime(__PRETTY_FUNCTION__);
   Serial.println("completed, transition to main::loop()");
 }

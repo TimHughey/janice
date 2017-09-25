@@ -187,7 +187,7 @@ bool mcrDS::convert() {
     // start a temperature conversion if one isn't already in-progress
     // TODO only handles powered devices as of 2017-09-11
     if (isIdle()) {
-      tempDebugOn();
+      // tempDebugOn();
 
       ds->reset();
       ds->skip();         // address all devices
@@ -195,7 +195,7 @@ bool mcrDS::convert() {
       delay(1);           // give the sensors an opportunity to start conversion
       printStartConvert(__PRETTY_FUNCTION__);
       startConvert();
-      tempDebugOff();
+      // tempDebugOff();
     }
 
     // bus is held low during temp convert
@@ -203,15 +203,15 @@ bool mcrDS::convert() {
     if (isConvertActive() && (ds->read_bit() > 0x00)) {
       idle(__PRETTY_FUNCTION__);
 
-      tempDebugOn();
+      // tempDebugOn();
       printStopConvert(__PRETTY_FUNCTION__);
-      tempDebugOff();
+      // tempDebugOff();
     } else if (convertTimeout()) {
       idle(__PRETTY_FUNCTION__);
 
-      tempDebugOn();
+      // tempDebugOn();
       printStopConvert(__PRETTY_FUNCTION__);
-      tempDebugOff();
+      // tempDebugOff();
     }
   }
   return rc;
@@ -249,7 +249,7 @@ bool mcrDS::pendingCmd() { return !cmd_queue.isEmpty(); }
 bool mcrDS::handleCmdAck(mcrCmd_t &cmd) {
   bool rc = true;
 
-  tempDebugOn();
+  // tempDebugOn();
   if (debugMode) {
     logDateTime(__PRETTY_FUNCTION__);
     log("handling CmdAck for: ");
@@ -261,7 +261,7 @@ bool mcrDS::handleCmdAck(mcrCmd_t &cmd) {
     setCmdAck(cmd);
     publishDevice(cmd);
   }
-  tempDebugOff();
+  // tempDebugOff();
 
   return rc;
 }

@@ -197,7 +197,7 @@ public:
       delta_since_first = 0;
     }
 
-    if (freeMemReport > (secs * 1000)) {
+    if (freeMemReport >= (secs * 1000)) {
       int percentFree = ((float)freeRAM() / (float)32000) * 100;
       int freeK = freeRAM() / 1000;
 
