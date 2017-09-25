@@ -80,6 +80,7 @@ public:
 
   dsDev(byte *addr, boolean power = false, Reading *reading = NULL)
       : mcrDev(reading) {
+    char buff[_id_len] = {0x00};
     // byte   0: 8-bit family code
     // byte 1-6: 48-bit unique serial number
     // byte   7: crc
@@ -88,17 +89,16 @@ public:
 
     setDesc(familyDesc(family()));
 
-    memset(_id, 0x00, _id_len);
     //                 00000000001111111
     //       byte num: 01234567890123456
     //     exmaple id: ds/28ffa442711604
     // format of name: ds/famil code + 48-bit serial (without the crc)
     //      total len: 18 bytes (id + string terminator)
-    sprintf(_id, "ds/%02x%02x%02x%02x%02x%02x%02x",
+    sprintf(buff, "ds/%02x%02x%02x%02x%02x%02x%02x",
             _addr[0],                      // byte 0: family code
             _addr[1], _addr[2], _addr[3],  // byte 1-3: serial number
             _addr[4], _addr[5], _addr[6]); // byte 4-6: serial number
-
+    setID(buff);
     // always calculate the crc8 and tack onto the end of the address
     // reminder the crc8 is of the first seven bytes
     //_addr[_crc_byte] = OneWire::crc8(_addr, _addr_len - 1);

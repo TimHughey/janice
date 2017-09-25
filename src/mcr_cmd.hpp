@@ -33,10 +33,12 @@
 
 #include "mcr_dev.hpp"
 
+typedef class mcrCmd mcrCmd_t;
+
 class mcrCmd {
 private:
   static const uint8_t _max_len = 30;
-  mcrDevID _dev_id;
+  mcrDevID_t _dev_id;
   uint8_t _state = 0x00;
   uint8_t _mask = 0x00;
   elapsedMicros _latency = 0;
@@ -46,9 +48,8 @@ private:
 public:
   mcrCmd() {}
 
-  mcrCmd(const char *name, uint8_t mask, uint8_t state,
-         const char *cid = NULL) {
-    _dev_id = name;
+  mcrCmd(mcrDevID_t &id, uint8_t mask, uint8_t state, const char *cid = NULL) {
+    _dev_id = id;
     _mask = mask;
     _state = state;
     _latency = 0;
@@ -58,7 +59,7 @@ public:
       _cid[0] = 0x00;
       strncat(_cid, cid, 38);
     }
-  };
+  }
 
   mcrDevID_t &dev_id() { return _dev_id; }
   mcrDevID_t &name() { return _dev_id; }
@@ -70,8 +71,6 @@ public:
 
   static const uint8_t size() { return sizeof(mcrCmd); }
 };
-
-typedef class mcrCmd mcrCmd_t;
 
 #endif // __cplusplus
 #endif // mcr_cmd_h

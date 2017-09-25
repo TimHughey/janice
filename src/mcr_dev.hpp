@@ -31,14 +31,16 @@
 
 #include "reading.hpp"
 
+typedef class mcrDevID mcrDevID_t;
+
 class mcrDevID {
 private:
   static const uint8_t _max_len = 30;
-  char _id[_max_len];
+  char _id[_max_len] = {0x00};
 
 public:
-  mcrDevID() { memset(_id, 0x00, _max_len); };
-  mcrDevID(char *id) { this->initAndCopy(id); };
+  mcrDevID(){};
+  mcrDevID(const char *id) { this->initAndCopy(id); };
 
   static const uint8_t max_len() { return _max_len; };
 
@@ -46,11 +48,34 @@ public:
   operator char *() { return _id; };
 
   // the == operator replicates the return vales from a standard strcmp
-  bool operator==(char *rhs) { return (strncmp(_id, rhs, _max_len)); };
-  mcrDevID &operator=(const char *id) {
+  bool operator==(const mcrDevID_t &rhs) {
+    auto rc = false;
+    if (strncmp(_id, rhs._id, _max_len) == 0) {
+      rc = true;
+    }
+
+    return rc;
+  }
+  bool operator==(char *rhs) {
+    auto rc = false;
+    if (strncmp(_id, rhs, _max_len) == 0) {
+      rc = true;
+    }
+
+    return rc;
+  };
+  mcrDevID_t &operator=(mcrDevID_t dev_id) {
+    _id[0] = 0x00;
+    strncat(_id, dev_id._id, _max_len);
+    return *this;
+  }
+
+  mcrDevID_t &operator=(const char *id) {
     this->initAndCopy(id);
     return *this;
   };
+
+  static const int max_id_len = _max_len;
 
 private:
   void initAndCopy(const char *id) {
@@ -59,19 +84,20 @@ private:
   }
 };
 
-typedef class mcrDevID mcrDevID_t;
-
+typedef class mcrDev mcrDev_t;
 class mcrDev {
+private:
+  mcrDevID_t _id; // unique identifier of this device
+
 protected:
-  static const uint8_t _addr_len = 8;  // max length of address
-  static const uint8_t _id_len = 30;   // max length of the id
+  static const uint8_t _addr_len = 8;                  // max length of address
+  static const uint8_t _id_len = mcrDevID::max_id_len; // max length of the id
   static const uint8_t _desc_len = 15; // max length of desciption
 
   uint8_t _addr[_addr_len] = {0x00}; // address of the device
   Reading *_reading = NULL;
 
-  char _id[_id_len] = {0x00}; // unique identifier of this device
-  char _desc[_desc_len];      // desciption of the device
+  char _desc[_desc_len]; // desciption of the device
 
   elapsedMillis _read_elapsed;
   time_t _read_ms = 0;
@@ -82,11 +108,7 @@ protected:
   time_t _read_timestamp = 0;
 
 public:
-  mcrDev() {
-    memset(_addr, 0x00, _addr_len);
-    memset(_id, 0x00, _id_len);
-    strcpy(_id, "new/00000000000000");
-  }
+  mcrDev() { _id = "undef/00000"; }
 
   mcrDev(Reading *reading) { _reading = reading; };
   mcrDev(const mcrDev &);
@@ -98,16 +120,12 @@ public:
   }
 
   // operators
-  // although the == operator uses strcmp to check for equality the
-  // value returns is boolean
-  inline int operator==(const mcrDev &rhs) {
-    if (strcmp(_id, rhs._id) == 0)
-      return true;
-
-    return false;
-  };
+  // rely on the == operator from mcrDevID_t
+  inline int operator==(const mcrDev &rhs) { return (_id == rhs._id); };
 
   Reading_t *reading() { return _reading; }
+
+  void setID(char *id) { _id = id; }
 
   // updaters
   void setReading(Reading *reading) {
@@ -150,8 +168,6 @@ public:
   }
   time_t writeMS() { return _write_ms; }
 };
-
-typedef class mcrDev mcrDev_t;
 
 #endif // __cplusplus
 #endif // mcrDev_h

@@ -70,16 +70,17 @@ public:
     _addr[_i2c_addr_byte] = addr;
     _use_multiplexer = use_multiplexer;
     _bus = bus;
+    char buff[_id_len] = {0x00};
 
     setDesc(i2cDevDesc(firstAddressByte()));
 
-    memset(_id, 0x00, _id_len);
     //                 0000000000111111111122222222223
     //       byte num: 0123456789012345678901234567890
     //      example id: i2c/f8f005f73b53.04.am2315
     //    format of id: i2c/mac_address/bus/desc
     //        max len: 30 bytes (id + string terminator)
-    sprintf(_id, "i2c/%s.%02x.%s", mcrUtil::macAddress(), this->bus(), desc());
+    sprintf(buff, "i2c/%s.%02x.%s", mcrUtil::macAddress(), this->bus(), desc());
+    setID(buff);
   };
 
   uint8_t devAddr() { return mcrDev::addr()[_i2c_addr_byte]; };

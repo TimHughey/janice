@@ -630,8 +630,9 @@ bool mcrDS::cmdCallback(JsonObject &root) {
 
   // json format of pio state key/value pairs
   // {"pio":[{"1":false}]}
-  const char *sw = root["switch"];
+  const char *switch_id = root["switch"];
   const char *cid = root["cid"];
+  mcrDevID_t sw(switch_id);
   const JsonVariant &variant = root.get<JsonVariant>("pio");
   const JsonArray &pio = variant.as<JsonArray>();
   uint8_t mask = 0x00;
@@ -656,9 +657,8 @@ bool mcrDS::cmdCallback(JsonObject &root) {
       }
     }
   }
-  mcrCmd_t cmd(sw, mask, state, cid);
+  mcrCmd cmd(sw, mask, state, cid);
   cmd_queue.push(&cmd);
-
 #ifdef VERBOSE
   uint8_t pio_count = root["pio_count"];
   Serial.print("  mcrDS::cmdCallback() invoked for switch: ");
