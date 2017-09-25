@@ -55,23 +55,28 @@
 #define MAX_DEVICES_PER_ENGINE 30
 #endif
 
+typedef class mcrEngine mcrEngine_t;
+
 class mcrEngine {
 private:
+  mcrMQTT_t *_mqtt;
   mcrEngineState_t _state = IDLE;
+  mcrDev_t *_known_devs[MAX_DEVICES_PER_ENGINE] = {0x00};
   uint16_t _dev_count = 0;
   Queue *_pending_ack_q = NULL;
   bool _savedDebugMode = false;
+  uint8_t _next_known_index = 0;
 
   // Engine runtime controls
-  ulong _loop_timeslice_ms = 50;
-  ulong _discover_interval_ms = 30000;
-  ulong _convert_interval_ms = 7000;
-  ulong _report_interval_ms = 11000;
-  ulong _stats_inverval_ms = 20000;
+  uint32_t _loop_timeslice_ms = 50;
+  uint32_t _discover_interval_ms = 30000;
+  uint32_t _convert_interval_ms = 7000;
+  uint32_t _report_interval_ms = 11000;
+  uint32_t _stats_inverval_ms = 20000;
 
-  ulong _discover_timeout_ms = 10000;
-  ulong _convert_timeout_ms = 3000;
-  ulong _report_timeout_ms = 10000;
+  uint32_t _discover_timeout_ms = 10000;
+  uint32_t _convert_timeout_ms = 3000;
+  uint32_t _report_timeout_ms = 10000;
 
   // Engine state tracking
   elapsedMillis _loop_runtime;
@@ -84,14 +89,14 @@ private:
   elapsedMillis _last_stats;
 
   // Engine runtime tracking by state
-  ulong _last_idle_ms = 0;
-  ulong _last_discover_ms = 0;
-  ulong _last_convert_ms = 0;
+  uint32_t _last_idle_ms = 0;
+  uint32_t _last_discover_ms = 0;
+  uint32_t _last_convert_ms = 0;
+  uint32_t _last_report_ms = 0;
+  uint32_t _last_cmd_ms = 0;
+  uint32_t _last_ackcmd_ms = 0;
+  uint32_t _last_stats_ms = 0;
   time_t _last_convert_timestamp = 0;
-  ulong _last_report_ms = 0;
-  ulong _last_cmd_ms = 0;
-  ulong _last_ackcmd_ms = 0;
-  ulong _last_stats_ms = 0;
 
 public:
   mcrEngine(mcrMQTT *mqtt);
@@ -100,6 +105,116 @@ public:
   virtual boolean loop();
 
   const static uint16_t maxDevices() { return MAX_DEVICES_PER_ENGINE; };
+
+  // functions for handling known devices
+  mcrDev_t *findDevice(mcrDev_t &dev) {
+    mcrDev_t *found_dev = NULL;
+    for (uint8_t i = 0; ((i < maxDevices()) && (found_dev == NULL)); i++) {
+      if (dev == _known_devs[i]) {
+        found_dev = _known_devs[i];
+      }
+    }
+    return found_dev;
+  }
+
+  bool knowDevice(mcrDev_t &dev) {
+    auto rc = true;
+    mcrDev_t *found_dev = findDevice(dev);
+
+    if (found_dev) { // if we already know this device then flag it as seen
+      found_dev->justSeen();
+    } else {
+      if (devCount() < maxDevices()) {             // make sure we have a slot
+        _known_devs[devCount()] = new mcrDev(dev); // create (copy) device
+        _dev_count += 1;
+      } else { // log a warning if no slots available
+        logDateTime(__PRETTY_FUNCTION__);
+        log("[WARNING] attempt to exceed supported max devices", true);
+        rc = false;
+      }
+    }
+    return rc;
+  }
+
+  bool forgetDevice(mcrDev_t &dev) {
+    auto rc = true;
+    mcrDev_t *found_dev = NULL;
+
+    for (uint8_t i = 0; ((i < maxDevices()) && (found_dev == NULL)); i++) {
+      if (_known_devs[i] && dev == _known_devs[i]) {
+        found_dev = _known_devs[i];
+        delete found_dev;
+        _known_devs[i] = NULL;
+      }
+    }
+
+    return rc;
+  }
+
+  // yes, yes... this is a poor man's iterator
+  mcrDev_t *getFirstKnownDevice() {
+    _next_known_index = 0;
+    return getNextKnownDevice();
+  }
+
+  mcrDev_t *getNextKnownDevice() {
+    mcrDev_t *found_dev = NULL;
+
+    for (; ((_next_known_index < maxDevices()) && (found_dev == NULL));
+         _next_known_index++) {
+      if (_known_devs[_next_known_index] != NULL) {
+        found_dev = _known_devs[_next_known_index];
+        _next_known_index += 1;
+      }
+    }
+
+    return found_dev;
+  }
+
+  mcrDev_t *getDevice(mcrDevAddr_t &addr) {
+    mcrDev_t *found_dev = NULL;
+
+    for (uint8_t i = 0; ((i < maxDevices()) && (found_dev == NULL)); i++) {
+      if (_known_devs[i] && (addr == _known_devs[i]->addr())) {
+        found_dev = _known_devs[i];
+      }
+    }
+
+    return found_dev;
+  }
+
+  mcrDev_t *getDevice(mcrDevID_t &id) {
+    mcrDev_t *found_dev = NULL;
+
+    // if (debugMode) {
+    //  logDateTime(__PRETTY_FUNCTION__);
+    //  log("searching: ");
+    //  }
+
+    for (uint8_t i = 0; ((i < maxDevices()) && (found_dev == NULL)); i++) {
+      //  log(i);
+      //  log(" ");
+      if (_known_devs[i] && (id == _known_devs[i]->id())) {
+        //  log("found ");
+        // log(_known_devs[i]->id());
+        //  log(" ", true);
+        found_dev = _known_devs[i];
+      }
+    }
+
+    return found_dev;
+  }
+
+  // mcrDev_t *getDevice(mcrCmd_t &cmd) {
+  //   mcrDev_t *found_dev = NULL;
+  //
+  //   for (uint8_t i = 0; ((i < maxDevices()) && (found_dev == NULL)); i++) {
+  //     if (cmd.dev_id() == _known_devs[i]->id()) {
+  //       found_dev = _known_devs[i];
+  //     }
+  //   }
+  //   return found_dev;
+  // }
 
   // state helper methods (grouped together for readability)
   bool isDiscoveryActive() { return _state == DISCOVER ? true : false; }
@@ -196,14 +311,22 @@ public:
   }
 
 protected:
-  mcrMQTT *mqtt;
-  bool debugMode;
+  bool debugMode = false;
 
   virtual bool discover();
   virtual bool convert();
   virtual bool report();
   virtual bool cmd();
   virtual bool cmdAck();
+
+  bool publish(Reading_t *reading) {
+    auto rc = false;
+
+    if (reading) {
+      _mqtt->publish(reading);
+    }
+    return rc;
+  }
   void idle(const char *func = NULL);
 
   // subclasses should override these functions and do something useful
@@ -211,8 +334,8 @@ protected:
   virtual bool handleCmdAck(mcrCmd_t &cmd) { return true; }
 
   uint16_t devCount() { return _dev_count; };
-  virtual void clearKnownDevices() { _dev_count = 0; };
-  void addDevice() { _dev_count += 1; };
+  // virtual void clearKnownDevices() { _dev_count = 0; };
+  // void addDevice() { _dev_count += 1; };
 
   void tempDebugOn() {
     _savedDebugMode = debugMode;
@@ -273,8 +396,8 @@ protected:
 
   bool needDiscover() {
     // case 1: if discover is active we must return true since the
-    //          implementation of discover knows when to declare it is finished
-    //          by calling idle
+    //          implementation of discover knows when to declare it is
+    //          finished by calling idle
     // case 2:  if enough millis have elapsed that it is time to do another
     //          discovery
     if (isDiscoveryActive() || (_last_discover > _discover_interval_ms))

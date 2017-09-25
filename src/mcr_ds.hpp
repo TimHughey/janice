@@ -48,86 +48,41 @@
 
 #define W1_PIN 10
 
+typedef class mcrDS mcrDS_t;
 class mcrDS : public mcrEngine {
-
-private:
-  OneWire *ds;
-  dsDev **_devs;
 
 public:
   mcrDS(mcrMQTT *mqtt);
   bool init();
 
 private:
-  dsDev *addDevice(byte *addr, bool pwr = false) {
-    dsDev *dev = NULL;
+  OneWire *ds;
 
-    if (devCount() < maxDevices()) {
-      dev = new dsDev(addr, pwr);
-      _devs[devCount()] = dev;
-      mcrEngine::addDevice();
-    } else {
-      Serial.print("    ");
-      Serial.print(__PRETTY_FUNCTION__);
-      Serial.println(" attempt to exceed maximum devices");
-    }
-
-    return dev;
-  };
-
-  dsDev *getDevice(mcrDevID_t &id) {
-    uint8_t *addr = dsDev::parseId(id);
-    dsDev *dev = NULL;
-
-    if (addr != NULL) {
-      dev = getDevice(addr);
-    }
-    return dev;
+  dsDev_t *getDevice(mcrDevID_t &id) {
+    mcrDev_t *dev = mcrEngine::getDevice(id);
+    return (dsDev_t *)dev;
   }
 
-  // TODO: deprecated -- replace with mcrDevID_t
-  dsDev *getDevice(char *name) {
-    uint8_t *addr = dsDev::parseId(name);
-    dsDev *dev = NULL;
-
-    if (addr != NULL) {
-      dev = getDevice(addr);
-    }
-    return dev;
-  }
-
-  dsDev *getDevice(byte *addr) {
-    dsDev search_dev = dsDev(addr);
-    dsDev *found_dev = NULL;
-
-    for (uint8_t i = 0; i < devCount() && found_dev == NULL; i++) {
-      if (search_dev == *_devs[i])
-        found_dev = _devs[i];
+  dsDev_t *getDevice(mcrCmd_t &cmd) {
+    if (debugMode) {
+      logDateTime(__PRETTY_FUNCTION__);
+      log("looking for dev_id=");
+      log(cmd.dev_id(), true);
     }
 
-    return found_dev;
+    mcrDev_t *dev = mcrEngine::getDevice(cmd.dev_id());
+    return (dsDev_t *)dev;
   }
 
   void setCmdAck(mcrCmd_t &cmd) {
     mcrDevID_t &dev_id = cmd.dev_id();
     dsDev_t *dev = NULL;
 
-    dev = getDevice(dev_id);
+    dev = (dsDev_t *)mcrEngine::getDevice(dev_id);
     if (dev != NULL) {
       dev->setReadingCmdAck(cmd.latency(), cmd.cid());
     }
   }
-
-  void clearKnownDevices() {
-    for (uint8_t i = 0; i < devCount(); i++) {
-      if (_devs[i] != NULL) {
-        delete _devs[i];
-        _devs[i] = NULL;
-      }
-    }
-
-    mcrEngine::clearKnownDevices();
-  };
 
   bool discover();
   bool convert();
@@ -145,7 +100,7 @@ private:
     return readDevice(dev_id);
   }
   bool readDevice(mcrDevID_t &id) { return readDevice(getDevice(id)); }
-  bool readDevice(dsDev *dev);
+  bool readDevice(dsDev_t *dev);
 
   // publish a device
   bool publishDevice(mcrCmd_t &cmd) {

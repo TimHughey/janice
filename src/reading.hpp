@@ -34,13 +34,17 @@
 #include <WiFi101.h>
 #include <elapsedMillis.h>
 
+#include "dev_id.hpp"
+
+typedef class Reading Reading_t;
+
 class Reading {
 private:
   // defines which values are populated
   typedef enum { UNDEF, TEMP, RH, SWITCH, SOIL, PH } reading_t;
 
   // id and metadata for the reading
-  char _id[30];
+  mcrDevID_t _id;
   time_t _mtime;
   reading_t _type;
 
@@ -61,17 +65,16 @@ private:
 public:
   // undefined reading
   Reading() {
-    strcpy(_id, "no_id");
     _mtime = now();
     _type = UNDEF;
   }
-  Reading(char *id) {
-    strcpy(_id, id);
+  Reading(mcrDevID_t &id) {
+    _id = id;
     _mtime = now();
     _type = UNDEF;
   }
-  Reading(char *id, time_t mtime) {
-    strcpy(_id, id);
+  Reading(mcrDevID_t &id, time_t mtime) {
+    _id = id;
     _mtime = mtime;
     _type = UNDEF;
   }
@@ -83,8 +86,8 @@ public:
   //  _type = TEMP;
   //  _celsius = celsius;
   //  }
-  Reading(const char *id, time_t mtime, float celsius) {
-    strcpy(_id, id);
+  Reading(mcrDevID_t &id, time_t mtime, float celsius) {
+    _id = id;
     _mtime = mtime;
     _type = TEMP;
     _celsius = celsius;
@@ -99,8 +102,8 @@ public:
   //  _relhum = relhum;
   //  }
 
-  Reading(const char *id, time_t mtime, float celsius, float relhum) {
-    strcpy(_id, id);
+  Reading(mcrDevID_t &id, time_t mtime, float celsius, float relhum) {
+    _id = id;
     _mtime = mtime;
     _type = RH;
     _celsius = celsius;
@@ -108,8 +111,8 @@ public:
   }
 
   // switch states
-  Reading(const char *id, time_t mtime, uint8_t state, uint8_t bits) {
-    strcpy(_id, id);
+  Reading(mcrDevID_t &id, time_t mtime, uint8_t state, uint8_t bits) {
+    _id = id;
     _mtime = mtime;
     _type = SWITCH;
     _state = state;
@@ -129,8 +132,6 @@ public:
   uint8_t state() { return _state; };
   char *json();
 };
-
-typedef class Reading Reading_t;
 
 #endif // __cplusplus
 #endif // reading_h

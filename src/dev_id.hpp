@@ -46,7 +46,7 @@ public:
   operator char *() { return _id; };
 
   // NOTE:  the == ooperator will compare the actual id and not the pointers
-  bool operator==(const mcrDevID_t &rhs) {
+  bool operator==(mcrDevID_t &rhs) {
     auto rc = false;
     if (strncmp(_id, rhs._id, _max_len) == 0) {
       rc = true;
@@ -75,6 +75,8 @@ public:
     this->initAndCopy(id);
     return *this;
   };
+
+  char *asString() { return _id; }
 
   static const int max_id_len = _max_len;
 

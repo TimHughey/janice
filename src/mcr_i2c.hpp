@@ -31,6 +31,8 @@
 
 #include <Wire.h>
 
+#include "dev_addr.hpp"
+#include "dev_id.hpp"
 #include "i2c_dev.hpp"
 #include "mcr_engine.hpp"
 #include "mcr_mqtt.hpp"
@@ -47,52 +49,52 @@
 #define I2C_PWR_PIN 12
 #define MAX_DEV_NAME 20
 
-class mcrI2C : public mcrEngine {
-
+typedef class mcrI2c mcrI2c_t;
+class mcrI2c : public mcrEngine {
 private:
   static const uint8_t _max_buses = 8;
-  i2cDev **known_devs;
-  boolean _use_multiplexer = false;
+  bool _use_multiplexer = false;
 
 public:
-  mcrI2C(mcrMQTT *mqtt);
-  boolean init();
+  mcrI2c(mcrMQTT *mqtt);
+  bool init();
 
 private:
-  i2cDev _search_devs[2] = {i2cDev(0x5C), i2cDev(0x44)};
-  i2cDev *search_devs() { return _search_devs; };
-  inline uint8_t search_devs_count() {
-    return sizeof(_search_devs) / sizeof(i2cDev);
+  mcrDevAddr_t _search_addrs[2] = {mcrDevAddr(0x5C), mcrDevAddr(0x44)};
+  mcrDevAddr_t *search_addrs() { return _search_addrs; };
+  inline uint8_t search_addrs_count() {
+    return sizeof(_search_addrs) / sizeof(mcrDevAddr_t);
   };
 
-  i2cDev *addDevice(byte addr, bool use_multiplexer, byte bus) {
-    i2cDev *dev = NULL;
+  // DEPRECATED with move to mcrEngine handling known devices
+  // i2cDev *addDevice(byte addr, bool use_multiplexer, byte bus) {
+  //   i2cDev *dev = NULL;
+  //
+  //   if (devCount() < maxDevices()) {
+  //     dev = new i2cDev(addr, use_multiplexer, bus);
+  //     dev->setDesc(i2cDev::i2cDevDesc(addr));
+  //     known_devs[devCount()] = dev;
+  //     mcrEngine::addDevice();
+  //   } else {
+  //     log("    ");
+  //     log(__PRETTY_FUNCTION__);
+  //     logln(" attempt to exceed maximum devices");
+  //   }
+  //
+  //   return dev;
+  // };
 
-    if (devCount() < maxDevices()) {
-      dev = new i2cDev(addr, use_multiplexer, bus);
-      dev->setDesc(i2cDev::i2cDevDesc(addr));
-      known_devs[devCount()] = dev;
-      mcrEngine::addDevice();
-    } else {
-      Serial.print("    ");
-      Serial.print(__PRETTY_FUNCTION__);
-      Serial.println(" attempt to exceed maximum devices");
-    }
-
-    return dev;
-  };
-
-  boolean discover();
-  boolean report();
+  bool discover();
+  bool report();
 
   // specific methods to read devices
-  boolean readAM2315(i2cDev *dev, Reading **reading);
-  boolean readSHT31(i2cDev *dev, Reading **reading);
+  bool readAM2315(i2cDev *dev, Reading **reading);
+  bool readSHT31(i2cDev *dev, Reading **reading);
 
   // utility methods
   uint8_t crcSHT31(const uint8_t *data, uint8_t len);
-  boolean detectDev(uint8_t addr, boolean use_multiplexer = false,
-                    uint8_t bus = 0x00);
+  bool detectDev(mcrDevAddr_t &addr, boolean use_multiplexer = false,
+                 uint8_t bus = 0x00);
 
   bool detectMultiplexer() {
     _use_multiplexer = false;
@@ -102,7 +104,8 @@ private:
       log("detecting TCA9514B i2c bus multiplexer...");
     }
     // let's see if there's a multiplexer available
-    if (detectDev(0x70)) {
+    mcrDevAddr_t multiplexer_dev(0x70);
+    if (detectDev(multiplexer_dev)) {
       if (debugMode)
         log(" found", true);
 
@@ -126,15 +129,17 @@ private:
     }
   }
 
-  void clearKnownDevices() {
-    for (uint8_t i = 0; i < devCount(); i++) {
-      if (known_devs[i] != NULL) {
-        delete known_devs[i];
-        known_devs[i] = NULL;
-      }
-    }
+  void printUnhandledDev(const char *func, i2cDev_t *dev) {
+    logDateTime(func);
 
-    mcrEngine::clearKnownDevices();
+    log("unhandled dev addr: ");
+    log(dev->devAddr());
+    log(" desc: ");
+    log(dev->desc());
+    log(" use_multiplexer: ");
+    log(dev->useMultiplexer());
+    log(" bus: ");
+    log(dev->bus(), true);
   }
 };
 

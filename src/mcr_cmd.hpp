@@ -62,7 +62,7 @@ public:
   }
 
   mcrDevID_t &dev_id() { return _dev_id; }
-  mcrDevID_t &name() { return _dev_id; }
+  // mcrDevID_t &name() { return _dev_id; }
   // char *name() { return _dev_id; }
   uint8_t state() { return _state; }
   uint8_t mask() { return _mask; }

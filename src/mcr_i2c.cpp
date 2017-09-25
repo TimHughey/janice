@@ -38,11 +38,7 @@
 #include "mcr_mqtt.hpp"
 #include "reading.hpp"
 
-mcrI2C::mcrI2C(mcrMQTT *mqtt) : mcrEngine(mqtt) {
-  known_devs = new i2cDev *[maxDevices()];
-
-  memset(known_devs, 0x00, sizeof(i2cDev *) * maxDevices());
-
+mcrI2c::mcrI2c(mcrMQTT *mqtt) : mcrEngine(mqtt) {
   // power up the i2c devices
   pinMode(I2C_PWR_PIN, OUTPUT);
   digitalWrite(I2C_PWR_PIN, HIGH);
@@ -52,13 +48,13 @@ mcrI2C::mcrI2C(mcrMQTT *mqtt) : mcrEngine(mqtt) {
   Wire.begin();
 }
 
-bool mcrI2C::init() { return true; }
+bool mcrI2c::init() { return true; }
 
-// mcrI2C::discover()
+// mcrI2c::discover()
 // this method should be called often to ensure proper operator.
-bool mcrI2C::discover() {
-  i2cDev *devs = search_devs();
-  static uint8_t dev_index = 0;
+bool mcrI2c::discover() {
+  mcrDevAddr_t *addrs = search_addrs();
+  static uint8_t addrs_index = 0;
   static uint8_t bus = 0;
   auto rc = true;
 
@@ -66,10 +62,8 @@ bool mcrI2C::discover() {
     if (isIdle()) {
       printStartDiscover(__PRETTY_FUNCTION__);
 
-      dev_index = 0; // reset discover control variables
-      bus = 0;       // since we are starting discover
-
-      clearKnownDevices();
+      addrs_index = 0; // reset discover control variables
+      bus = 0;         // since we are starting discover
       detectMultiplexer();
       startDiscover();
     }
@@ -85,38 +79,42 @@ bool mcrI2C::discover() {
         return rc;
       }
 
-    i2cDev *search_dev = &(devs[dev_index]); // detect the next device
+    mcrDevAddr_t &search_addr = addrs[addrs_index]; // detect the next device
     selectBus(bus);
-    if (detectDev(search_dev->devAddr(), false)) {
-      addDevice(search_dev->devAddr(), useMultiplexer(), bus);
+    if (detectDev(search_addr, false)) {
+      i2cDev_t new_dev(search_addr, useMultiplexer(), bus);
+
+      knowDevice(new_dev);
     }
 
-    dev_index += 1; // increment to next search dev
+    addrs_index += 1; // increment to next search dev
 
-    if (dev_index >= search_devs_count()) { // if next dev exceeds
-      bus += 1;                             // the count of search devs
-      dev_index = 0;                        // move to next bus
+    if (addrs_index >= search_addrs_count()) { // if next dev exceeds
+      bus += 1;                                // the count of search devs
+      addrs_index = 0;                         // move to next bus
     }
   } // needDiscover
 
   return rc;
 }
 
-bool mcrI2C::report() {
+bool mcrI2c::report() {
   bool rc = true;
-  static uint8_t dev_index = 0;
+  mcrDev_t *next_dev = NULL;
+  i2cDev_t *dev = NULL;
 
   if (needReport()) {
     if (isIdle()) {
-      dev_index = 0;
+      next_dev = getFirstKnownDevice();
       startReport();
+    } else {
+      next_dev = getNextKnownDevice();
     }
 
-    Reading *reading = NULL;
+    dev = (i2cDev_t *)next_dev;
+    Reading_t *reading = NULL;
 
-    if (dev_index < devCount()) {
-      i2cDev *dev = known_devs[dev_index];
-
+    if (dev) {
       selectBus(dev->bus());
 
       switch (dev->devAddr()) {
@@ -131,26 +129,16 @@ bool mcrI2C::report() {
         break;
 
       default:
-        Serial.print("  mcrI2C::deviceReport unhandled dev addr: ");
-        Serial.print(dev->devAddr());
-        Serial.print(" desc: ");
-        Serial.print(dev->desc());
-        Serial.print(" use_multiplexer: ");
-        Serial.print(dev->useMultiplexer());
-        Serial.print(" bus: ");
-        Serial.print(dev->bus());
-        Serial.println();
+        printUnhandledDev(__PRETTY_FUNCTION__, dev);
         break;
       }
 
       if (reading != NULL) {
-        mqtt->publish(reading);
+        publish(reading);
       }
-
-      dev_index += 1;
     }
 
-    if (isReportActive() && (dev_index >= devCount())) {
+    if ((dev == NULL) && isReportActive()) {
       idle(__PRETTY_FUNCTION__);
     }
   }
@@ -158,7 +146,7 @@ bool mcrI2C::report() {
   return rc;
 }
 
-bool mcrI2C::readAM2315(i2cDev *dev, Reading **reading) {
+bool mcrI2c::readAM2315(i2cDev *dev, Reading **reading) {
   elapsedMillis read_elapsed;
   static uint8_t error_count = 0;
   auto rc = true;
@@ -275,7 +263,7 @@ bool mcrI2C::readAM2315(i2cDev *dev, Reading **reading) {
   return rc;
 }
 
-bool mcrI2C::readSHT31(i2cDev *dev, Reading **reading) {
+bool mcrI2c::readSHT31(i2cDev *dev, Reading **reading) {
   elapsedMillis read_elapsed;
   static uint8_t error_count = 0;
   auto rc = true;
@@ -385,7 +373,7 @@ bool mcrI2C::readSHT31(i2cDev *dev, Reading **reading) {
   return rc;
 }
 
-uint8_t mcrI2C::crcSHT31(const uint8_t *data, uint8_t len) {
+uint8_t mcrI2c::crcSHT31(const uint8_t *data, uint8_t len) {
   uint8_t crc = 0xFF;
 
   for (uint8_t j = len; j; --j) {
@@ -398,14 +386,14 @@ uint8_t mcrI2C::crcSHT31(const uint8_t *data, uint8_t len) {
   return crc;
 }
 
-bool mcrI2C::detectDev(uint8_t addr, bool use_multiplexer, uint8_t bus) {
+bool mcrI2c::detectDev(mcrDevAddr_t &addr, bool use_multiplexer, uint8_t bus) {
   bool rc = false;
 
-  Wire.beginTransmission(addr);
+  Wire.beginTransmission(addr.firstAddressByte());
 
   // handle special cases where certain i2c devices
   // need additional cmds before releasing the bus
-  switch (addr) {
+  switch (addr.firstAddressByte()) {
   case 0x70:          // TCA9548B - TI i2c bus multiplexer
     Wire.write(0x00); // select no bus
     break;
@@ -418,7 +406,7 @@ bool mcrI2C::detectDev(uint8_t addr, bool use_multiplexer, uint8_t bus) {
   case 0x5C: // AM2315 needs to be woken up
     Wire.endTransmission(true);
     delay(2);
-    Wire.beginTransmission(addr);
+    Wire.beginTransmission(addr.firstAddressByte());
   }
 
   // Wire.endTransmission() returns 0 if the

@@ -34,7 +34,7 @@
 void Reading::jsonCommon(JsonObject &root) {
   root["version"] = VERSION;
   root["host"] = mcrUtil::hostID();
-  root["device"] = _id;
+  root["device"] = _id.asString();
   root["mtime"] = _mtime;
   root["type"] = typeAsString();
 

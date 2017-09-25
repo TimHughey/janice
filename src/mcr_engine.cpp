@@ -32,8 +32,8 @@
 
 mcrEngine::mcrEngine(mcrMQTT *mqtt) {
 
-  this->mqtt = mqtt;
-  debugMode = false;
+  _mqtt = mqtt;
+  // debugMode = true;
 
   // setting  to the discover interval will
   // prevent a delay for first discovery cycle at startup

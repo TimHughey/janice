@@ -39,12 +39,7 @@
 // static.  i really don't like this.  TODO fix MQTT library
 static Queue cmd_queue(sizeof(mcrCmd), 25, FIFO); // Instantiate queue
 
-mcrDS::mcrDS(mcrMQTT *mqtt) : mcrEngine(mqtt) {
-  ds = new OneWire(W1_PIN);
-  _devs = new dsDev *[maxDevices()];
-
-  memset(_devs, 0x00, sizeof(dsDev *) * maxDevices());
-}
+mcrDS::mcrDS(mcrMQTT *mqtt) : mcrEngine(mqtt) { ds = new OneWire(W1_PIN); }
 
 bool mcrDS::init() {
   mcrMQTT::registerCmdCallback(&cmdCallback);
@@ -61,7 +56,7 @@ bool mcrDS::init() {
 //     a single search
 
 bool mcrDS::discover() {
-  byte addr[8];
+  uint8_t addr[8];
   auto rc = true;
 
   if (needDiscover()) {
@@ -69,13 +64,13 @@ bool mcrDS::discover() {
       printStartDiscover(__PRETTY_FUNCTION__);
 
       ds->reset_search();
-      clearKnownDevices();
       startDiscover();
     }
 
     if (ds->search(addr)) {
       // confirm addr we received is legit
       if (OneWire::crc8(addr, 7) == addr[7]) {
+        mcrDevAddr_t found_addr(addr, 8);
 
         // TODO: move to own method and implement family code
         // specific logic
@@ -85,7 +80,9 @@ bool mcrDS::discover() {
         ds->write(0xB4); // Read Power Supply
         byte pwr = ds->read_bit();
 
-        addDevice(addr, pwr);
+        dsDev_t dev(found_addr, pwr);
+        knowDevice(dev);
+
 #ifdef VERBOSE
         Serial.print("  mcrDS::discover() found dev ");
         // Serial.print(deviceID(addr));
@@ -106,30 +103,37 @@ bool mcrDS::discover() {
 
 bool mcrDS::report() {
   bool rc = true;
-  static uint8_t dev_index = 0;
+  mcrDev_t *next_dev = NULL;
+  dsDev_t *dev = NULL;
 
-  if (isIdle() && needReport()) {
-    startReport();
-    dev_index = 0;
-  }
+  if (needReport()) {
+    if (isIdle()) {
+      next_dev = getFirstKnownDevice();
+      startReport();
+    } else {
+      next_dev = getNextKnownDevice();
+    }
 
-  if (isReportActive()) {
-    dsDev_t *dev = _devs[dev_index];
-    rc = readDevice(dev);
+    dev = (dsDev_t *)next_dev;
 
-    if (rc)
-      publishDevice(dev);
+    if (isReportActive()) {
+      if (dev != NULL) {
+        rc = readDevice(dev->id());
 
-    dev_index += 1; // increment to dev_index for next loop invocation
-    if (dev_index >= (devCount() - 1)) {
-      idle(__PRETTY_FUNCTION__);
+        if (rc)
+          publishDevice(dev);
+      }
+
+      if (dev == NULL) {
+        idle(__PRETTY_FUNCTION__);
+      }
     }
   }
 
   return rc;
 }
 
-bool mcrDS::readDevice(dsDev *dev) {
+bool mcrDS::readDevice(dsDev_t *dev) {
   auto rc = true;
   Reading *reading = NULL;
 
@@ -166,8 +170,7 @@ bool mcrDS::publishDevice(dsDev_t *dev) {
   Reading_t *reading = dev->reading();
 
   if (reading != NULL) {
-
-    mqtt->publish(reading);
+    publish(reading);
   }
   return rc;
 }
@@ -229,7 +232,7 @@ bool mcrDS::handleCmd() {
       log("qdepth=");
       log(recs);
       log(" popped: name=");
-      log(cmd.name());
+      log(cmd.dev_id());
       log(" new_state=");
       log(cmd.state(), true);
     }
@@ -240,7 +243,8 @@ bool mcrDS::handleCmd() {
   }
 
   // must call the base case to ensure remaining work is done
-  return mcrEngine::loop();
+  // return mcrEngine::loop();
+  return true;
 }
 
 bool mcrDS::isCmdQueueEmpty() { return cmd_queue.isEmpty(); }
@@ -481,11 +485,11 @@ bool mcrDS::readDS2408(dsDev *dev, Reading **reading) {
   return rc;
 }
 
-bool mcrDS::setSwitch(mcrCmd &cmd) {
+bool mcrDS::setSwitch(mcrCmd_t &cmd) {
   bool rc = true;
 
   // mcrDevID id = cmd.name();
-  dsDev *dev = getDevice(cmd.name());
+  dsDev_t *dev = (dsDev_t *)getDevice(cmd);
 
   if (dev == NULL) {
     return false;
@@ -500,10 +504,10 @@ bool mcrDS::setSwitch(mcrCmd &cmd) {
   return rc;
 }
 
-bool mcrDS::setDS2406(mcrCmd &cmd) {
+bool mcrDS::setDS2406(mcrCmd_t &cmd) {
   bool rc = true;
   // mcrDevID id = cmd.name();
-  dsDev *dev = getDevice(cmd.name());
+  dsDev_t *dev = (dsDev_t *)getDevice(cmd);
 
   if (dev == NULL) {
     return false;
@@ -565,7 +569,7 @@ bool mcrDS::setDS2406(mcrCmd &cmd) {
 bool mcrDS::setDS2408(mcrCmd &cmd) {
   bool rc = true;
   // mcrDevID id = cmd.name();
-  dsDev *dev = getDevice(cmd.name());
+  dsDev_t *dev = (dsDev_t *)getDevice(cmd);
 
   if (dev == NULL) {
     return false;

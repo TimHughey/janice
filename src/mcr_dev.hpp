@@ -29,22 +29,23 @@
 #include <WProgram.h>
 #endif
 
+#include "dev_addr.hpp"
 #include "dev_id.hpp"
 #include "reading.hpp"
 
 typedef class mcrDev mcrDev_t;
 class mcrDev {
 private:
-  mcrDevID_t _id; // unique identifier of this device
+  mcrDevID_t _id;     // unique identifier of this device
+  mcrDevAddr_t _addr; // address of this device
 
 protected:
-  static const uint8_t _addr_len = 8;                  // max length of address
-  static const uint8_t _id_len = mcrDevID::max_id_len; // max length of the id
+  static const uint8_t _addr_len = mcrDevAddr::max_addr_len;
+  static const uint8_t _id_len = mcrDevID::max_id_len;
   static const uint8_t _desc_len = 15; // max length of desciption
 
-  uint8_t _addr[_addr_len] = {0x00}; // address of the device
-  char _desc[_desc_len] = {0x00};    // desciption of the device
-  Reading *_reading = NULL;
+  char _desc[_desc_len] = {0x00}; // desciption of the device
+  Reading_t *_reading = NULL;
 
   time_t _last_seen = 0; // mtime of last time this device was discovered
 
@@ -57,10 +58,16 @@ protected:
   time_t _read_timestamp = 0;
 
 public:
-  mcrDev() { _id = "undef/00000"; }
+  mcrDev() {} // all values are defaulted in definition of class(es)
 
-  mcrDev(Reading *reading) { _reading = reading; };
-  mcrDev(const mcrDev &);
+  mcrDev(mcrDevAddr_t &addr) { // construct a new mcrDev with only an address
+    _addr = addr;
+  }
+
+  mcrDev(mcrDevID_t &id, mcrDevAddr_t &addr) {
+    _id = id; // copy id and addr objects
+    _addr = addr;
+  }
 
   // base class will handle deleteing the reading, if needed
   ~mcrDev() {
@@ -69,10 +76,15 @@ public:
   }
 
   // operators
+  mcrDev_t &operator=(mcrDev_t &dev) {
+    memcpy(this, &dev, sizeof(mcrDev_t));
+    return *this;
+  }
   // rely on the == operator from mcrDevID_t
-  inline int operator==(const mcrDev &rhs) { return (_id == rhs._id); };
+  inline bool operator==(mcrDev_t &rhs) { return (_id == rhs._id); };
+  inline bool operator==(mcrDev_t *rhs) { return (_id == rhs->_id); }
 
-  Reading_t *reading() { return _reading; }
+  void justSeen() { _last_seen = now(); }
 
   void setID(char *id) { _id = id; }
 
@@ -88,10 +100,12 @@ public:
     strncat(_desc, desc, _desc_len - 1);
   }
 
-  uint8_t firstAddressByte() { return _addr[0]; };
-  uint8_t *addr() { return _addr; };
-  const char *id() { return _id; };
+  uint8_t firstAddressByte() { return _addr.firstAddressByte(); };
+  mcrDevAddr_t &addr() { return _addr; }
+  // uint8_t *addr() { return _addr; };
+  mcrDevID_t &id() { return _id; };
   const char *desc() { return _desc; };
+  Reading_t *reading() { return _reading; }
   static const uint8_t idMaxLen() { return _id_len; };
   bool isValid() { return firstAddressByte() != 0x00 ? true : false; };
   bool isNotValid() { return !isValid(); }

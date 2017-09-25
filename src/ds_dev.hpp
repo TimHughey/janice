@@ -35,17 +35,20 @@
 #include "mcr_util.hpp"
 #include "reading.hpp"
 
+typedef class dsDev dsDev_t;
+
 class dsDev : public mcrDev {
 private:
   // static const uint8_t _addr_len = 8;
   // static const uint8_t _id_len = 18;
+  static const uint8_t _ds_max_addr_len = 8;
   static const uint8_t _family_byte = 0;
   static const uint8_t _crc_byte = 7;
 
   static const uint8_t _family_DS2408 = 0x29;
   static const uint8_t _family_DS2406 = 0x12;
 
-  boolean _power = false; // is the device powered?
+  bool _power = false; // is the device powered?
 
   static const char *familyDesc(uint8_t family) {
     switch (family) {
@@ -73,18 +76,13 @@ private:
   const char *familyDesc() { return familyDesc(family()); }
 
 public:
-  dsDev() : mcrDev() {
-    _power = false;
-    _reading = NULL;
-  };
+  dsDev() { _power = false; };
 
-  dsDev(byte *addr, boolean power = false, Reading *reading = NULL)
-      : mcrDev(reading) {
-    char buff[_id_len] = {0x00};
+  dsDev(mcrDevAddr_t &addr, bool power = false) : mcrDev(addr) {
+    char buff[_ds_max_addr_len] = {0x00};
     // byte   0: 8-bit family code
     // byte 1-6: 48-bit unique serial number
     // byte   7: crc
-    memcpy(_addr, addr, _addr_len);
     _power = power;
 
     setDesc(familyDesc(family()));
@@ -95,9 +93,9 @@ public:
     // format of name: ds/famil code + 48-bit serial (without the crc)
     //      total len: 18 bytes (id + string terminator)
     sprintf(buff, "ds/%02x%02x%02x%02x%02x%02x%02x",
-            _addr[0],                      // byte 0: family code
-            _addr[1], _addr[2], _addr[3],  // byte 1-3: serial number
-            _addr[4], _addr[5], _addr[6]); // byte 4-6: serial number
+            addr[0],                    // byte 0: family code
+            addr[1], addr[2], addr[3],  // byte 1-3: serial number
+            addr[4], addr[5], addr[6]); // byte 4-6: serial number
     setID(buff);
     // always calculate the crc8 and tack onto the end of the address
     // reminder the crc8 is of the first seven bytes
@@ -105,7 +103,7 @@ public:
   };
 
   uint8_t family() { return firstAddressByte(); };
-  uint8_t crc() { return _addr[_crc_byte]; };
+  uint8_t crc() { return addr()[_crc_byte]; };
   boolean isPowered() { return _power; };
   void setReadingCmdAck(time_t latency, const char *cid = NULL) {
     if (_reading != NULL) {

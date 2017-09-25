@@ -55,6 +55,7 @@ typedef enum {
   HEARTBEAT
 } remoteCommand_t;
 
+typedef class mcrMQTT mcrMQTT_t;
 class mcrMQTT {
 private:
   IPAddress broker;

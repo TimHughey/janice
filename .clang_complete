@@ -3,13 +3,13 @@
 -I/Users/thughey/.platformio/packages/framework-arduinosam/system/samd/CMSIS-Atmel/CMSIS/Device/ATMEL
 -I/Users/thughey/.platformio/packages/framework-arduinosam/variants/feather_m0
 -I/Users/thughey/Documents/PlatformIO/Projects/170918-112054-adafruit_feather_m0/src
+-I/Users/thughey/Documents/PlatformIO/Projects/170918-112054-adafruit_feather_m0/.piolibdeps/PubSubClient_ID89/src
 -I/Users/thughey/.platformio/lib/Time_ID44
 -I/Users/thughey/.platformio/lib/Queue_ID1566/src
 -I/Users/thughey/.platformio/packages/framework-arduinosam/libraries/__cores__/adafruit/SPI
 -I/Users/thughey/.platformio/lib/WiFi101_ID299/src
--I/Users/thughey/Documents/PlatformIO/Projects/170918-112054-adafruit_feather_m0/.piolibdeps/ArduinoJson_ID64/src
 -I/Users/thughey/.platformio/lib/elapsedMillis_ID1002
--I/Users/thughey/Documents/PlatformIO/Projects/170918-112054-adafruit_feather_m0/.piolibdeps/PubSubClient_ID89/src
+-I/Users/thughey/Documents/PlatformIO/Projects/170918-112054-adafruit_feather_m0/.piolibdeps/ArduinoJson_ID64/src
 -I/Users/thughey/.platformio/packages/framework-arduinosam/libraries/__cores__/adafruit/Wire
 -I/Users/thughey/.platformio/lib/OneWire_ID1
 -I/Users/thughey/Documents/PlatformIO/Projects/170918-112054-adafruit_feather_m0/.piolibdeps/ArduinoJson_ID64/src

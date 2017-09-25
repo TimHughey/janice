@@ -1,5 +1,5 @@
 /*
-    mcpr_i2c.h - Master Control Remote I2C
+    mcr_i2c.h - Master Control Remote I2C
     Copyright (C) 2017  Tim Hughey
 
     This program is free software: you can redistribute it and/or modify
@@ -33,6 +33,8 @@
 #include "mcr_util.hpp"
 #include "reading.hpp"
 
+typedef class i2cDev i2cDev_t;
+
 class i2cDev : public mcrDev {
 public:
   static const char *i2cDevDesc(uint8_t addr) {
@@ -59,15 +61,14 @@ private:
   uint8_t _bus;             // if using multiplexer then this is the bus number
                             // where the device is hoste
 public:
-  i2cDev() : mcrDev() {
+  i2cDev() {
     _use_multiplexer = false;
     _bus = 0;
-  };
+  }
 
-  i2cDev(uint8_t addr, boolean use_multiplexer = false, uint8_t bus = 0,
-         Reading *reading = NULL)
-      : mcrDev(reading) {
-    _addr[_i2c_addr_byte] = addr;
+  // construct a new i2cDev with a known address and compute the id
+  i2cDev(mcrDevAddr_t &addr, bool use_multiplexer = false, uint8_t bus = 0)
+      : mcrDev(addr) {
     _use_multiplexer = use_multiplexer;
     _bus = bus;
     char buff[_id_len] = {0x00};
@@ -83,7 +84,7 @@ public:
     setID(buff);
   };
 
-  uint8_t devAddr() { return mcrDev::addr()[_i2c_addr_byte]; };
+  uint8_t devAddr() { return firstAddressByte(); };
   boolean useMultiplexer() { return _use_multiplexer; };
   uint8_t bus() { return _bus; };
 
@@ -92,7 +93,7 @@ public:
     mcrUtil::printDateTime(func);
     Serial.print(desc());
     Serial.print(" ");
-    Serial.print(id());
+    Serial.print((char *)id());
     Serial.print(" read took ");
     Serial.print(readMS());
     Serial.println("ms");

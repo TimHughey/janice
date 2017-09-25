@@ -55,9 +55,9 @@ IPAddress broker(108, 35, 196, 234);
 IPAddress broker(192, 168, 2, 4);
 #endif
 
-mcrMQTT *mqtt = NULL;
-mcrDS *ds = NULL;
-mcrI2C *i2c = NULL;
+mcrMQTT_t *mqtt = NULL;
+mcrDS_t *ds = NULL;
+mcrI2c_t *i2c = NULL;
 
 int debugMode = 0;
 
@@ -117,7 +117,7 @@ void setup() {
 
   logDateTime(__PRETTY_FUNCTION__);
   Serial.print("mcrI2C");
-  i2c = new mcrI2C(mqtt);
+  i2c = new mcrI2c(mqtt);
   Serial.print(" created, ");
   i2c->init();
   Serial.println("initialized");
