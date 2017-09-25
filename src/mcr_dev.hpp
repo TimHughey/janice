@@ -29,60 +29,8 @@
 #include <WProgram.h>
 #endif
 
+#include "dev_id.hpp"
 #include "reading.hpp"
-
-typedef class mcrDevID mcrDevID_t;
-
-class mcrDevID {
-private:
-  static const uint8_t _max_len = 30;
-  char _id[_max_len] = {0x00};
-
-public:
-  mcrDevID(){};
-  mcrDevID(const char *id) { this->initAndCopy(id); };
-
-  static const uint8_t max_len() { return _max_len; };
-
-  // allow a mcrDevID to be assigned to a regular char *
-  operator char *() { return _id; };
-
-  // the == operator replicates the return vales from a standard strcmp
-  bool operator==(const mcrDevID_t &rhs) {
-    auto rc = false;
-    if (strncmp(_id, rhs._id, _max_len) == 0) {
-      rc = true;
-    }
-
-    return rc;
-  }
-  bool operator==(char *rhs) {
-    auto rc = false;
-    if (strncmp(_id, rhs, _max_len) == 0) {
-      rc = true;
-    }
-
-    return rc;
-  };
-  mcrDevID_t &operator=(mcrDevID_t dev_id) {
-    _id[0] = 0x00;
-    strncat(_id, dev_id._id, _max_len);
-    return *this;
-  }
-
-  mcrDevID_t &operator=(const char *id) {
-    this->initAndCopy(id);
-    return *this;
-  };
-
-  static const int max_id_len = _max_len;
-
-private:
-  void initAndCopy(const char *id) {
-    _id[0] = 0x00;
-    strncat(_id, id, _max_len - 1);
-  }
-};
 
 typedef class mcrDev mcrDev_t;
 class mcrDev {
@@ -95,9 +43,10 @@ protected:
   static const uint8_t _desc_len = 15; // max length of desciption
 
   uint8_t _addr[_addr_len] = {0x00}; // address of the device
+  char _desc[_desc_len] = {0x00};    // desciption of the device
   Reading *_reading = NULL;
 
-  char _desc[_desc_len]; // desciption of the device
+  time_t _last_seen = 0; // mtime of last time this device was discovered
 
   elapsedMillis _read_elapsed;
   time_t _read_ms = 0;
