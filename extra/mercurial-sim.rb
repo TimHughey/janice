@@ -217,7 +217,7 @@ MQTT::Client.connect(CONNECT_INFO).connect do |client|
     if (heartbeat_time.to_i - last_heartbeat_time.to_i) > 10
       heartbeat_hash = {
         version: '1', cmd: 'heartbeat', mtime: heartbeat_time.to_i.to_s, key: '0xAA',
-        master: ADAFRUIT_HOST
+        master: MQTT_HOST
       }
 
       heartbeat_json = JSON.generate(heartbeat_hash)
