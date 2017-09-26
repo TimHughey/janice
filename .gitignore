@@ -23,3 +23,7 @@ erl_crash.dump
 !lib/
 
 *.swp
+.pioenvs
+.piolibdeps
+.clang_complete
+.gcc-flags.json
