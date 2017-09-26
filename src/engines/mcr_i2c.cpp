@@ -34,11 +34,11 @@
 #include <WiFi101.h>
 #include <Wire.h>
 
+#include "../protocols/mcr_mqtt.hpp"
+#include "../readings/reading.hpp"
 #include "mcr_i2c.hpp"
-#include "mcr_mqtt.hpp"
-#include "reading.hpp"
 
-mcrI2c::mcrI2c(mcrMQTT *mqtt) : mcrEngine(mqtt) {
+mcrI2c::mcrI2c(mcrMQTT_t *mqtt) : mcrEngine(mqtt) {
   // power up the i2c devices
   pinMode(I2C_PWR_PIN, OUTPUT);
   digitalWrite(I2C_PWR_PIN, HIGH);
@@ -100,8 +100,8 @@ bool mcrI2c::discover() {
 
 bool mcrI2c::report() {
   bool rc = true;
-  mcrDev_t *next_dev = NULL;
-  i2cDev_t *dev = NULL;
+  mcrDev_t *next_dev = nullptr;
+  i2cDev_t *dev = nullptr;
 
   if (needReport()) {
     if (isIdle()) {
@@ -112,7 +112,7 @@ bool mcrI2c::report() {
     }
 
     dev = (i2cDev_t *)next_dev;
-    Reading_t *reading = NULL;
+    Reading_t *reading = nullptr;
 
     if (dev) {
       selectBus(dev->bus());
@@ -133,12 +133,12 @@ bool mcrI2c::report() {
         break;
       }
 
-      if (reading != NULL) {
+      if (reading != nullptr) {
         publish(reading);
       }
     }
 
-    if ((dev == NULL) && isReportActive()) {
+    if ((dev == nullptr) && isReportActive()) {
       idle(__PRETTY_FUNCTION__);
     }
   }
@@ -146,7 +146,7 @@ bool mcrI2c::report() {
   return rc;
 }
 
-bool mcrI2c::readAM2315(i2cDev *dev, Reading **reading) {
+bool mcrI2c::readAM2315(i2cDev_t *dev, Reading **reading) {
   elapsedMillis read_elapsed;
   static uint8_t error_count = 0;
   auto rc = true;
@@ -263,7 +263,7 @@ bool mcrI2c::readAM2315(i2cDev *dev, Reading **reading) {
   return rc;
 }
 
-bool mcrI2c::readSHT31(i2cDev *dev, Reading **reading) {
+bool mcrI2c::readSHT31(i2cDev_t *dev, Reading **reading) {
   elapsedMillis read_elapsed;
   static uint8_t error_count = 0;
   auto rc = true;

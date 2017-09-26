@@ -34,10 +34,10 @@
 #include <TimeLib.h>
 #include <elapsedMillis.h>
 
-#include "ds_dev.hpp"
-#include "mcr_cmd.hpp"
+#include "../devs/ds_dev.hpp"
+#include "../protocols/mcr_mqtt.hpp"
+#include "../types/mcr_cmd.hpp"
 #include "mcr_engine.hpp"
-#include "mcr_mqtt.hpp"
 
 #define mcr_ds_version_1 1
 
@@ -76,10 +76,10 @@ private:
 
   void setCmdAck(mcrCmd_t &cmd) {
     mcrDevID_t &dev_id = cmd.dev_id();
-    dsDev_t *dev = NULL;
+    dsDev_t *dev = nullptr;
 
     dev = (dsDev_t *)mcrEngine::getDevice(dev_id);
-    if (dev != NULL) {
+    if (dev != nullptr) {
       dev->setReadingCmdAck(cmd.latency(), cmd.cid());
     }
   }
@@ -114,7 +114,7 @@ private:
 
   // specific methods to read devices
   bool readDS1820(dsDev *dev, Reading **reading);
-  bool readDS2408(dsDev *dev, Reading **reading = NULL);
+  bool readDS2408(dsDev *dev, Reading **reading = nullptr);
   bool readDS2406(dsDev *dev, Reading **reading);
 
   bool setSwitch(mcrCmd &cmd);
@@ -143,6 +143,5 @@ private:
   static bool cmdCallback(JsonObject &root);
 };
 
-typedef class dsDev dsDev_t;
 #endif // __cplusplus
 #endif // mcr_ds_h

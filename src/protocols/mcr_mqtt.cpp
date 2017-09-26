@@ -26,12 +26,12 @@
 #include <WProgram.h>
 #endif
 
+#include "../misc/mcr_util.hpp"
 #include "mcr_mqtt.hpp"
-#include "mcr_util.hpp"
 
 static uint8_t cmd_callback_count = 0;
-static cmdCallback_t cmd_callback[10] = {NULL};
-static boolean debugMode = false;
+static cmdCallback_t cmd_callback[10] = {nullptr};
+static bool debugMode = false;
 
 mcrMQTT::mcrMQTT() {
   this->mqtt = PubSubClient();
@@ -47,9 +47,9 @@ mcrMQTT::mcrMQTT(Client &client, IPAddress broker, uint16_t port) {
   mqtt.setClient(client);
 }
 
-boolean mcrMQTT::loop(boolean fullreport) {
+bool mcrMQTT::loop(bool fullreport) {
   elapsedMillis duration;
-  boolean rc;
+  bool rc;
 
   rc = loop();
 
@@ -71,9 +71,9 @@ boolean mcrMQTT::loop(boolean fullreport) {
   return rc;
 }
 
-boolean mcrMQTT::loop() {
+bool mcrMQTT::loop() {
   elapsedMillis timeslice;
-  boolean rc = 0;
+  bool rc = 0;
 
   // safety mechanism to all loop() to be called as frequently as desired
   // without creating unnecessary load
@@ -112,10 +112,10 @@ void mcrMQTT::announceStartup() {
 void mcrMQTT::publish(Reading *reading) {
   elapsedMicros eus;
 
-  if (reading == NULL) {
+  if (reading == nullptr) {
     Serial.print("    ");
     Serial.print(__PRETTY_FUNCTION__);
-    Serial.print(" invoked with reading == NULL\n\r");
+    Serial.print(" invoked with reading == nullptr\n\r");
     return;
   }
 
@@ -146,7 +146,7 @@ void mcrMQTT::publish(Reading *reading) {
   debug("\r\n");
 }
 
-boolean mcrMQTT::connect() {
+bool mcrMQTT::connect() {
   int rc;
 
   if (!mqtt.connected()) {
@@ -310,7 +310,7 @@ bool mcrMQTT::handleSetSwitchCmd(JsonObject &root) {
 
 remoteCommand_t mcrMQTT::parseCmd(JsonObject &root) {
   const char *cmd = root["cmd"];
-  if (cmd == NULL) {
+  if (cmd == nullptr) {
     return NONE;
   }
 
@@ -326,7 +326,7 @@ remoteCommand_t mcrMQTT::parseCmd(JsonObject &root) {
   return UNKNOWN;
 }
 
-void mcrMQTT::setDebug(boolean mode) { debugMode = mode; }
+void mcrMQTT::setDebug(bool mode) { debugMode = mode; }
 void mcrMQTT::debugOn() { setDebug(true); }
 void mcrMQTT::debugOff() { setDebug(false); }
 void mcrMQTT::debug(const char *msg) {

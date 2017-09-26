@@ -31,7 +31,7 @@
 
 #include <TimeLib.h>
 
-#include "mcr_dev.hpp"
+#include "../devs/mcr_dev.hpp"
 
 typedef class mcrCmd mcrCmd_t;
 
@@ -48,7 +48,8 @@ private:
 public:
   mcrCmd() {}
 
-  mcrCmd(mcrDevID_t &id, uint8_t mask, uint8_t state, const char *cid = NULL) {
+  mcrCmd(mcrDevID_t &id, uint8_t mask, uint8_t state,
+         const char *cid = nullptr) {
     _dev_id = id;
     _mask = mask;
     _state = state;

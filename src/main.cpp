@@ -6,10 +6,10 @@
 // #include <Adafruit_SleepyDog.h>
 #include <ArduinoJson.h>
 
-#include "mcr_ds.hpp"
-#include "mcr_i2c.hpp"
-#include "mcr_mqtt.hpp"
-#include "mcr_util.hpp"
+#include "engines/mcr_ds.hpp"
+#include "engines/mcr_i2c.hpp"
+#include "misc/mcr_util.hpp"
+#include "protocols/mcr_mqtt.hpp"
 
 // boards 32u4, M0, and 328p
 #define LED 13
@@ -55,9 +55,9 @@ IPAddress broker(108, 35, 196, 234);
 IPAddress broker(192, 168, 2, 4);
 #endif
 
-mcrMQTT_t *mqtt = NULL;
-mcrDS_t *ds = NULL;
-mcrI2c_t *i2c = NULL;
+mcrMQTT_t *mqtt = nullptr;
+mcrDS_t *ds = nullptr;
+mcrI2c_t *i2c = nullptr;
 
 int debugMode = 0;
 

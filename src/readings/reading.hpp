@@ -22,7 +22,6 @@
 #define reading_h
 
 #ifdef __cplusplus
-
 #if ARDUINO >= 100
 #include <Arduino.h>
 #else
@@ -34,10 +33,9 @@
 #include <WiFi101.h>
 #include <elapsedMillis.h>
 
-#include "dev_id.hpp"
+#include "../devs/dev_id.hpp"
 
 typedef class Reading Reading_t;
-
 class Reading {
 private:
   // defines which values are populated
@@ -45,8 +43,8 @@ private:
 
   // id and metadata for the reading
   mcrDevID_t _id;
-  time_t _mtime;
-  reading_t _type;
+  time_t _mtime = now();
+  reading_t _type = UNDEF;
 
   // actual reading data
   float _celsius;
@@ -60,19 +58,21 @@ private:
   char _cid[39] = {0x00};
 
   void jsonCommon(JsonObject &root);
+
+  virtual void populateJSON(JsonObject &root){};
   const char *typeAsString();
 
 public:
-  // undefined reading
-  Reading() {
-    _mtime = now();
-    _type = UNDEF;
-  }
+  // default constructor, Reading type undefined
+  Reading() {}
+  virtual ~Reading(){};
+
   Reading(mcrDevID_t &id) {
     _id = id;
     _mtime = now();
     _type = UNDEF;
   }
+
   Reading(mcrDevID_t &id, time_t mtime) {
     _id = id;
     _mtime = mtime;

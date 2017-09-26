@@ -36,7 +36,7 @@
 #include <WiFi101.h>
 #include <elapsedMillis.h>
 
-#include "reading.hpp"
+#include "../readings/reading.hpp"
 
 #define mcr_mqtt_version_1 1
 
@@ -76,12 +76,12 @@ public:
   mcrMQTT();
   mcrMQTT(Client &client, IPAddress broker, uint16_t port);
 
-  boolean connect();
-  boolean loop();
-  boolean loop(boolean fullreport);
+  bool connect();
+  bool loop();
+  bool loop(bool fullreport);
 
   void announceStartup();
-  void publish(Reading *reading);
+  void publish(Reading_t *reading);
 
   static void registerCmdCallback(cmdCallback_t cmdCallback);
 
@@ -98,7 +98,7 @@ private:
   static bool handleTimeSyncCmd(JsonObject &root);
   static bool handleSetSwitchCmd(JsonObject &root);
 
-  static void setDebug(boolean mode);
+  static void setDebug(bool mode);
   static void debugOn();
   static void debugOff();
   static void debug(const char *msg);

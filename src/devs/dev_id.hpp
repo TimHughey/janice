@@ -65,6 +65,7 @@ public:
     return rc;
   };
 
+  // copy constructor
   mcrDevID_t &operator=(mcrDevID_t dev_id) {
     _id[0] = 0x00;
     strncat(_id, dev_id._id, _max_len);
@@ -76,7 +77,7 @@ public:
     return *this;
   };
 
-  char *asString() { return _id; }
+  const char *asString() { return _id; }
 
   static const int max_id_len = _max_len;
 

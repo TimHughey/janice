@@ -30,10 +30,10 @@
 #include <OneWire.h>
 #include <cppQueue.h>
 
-#include "mcr_cmd.hpp"
+#include "../readings/reading.hpp"
+#include "../types/mcr_cmd.hpp"
 #include "mcr_ds.hpp"
 #include "mcr_engine.hpp"
-#include "reading.hpp"
 
 // this must be a global (at least to this file) due to the MQTT callback
 // static.  i really don't like this.  TODO fix MQTT library
@@ -103,8 +103,8 @@ bool mcrDS::discover() {
 
 bool mcrDS::report() {
   bool rc = true;
-  mcrDev_t *next_dev = NULL;
-  dsDev_t *dev = NULL;
+  mcrDev_t *next_dev = nullptr;
+  dsDev_t *dev = nullptr;
 
   if (needReport()) {
     if (isIdle()) {
@@ -117,14 +117,14 @@ bool mcrDS::report() {
     dev = (dsDev_t *)next_dev;
 
     if (isReportActive()) {
-      if (dev != NULL) {
+      if (dev != nullptr) {
         rc = readDevice(dev->id());
 
         if (rc)
           publishDevice(dev);
       }
 
-      if (dev == NULL) {
+      if (dev == nullptr) {
         idle(__PRETTY_FUNCTION__);
       }
     }
@@ -135,9 +135,9 @@ bool mcrDS::report() {
 
 bool mcrDS::readDevice(dsDev_t *dev) {
   auto rc = true;
-  Reading *reading = NULL;
+  Reading_t *reading = nullptr;
 
-  if ((dev == NULL) || (dev->isNotValid())) {
+  if ((dev == nullptr) || (dev->isNotValid())) {
     printInvalidDev(dev);
     return false;
   }
@@ -169,7 +169,7 @@ bool mcrDS::publishDevice(dsDev_t *dev) {
 
   Reading_t *reading = dev->reading();
 
-  if (reading != NULL) {
+  if (reading != nullptr) {
     publish(reading);
   }
   return rc;
@@ -190,15 +190,14 @@ bool mcrDS::convert() {
     // start a temperature conversion if one isn't already in-progress
     // TODO only handles powered devices as of 2017-09-11
     if (isIdle()) {
-      // tempDebugOn();
-
       ds->reset();
       ds->skip();         // address all devices
       ds->write(0x44, 1); // start conversion
       delay(1);           // give the sensors an opportunity to start conversion
-      printStartConvert(__PRETTY_FUNCTION__);
+      if (debugMode)
+        printStartConvert(__PRETTY_FUNCTION__);
+
       startConvert();
-      // tempDebugOff();
     }
 
     // bus is held low during temp convert
@@ -206,15 +205,11 @@ bool mcrDS::convert() {
     if (isConvertActive() && (ds->read_bit() > 0x00)) {
       idle(__PRETTY_FUNCTION__);
 
-      // tempDebugOn();
       printStopConvert(__PRETTY_FUNCTION__);
-      // tempDebugOff();
     } else if (convertTimeout()) {
       idle(__PRETTY_FUNCTION__);
 
-      // tempDebugOn();
       printStopConvert(__PRETTY_FUNCTION__);
-      // tempDebugOff();
     }
   }
   return rc;
@@ -271,7 +266,7 @@ bool mcrDS::handleCmdAck(mcrCmd_t &cmd) {
 }
 
 // specific device scratchpad methods
-bool mcrDS::readDS1820(dsDev *dev, Reading **reading) {
+bool mcrDS::readDS1820(dsDev *dev, Reading_t **reading) {
   byte data[9];
   bool type_s = false;
   bool rc = true;
@@ -422,7 +417,7 @@ bool mcrDS::readDS2406(dsDev *dev, Reading **reading) {
   return rc;
 }
 
-bool mcrDS::readDS2408(dsDev *dev, Reading **reading) {
+bool mcrDS::readDS2408(dsDev *dev, Reading_t **reading) {
   bool rc = true;
   // byte data[12]
 
@@ -472,7 +467,7 @@ bool mcrDS::readDS2408(dsDev *dev, Reading **reading) {
     Serial.println("good");
 #endif
 
-    if (reading != NULL) {
+    if (reading != nullptr) {
       *reading = new Reading(dev->id(), now(), positions, (uint8_t)8);
     }
   } else {
@@ -491,7 +486,7 @@ bool mcrDS::setSwitch(mcrCmd_t &cmd) {
   // mcrDevID id = cmd.name();
   dsDev_t *dev = (dsDev_t *)getDevice(cmd);
 
-  if (dev == NULL) {
+  if (dev == nullptr) {
     return false;
   }
 
@@ -509,7 +504,7 @@ bool mcrDS::setDS2406(mcrCmd_t &cmd) {
   // mcrDevID id = cmd.name();
   dsDev_t *dev = (dsDev_t *)getDevice(cmd);
 
-  if (dev == NULL) {
+  if (dev == nullptr) {
     return false;
   }
 
@@ -518,7 +513,7 @@ bool mcrDS::setDS2406(mcrCmd_t &cmd) {
     return false;
   };
 
-  Reading *reading = dev->reading();
+  Reading_t *reading = dev->reading();
   uint8_t mask = cmd.mask();
   uint8_t tobe_state = cmd.state();
   uint8_t asis_state = reading->state();
@@ -571,7 +566,7 @@ bool mcrDS::setDS2408(mcrCmd &cmd) {
   // mcrDevID id = cmd.name();
   dsDev_t *dev = (dsDev_t *)getDevice(cmd);
 
-  if (dev == NULL) {
+  if (dev == nullptr) {
     return false;
   }
 
@@ -580,7 +575,7 @@ bool mcrDS::setDS2408(mcrCmd &cmd) {
     return false;
   };
 
-  Reading *reading = dev->reading();
+  Reading_t *reading = dev->reading();
 
   uint8_t mask = cmd.mask();
   uint8_t tobe_state = 0x00;

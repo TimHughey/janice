@@ -31,13 +31,13 @@
 
 #include <Wire.h>
 
-#include "dev_addr.hpp"
-#include "dev_id.hpp"
-#include "i2c_dev.hpp"
+#include "../devs/dev_addr.hpp"
+#include "../devs/dev_id.hpp"
+#include "../devs/i2c_dev.hpp"
+#include "../misc/mcr_util.hpp"
+#include "../protocols/mcr_mqtt.hpp"
+#include "../readings/reading.hpp"
 #include "mcr_engine.hpp"
-#include "mcr_mqtt.hpp"
-#include "mcr_util.hpp"
-#include "reading.hpp"
 
 #define mcr_i2c_version_1 1
 
@@ -56,7 +56,7 @@ private:
   bool _use_multiplexer = false;
 
 public:
-  mcrI2c(mcrMQTT *mqtt);
+  mcrI2c(mcrMQTT_t *mqtt);
   bool init();
 
 private:

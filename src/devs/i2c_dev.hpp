@@ -29,9 +29,9 @@
 #include <WProgram.h>
 #endif
 
+#include "../misc/mcr_util.hpp"
+#include "../readings/reading.hpp"
 #include "mcr_dev.hpp"
-#include "mcr_util.hpp"
-#include "reading.hpp"
 
 typedef class i2cDev i2cDev_t;
 

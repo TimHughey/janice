@@ -22,16 +22,15 @@
 #define mcrDev_h
 
 #ifdef __cplusplus
-
 #if ARDUINO >= 100
 #include <Arduino.h>
 #else
 #include <WProgram.h>
 #endif
 
+#include "../readings/reading.hpp"
 #include "dev_addr.hpp"
 #include "dev_id.hpp"
-#include "reading.hpp"
 
 typedef class mcrDev mcrDev_t;
 class mcrDev {
@@ -56,6 +55,10 @@ protected:
   time_t _write_ms = 0;
 
   time_t _read_timestamp = 0;
+
+  bool debugMode = false;
+  bool infoMode = false;
+  bool warningMode = false;
 
 public:
   mcrDev() {} // all values are defaulted in definition of class(es)

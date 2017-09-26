@@ -33,7 +33,7 @@
 #include <WiFi101.h>
 #include <elapsedMillis.h>
 
-#include "mcr_cmd.hpp"
+#include "../types/mcr_cmd.hpp"
 
 extern "C" char *sbrk(int i);
 
@@ -142,7 +142,7 @@ public:
     Serial.print(" ");
   }
 
-  static void printNet(const char *func = NULL) {
+  static void printNet(const char *func = nullptr) {
     if (func)
       printDateTime(func);
     else
@@ -185,7 +185,7 @@ public:
     Serial.println(mcrUtil::macAddress());
   }
 
-  static void printFreeMem(const char *func = NULL, uint8_t secs = 15) {
+  static void printFreeMem(const char *func = nullptr, uint8_t secs = 15) {
     static int first_free = 0;
     static int prev_free = 0;
     static elapsedMillis freeMemReport;

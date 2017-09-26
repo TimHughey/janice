@@ -26,8 +26,8 @@
 
 #include <ArduinoJson.h>
 
-#include "mcr_util.hpp"
-#include "reading.hpp"
+#include "../misc/mcr_util.hpp"
+#include "../readings/reading.hpp"
 
 #define VERSION ((uint8_t)1)
 
@@ -143,27 +143,9 @@ char *Reading::json() {
 }
 
 const char *Reading::typeAsString() {
-  static const char _s1[] = "undef";
-  static const char _s2[] = "temp";
-  static const char _s3[] = "relh";
-  static const char _s4[] = "switch";
-  static const char _s5[] = "soil";
-  static const char _s6[] = "ph";
+  // NOTE:  these descriptions must be ordered that same as the enum
+  static const char s[][7] = {"undef", "temp", "relh", "switch",
+                              "soil",  "ph",   "oob"};
 
-  switch (_type) {
-  case UNDEF:
-    return _s1;
-  case TEMP:
-    return _s2;
-  case RH:
-    return _s3;
-  case SWITCH:
-    return _s4;
-  case SOIL:
-    return _s5;
-  case PH:
-    return _s6;
-  }
-
-  return _s1;
+  return s[_type];
 }

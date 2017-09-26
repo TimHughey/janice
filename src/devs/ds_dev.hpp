@@ -31,9 +31,9 @@
 
 #include <OneWire.h>
 
+#include "../misc/mcr_util.hpp"
+#include "../readings/reading.hpp"
 #include "mcr_dev.hpp"
-#include "mcr_util.hpp"
-#include "reading.hpp"
 
 typedef class dsDev dsDev_t;
 
@@ -105,8 +105,8 @@ public:
   uint8_t family() { return firstAddressByte(); };
   uint8_t crc() { return addr()[_crc_byte]; };
   boolean isPowered() { return _power; };
-  void setReadingCmdAck(time_t latency, const char *cid = NULL) {
-    if (_reading != NULL) {
+  void setReadingCmdAck(time_t latency, const char *cid = nullptr) {
+    if (_reading != nullptr) {
       _reading->setCmdAck(latency, cid);
     }
   }

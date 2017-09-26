@@ -34,11 +34,11 @@
 #include <cppQueue.h>
 #include <elapsedMillis.h>
 
-#include "mcr_cmd.hpp"
-#include "mcr_dev.hpp"
-#include "mcr_mqtt.hpp"
-#include "mcr_type.hpp"
-#include "mcr_util.hpp"
+#include "../devs/mcr_dev.hpp"
+#include "../misc/mcr_util.hpp"
+#include "../protocols/mcr_mqtt.hpp"
+#include "../types/mcr_cmd.hpp"
+#include "../types/mcr_type.hpp"
 
 #define mcr_engine_version_1 1
 
@@ -63,7 +63,7 @@ private:
   mcrEngineState_t _state = IDLE;
   mcrDev_t *_known_devs[MAX_DEVICES_PER_ENGINE] = {0x00};
   uint16_t _dev_count = 0;
-  Queue *_pending_ack_q = NULL;
+  Queue *_pending_ack_q = nullptr;
   bool _savedDebugMode = false;
   uint8_t _next_known_index = 0;
 
@@ -108,8 +108,8 @@ public:
 
   // functions for handling known devices
   mcrDev_t *findDevice(mcrDev_t &dev) {
-    mcrDev_t *found_dev = NULL;
-    for (uint8_t i = 0; ((i < maxDevices()) && (found_dev == NULL)); i++) {
+    mcrDev_t *found_dev = nullptr;
+    for (uint8_t i = 0; ((i < maxDevices()) && (found_dev == nullptr)); i++) {
       if (dev == _known_devs[i]) {
         found_dev = _known_devs[i];
       }
@@ -138,13 +138,13 @@ public:
 
   bool forgetDevice(mcrDev_t &dev) {
     auto rc = true;
-    mcrDev_t *found_dev = NULL;
+    mcrDev_t *found_dev = nullptr;
 
-    for (uint8_t i = 0; ((i < maxDevices()) && (found_dev == NULL)); i++) {
+    for (uint8_t i = 0; ((i < maxDevices()) && (found_dev == nullptr)); i++) {
       if (_known_devs[i] && dev == _known_devs[i]) {
         found_dev = _known_devs[i];
         delete found_dev;
-        _known_devs[i] = NULL;
+        _known_devs[i] = nullptr;
       }
     }
 
@@ -158,11 +158,11 @@ public:
   }
 
   mcrDev_t *getNextKnownDevice() {
-    mcrDev_t *found_dev = NULL;
+    mcrDev_t *found_dev = nullptr;
 
-    for (; ((_next_known_index < maxDevices()) && (found_dev == NULL));
+    for (; ((_next_known_index < maxDevices()) && (found_dev == nullptr));
          _next_known_index++) {
-      if (_known_devs[_next_known_index] != NULL) {
+      if (_known_devs[_next_known_index] != nullptr) {
         found_dev = _known_devs[_next_known_index];
         _next_known_index += 1;
       }
@@ -172,9 +172,9 @@ public:
   }
 
   mcrDev_t *getDevice(mcrDevAddr_t &addr) {
-    mcrDev_t *found_dev = NULL;
+    mcrDev_t *found_dev = nullptr;
 
-    for (uint8_t i = 0; ((i < maxDevices()) && (found_dev == NULL)); i++) {
+    for (uint8_t i = 0; ((i < maxDevices()) && (found_dev == nullptr)); i++) {
       if (_known_devs[i] && (addr == _known_devs[i]->addr())) {
         found_dev = _known_devs[i];
       }
@@ -184,14 +184,14 @@ public:
   }
 
   mcrDev_t *getDevice(mcrDevID_t &id) {
-    mcrDev_t *found_dev = NULL;
+    mcrDev_t *found_dev = nullptr;
 
     // if (debugMode) {
     //  logDateTime(__PRETTY_FUNCTION__);
     //  log("searching: ");
     //  }
 
-    for (uint8_t i = 0; ((i < maxDevices()) && (found_dev == NULL)); i++) {
+    for (uint8_t i = 0; ((i < maxDevices()) && (found_dev == nullptr)); i++) {
       //  log(i);
       //  log(" ");
       if (_known_devs[i] && (id == _known_devs[i]->id())) {
@@ -206,9 +206,10 @@ public:
   }
 
   // mcrDev_t *getDevice(mcrCmd_t &cmd) {
-  //   mcrDev_t *found_dev = NULL;
+  //   mcrDev_t *found_dev = nullptr;
   //
-  //   for (uint8_t i = 0; ((i < maxDevices()) && (found_dev == NULL)); i++) {
+  //   for (uint8_t i = 0; ((i < maxDevices()) && (found_dev == nullptr)); i++)
+  //   {
   //     if (cmd.dev_id() == _known_devs[i]->id()) {
   //       found_dev = _known_devs[i];
   //     }
@@ -228,21 +229,21 @@ public:
   virtual bool pendingCmd() { return false; }
 
   bool isCmdAckQueueEmpty() {
-    if (_pending_ack_q != NULL) {
+    if (_pending_ack_q != nullptr) {
       return _pending_ack_q->isEmpty();
     }
     return true;
   }
 
   bool pendingCmdAcks() {
-    if (_pending_ack_q == NULL)
+    if (_pending_ack_q == nullptr)
       return false;
 
     return (_pending_ack_q->nbRecs() > 0) ? true : false;
   };
 
   bool popPendingCmdAck(mcrCmd_t *cmd) {
-    if (_pending_ack_q == NULL)
+    if (_pending_ack_q == nullptr)
       return false;
     return _pending_ack_q->pop(cmd);
   }
@@ -256,17 +257,17 @@ public:
   }
 
   // public methods for managing state tracking time metrics
-  ulong lastDiscover() { return _last_discover; }
-  ulong lastConvert() { return _last_convert; }
-  ulong lastReport() { return _last_report; }
-  ulong lastAckCmd() { return _last_ackcmd; }
+  uint32_t lastDiscover() { return _last_discover; }
+  uint32_t lastConvert() { return _last_convert; }
+  uint32_t lastReport() { return _last_report; }
+  uint32_t lastAckCmd() { return _last_ackcmd; }
 
-  ulong lastDiscoverRunMS() { return _last_discover_ms; }
-  ulong lastConvertRunMS() { return _last_convert_ms; }
-  ulong lastReportRunMS() { return _last_report_ms; }
-  ulong lastAckCmdMS() { return _last_ackcmd_ms; }
+  uint32_t lastDiscoverRunMS() { return _last_discover_ms; }
+  uint32_t lastConvertRunMS() { return _last_convert_ms; }
+  uint32_t lastReportRunMS() { return _last_report_ms; }
+  uint32_t lastAckCmdMS() { return _last_ackcmd_ms; }
 
-  void printStartDiscover(const char *func_name = NULL, uint8_t indent = 2) {
+  void printStartDiscover(const char *func_name = nullptr, uint8_t indent = 2) {
     logDateTime(func_name);
 
     log("started, ");
@@ -274,7 +275,7 @@ public:
     log(" since last discover", true);
   }
 
-  void printStopDiscover(const char *func_name = NULL, uint8_t indent = 2) {
+  void printStopDiscover(const char *func_name = nullptr, uint8_t indent = 2) {
     logDateTime(func_name);
 
     if (devCount() == 0)
@@ -286,7 +287,7 @@ public:
     logElapsed(lastDiscoverRunMS(), true);
   }
 
-  void printStartConvert(const char *func_name = NULL, uint8_t indent = 2) {
+  void printStartConvert(const char *func_name = nullptr, uint8_t indent = 2) {
     logDateTime(func_name);
 
     log("started, ");
@@ -294,7 +295,7 @@ public:
     log(" ms since last convert", true);
   }
 
-  void printStopConvert(const char *func_name = NULL, uint8_t indent = 2) {
+  void printStopConvert(const char *func_name = nullptr, uint8_t indent = 2) {
     logDateTime(func_name);
 
     if (convertTimeout())
@@ -312,6 +313,8 @@ public:
 
 protected:
   bool debugMode = false;
+  bool infoMode = false;
+  bool noticeMode = false;
 
   virtual bool discover();
   virtual bool convert();
@@ -327,7 +330,7 @@ protected:
     }
     return rc;
   }
-  void idle(const char *func = NULL);
+  void idle(const char *func = nullptr);
 
   // subclasses should override these functions and do something useful
   virtual bool handleCmd() { return true; }

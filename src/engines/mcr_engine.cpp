@@ -26,9 +26,9 @@
 
 #include <OneWire.h>
 
-#include "mcr_cmd.hpp"
+#include "../readings/reading.hpp"
+#include "../types/mcr_cmd.hpp"
 #include "mcr_engine.hpp"
-#include "reading.hpp"
 
 mcrEngine::mcrEngine(mcrMQTT *mqtt) {
 
@@ -50,7 +50,7 @@ bool mcrEngine::init() {
 
   _pending_ack_q = new Queue(sizeof(mcrCmd_t), 10, FIFO);
 
-  if (_pending_ack_q == NULL) {
+  if (_pending_ack_q == nullptr) {
     rc = false;
   }
 
@@ -108,7 +108,7 @@ bool mcrEngine::discover() {
 }
 
 bool mcrEngine::report() {
-  boolean rc = true;
+  bool rc = true;
 
   if (needReport()) {
     if (isIdle())
@@ -131,7 +131,7 @@ bool mcrEngine::report() {
 //     do a single check to determine if conversion is finished
 
 bool mcrEngine::convert() {
-  boolean rc = true;
+  bool rc = true;
 
   if (needConvert()) {
     // start a temperature conversion if one isn't already in-progress
