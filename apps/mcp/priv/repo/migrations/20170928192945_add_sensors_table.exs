@@ -13,9 +13,9 @@ defmodule Mcp.Repo.Migrations.AddSensorsTable do
       timestamps
     end
     create_if_not_exists index(:sensors, [:name], unique: true)
-    execute("create sequence"
-              "if not exists"
-              "dev_alias_seq"
-              " minvalue 1 start with 1")
+    execute("create sequence "
+              "if not exists "
+              "dev_alias_seq "
+              "minvalue 1 start with 1")
   end
 end
