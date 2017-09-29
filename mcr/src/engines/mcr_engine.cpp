@@ -34,8 +34,6 @@
 mcrEngine::mcrEngine(mcrMQTT *mqtt) {
 
   _mqtt = mqtt;
-  // debugMode = true;
-
   // setting  to the discover interval will
   // prevent a delay for first discovery cycle at startup
   _last_discover = _discover_interval_ms;
@@ -45,8 +43,8 @@ mcrEngine::mcrEngine(mcrMQTT *mqtt) {
   _dev_count = 0;
   _state = IDLE;
 
-  memset(_known_devs, 0x00,
-         sizeof(MAX_DEVICES_PER_ENGINE) * sizeof(mcrDev_t *));
+  // memset(_known_devs, 0x00,
+  //       sizeof(MAX_DEVICES_PER_ENGINE) * sizeof(mcrDev_t *));
 }
 
 const uint16_t mcrEngine::maxDevices() { return MAX_DEVICES_PER_ENGINE; };
@@ -317,6 +315,8 @@ bool mcrEngine::addDevice(mcrDev_t *dev) {
         log(" at slot ");
         log(i, true);
       }
+
+      dev->justSeen();
       _known_devs[i] = dev;
       _dev_count += 1;
       rc = true;
@@ -330,32 +330,6 @@ bool mcrEngine::addDevice(mcrDev_t *dev) {
 
   return rc;
 }
-
-// bool mcrEngine::knowDevice(mcrDev_t *dev) {
-//   if (debugMode) {
-//     logDateTime(__PRETTY_FUNCTION__);
-//     log("searching for device ");
-//     log(dev->id(), true);
-//   }
-//
-//   bool rc = true;
-//   mcrDev_t *found_dev;
-//   found_dev = findDevice(dev);
-//
-//   if (found_dev) { // if we already know this device then flag it as seen
-//     found_dev->justSeen();
-//   } else {
-//     if (devCount() < maxDevices()) {             // make sure we have a slot
-//       _known_devs[devCount()] = new mcrDev(dev); // create (copy) device
-//       _dev_count += 1;
-//     } else { // log a warning if no slots available
-//       logDateTime(__PRETTY_FUNCTION__);
-//       log("[WARNING] attempt to exceed supported max devices", true);
-//       rc = false;
-//     }
-//   }
-//   return rc;
-// }
 
 bool mcrEngine::forgetDevice(mcrDev_t &dev) {
   auto rc = true;

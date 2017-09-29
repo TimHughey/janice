@@ -74,18 +74,17 @@ bool mcrMQTT::loop(bool fullreport) {
 
 bool mcrMQTT::loop() {
   elapsedMillis timeslice;
-  bool rc = 0;
+  bool rc = false;
 
   // safety mechanism to all loop() to be called as frequently as desired
   // without creating unnecessary load
-  if (lastLoop < _min_loop_ms) {
-    return true;
-  }
+  // if (lastLoop < _min_loop_ms) {
+  //  return true;
+  //}
 
-  while (timeslice < _timeslice_ms) {
-    if (connect() == 1) {
-      rc = mqtt.loop();
-    }
+  // while (timeslice < _timeslice_ms) {
+  if (connect() == 1) {
+    rc = mqtt.loop();
   }
 
   lastLoop = 0;
@@ -96,6 +95,7 @@ void mcrMQTT::announceStartup() {
   const int json_buffer_max = 256;
   const int json_max = 384;
 
+  // since this is a one-time only action let's use dynamic memory
   DynamicJsonBuffer jsonBuffer(json_buffer_max);
   char *buffer = new char[json_max];
 

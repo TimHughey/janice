@@ -46,6 +46,7 @@ protected:
   char _desc[_desc_len] = {0x00}; // desciption of the device
   Reading_t *_reading = NULL;
 
+  time_t _created_mtime = now();
   time_t _last_seen = 0; // mtime of last time this device was discovered
 
   elapsedMillis _read_elapsed;
@@ -92,6 +93,8 @@ public:
   time_t stopRead();
   time_t readMS();
   time_t readTimestamp();
+  time_t timeCreated();
+  time_t secondsSinceLastSeen();
 
   void startWrite();
   time_t stopWrite();

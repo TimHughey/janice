@@ -93,6 +93,8 @@ time_t mcrDev::stopRead() {
 }
 time_t mcrDev::readMS() { return _read_ms; }
 time_t mcrDev::readTimestamp() { return _read_timestamp; }
+time_t mcrDev::timeCreated() { return _created_mtime; }
+time_t mcrDev::secondsSinceLastSeen() { return (now() - _last_seen); }
 
 void mcrDev::startWrite() { _write_elapsed = 0; }
 time_t mcrDev::stopWrite() {
