@@ -26,8 +26,9 @@
 #include <WProgram.h>
 #endif
 
-#include "../misc/mcr_util.hpp"
-#include "mcr_mqtt.hpp"
+#include "../include/mcr_mqtt.hpp"
+#include "../include/mcr_util.hpp"
+#include "../include/readings.hpp"
 
 static uint8_t cmd_callback_count = 0;
 static cmdCallback_t cmd_callback[10] = {nullptr};
@@ -109,7 +110,7 @@ void mcrMQTT::announceStartup() {
   delete buffer;
 }
 
-void mcrMQTT::publish(Reading *reading) {
+void mcrMQTT::publish(Reading_t *reading) {
   elapsedMicros eus;
 
   if (reading == nullptr) {
@@ -201,11 +202,11 @@ char *mcrMQTT::clientId() {
 }
 
 void mcrMQTT::incomingMsg(char *topic, uint8_t *payload, unsigned int length) {
-  char msg[512];
+  static char msg[512] = {0x00};
   elapsedMicros callback_elapsed;
   StaticJsonBuffer<512> jsonBuffer;
 
-  memset(msg, 0x00, 512);
+  memset(msg, 0x00, sizeof(msg));
   memcpy(msg, (char *)payload, length);
 
   if (length == 0) {

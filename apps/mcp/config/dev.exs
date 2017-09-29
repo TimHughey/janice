@@ -15,16 +15,16 @@ max_seconds = 1
 auto_populate = :true
 i2c_sensor_mode = :simulate
 i2c_use_multiplexer = :false
-influx = %{db: "mcp_test", host: "jophiel.wisslanding.com:8086",
-           user: "mcp_test", pass: "mcp_test"}
+influx = %{db: "merc_test", host: "jophiel.wisslanding.com:8086",
+           user: "merc_test", pass: "merc_test"}
 
 config :distillery, no_warn_missing: [:elixir_make, :distillery]
 
 config :mcp, Mcp.Repo,
   adapter: Ecto.Adapters.Postgres,
-  database: "mcp_test",
-  username: "mcp_test",
-  password: System.get_env("MCP_DB_PASS_T"),
+  database: "merc_test",
+  username: "merc_test",
+  password: System.get_env("MERC_DB_PASS_T"),
   hostname: "gabriel.wisslanding.com"
 
 #
@@ -60,29 +60,6 @@ config :mcp,
         kickstart_wait_ms: 11,
         refresh_ms: 10_000},
 
-    Elixir.Mcp.Owfs =>
-      %{name: {scope, Mcp.Owfs},
-        run_node: run_node,
-        path: "/var/lib/owfs/mnt", sensor_regex: "ts_|hs_",
-        kickstart_wait_ms: 10,
-        call_timeout_ms: 5000,
-        temp_refresh_ms: 9_000,
-        write_max_retries: 5, write_retry_ms: 100},
-
-    Elixir.Mcp.Proxr =>
-      %{name: {scope, Mcp.Proxr},
-        run_node: run_node,
-        relay_dev: "/dev/ttyUSB0",
-        kickstart: false, kickstart_wait_ms: 1,
-        call_timeout_ms: 2000},
-
-    Elixir.Mcp.ProxrBoy =>
-      %{name: {scope, Mcp.ProxrBoy},
-        run_node: run_node,
-        call_timeout_ms: 1000,
-        kickstart: false, kickstart_wait_ms: 100,
-        refresh_ms: 500},
-
     Elixir.Mcp.Influx =>
       %{name: {:local, Mcp.Influx},
         run_node: run_node,
@@ -102,18 +79,4 @@ config :mcp,
 
     Elixir.Mcp.GenServerTest.Global =>
       %{name: {:global, Mcp.GenServerTest.Global},
-        doctor: :computer, yesterday: "tomorrow"},
-
-    Elixir.Mcp.I2cSensor =>
-      %{name: {scope, Mcp.I2cSensor},
-        run_node: run_node,
-        kickstart_wait_ms: 15,
-        mode: i2c_sensor_mode,
-        call_timeout_ms: 5000,
-        temp_refresh_ms: 10_000,
-        i2c_device: "i2c-1",
-        i2c_use_multiplexer: i2c_use_multiplexer,
-        sht: %{address: 0x44, wait_ms: 20, name: "i2c_sht"},
-        hih: %{address: 0x27, wait_ms: 100, name: "i2c_hih"},
-        am2315: %{address: 0x5c, wait_ms: 0, name: "i2c_am2315",
-                   failure_ms: 10, pwr_sw: "am2315_pwr", pwr_wait_ms: 2000}}}
+        doctor: :computer, yesterday: "tomorrow"}}

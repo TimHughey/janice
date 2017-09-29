@@ -6,10 +6,10 @@
 // #include <Adafruit_SleepyDog.h>
 #include <ArduinoJson.h>
 
-#include "engines/mcr_ds.hpp"
-#include "engines/mcr_i2c.hpp"
-#include "misc/mcr_util.hpp"
-#include "protocols/mcr_mqtt.hpp"
+#include "include/mcr_ds.hpp"
+#include "include/mcr_i2c.hpp"
+#include "include/mcr_mqtt.hpp"
+#include "include/mcr_util.hpp"
 
 // boards 32u4, M0, and 328p
 #define LED 13

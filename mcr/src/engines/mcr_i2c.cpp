@@ -34,9 +34,10 @@
 #include <WiFi101.h>
 #include <Wire.h>
 
-#include "../protocols/mcr_mqtt.hpp"
-#include "../readings/reading.hpp"
-#include "mcr_i2c.hpp"
+#include "../include/mcr_dev.hpp"
+#include "../include/mcr_i2c.hpp"
+#include "../include/mcr_mqtt.hpp"
+#include "../include/readings.hpp"
 
 mcrI2c::mcrI2c(mcrMQTT_t *mqtt) : mcrEngine(mqtt) {
   // power up the i2c devices
@@ -112,20 +113,20 @@ bool mcrI2c::report() {
     }
 
     dev = (i2cDev_t *)next_dev;
-    Reading_t *reading = nullptr;
+    humidityReading_t *humidity = nullptr;
 
     if (dev) {
       selectBus(dev->bus());
 
       switch (dev->devAddr()) {
       case 0x5C:
-        rc = readAM2315(dev, &reading);
-        dev->setReading(reading);
+        rc = readAM2315(dev, &humidity);
+        dev->setReading(humidity);
         break;
 
       case 0x44:
-        rc = readSHT31(dev, &reading);
-        dev->setReading(reading);
+        rc = readSHT31(dev, &humidity);
+        dev->setReading(humidity);
         break;
 
       default:
@@ -133,8 +134,8 @@ bool mcrI2c::report() {
         break;
       }
 
-      if (reading != nullptr) {
-        publish(reading);
+      if (humidity != nullptr) {
+        publish(humidity);
       }
     }
 
@@ -146,7 +147,7 @@ bool mcrI2c::report() {
   return rc;
 }
 
-bool mcrI2c::readAM2315(i2cDev_t *dev, Reading **reading) {
+bool mcrI2c::readAM2315(i2cDev_t *dev, humidityReading_t **reading) {
   elapsedMillis read_elapsed;
   static uint8_t error_count = 0;
   auto rc = true;
@@ -246,7 +247,7 @@ bool mcrI2c::readAM2315(i2cDev_t *dev, Reading **reading) {
     Serial.println(msg);
 #endif
 
-    *reading = new Reading(dev->id(), dev->readTimestamp(), tc, rh);
+    *reading = new humidityReading(dev->id(), dev->readTimestamp(), tc, rh);
     error_count = 0;
   } else { // crc did not match
     error_count += 1;
@@ -263,7 +264,7 @@ bool mcrI2c::readAM2315(i2cDev_t *dev, Reading **reading) {
   return rc;
 }
 
-bool mcrI2c::readSHT31(i2cDev_t *dev, Reading **reading) {
+bool mcrI2c::readSHT31(i2cDev_t *dev, humidityReading_t **reading) {
   elapsedMillis read_elapsed;
   static uint8_t error_count = 0;
   auto rc = true;
@@ -353,7 +354,7 @@ bool mcrI2c::readSHT31(i2cDev_t *dev, Reading **reading) {
     Serial.println(msg);
 #endif
 
-    *reading = new Reading(dev->id(), dev->readTimestamp(), tc, rh);
+    *reading = new humidityReading(dev->id(), dev->readTimestamp(), tc, rh);
 
     error_count = 0;
   } else { // crc did not match
@@ -434,4 +435,52 @@ bool mcrI2c::detectDev(mcrDevAddr_t &addr, bool use_multiplexer, uint8_t bus) {
   }
 
   return rc;
+}
+
+// utility methods
+
+bool mcrI2c::detectMultiplexer() {
+  _use_multiplexer = false;
+
+  if (debugMode) {
+    logDateTime(__PRETTY_FUNCTION__);
+    log("detecting TCA9514B i2c bus multiplexer...");
+  }
+  // let's see if there's a multiplexer available
+  mcrDevAddr_t multiplexer_dev(0x70);
+  if (detectDev(multiplexer_dev)) {
+    if (debugMode)
+      log(" found", true);
+
+    _use_multiplexer = true;
+  } else {
+    if (debugMode)
+      log(" not found");
+  }
+
+  return _use_multiplexer;
+}
+
+uint8_t mcrI2c::maxBuses() { return _max_buses; }
+bool mcrI2c::useMultiplexer() { return _use_multiplexer; }
+
+void mcrI2c::selectBus(uint8_t bus) {
+  if (useMultiplexer() && (bus < _max_buses)) {
+    Wire.beginTransmission(0x70);
+    Wire.write(0x01 << bus);
+    Wire.endTransmission(true);
+  }
+}
+
+void mcrI2c::printUnhandledDev(const char *func, i2cDev_t *dev) {
+  logDateTime(func);
+
+  log("unhandled dev addr: ");
+  log(dev->devAddr());
+  log(" desc: ");
+  log(dev->desc());
+  log(" use_multiplexer: ");
+  log(dev->useMultiplexer());
+  log(" bus: ");
+  log(dev->bus(), true);
 }

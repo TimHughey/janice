@@ -14,6 +14,8 @@ require 'json'
 require 'securerandom'
 require 'socket'
 
+require 'refIDTracker'
+
 # ---
 # Define MQTT config, mostly from the environment
 
@@ -65,6 +67,11 @@ CONNECT_INFO = {
 TOPIC = 'mcr/f/report'.freeze
 $stderr.puts "Connecting to #{MQTT_HOST} as #{MQTT_USER} for #{TOPIC}"
 
+def handleClientStartup
+  send_time_sync(client)
+  Time.new.to_i # return time for recording last publish time
+end
+
 def send_time_sync(client)
   t = Time.new
   time_str = "#{t.to_i} "
@@ -104,12 +111,13 @@ def human_us(usec)
   "#{val}#{unit}"
 end
 
+cmd_tracker = new CmdTracker
+
 MQTT::Client.connect(CONNECT_INFO).connect do |client|
   log = File.open('/tmp/merc.log', 'a+')
 
   client.subscribe(TOPIC => 2)
 
-  cmd_tracker = {}
   last_publish_time = Time.new
   last_heartbeat_time = Time.new
   last_led_flash = Time.new
@@ -135,74 +143,37 @@ MQTT::Client.connect(CONNECT_INFO).connect do |client|
         msg2 = ' '
 
         if datum.key?('startup')
-          send_time_sync(client)
-          last_publish_time = Time.new.to_i
+          last_publish_time = handleClientStartup(datum)
           msg2 += "startup=#{datum['startup']}"
         end
 
         if datum.key?('device')
-          time_diff = Time.new.to_i - datum['mtime'].to_i
+          # time_diff = Time.new.to_i - datum['mtime'].to_i
 
           # msg1 += "device=#{datum["device"]} type=#{datum["type"]} time_diff=#{time_diff}"
           msg1 += "#{datum['device']} #{datum['type']} "
 
           if datum.key?('cmdack')
+            ref_id = datum['refid']
+            rt_latency = cmd_tracker.untrack(ref_id)
             msg1 += "cmdack latency=#{human_us(datum['latency'])} "
-
-            # handle the returned UUID (cid) if it exists
-            if datum.key?('cid')
-              cid = datum['cid']
-              if cmd_tracker.key?(cid)
-                sent_mtime = cmd_tracker[cid]
-                cmd_tracker.delete(cid)
-                rt_latency = (Time.now - sent_mtime) * 1000
-                msg1 += "rt_latency=#{human_ms(rt_latency)}"
-              end
-            end
-          end
-
-          case datum['type']
-          when /temp/
-            msg2 += "tf=#{datum['tf']} tc=#{datum['tc']}"
-
-          when /switch/
-            pio = datum['pio']
-            msg2 += "pio=#{pio}"
-
-          when /relh/
-            msg2 += "tf=#{datum['tf']} tc=#{datum['tc']} rh=#{datum['rh']}"
-          end
-        end
-
-        case datum['type']
-        when /switch/
-          if datum.key?('cmdack')
-            $stderr.puts msg1
-            $stderr.puts "   #{msg2}"
-            $stderr.puts ' '
+            msg1 += "rt_latency=#{human_ms(rt_latency)}"
 
             log.puts msg1
             log.puts "   #{msg2}"
             log.puts ' '
             log.fsync
-
           end
+
+          msg2 = deviceLogMessage(datum)
+
         end
 
-      else
-        datum = data_str.split(',')
-
-        id = datum.shift
-        mtime = datum.shift
-
-        time_diff = Time.new.to_i - mtime.to_i
-        data_timestamp = time_diff.to_s
-
-        msg = "#{feed}: #{id} #{data_timestamp} "
-        msg += datum.map(&:to_f).keep_if { |x| x > 0.0 }.join(' ')
-
-        $stderr.puts msg
+        $stderr.puts msg1
+        $stderr.puts "   #{msg2}"
+        $stderr.puts ' '
       end
+
     else
       # $stderr.puts "#{TOPIC} queue empty, sleeping...."
       sleep(0.01)
@@ -250,7 +221,7 @@ MQTT::Client.connect(CONNECT_INFO).connect do |client|
         cid = SecureRandom.uuid
         hash = {
           version: '1', cmd: 'set.switch', mtime: led_flash.to_i.to_s, key: '0xAA',
-          switch: d, pio: [pio.to_s => s], pio_count: 1, cid: cid
+          switch: d, pio: [pio.to_s => s], pios: 1, refid: cid
         }
 
         json = JSON.generate(hash)

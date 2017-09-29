@@ -30,10 +30,10 @@
 #include <OneWire.h>
 #include <cppQueue.h>
 
-#include "../readings/reading.hpp"
-#include "../types/mcr_cmd.hpp"
-#include "mcr_ds.hpp"
-#include "mcr_engine.hpp"
+#include "../include/mcr_cmd.hpp"
+#include "../include/mcr_ds.hpp"
+#include "../include/mcr_engine.hpp"
+#include "../include/readings.hpp"
 
 // this must be a global (at least to this file) due to the MQTT callback
 // static.  i really don't like this.  TODO fix MQTT library
@@ -134,8 +134,9 @@ bool mcrDS::report() {
 }
 
 bool mcrDS::readDevice(dsDev_t *dev) {
+  celsiusReading_t *celsius = nullptr;
+  positionsReading_t *positions = nullptr;
   auto rc = true;
-  Reading_t *reading = nullptr;
 
   if ((dev == nullptr) || (dev->isNotValid())) {
     printInvalidDev(dev);
@@ -146,22 +147,33 @@ bool mcrDS::readDevice(dsDev_t *dev) {
   case 0x10: // DS1820 (temperature sensors)
   case 0x22:
   case 0x28:
-    rc = readDS1820(dev, &reading);
-    dev->setReading(reading);
+    rc = readDS1820(dev, &celsius);
+    dev->setReading(celsius);
     break;
 
   case 0x29: // DS2408 (8-channel switch)
-    rc = readDS2408(dev, &reading);
-    dev->setReading(reading);
+    rc = readDS2408(dev, &positions);
+    dev->setReading(positions);
     break;
 
   case 0x12: // DS2406 (2-channel switch with 1k EPROM)
-    rc = readDS2406(dev, &reading);
-    dev->setReading(reading);
+    rc = readDS2406(dev, &positions);
+    dev->setReading(positions);
     break;
   }
 
   return rc;
+}
+
+// publish a device
+bool mcrDS::publishDevice(mcrCmd_t &cmd) {
+  mcrDevID_t &dev_id = cmd.dev_id();
+
+  return publishDevice(dev_id);
+}
+
+bool mcrDS::publishDevice(mcrDevID_t &id) {
+  return publishDevice(getDevice(id));
 }
 
 bool mcrDS::publishDevice(dsDev_t *dev) {
@@ -252,7 +264,7 @@ bool mcrDS::handleCmdAck(mcrCmd_t &cmd) {
   if (debugMode) {
     logDateTime(__PRETTY_FUNCTION__);
     log("handling CmdAck for: ");
-    log(cmd, true);
+    cmd.printLog(true);
   }
 
   rc = readDevice(cmd);
@@ -265,8 +277,16 @@ bool mcrDS::handleCmdAck(mcrCmd_t &cmd) {
   return rc;
 }
 
+bool mcrDS::readDevice(mcrCmd_t &cmd) {
+  mcrDevID_t &dev_id = cmd.dev_id();
+
+  return readDevice(dev_id);
+}
+
+bool mcrDS::readDevice(mcrDevID_t &id) { return readDevice(getDevice(id)); }
+
 // specific device scratchpad methods
-bool mcrDS::readDS1820(dsDev *dev, Reading_t **reading) {
+bool mcrDS::readDS1820(dsDev *dev, celsiusReading_t **reading) {
   byte data[9];
   bool type_s = false;
   bool rc = true;
@@ -339,7 +359,7 @@ bool mcrDS::readDS1820(dsDev *dev, Reading_t **reading) {
     }
     float celsius = (float)raw / 16.0;
 
-    *reading = new Reading(dev->id(), lastConvertTimestamp(), celsius);
+    *reading = new celsiusReading(dev->id(), lastConvertTimestamp(), celsius);
   } else {
 
 #ifdef VERBOSE
@@ -352,7 +372,7 @@ bool mcrDS::readDS1820(dsDev *dev, Reading_t **reading) {
   return rc;
 }
 
-bool mcrDS::readDS2406(dsDev *dev, Reading **reading) {
+bool mcrDS::readDS2406(dsDev *dev, positionsReading_t **reading) {
   bool rc = true;
 
   if (ds->reset() == 0x00) {
@@ -406,7 +426,7 @@ bool mcrDS::readDS2406(dsDev *dev, Reading **reading) {
 #ifdef VERBOSE
     Serial.println("good");
 #endif
-    *reading = new Reading(dev->id(), now(), positions, (uint8_t)2);
+    *reading = new positionsReading(dev->id(), now(), positions, (uint8_t)2);
   } else {
 #ifdef VERBOSE
     Serial.println("bad");
@@ -417,7 +437,7 @@ bool mcrDS::readDS2406(dsDev *dev, Reading **reading) {
   return rc;
 }
 
-bool mcrDS::readDS2408(dsDev *dev, Reading_t **reading) {
+bool mcrDS::readDS2408(dsDev *dev, positionsReading_t **reading) {
   bool rc = true;
   // byte data[12]
 
@@ -468,7 +488,7 @@ bool mcrDS::readDS2408(dsDev *dev, Reading_t **reading) {
 #endif
 
     if (reading != nullptr) {
-      *reading = new Reading(dev->id(), now(), positions, (uint8_t)8);
+      *reading = new positionsReading(dev->id(), now(), positions, (uint8_t)8);
     }
   } else {
 #ifdef VERBOSE
@@ -513,7 +533,7 @@ bool mcrDS::setDS2406(mcrCmd_t &cmd) {
     return false;
   };
 
-  Reading_t *reading = dev->reading();
+  positionsReading_t *reading = (positionsReading_t *)dev->reading();
   uint8_t mask = cmd.mask();
   uint8_t tobe_state = cmd.state();
   uint8_t asis_state = reading->state();
@@ -575,7 +595,7 @@ bool mcrDS::setDS2408(mcrCmd &cmd) {
     return false;
   };
 
-  Reading_t *reading = dev->reading();
+  positionsReading_t *reading = (positionsReading_t *)dev->reading();
 
   uint8_t mask = cmd.mask();
   uint8_t tobe_state = 0x00;
@@ -630,7 +650,7 @@ bool mcrDS::cmdCallback(JsonObject &root) {
   // json format of pio state key/value pairs
   // {"pio":[{"1":false}]}
   const char *switch_id = root["switch"];
-  const char *cid = root["cid"];
+  mcrRefID_t refid = (const char *)root["refid"];
   mcrDevID_t sw(switch_id);
   const JsonVariant &variant = root.get<JsonVariant>("pio");
   const JsonArray &pio = variant.as<JsonArray>();
@@ -656,7 +676,7 @@ bool mcrDS::cmdCallback(JsonObject &root) {
       }
     }
   }
-  mcrCmd cmd(sw, mask, state, cid);
+  mcrCmd_t cmd(sw, mask, state, refid);
   cmd_queue.push(&cmd);
 #ifdef VERBOSE
   uint8_t pio_count = root["pio_count"];
@@ -670,4 +690,48 @@ bool mcrDS::cmdCallback(JsonObject &root) {
 #endif
 
   return true;
+}
+
+dsDev_t *mcrDS::getDevice(mcrDevID_t &id) {
+  mcrDev_t *dev = mcrEngine::getDevice(id);
+  return (dsDev_t *)dev;
+}
+
+dsDev_t *mcrDS::getDevice(mcrCmd_t &cmd) {
+  if (debugMode) {
+    logDateTime(__PRETTY_FUNCTION__);
+    log("looking for dev_id=");
+    log(cmd.dev_id(), true);
+  }
+
+  mcrDev_t *dev = mcrEngine::getDevice(cmd.dev_id());
+  return (dsDev_t *)dev;
+}
+
+void mcrDS::setCmdAck(mcrCmd_t &cmd) {
+  mcrDevID_t &dev_id = cmd.dev_id();
+  dsDev_t *dev = nullptr;
+
+  dev = (dsDev_t *)mcrEngine::getDevice(dev_id);
+  if (dev != nullptr) {
+    dev->setReadingCmdAck(cmd.latency(), cmd.refID());
+  }
+}
+
+void mcrDS::printInvalidDev(dsDev *dev) {
+  logDateTime(__PRETTY_FUNCTION__);
+  log("[WARNING] device ");
+  if (dev == NULL) {
+    log("is NULL", true);
+  } else {
+    log(dev->id());
+    log(" crc8 is ");
+    switch (dev->isValid()) {
+    case true:
+      log("valid", true);
+      break;
+    case false:
+      log("invalid", true);
+    }
+  }
 }

@@ -1,5 +1,5 @@
 /*
-    mcpr_mqtt.cpp - Readings used within Master Control Remote
+    reading.cpp - Readings used within Master Control Remote
     Copyright (C) 2017  Tim Hughey
 
     This program is free software: you can redistribute it and/or modify
@@ -18,134 +18,66 @@
     https://www.wisslanding.com
 */
 
+#ifdef __cplusplus
 #if ARDUINO >= 100
 #include <Arduino.h>
 #else
 #include <WProgram.h>
 #endif
+#endif
 
 #include <ArduinoJson.h>
+#include <TimeLib.h>
+#include <WiFi101.h>
+#include <elapsedMillis.h>
 
-#include "../misc/mcr_util.hpp"
-#include "../readings/reading.hpp"
+#include "../include/dev_id.hpp"
+#include "../include/mcr_util.hpp"
+#include "../include/readings.hpp"
+#include "../include/ref_id.hpp"
 
-#define VERSION ((uint8_t)1)
+// static class variables for conversion to JOSN
+// this implies that a single JSON conversion can be done at any time
+// and the converted JSON must be used or copied before the next
+static StaticJsonBuffer<512> _jsonBuffer;
+static char _buffer[768] = {0x00};
 
-void Reading::jsonCommon(JsonObject &root) {
-  root["version"] = VERSION;
+Reading::Reading(mcrDevID_t &id, time_t mtime) {
+  _id = id;
+  _mtime = mtime;
+}
+
+void Reading::setCmdAck(time_t latency, const char *refid_raw) {
+  _cmd_ack = true;
+  _latency = latency;
+
+  if (refid_raw)
+    _refid = refid_raw;
+}
+
+void Reading::commonJSON(JsonObject &root) {
+  root["version"] = _version;
   root["host"] = mcrUtil::hostID();
   root["device"] = _id.asString();
   root["mtime"] = _mtime;
-  root["type"] = typeAsString();
+  // root["type"] = typeAsString();
 
   if (_cmd_ack) {
     root["cmdack"] = _cmd_ack;
     root["latency"] = _latency;
-    root["cid"] = _cid;
+    root["refid"] = (const char *)_refid;
   }
 }
 
 char *Reading::json() {
-  StaticJsonBuffer<512> jsonBuffer;
-  static char buffer[768];
-  elapsedMicros json_elapsed;
 
-  memset(buffer, 0x00, sizeof(buffer));
+  // yes, i bit paranoid to always clear every buffer before use
+  memset(_buffer, 0x00, sizeof(_buffer));
 
-  JsonObject &root = jsonBuffer.createObject();
-  jsonCommon(root);
+  JsonObject &root = _jsonBuffer.createObject();
+  commonJSON(root);
+  populateJSON(root);
+  root.printTo(_buffer, sizeof(_buffer));
 
-  if (_type == SWITCH) {
-    static char pio_id[8][2] = {0x00};
-    memset(pio_id, 0x00, sizeof(pio_id));
-
-#ifdef VERBOSE
-    logDateTime(__PRETTY_FUNCTION__);
-    log("switch: ");
-    log("sizeof(pio_id)=");
-    log(sizeof(pio_id));
-#endif
-
-    JsonArray &pio = root.createNestedArray("pio");
-
-    for (uint8_t i = 0, k = 7; i < _bits; i++, k--) {
-      // char  pio_id[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-      boolean pio_state = (_state & ((uint8_t)0x01 << i));
-      JsonObject &item = pio.createNestedObject();
-
-      itoa(i, &(pio_id[i][0]), 10);
-      item.set(&(pio_id[i][0]), pio_state);
-#ifdef VERBOSE
-      log(" pio=");
-      log(&(pio_id[i][0]));
-      log(",");
-      log(pio_state);
-#endif
-    }
-  }
-
-  switch (_type) {
-  case UNDEF:
-    break;
-
-  case TEMP:
-    root["tc"] = _celsius;
-    root["tf"] = _celsius * 1.8 + 32.0;
-#ifdef VERBOSE
-    Serial.print("    Reading creating temperature json: tc=");
-    Serial.print(_celsius);
-    Serial.print(" ");
-#endif
-    break;
-
-  case RH:
-    root["tc"] = _celsius;
-    root["tf"] = _celsius * 1.8 + 32.0;
-    root["rh"] = _relhum;
-#ifdef VERBOSE
-    Serial.print("    Reading creating relhum json: tc=");
-    Serial.print(_celsius);
-    Serial.print(" rh=");
-    Serial.print(_relhum);
-    Serial.print(" ");
-#endif
-    break;
-
-  case SOIL:
-    root["soil"] = _soil;
-#ifdef VERBOSE
-    Serial.print("    Reading creating soil json: soil=");
-    Serial.print(_soil);
-    Serial.print(" ");
-#endif
-    break;
-
-  case PH:
-    root["ph"] = _ph;
-#ifdef VERBOSE
-    Serial.print("    Reading creating ph json: ph=");
-    Serial.print(_ph);
-    Serial.print(" ");
-#endif
-    break;
-
-  default:
-    break;
-  }
-
-  root.printTo(buffer, sizeof(buffer));
-#ifdef VERBOSE
-  log("in ");
-  logElapsed(json_elapsed, true);
-#endif
-
-  return buffer;
-}
-
-const char *Reading::typeAsString() {
-  // NOTE:  these descriptions must be ordered that same as the enum
-  static const char s[][7] = {"undef", "temp", "relh", "switch",
-                              "soil",  "ph",   "oob"};
-
-  return s[_type];
+  return _buffer;
 }

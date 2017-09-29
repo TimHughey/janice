@@ -31,7 +31,6 @@ defmodule Mcp.Sensor do
 
   schema "sensors" do
     field :name
-    field :reading
     field :description
     field :value, :float, default: 0.0
     field :read_at, Timex.Ecto.DateTime
