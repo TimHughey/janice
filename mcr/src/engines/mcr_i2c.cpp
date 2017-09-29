@@ -83,9 +83,18 @@ bool mcrI2c::discover() {
     mcrDevAddr_t &search_addr = addrs[addrs_index]; // detect the next device
     selectBus(bus);
     if (detectDev(search_addr, false)) {
-      i2cDev_t new_dev(search_addr, useMultiplexer(), bus);
+      i2cDev_t dev(search_addr, useMultiplexer(), bus);
 
-      knowDevice(new_dev);
+      if (justSeenDevice(dev)) {
+        if (debugMode) {
+          logDateTime(__PRETTY_FUNCTION__);
+          dev.debug();
+          log(" already known, flagged as just seen", true);
+        }
+      } else { // device was not known, must addr
+        i2cDev_t *new_dev = new i2cDev(dev);
+        addDevice(new_dev);
+      }
     }
 
     addrs_index += 1; // increment to next search dev

@@ -35,8 +35,8 @@
 #include "../include/positions.hpp"
 #include "../include/reading.hpp"
 
-positionsReading::positionsReading(mcrDevID_t &id, time_t mtime, uint8_t pios,
-                                   uint16_t states)
+positionsReading::positionsReading(mcrDevID_t &id, time_t mtime,
+                                   uint16_t states, uint8_t pios)
     : Reading(id, mtime) {
   if (pios < (_max_pios + 1)) {
     _pios = pios;

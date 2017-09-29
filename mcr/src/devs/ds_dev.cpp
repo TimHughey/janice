@@ -35,7 +35,7 @@
 #include "../include/ref_id.hpp"
 
 dsDev::dsDev(mcrDevAddr_t &addr, bool power) : mcrDev(addr) {
-  char buff[_ds_max_addr_len] = {0x00};
+  char buff[_id_len] = {0x00};
   // byte   0: 8-bit family code
   // byte 1-6: 48-bit unique serial number
   // byte   7: crc
@@ -156,6 +156,13 @@ bool dsDev::validAddress(mcrDevAddr_t *addr) {
     rc = false;
 
   return rc;
-};
+}
+
+void dsDev::debug(bool newline) {
+  log("dsDev_t id: ");
+  log(id());
+  log(" ");
+  addr().debug(newline);
+}
 
 #endif

@@ -59,8 +59,8 @@ public:
 private:
   OneWire *ds;
 
-  dsDev_t *getDevice(mcrDevID_t &id);
-  dsDev_t *getDevice(mcrCmd_t &cmd);
+  // dsDev_t *dsDevGetDevice(mcrDevID_t &id);
+  dsDev_t *getDeviceByCmd(mcrCmd_t &cmd);
   void setCmdAck(mcrCmd_t &cmd);
 
   bool discover();

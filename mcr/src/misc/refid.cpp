@@ -26,16 +26,17 @@
 #include <WProgram.h>
 #endif
 
+#include "../include/mcr_util.hpp"
 #include "../include/ref_id.hpp"
 
 mcrRefID::mcrRefID(const char *id) { this->initAndCopy(id); };
 
 const uint8_t mcrRefID::max_len() { return _max_len; };
 
-mcrRefID_t &mcrRefID::operator=(mcrRefID_t &id) {
-  initAndCopy(id._id);
-  return *this;
-}
+// mcrRefID_t &mcrRefID::operator=(mcrRefID_t &id) {
+//   initAndCopy(id._id);
+//   return *this;
+// }
 
 // type cast support from mcrRefID to char *
 mcrRefID::operator char *() { return _id; };
@@ -63,6 +64,10 @@ bool mcrRefID::operator==(char *rhs) {
 // assignment operator from a plain ole char *
 // to a mcrRefID_t object reference
 mcrRefID_t &mcrRefID::operator=(const char *id) {
+  // logDateTime(__PRETTY_FUNCTION__);
+  // log("copying ");
+  // log(id);
+  // log(" to this", true);
   this->initAndCopy(id);
   return *this;
 };

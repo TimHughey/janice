@@ -65,6 +65,8 @@ public:
   // allow comparsions of a mcrDeviID to a plain ole char string array
   bool operator==(uint8_t *rhs);
 
+  void debug(bool newline = false);
+
 private:
 };
 

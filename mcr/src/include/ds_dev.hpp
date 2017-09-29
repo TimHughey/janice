@@ -73,6 +73,8 @@ public:
   // static member function for validating an address (ROM) is validAddress
   static bool validAddress(uint8_t *addr);
   bool validAddress(mcrDevAddr_t *addr);
+
+  void debug(bool newline = false);
 };
 
 typedef class dsDev dsDev_t;

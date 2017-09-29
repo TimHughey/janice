@@ -65,12 +65,12 @@ public:
 
   mcrDev(mcrDevAddr_t &addr);
   mcrDev(mcrDevID_t &id, mcrDevAddr_t &addr);
-  ~mcrDev(); // base class will handle deleteing the reading, if needed
+  virtual ~mcrDev(); // base class will handle deleteing the reading, if needed
 
   // operators
-  mcrDev_t &operator=(mcrDev_t &dev);
-  bool operator==(mcrDev_t &rhs); // rely on the == operator from mcrDevID_t
-  bool operator==(mcrDev_t *rhs);
+  // mcrDev_t &operator=(mcrDev_t &dev);
+  bool operator==(mcrDevID_t &rhs); // rely on the == operator from mcrDevID_t
+  // bool operator==(mcrDev_t *rhs);
 
   // updaters
   void justSeen();
@@ -96,6 +96,8 @@ public:
   void startWrite();
   time_t stopWrite();
   time_t writeMS();
+
+  virtual void debug(bool newline = false);
 };
 
 #endif // __cplusplus

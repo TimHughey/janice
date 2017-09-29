@@ -171,9 +171,9 @@ void mcrUtil::printNet(const char *func) {
 }
 
 void mcrUtil::printFreeMem(const char *func, uint8_t secs) {
-  int first_free = 0;
-  int prev_free = 0;
-  elapsedMillis freeMemReport;
+  static int first_free = 0;
+  static int prev_free = 0;
+  static elapsedMillis freeMemReport;
   int delta = prev_free - freeRAM();
   int delta_since_first = first_free - freeRAM();
 

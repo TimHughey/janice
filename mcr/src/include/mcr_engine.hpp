@@ -108,6 +108,17 @@ public:
 
   // functions for handling known devices
   mcrDev_t *findDevice(mcrDev_t &dev);
+  bool isDeviceKnown(mcrDevID_t &id);
+
+  // justSeenDevice():
+  //    will return true if the device was found
+  //    and call justSeen() on the device if found
+  bool justSeenDevice(mcrDev_t &dev);
+
+  // addDevice():
+  //    will add a device to the known devices
+  bool addDevice(mcrDev_t *dev);
+
   bool knowDevice(mcrDev_t &dev);
   bool forgetDevice(mcrDev_t &dev);
 

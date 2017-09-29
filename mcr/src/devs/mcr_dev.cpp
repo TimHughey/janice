@@ -28,6 +28,7 @@
 #include "../include/dev_addr.hpp"
 #include "../include/dev_id.hpp"
 #include "../include/mcr_dev.hpp"
+#include "../include/mcr_util.hpp"
 #include "../include/readings.hpp"
 
 mcrDev::mcrDev(
@@ -47,13 +48,13 @@ mcrDev::~mcrDev() {
 }
 
 // operators
-mcrDev_t &mcrDev::operator=(mcrDev_t &dev) {
-  memcpy(this, &dev, sizeof(mcrDev_t));
-  return *this;
-}
+// mcrDev_t &mcrDev::operator=(mcrDev_t &dev) {
+//  memcpy(this, dev, sizeof(mcrDev_t));
+//  return *this;
+//}
 // rely on the == operator from mcrDevID_t
-bool mcrDev::operator==(mcrDev_t &rhs) { return (_id == rhs._id); };
-bool mcrDev::operator==(mcrDev_t *rhs) { return (_id == rhs->_id); }
+bool mcrDev::operator==(mcrDevID_t &rhs) { return (_id == rhs); };
+// bool mcrDev::operator==(mcrDev_t *rhs) { return (_id == rhs->_id); }
 
 void mcrDev::justSeen() { _last_seen = now(); }
 
@@ -101,5 +102,12 @@ time_t mcrDev::stopWrite() {
   return _write_ms;
 }
 time_t mcrDev::writeMS() { return _write_ms; }
+
+void mcrDev::debug(bool newline) {
+  log("mcrDev_t id: ");
+  log(id());
+  log(" ");
+  addr().debug(newline);
+}
 
 #endif // __cplusplus

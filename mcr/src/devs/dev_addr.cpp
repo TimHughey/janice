@@ -27,6 +27,7 @@
 #endif
 
 #include "../include/dev_addr.hpp"
+#include "../include/mcr_util.hpp"
 
 // construct a very simple device address of only one byte
 mcrDevAddr::mcrDevAddr(uint8_t addr) { _addr[0] = addr, _len = 1; }
@@ -69,6 +70,18 @@ void mcrDevAddr::initAndCopy(uint8_t *addr, uint8_t len) {
   memset(_addr, 0x00, _max_len);
   memcpy(_addr, addr, len);
   _len = len;
+}
+
+void mcrDevAddr::debug(bool newline) {
+  char buff[5] = {0x00};
+
+  log("mcrDevAddr_t addr: ");
+
+  for (uint8_t i = 0; i < _len; i++) {
+    sprintf(buff, "%02x", _addr[i]);
+    log(buff);
+  }
+  log("", newline);
 }
 
 #endif // __cplusplus

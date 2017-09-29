@@ -55,8 +55,8 @@ public:
   bool operator==(char *rhs);
 
   // assignment operators
-  mcrRefID_t &operator=(mcrRefID_t &id);
-  mcrRefID_t &operator=(mcrRefID_t *id);
+  // mcrRefID_t &operator=(mcrRefID_t &id);
+  // mcrRefID_t &operator=(mcrRefID_t *id);
   mcrRefID_t &operator=(const char *id);
 
   const char *asString();

@@ -48,7 +48,7 @@ private:
 
 public:
   // undefined reading
-  positionsReading(mcrDevID_t &id, time_t mtime, uint8_t pios, uint16_t states);
+  positionsReading(mcrDevID_t &id, time_t mtime, uint16_t states, uint8_t pios);
   uint16_t state() { return _states; }
 
 protected:

@@ -28,6 +28,7 @@
 
 #include "../include/mcr_cmd.hpp"
 #include "../include/mcr_engine.hpp"
+#include "../include/mcr_util.hpp"
 #include "../include/readings.hpp"
 
 mcrEngine::mcrEngine(mcrMQTT *mqtt) {
@@ -43,6 +44,9 @@ mcrEngine::mcrEngine(mcrMQTT *mqtt) {
   _last_convert = 0;
   _dev_count = 0;
   _state = IDLE;
+
+  memset(_known_devs, 0x00,
+         sizeof(MAX_DEVICES_PER_ENGINE) * sizeof(mcrDev_t *));
 }
 
 const uint16_t mcrEngine::maxDevices() { return MAX_DEVICES_PER_ENGINE; };
@@ -248,40 +252,117 @@ bool mcrEngine::publish(Reading_t *reading) {
 
 // functions for handling known devices
 mcrDev_t *mcrEngine::findDevice(mcrDev_t &dev) {
-  mcrDev_t *found_dev = nullptr;
-  for (uint8_t i = 0; ((i < maxDevices()) && (found_dev == nullptr)); i++) {
-    if (dev == _known_devs[i]) {
-      found_dev = _known_devs[i];
-    }
+  if (debugMode) {
+    logDateTime(__PRETTY_FUNCTION__);
+    log("finding ");
+    dev.debug(true);
   }
-  return found_dev;
+
+  return getDevice(dev.id());
 }
 
-bool mcrEngine::mcrEngine::knowDevice(mcrDev_t &dev) {
-  auto rc = true;
-  mcrDev_t *found_dev = findDevice(dev);
+bool mcrEngine::isDeviceKnown(mcrDevID_t &id) {
+  auto rc = false;
 
-  if (found_dev) { // if we already know this device then flag it as seen
-    found_dev->justSeen();
-  } else {
-    if (devCount() < maxDevices()) {             // make sure we have a slot
-      _known_devs[devCount()] = new mcrDev(dev); // create (copy) device
-      _dev_count += 1;
-    } else { // log a warning if no slots available
-      logDateTime(__PRETTY_FUNCTION__);
-      log("[WARNING] attempt to exceed supported max devices", true);
-      rc = false;
+  for (uint8_t i = 0; ((i < maxDevices()) && (!rc)); i++) {
+    mcrDev_t *dev = _known_devs[i];
+
+    if (dev->id() == id) {
+      rc = true;
     }
   }
+
   return rc;
 }
 
-bool mcrEngine::mcrEngine::forgetDevice(mcrDev_t &dev) {
+bool mcrEngine::justSeenDevice(mcrDev_t &dev) {
+  auto rc = false;
+
+  if (debugMode) {
+    logDateTime(__PRETTY_FUNCTION__);
+    log(" called for ");
+    dev.debug(true);
+  }
+
+  for (uint8_t i = 0; ((i < maxDevices()) && (!rc)); i++) {
+    mcrDev_t *search_dev = _known_devs[i];
+
+    if ((search_dev) && (search_dev->id() == dev.id())) {
+      search_dev->justSeen();
+      rc = true;
+    }
+  }
+
+  return rc;
+}
+
+bool mcrEngine::addDevice(mcrDev_t *dev) {
+  auto rc = false;
+
+  if (debugMode) {
+    logDateTime(__PRETTY_FUNCTION__);
+    log("adding ");
+    dev->debug(true);
+  }
+
+  for (uint8_t i = 0; ((i < maxDevices()) && (!rc)); i++) {
+    mcrDev_t *search_dev = _known_devs[i];
+
+    // find the first empty device location and store the new device
+    if (search_dev == nullptr) {
+      if (debugMode) {
+        logDateTime(__PRETTY_FUNCTION__);
+        log("added ");
+        dev->debug();
+        log(" at slot ");
+        log(i, true);
+      }
+      _known_devs[i] = dev;
+      _dev_count += 1;
+      rc = true;
+    }
+  }
+
+  if (rc == false) {
+    logDateTime(__PRETTY_FUNCTION__);
+    log("[WARNING] attempt to exceed max devices", true);
+  }
+
+  return rc;
+}
+
+// bool mcrEngine::knowDevice(mcrDev_t *dev) {
+//   if (debugMode) {
+//     logDateTime(__PRETTY_FUNCTION__);
+//     log("searching for device ");
+//     log(dev->id(), true);
+//   }
+//
+//   bool rc = true;
+//   mcrDev_t *found_dev;
+//   found_dev = findDevice(dev);
+//
+//   if (found_dev) { // if we already know this device then flag it as seen
+//     found_dev->justSeen();
+//   } else {
+//     if (devCount() < maxDevices()) {             // make sure we have a slot
+//       _known_devs[devCount()] = new mcrDev(dev); // create (copy) device
+//       _dev_count += 1;
+//     } else { // log a warning if no slots available
+//       logDateTime(__PRETTY_FUNCTION__);
+//       log("[WARNING] attempt to exceed supported max devices", true);
+//       rc = false;
+//     }
+//   }
+//   return rc;
+// }
+
+bool mcrEngine::forgetDevice(mcrDev_t &dev) {
   auto rc = true;
   mcrDev_t *found_dev = nullptr;
 
   for (uint8_t i = 0; ((i < maxDevices()) && (found_dev == nullptr)); i++) {
-    if (_known_devs[i] && dev == _known_devs[i]) {
+    if (_known_devs[i] && (dev.id() == _known_devs[i]->id())) {
       found_dev = _known_devs[i];
       delete found_dev;
       _known_devs[i] = nullptr;
@@ -326,10 +407,11 @@ mcrDev_t *mcrEngine::getDevice(mcrDevAddr_t &addr) {
 mcrDev_t *mcrEngine::getDevice(mcrDevID_t &id) {
   mcrDev_t *found_dev = nullptr;
 
-  // if (debugMode) {
-  //  logDateTime(__PRETTY_FUNCTION__);
-  //  log("searching: ");
-  //  }
+  if (debugMode) {
+    logDateTime(__PRETTY_FUNCTION__);
+    log("getting (looking up) ");
+    id.debug(true);
+  }
 
   for (uint8_t i = 0; ((i < maxDevices()) && (found_dev == nullptr)); i++) {
     //  log(i);
@@ -479,50 +561,55 @@ void mcrEngine::debugIdle(const char *c, mcrEngineState_t s) {
   // Serial.println();
 }
 
-void mcrEngine::mcrEngine::printStartDiscover(const char *func_name,
-                                              uint8_t indent) {
-  logDateTime(func_name);
+void mcrEngine::printStartDiscover(const char *func_name, uint8_t indent) {
 
-  log("started, ");
-  logElapsed(lastDiscover());
-  log(" since last discover", true);
+  if (infoMode || debugMode) {
+    logDateTime(func_name);
+
+    log("started, ");
+    logElapsed(lastDiscover());
+    log(" since last discover", true);
+  }
 }
 
-void mcrEngine::mcrEngine::printStopDiscover(const char *func_name,
-                                             uint8_t indent) {
-  logDateTime(func_name);
+void mcrEngine::printStopDiscover(const char *func_name, uint8_t indent) {
+  if (infoMode || debugMode) {
+    logDateTime(func_name);
 
-  if (devCount() == 0)
-    log("[WARNING] ");
+    if (devCount() == 0)
+      log("[WARNING] ");
 
-  log("finished, found ");
-  log(devCount());
-  log(" devices in ");
-  logElapsed(lastDiscoverRunMS(), true);
+    log("finished, found ");
+    log(devCount());
+    log(" devices in ");
+    logElapsed(lastDiscoverRunMS(), true);
+  }
 }
 
-void mcrEngine::mcrEngine::printStartConvert(const char *func_name,
-                                             uint8_t indent) {
-  logDateTime(func_name);
+void mcrEngine::printStartConvert(const char *func_name, uint8_t indent) {
+  if (infoMode || debugMode) {
+    logDateTime(func_name);
 
-  log("started, ");
-  logElapsed(lastConvert());
-  log(" ms since last convert", true);
-}
-
-void mcrEngine::mcrEngine::printStopConvert(const char *func_name,
-                                            uint8_t indent) {
-  logDateTime(func_name);
-
-  if (convertTimeout())
-    log("[WARNING] ");
-
-  log("finished, took ");
-
-  if (convertTimeout()) {
+    log("started, ");
     logElapsed(lastConvert());
-    log(" *TIMEOUT*", true);
-  } else {
-    logElapsed(lastConvertRunMS(), true);
+    log(" ms since last convert", true);
+  }
+}
+
+void mcrEngine::printStopConvert(const char *func_name, uint8_t indent) {
+  if (infoMode || debugMode) {
+    logDateTime(func_name);
+
+    if (convertTimeout())
+      log("[WARNING] ");
+
+    log("finished, took ");
+
+    if (convertTimeout()) {
+      logElapsed(lastConvert());
+      log(" *TIMEOUT*", true);
+    } else {
+      logElapsed(lastConvertRunMS(), true);
+    }
   }
 }

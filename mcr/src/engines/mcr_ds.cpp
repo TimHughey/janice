@@ -72,22 +72,32 @@ bool mcrDS::discover() {
       if (OneWire::crc8(addr, 7) == addr[7]) {
         mcrDevAddr_t found_addr(addr, 8);
 
+        if (debugMode) {
+          logDateTime(__PRETTY_FUNCTION__);
+          log("discovered ");
+          found_addr.debug(true);
+        }
+
         // TODO: move to own method and implement family code
         // specific logic
         // check if chip is powered
-        ds->reset();
-        ds->select(addr);
-        ds->write(0xB4); // Read Power Supply
-        byte pwr = ds->read_bit();
+        // ds->reset();
+        // ds->select(addr);
+        // ds->write(0xB4); // Read Power Supply
+        // uint8_t pwr = ds->read_bit();
 
-        dsDev_t dev(found_addr, pwr);
-        knowDevice(dev);
+        dsDev_t dev(found_addr, true);
 
-#ifdef VERBOSE
-        Serial.print("  mcrDS::discover() found dev ");
-        // Serial.print(deviceID(addr));
-        Serial.println();
-#endif
+        if (justSeenDevice(dev)) {
+          if (debugMode) {
+            logDateTime(__PRETTY_FUNCTION__);
+            dev.debug();
+            log(" already known, flagged as just seen", true);
+          }
+        } else { // device was not known, must addr
+          dsDev_t *new_dev = new dsDev(dev);
+          addDevice(new_dev);
+        }
       } else { // crc check failed
         // crc check failed -- report back to caller
         rc = false;
@@ -173,7 +183,7 @@ bool mcrDS::publishDevice(mcrCmd_t &cmd) {
 }
 
 bool mcrDS::publishDevice(mcrDevID_t &id) {
-  return publishDevice(getDevice(id));
+  return publishDevice((dsDev_t *)getDevice(id));
 }
 
 bool mcrDS::publishDevice(dsDev_t *dev) {
@@ -206,8 +216,8 @@ bool mcrDS::convert() {
       ds->skip();         // address all devices
       ds->write(0x44, 1); // start conversion
       delay(1);           // give the sensors an opportunity to start conversion
-      if (debugMode)
-        printStartConvert(__PRETTY_FUNCTION__);
+
+      printStartConvert(__PRETTY_FUNCTION__);
 
       startConvert();
     }
@@ -283,7 +293,9 @@ bool mcrDS::readDevice(mcrCmd_t &cmd) {
   return readDevice(dev_id);
 }
 
-bool mcrDS::readDevice(mcrDevID_t &id) { return readDevice(getDevice(id)); }
+bool mcrDS::readDevice(mcrDevID_t &id) {
+  return readDevice((dsDev_t *)getDevice(id));
+}
 
 // specific device scratchpad methods
 bool mcrDS::readDS1820(dsDev *dev, celsiusReading_t **reading) {
@@ -504,7 +516,7 @@ bool mcrDS::setSwitch(mcrCmd_t &cmd) {
   bool rc = true;
 
   // mcrDevID id = cmd.name();
-  dsDev_t *dev = (dsDev_t *)getDevice(cmd);
+  dsDev_t *dev = (dsDev_t *)getDeviceByCmd(cmd);
 
   if (dev == nullptr) {
     return false;
@@ -522,7 +534,7 @@ bool mcrDS::setSwitch(mcrCmd_t &cmd) {
 bool mcrDS::setDS2406(mcrCmd_t &cmd) {
   bool rc = true;
   // mcrDevID id = cmd.name();
-  dsDev_t *dev = (dsDev_t *)getDevice(cmd);
+  dsDev_t *dev = (dsDev_t *)getDeviceByCmd(cmd);
 
   if (dev == nullptr) {
     return false;
@@ -584,7 +596,7 @@ bool mcrDS::setDS2406(mcrCmd_t &cmd) {
 bool mcrDS::setDS2408(mcrCmd &cmd) {
   bool rc = true;
   // mcrDevID id = cmd.name();
-  dsDev_t *dev = (dsDev_t *)getDevice(cmd);
+  dsDev_t *dev = (dsDev_t *)getDeviceByCmd(cmd);
 
   if (dev == nullptr) {
     return false;
@@ -692,12 +704,12 @@ bool mcrDS::cmdCallback(JsonObject &root) {
   return true;
 }
 
-dsDev_t *mcrDS::getDevice(mcrDevID_t &id) {
-  mcrDev_t *dev = mcrEngine::getDevice(id);
-  return (dsDev_t *)dev;
-}
-
-dsDev_t *mcrDS::getDevice(mcrCmd_t &cmd) {
+// dsDev_t *mcrDS::dsDevgetDevice(mcrDevID_t &id) {
+//   mcrDev_t *dev = mcrEngine::getDevice(id);
+//   return (dsDev_t *)dev;
+// }
+//
+dsDev_t *mcrDS::getDeviceByCmd(mcrCmd_t &cmd) {
   if (debugMode) {
     logDateTime(__PRETTY_FUNCTION__);
     log("looking for dev_id=");
