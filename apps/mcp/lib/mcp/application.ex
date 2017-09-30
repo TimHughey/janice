@@ -7,10 +7,9 @@ defmodule Mcp.Application do
 
   def start(_type, _args) do
     # List all child processes to be supervised
-    children = [
+    children = [Mcp.Repo]
       # Starts a worker by calling: Mcp.Worker.start_link(arg)
       # {Mcp.Worker, arg},
-    ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options

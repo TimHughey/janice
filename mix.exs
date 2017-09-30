@@ -1,4 +1,6 @@
 defmodule Mercurial.Mixfile do
+  @moduledoc """
+  """
   use Mix.Project
 
   def project do
@@ -6,7 +8,10 @@ defmodule Mercurial.Mixfile do
       apps_path: "apps",
       version: "0.1.0",
       start_permanent: Mix.env == :prod,
-      deps: deps()
+      deps: deps(),
+      aliases: aliases(),
+      build_embedded: Mix.env == :prod,
+      start_permanent: Mix.env == :prod
     ]
   end
 
@@ -16,6 +21,19 @@ defmodule Mercurial.Mixfile do
   #
   # Run "mix help deps" for examples and options.
   defp deps do
-    []
+    [{:httpoison, "~> 0.12"},
+     {:hackney, "~> 1.9"},
+     {:timex, "~> 3.0"},
+     {:poison, "~> 3.1"},
+     {:postgrex, "~> 0.13"},
+     {:ecto, "~> 2.1"},
+     {:timex_ecto, "~> 3.1"},
+     {:distillery, "~> 1.0"},
+     {:credo, "> 0.0.0", only: [:dev, :test]}]
+  end
+
+  defp aliases do
+    ["ecto.setup": ["ecto.create", "ecto.migrate"],
+     "ecto.reset": ["ecto.drop", "ecto.setup"]]
   end
 end

@@ -33,12 +33,13 @@ defmodule Mcp.Mixfile do
      description: description(),
      package: package(),
      elixir: "~> 1.5",
-     compilers: [:elixir, :app],
+     #compilers: [:elixir, :app],
      # compilers: [:proxr, :elixir, :app],
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
      escript: escript_config(),
-     deps: deps()]
+     deps: deps(),
+     aliases: aliases()]
   end
 
   # Configuration for the OTP application
@@ -47,7 +48,7 @@ defmodule Mcp.Mixfile do
   end
 
   defp applications_by_env(:dev) do
-    [mod: {Mcp, []},
+    [mod: {Mcp.Application, []},
       applications:
         [:runtime_tools, :httpoison, :hackney, :timex, :poison, :postgrex,
           :ecto, :timex_ecto, :distillery]
@@ -55,10 +56,10 @@ defmodule Mcp.Mixfile do
   end
 
   defp applications_by_env(_) do
-    [mod: {Mcp, []},
+    [mod: {Mcp.Application, []},
       applications:
         [:runtime_tools, :httpoison, :hackney, :timex, :poison, :postgrex,
-          :ecto, :timex_ecto, :elixir_ale, :distillery]]
+          :ecto, :timex_ecto, :distillery]]
   end
 
   defp deps do
@@ -69,9 +70,13 @@ defmodule Mcp.Mixfile do
      {:postgrex, "~> 0.13"},
      {:ecto, "~> 2.1"},
      {:timex_ecto, "~> 3.1"},
-     {:elixir_ale, "~> 0.7.0", [only: [:prod, :test]]},
      {:distillery, "~> 1.0"},
      {:credo, "> 0.0.0", only: [:dev, :test]}]
+  end
+
+  defp aliases do
+    ["ecto.setup": ["ecto.create", "ecto.migrate"],
+     "ecto.reset": ["ecto.drop", "ecto.setup"]]
   end
 
   defp description do
@@ -88,24 +93,5 @@ defmodule Mcp.Mixfile do
 
   defp escript_config do
   [main_module: Mcp]
-  end
-end
-
-defmodule Mix.Tasks.Compile.Proxr do
-  alias Mix.Project
-  @moduledoc :false
-
-  @doc "Compiles proxr port binary"
-  def run(_) do
-
-    # bit of a hack here to allow compilation under MacOS
-    if Mix.env() == :dev do
-      Mix.Shell.IO.cmd("make priv/proxr")
-    else
-      0 = Mix.Shell.IO.cmd("make priv/proxr")
-    end
-
-    Project.build_structure()
-    :ok
   end
 end
