@@ -8,7 +8,7 @@ config :mcp, Mcp.Repo,
   adapter: Ecto.Adapters.Postgres,
   database: "merc_test",
   username: "merc_test",
-  password: System.get_env("MERC_DB_PASS_T"),
+  password: System.get_env("MERC_TEST_DB_PASS"),
   hostname: "gabriel.wisslanding.com"
 
 #
