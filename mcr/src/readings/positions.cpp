@@ -45,7 +45,7 @@ positionsReading::positionsReading(mcrDevID_t &id, time_t mtime,
 }
 
 void positionsReading::populateJSON(JsonObject &root) {
-  static char pio_id[_max_pios][2] = {0x00};
+  static char pio_id[_max_pios][3] = {0x00};
 
   root["type"] = "switch";
   root["pios"] = _pios;
@@ -57,8 +57,10 @@ void positionsReading::populateJSON(JsonObject &root) {
     boolean pio_state = (_states & ((uint16_t)0x01 << i));
     JsonObject &item = pio.createNestedObject();
 
-    itoa(i, &(pio_id[i][0]), 10);
+    pio_id[i][0] = 'p';
+    itoa(i, &(pio_id[i][1]), 10);
     item.set(&(pio_id[i][0]), pio_state);
+
 #ifdef VERBOSE
     log(" pio=");
     log(&(pio_id[i][0]));
