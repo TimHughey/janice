@@ -41,7 +41,7 @@ humidityReading::humidityReading(mcrDevID_t &id, time_t mtime, float celsius,
 
 void humidityReading::populateJSON(JsonObject &root) {
   celsiusReading::populateJSON(root); // subclassing not supported so
-  root["type"] = "temp";              // the type is set here without any
+  root["type"] = "relhum";            // the type is set here without any
   root["rh"] = _relhum;               // checks
 }
 
