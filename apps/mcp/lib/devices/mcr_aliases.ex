@@ -12,11 +12,11 @@ import Ecto.Adapters.SQL, only: [query!: 2]
 alias Mcp.McrAlias
 alias Mcp.Repo
 
-schema "mcr_aliases" do
+schema "mcr_alias" do
   field :device
   field :friendly_name
   field :description
-  field :dt_last_used, Timex.Ecto.DateTime
+  field :dt_last_seen, Timex.Ecto.DateTime
 
   timestamps usec: true
 end
@@ -42,6 +42,8 @@ def friendly_name(device) when is_binary(device) do
   end
 end
 
+def friendly_name(nil), do: nil
+
 @doc ~S"""
 Retrieve a device id for a friendly name
 
@@ -64,16 +66,16 @@ end
 Retrieve the last time a friendly name was used
 
 ## Examples:
-  iex> Mcp.McrAlias.last_used("relhum") |> Timex.is_valid?
+  iex> Mcp.McrAlias.last_seen("relhum") |> Timex.is_valid?
   true
 
-  iex> Mcp.McrAlias.last_used("bad test dev")
+  iex> Mcp.McrAlias.last_seen("bad test dev")
   nil
 """
-def last_used(friendly_name) when is_binary(friendly_name) do
+def last_seen(friendly_name) when is_binary(friendly_name) do
   case get_by(McrAlias, [friendly_name: friendly_name]) do
     nil -> nil
-    d -> d.dt_last_used
+    d -> d.dt_last_seen
   end
 end
 
@@ -94,7 +96,7 @@ def add(%McrAlias{} = d) do
       friendly_name -> friendly_name
     end
 
-  update = [dt_last_used: Timex.now()]
+  update = [dt_last_seen: Timex.now()]
 
   {:ok, added} = to_add |> change(update) |> insert_or_update
   added
@@ -109,11 +111,11 @@ Get a new friendly name
   true
 """
 def new_friendly_name do
-  query = ~S/ select nextval('mcr_alias_seq') /
+  query = ~S/ select nextval('seq_mcr_alias') /
 
   %{rows: [[next_num]]} = query!(Repo, query)
   num_str = next_num |> Integer.to_string() |> String.pad_leading(6, "0")
-  "new_#{num_str}"
+  "newdev_#{num_str}"
 end
 
 end

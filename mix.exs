@@ -29,6 +29,7 @@ defmodule Mercurial.Mixfile do
      {:ecto, "~> 2.1"},
      {:timex_ecto, "~> 3.1"},
      {:distillery, "~> 1.0"},
+     {:hulaaki, "~> 0.1.0"},
      {:uuid, "~> 1.1"},
      {:credo, "> 0.0.0", only: [:dev, :test]}]
   end

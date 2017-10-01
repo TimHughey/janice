@@ -7,6 +7,7 @@ use Timex
 require Logger
 
 alias Poison
+alias Mcp.McrAlias
 
 @undef "undef"
 @version 1
@@ -18,6 +19,7 @@ alias Poison
 defstruct version: 0,
           host: @undef,
           device: nil,
+          friendly_name: nil,
           type: nil,
           mtime: 0,
           tc: nil,
@@ -27,7 +29,10 @@ defstruct version: 0,
           pios: 0,
           cmdack: false,
           latency: 0,
-          refid: nil
+          refid: nil,
+          p0: true, p1: true, p2: true,  # these aren't actually stored at
+          p3: true, p4: true, p5: true,  # this level however listing them
+          p6: true, p7: true             # here ensures the atoms are created
 
 @doc ~S"""
 Parse a JSON into a Reading
@@ -36,12 +41,17 @@ Parse a JSON into a Reading
   iex> json =
   ...>   ~s({"version": 1, "host": "mcr-macaddr", "device": "ds/29.0000",
   ...>       "mtime": 1506867918, "type": "temp", "tc": 20.0, "tf": 80.0})
-  ...> Mcp.Reading.parse!(json) |> Mcp.Reading.metadata?()
+  ...> Mcp.Reading.decode!(json) |> Mcp.Reading.metadata?()
   true
 """
-def parse!(json)
+def decode!(json)
 when is_binary(json) do
-  Poison.decode!(json, [keys: :atoms!, as: %Mcp.Reading{}])
+  # pre-create necessary atoms
+  %{p0: true, p1: true, p2: true, p3: true, p4: true,
+    p5: true, p6: true, p7: true}
+
+  r = Poison.decode!(json, [keys: :atoms!, as: %Mcp.Reading{}])
+  Map.put(r, :friendly_name, McrAlias.friendly_name(r.device))
 end
 
 @doc ~S"""
@@ -57,13 +67,13 @@ NOTE: 1. As of 2017-10-01 we only support readings from mcr hosts and this is
   iex> json =
   ...>   ~s({"version": 1, "host":"mcr-macaddr", "device":"ds/28.0000",
   ...>       "mtime": 1506867918, "type": "temp", "tc": 20.0, "tf": 80.0})
-  ...> Mcp.Reading.parse!(json) |> Mcp.Reading.metadata?()
+  ...> Mcp.Reading.decode!(json) |> Mcp.Reading.metadata?()
   true
 
   iex> json =
   ...>   ~s({"version": 0, "host": "other-macaddr", "device": "ds/28.0000",
   ...>       "mtime": 1506867918, "type": "temp", "tc": 20.0, "tf": 80.0})
-  ...> Mcp.Reading.parse!(json) |> Mcp.Reading.metadata?()
+  ...> Mcp.Reading.decode!(json) |> Mcp.Reading.metadata?()
   false
 """
 def metadata?(%Reading{} = r) do
@@ -82,7 +92,7 @@ Is the Reading a temperature?
   iex> json =
   ...>   ~s({"version": 1, "host": "mcr-macaddr", "device": "ds/28.0000",
   ...>       "mtime": 1506867918, "type": "temp", "tc": 20.0, "tf": 80.0})
-  ...> Mcp.Reading.parse!(json) |> Mcp.Reading.temperature?()
+  ...> Mcp.Reading.decode!(json) |> Mcp.Reading.temperature?()
   true
 """
 def temperature?(%Reading{} = r) do
@@ -101,7 +111,7 @@ Is the Reading a relative humidity?
  ...>       "device": "ds/29.0000", "mtime": 1506867918,
  ...>       "type": "relhum",
  ...>       "rh": 56.0})
- ...> Mcp.Reading.parse!(json) |> Mcp.Reading.relhum?()
+ ...> Mcp.Reading.decode!(json) |> Mcp.Reading.relhum?()
  true
 """
 def relhum?(%Reading{} = r) do
@@ -119,7 +129,7 @@ Is the Reading a switch?
   ...>       "device": "ds/29.0000", "mtime": 1506867918,
   ...>        "type": "switch",
   ...>        "pio": [{"p0": true}, {"p1": false}], "pios": 2})
-  ...> Mcp.Reading.parse!(json) |> Mcp.Reading.switch?()
+  ...> Mcp.Reading.decode!(json) |> Mcp.Reading.switch?()
   true
 """
 def switch?(%Reading{} = r) do
@@ -140,7 +150,7 @@ Is the Reading a cmdack?
   ...>        "type": "switch",
   ...>        "pio": [{"p0": true}, {"p1": false}], "pios": 2,
   ...>        "cmdack": true, "latency": 10, "refid": "uuid"})
-  ...> Mcp.Reading.parse!(json) |> Mcp.Reading.cmdack?()
+  ...> Mcp.Reading.decode!(json) |> Mcp.Reading.cmdack?()
   true
 """
 def cmdack?(%Reading{} = r) do
