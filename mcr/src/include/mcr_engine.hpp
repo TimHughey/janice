@@ -70,7 +70,7 @@ private:
   // Engine runtime controls
   uint32_t _loop_timeslice_ms = 50;
   uint32_t _discover_interval_ms = 30000;
-  uint32_t _convert_interval_ms = 7000;
+  uint32_t _convert_interval_ms = 9000;
   uint32_t _report_interval_ms = 11000;
   uint32_t _stats_inverval_ms = 20000;
 
@@ -159,6 +159,8 @@ public:
   void printStopDiscover(const char *func_name = nullptr, uint8_t indent = 2);
   void printStartConvert(const char *func_name = nullptr, uint8_t indent = 2);
   void printStopConvert(const char *func_name = nullptr, uint8_t indent = 2);
+  void printStartReport(const char *func_name = nullptr, uint8_t indent = 2);
+  void printStopReport(const char *func_name = nullptr, uint8_t indent = 2);
 
 protected:
   bool debugMode = false;

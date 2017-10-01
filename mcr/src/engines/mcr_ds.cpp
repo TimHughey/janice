@@ -89,7 +89,7 @@ bool mcrDS::discover() {
         dsDev_t dev(found_addr, true);
 
         if (justSeenDevice(dev)) {
-          if (debugMode) {
+          if (infoMode) {
             logDateTime(__PRETTY_FUNCTION__);
             dev.debug();
             log(" already known, flagged as just seen", true);
@@ -118,6 +118,7 @@ bool mcrDS::report() {
 
   if (needReport()) {
     if (isIdle()) {
+      printStartReport(__PRETTY_FUNCTION__);
       next_dev = getFirstKnownDevice();
       startReport();
     } else {
@@ -136,6 +137,7 @@ bool mcrDS::report() {
 
       if (dev == nullptr) {
         idle(__PRETTY_FUNCTION__);
+        printStopReport(__PRETTY_FUNCTION__);
       }
     }
   }

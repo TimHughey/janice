@@ -297,7 +297,7 @@ bool mcrEngine::justSeenDevice(mcrDev_t &dev) {
 bool mcrEngine::addDevice(mcrDev_t *dev) {
   auto rc = false;
 
-  if (debugMode) {
+  if (infoMode) {
     logDateTime(__PRETTY_FUNCTION__);
     log("adding ");
     dev->debug(true);
@@ -359,7 +359,6 @@ mcrDev_t *mcrEngine::getNextKnownDevice() {
        _next_known_index++) {
     if (_known_devs[_next_known_index] != nullptr) {
       found_dev = _known_devs[_next_known_index];
-      _next_known_index += 1;
     }
   }
 
@@ -585,5 +584,24 @@ void mcrEngine::printStopConvert(const char *func_name, uint8_t indent) {
     } else {
       logElapsed(lastConvertRunMS(), true);
     }
+  }
+}
+
+void mcrEngine::printStartReport(const char *func_name, uint8_t indent) {
+  if (infoMode || debugMode) {
+    logDateTime(func_name);
+
+    log("started, ");
+    logElapsed(lastReport());
+    log(" ms since last report", true);
+  }
+}
+
+void mcrEngine::printStopReport(const char *func_name, uint8_t indent) {
+  if (infoMode || debugMode) {
+    logDateTime(func_name);
+
+    log("finished, took ");
+    logElapsed(lastReportRunMS(), true);
   }
 }

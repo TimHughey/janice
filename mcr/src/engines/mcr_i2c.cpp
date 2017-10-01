@@ -86,7 +86,7 @@ bool mcrI2c::discover() {
       i2cDev_t dev(search_addr, useMultiplexer(), bus);
 
       if (justSeenDevice(dev)) {
-        if (debugMode) {
+        if (infoMode) {
           logDateTime(__PRETTY_FUNCTION__);
           dev.debug();
           log(" already known, flagged as just seen", true);
@@ -115,6 +115,7 @@ bool mcrI2c::report() {
 
   if (needReport()) {
     if (isIdle()) {
+      printStartReport(__PRETTY_FUNCTION__);
       next_dev = getFirstKnownDevice();
       startReport();
     } else {
@@ -150,6 +151,7 @@ bool mcrI2c::report() {
 
     if ((dev == nullptr) && isReportActive()) {
       idle(__PRETTY_FUNCTION__);
+      printStopReport(__PRETTY_FUNCTION__);
     }
   }
 
