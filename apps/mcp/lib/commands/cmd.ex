@@ -61,7 +61,7 @@ Generate JSON for a command
 ##Examples:
  iex> c = Mcp.Cmd.setswitch([%{p0: true}, %{p1: false}], 2, "uuid")
  ...> json = Mcp.Cmd.json(c)
- ...> parsed_cmd = Poison.Parser.parse!(json, keys: :atoms!)
+ ...> parsed_cmd = Poison.Parser.parse!(json, [keys: :atoms!, as: Mcp.Cmd])
  ...> parsed_cmd === Map.from_struct(c)
  true
 """
