@@ -133,13 +133,13 @@ void mcrUtil::printNet(const char *func) {
   else
     printDateTime(__PRETTY_FUNCTION__);
   // print the SSID of the network you're attached to:
-  Serial.print("SSID: ");
+  Serial.print("SSID=");
   Serial.print(WiFi.SSID());
 
   // print the MAC address of the router you're attached to:
   byte bssid[6];
   WiFi.BSSID(bssid);
-  Serial.print("  BSSID: ");
+  Serial.print(" BSSID=");
   Serial.print(bssid[5], HEX);
   Serial.print(":");
   Serial.print(bssid[4], HEX);
@@ -154,37 +154,49 @@ void mcrUtil::printNet(const char *func) {
 
   // print the received signal strength:
   long rssi = WiFi.RSSI();
-  Serial.print("  RSSI: ");
+  Serial.print(" RSSI=");
   Serial.print(rssi);
 
   // print the encryption type:
   byte encryption = WiFi.encryptionType();
-  Serial.print("  Encryption: ");
+  Serial.print(" Encrypt=");
   Serial.print(encryption, HEX);
 
   IPAddress ip = WiFi.localIP();
-  Serial.print("  IP: ");
+  Serial.print(" IP=");
   Serial.print(ip);
 
-  Serial.print("  MAC: ");
+  Serial.print(" MAC=");
   Serial.println(mcrUtil::macAddress());
 }
 
 void mcrUtil::printFreeMem(const char *func, uint8_t secs) {
   static int first_free = 0;
   static int prev_free = 0;
+  static int min_free = 0;
+  static int max_free = 0;
   static elapsedMillis freeMemReport;
-  int delta = prev_free - freeRAM();
-  int delta_since_first = first_free - freeRAM();
+  int free_ram = freeRAM();
+  int delta = prev_free - free_ram;
 
   if (first_free == 0) {
-    first_free = mcrUtil::freeRAM();
-    delta_since_first = 0;
+    first_free = free_ram;
+  }
+
+  if ((min_free == 0) || (max_free == 0)) {
+    min_free = free_ram;
+    max_free = free_ram;
+  } else {
+    if (free_ram > max_free)
+      max_free = free_ram;
+
+    if (free_ram < min_free)
+      min_free = free_ram;
   }
 
   if (freeMemReport >= (secs * 1000)) {
-    int percentFree = ((float)freeRAM() / (float)32000) * 100;
-    int freeK = freeRAM() / 1000;
+    int percentFree = ((float)freeRAM() / (float)(32 * 1024)) * 100;
+    int freeK = freeRAM() / 1024;
 
     if (func)
       printDateTime(func);
@@ -195,10 +207,15 @@ void mcrUtil::printFreeMem(const char *func, uint8_t secs) {
     Serial.print(percentFree);
     Serial.print("% (");
     Serial.print(freeK);
-    Serial.print("k of 32k) delta: ");
+    Serial.print("k of 32k) dif: ");
     Serial.print(delta);
-    Serial.print(" delta since first report: ");
-    Serial.print(delta_since_first);
+    Serial.print(" min: ");
+    Serial.print(min_free);
+    Serial.print(" now: ");
+    Serial.print(free_ram);
+    Serial.print(" max: ");
+    Serial.print(max_free);
+
     Serial.println();
 
     freeMemReport = 0;
