@@ -60,6 +60,7 @@ bool mcrI2c::discover() {
   auto rc = true;
 
   if (needDiscover()) {
+
     if (isIdle()) {
       printStartDiscover(__PRETTY_FUNCTION__);
 
@@ -72,13 +73,24 @@ bool mcrI2c::discover() {
     bool more_buses = useMultiplexer() ? (bus < (maxBuses())) : (bus == 0);
     // bool more_devs = ((dev_index) < search_devs_count());
 
-    if (isDiscoveryActive())
+    // if (isDiscoveryActive())
+    //
+    //   if (specialDebugMode) {
+    //     logDateTime(__PRETTY_FUNCTION__);
+    //     log(" discovery active, more_buses: ");
+    //     log(more_buses);
+    //     log(" bus: ");
+    //     log(bus);
+    //     log(" addrs_index: ");
+    //     log(addrs_index);
+    //     log("", true);
+    //   }
 
-      if (!more_buses) {           // reached the
-        idle(__PRETTY_FUNCTION__); // end of the discover cycle
-        printStopDiscover(__PRETTY_FUNCTION__);
-        return rc;
-      }
+    if (!more_buses) {           // reached the
+      idle(__PRETTY_FUNCTION__); // end of the discover cycle
+      printStopDiscover(__PRETTY_FUNCTION__);
+      return rc;
+    }
 
     mcrDevAddr_t &search_addr = addrs[addrs_index]; // detect the next device
     selectBus(bus);
@@ -86,13 +98,19 @@ bool mcrI2c::discover() {
       i2cDev_t dev(search_addr, useMultiplexer(), bus);
 
       if (justSeenDevice(dev)) {
-        if (infoMode) {
+        if (infoMode || specialDebugMode) {
           logDateTime(__PRETTY_FUNCTION__);
           dev.debug();
           log(" already known, flagged as just seen", true);
         }
       } else { // device was not known, must addr
         i2cDev_t *new_dev = new i2cDev(dev);
+        if (specialDebugMode) {
+          logDateTime(__PRETTY_FUNCTION__);
+          log(" adding device: ");
+          dev.debug();
+          log("", true);
+        }
         addDevice(new_dev);
       }
     }
@@ -102,8 +120,14 @@ bool mcrI2c::discover() {
     if (addrs_index >= search_addrs_count()) { // if next dev exceeds
       bus += 1;                                // the count of search devs
       addrs_index = 0;                         // move to next bus
-    }
-  } // needDiscover
+
+      if (specialDebugMode) {
+        logDateTime(__PRETTY_FUNCTION__);
+        log("finished scanning bus: ");
+        log((bus - 1), true);
+      }
+    } // last bus check
+  }   // needDiscover
 
   return rc;
 }
@@ -476,6 +500,13 @@ uint8_t mcrI2c::maxBuses() { return _max_buses; }
 bool mcrI2c::useMultiplexer() { return _use_multiplexer; }
 
 void mcrI2c::selectBus(uint8_t bus) {
+  if (bus >= _max_buses) {
+    logDateTime(__PRETTY_FUNCTION__);
+    log("[WARNING] attempt to select bus >= ");
+    log(_max_buses);
+    log(", selected bus remains unchanged", true);
+  }
+
   if (useMultiplexer() && (bus < _max_buses)) {
     Wire.beginTransmission(0x70);
     Wire.write(0x01 << bus);

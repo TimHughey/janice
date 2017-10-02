@@ -163,6 +163,7 @@ public:
   void printStopReport(const char *func_name = nullptr, uint8_t indent = 2);
 
 protected:
+  bool specialDebugMode = true;
   bool debugMode = false;
   bool infoMode = false;
   bool noticeMode = false;

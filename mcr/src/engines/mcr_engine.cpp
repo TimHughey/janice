@@ -355,6 +355,9 @@ mcrDev_t *mcrEngine::getFirstKnownDevice() {
 mcrDev_t *mcrEngine::getNextKnownDevice() {
   mcrDev_t *found_dev = nullptr;
 
+  if (_next_known_index >= maxDevices()) // bail out if we've reached
+    return nullptr;                      // the end of possible known devices
+
   for (; ((_next_known_index < maxDevices()) && (found_dev == nullptr));
        _next_known_index++) {
     if (_known_devs[_next_known_index] != nullptr) {
