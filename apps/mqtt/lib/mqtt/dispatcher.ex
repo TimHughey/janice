@@ -37,11 +37,37 @@ when is_map(s) do
   {:ok, s}
 end
 
+# internal work functions
 def incoming_message(msg)
 when is_binary(msg) do
   GenServer.cast(__MODULE__, {:incoming_message, msg})
 end
 
+defp log_reading(%Reading{} = r) do
+  if Reading.temperature?(r) do
+    Logger.info fn ->
+      ~s(#{r.host} #{r.device} #{r.friendly_name} #{r.tc} #{r.tf})
+    end
+  end
+
+  if Reading.relhum?(r) do
+    Logger.info fn ->
+      ~s(#{r.host} #{r.device} #{r.friendly_name} #{r.tc} #{r.tf} #{r.rh})
+    end
+  end
+
+  if Reading.startup?(r) do
+    Logger.info("#{__MODULE__} received client startup announcement")
+    send_after(self(), {:timesync_cmd}, 0)
+  end
+end
+
+defp publish_opts(topic, msg)
+when is_binary(topic) and is_binary(msg) do
+  [topic: topic, message: msg, dup: 0, qos: 0, retain: 0]
+end
+
+# GenServer callbacks
 def handle_cast({:incoming_message, msg}, s)
 when is_binary(msg) and is_map(s) do
   r = Reading.decode!(msg)
@@ -68,30 +94,6 @@ when is_map(s) do
 
   send_after(self(), {:timesync_cmd}, 300_000)
   {:noreply, s}
-end
-
-defp log_reading(%Reading{} = r) do
-  if Reading.temperature?(r) do
-    Logger.info fn ->
-      ~s(#{r.host} #{r.device} #{r.friendly_name} #{r.tc} #{r.tf})
-    end
-  end
-
-  if Reading.relhum?(r) do
-    Logger.info fn ->
-      ~s(#{r.host} #{r.device} #{r.friendly_name} #{r.tc} #{r.tf} #{r.rh})
-    end
-  end
-
-  if Reading.startup?(r) do
-    Logger.info("#{__MODULE__} received client startup announcement")
-    send_after(self(), {:timesync_cmd}, 0)
-  end
-end
-
-defp publish_opts(topic, msg)
-when is_binary(topic) and is_binary(msg) do
-  [topic: topic, message: msg, dup: 0, qos: 0, retain: 0]
 end
 
 end
