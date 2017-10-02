@@ -4,18 +4,20 @@ defmodule Mqtt.Application do
   @moduledoc false
 
   use Application
+  alias Mqtt.Client
 
   def start(_type, _args) do
     # List all child processes to be supervised
     children = [
-      {Mqtt.Client, %{}}
+      {Mqtt.Client, %{}},
+      {Mqtt.Dispatcher, %{}}]
       # Starts a worker by calling: Mqtt.Worker.start_link(arg)
       # {Mqtt.Worker, arg},
-    ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Mqtt.Supervisor]
     Supervisor.start_link(children, opts)
+
   end
 end

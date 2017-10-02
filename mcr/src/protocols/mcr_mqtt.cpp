@@ -102,7 +102,8 @@ void mcrMQTT::announceStartup() {
   JsonObject &root = jsonBuffer.createObject();
   root["version"] = 1;
   root["host"] = mcrUtil::hostID();
-  root["startup"] = true;
+  root["type"] = "startup";
+  root["mtime"] = millis();
 
   root.printTo(buffer, json_max);
   publish(buffer);

@@ -11,6 +11,7 @@ alias Mcp.McrAlias
 
 @undef "undef"
 @version 1
+@startup_t "startup"
 @temp_t "temp"
 @switch_t "switch"
 @relhum_t "relhum"
@@ -57,8 +58,8 @@ end
 @doc ~S"""
 Does the Reading have the base metadata?
 
-NOTE: 1. As of 2017-10-01 we only support readings from mcr hosts and this is
-         enforced by checking the prefix of the host id
+NOTE: 1. As of 2017-10-01 we only support readings from mcr hosts with
+         enforcement by checking the prefix of the host id
       2. We also check the mtime to confirm it is greater than epoch + 1 year.
          This is a safety check for situations where a host is reporting
          readings without the time set
@@ -80,9 +81,57 @@ def metadata?(%Reading{} = r) do
   epoch_first_year = (365 * 24 * 60 * 60) - 1 # seconds since epoch for year 2
 
   r.version === @version and
-    (r.mtime > epoch_first_year) and
+    is_integer(r.mtime) and
     String.starts_with?(r.host, "mcr") and
     is_binary(r.type)
+end
+
+@doc ~S"""
+Does the Reading have a good mtime?
+
+NOTE: 1. We check the mtime to confirm it is greater than epoch + 1 year.
+         This is a safety check for situations where a host is reporting
+         time sensitive readings without the time set
+
+ ##Examples:
+  iex> json =
+  ...>   ~s({"version": 1, "host":"mcr-macaddr", "device":"ds/28.0000",
+  ...>       "mtime": 1506867918, "type": "temp", "tc": 20.0, "tf": 80.0})
+  ...> Mcp.Reading.decode!(json) |> Mcp.Reading.mtime_good?()
+  true
+
+  iex> json =
+  ...>   ~s({"version": 0, "host": "other-macaddr",
+  ...>       "mtime": 2106, "type": "startup"})
+  ...> Mcp.Reading.decode!(json) |> Mcp.Reading.mtime_good?()
+  false
+"""
+
+def mtime_good?(%Reading{} = r) do
+  epoch_first_year = (365 * 24 * 60 * 60) - 1 # seconds since epoch for year 2
+
+  (r.mtime > epoch_first_year)
+end
+
+@doc ~S"""
+Is the Reading a startup announcement?
+
+ ##Examples:
+  iex> json =
+  ...>   ~s({"version": 0, "host": "other-macaddr",
+  ...>       "mtime": 2106, "type": "startup"})
+  ...> Mcp.Reading.decode!(json) |> Mcp.Reading.startup?()
+  true
+
+  iex> json =
+  ...>   ~s({"version": 1, "host":"mcr-macaddr", "device":"ds/28.0000",
+  ...>       "mtime": 1506867918, "type": "temp", "tc": 20.0, "tf": 80.0})
+  ...> Mcp.Reading.decode!(json) |> Mcp.Reading.startup?()
+  false
+"""
+def startup?(%Reading{} = r) do
+  metadata?(r) and
+    r.type === @startup_t
 end
 
 @doc ~S"""

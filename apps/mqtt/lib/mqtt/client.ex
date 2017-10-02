@@ -3,10 +3,12 @@ defmodule Mqtt.Client do
 """
 require Logger
 use GenServer
+import Process, only: [send_after: 3]
 alias Hulaaki.Connection
 alias Hulaaki.Message
 
 alias Mqtt.Client
+alias Mqtt.Dispatcher
 alias Mcp.Reading
 
 #  def child_spec(opts) do
@@ -22,22 +24,24 @@ alias Mcp.Reading
 
 def start_link(state) do
   GenServer.start_link(__MODULE__, state, name: __MODULE__)
+
 end
 
 ## Callbacks
 
-def init(state) when is_map(state) do
-  Logger.info("Mqtt.Client.init()")
+def init(s) when is_map(s) do
+  Logger.info("#{__MODULE__} init() invoked")
 
-  state =
-        state
-        |> Map.put(:packet_id, 1)
-        |> Map.put(:keep_alive_interval, nil)
-        |> Map.put(:keep_alive_timer_ref, nil)
-        |> Map.put(:ping_response_timeout_interval, nil)
-        |> Map.put(:ping_response_timer_ref, nil)
+  s = s |>
+    Map.put(:packet_id, 1) |>
+    Map.put(:keep_alive_interval, nil) |>
+    Map.put(:keep_alive_timer_ref, nil) |>
+    Map.put(:ping_response_timeout_interval, nil) |>
+    Map.put(:ping_response_timer_ref, nil)
 
-  {:ok, state}
+  send_after(self(), {:startup}, 1)
+
+  {:ok, s}
 end
 
 def connect do
@@ -57,68 +61,69 @@ def subscribe(opts) do
   GenServer.call(__MODULE__, {:subscribe, opts})
 end
 
+def publish(opts) do
+  GenServer.call(__MODULE__, {:publish, opts})
+end
+
 def handle_call(:state, _from, state) do
   {:reply, state, state}
 end
 
 def handle_call(:connect, _from, s) do
-  opts = Application.get_env(:mcp, Mqtt.Client) |> Keyword.get(:broker)
-
-  {:ok, conn_pid} = Connection.start_link(self())
-
-  host          = opts |> Keyword.fetch!(:host)
-  port          = opts |> Keyword.fetch!(:port)
-  timeout       = opts |> Keyword.get(:timeout, 100)
-  ssl           = opts |> Keyword.get(:ssl, false)
-
-  client_id     = opts |> Keyword.fetch!(:client_id)
-  username      = opts |> Keyword.get(:username, "")
-  password      = opts |> Keyword.get(:password, "")
-  will_topic    = opts |> Keyword.get(:will_topic, "")
-  will_message  = opts |> Keyword.get(:will_message, "")
-  will_qos      = opts |> Keyword.get(:will_qos, 0)
-  will_retain   = opts |> Keyword.get(:will_retain, 0)
-  clean_session = opts |> Keyword.get(:clean_session, 1)
-  keep_alive    = opts |> Keyword.get(:keep_alive, 100)
-
-  # arbritary : based off recommendation on MQTT 3.1.1 spec Line 542/543
-  ping_response_timeout = keep_alive * 2
-
-  message = Message.connect(client_id, username, password,
-                            will_topic, will_message, will_qos,
-                            will_retain, clean_session, keep_alive)
-
-  s = Map.merge(%{connection: conn_pid}, s)
-
-  connect_opts = [host: host, port: port, timeout: timeout, ssl: ssl]
-
-  s = %{s | keep_alive_interval: keep_alive * 1000,
-            ping_response_timeout_interval: ping_response_timeout * 1000}
-
-  case s.connection |> Connection.connect(message, connect_opts) do
+  case do_connect(s) do
     :ok -> {:reply, {:ok, s}, s}
     {:error, reason} -> {:reply, {:error, reason}, s}
   end
 end
 
-def handle_call({:subscribe, opts}, _from, state) do
-  id     = state.packet_id
-  topics = opts |> Keyword.fetch!(:topics)
-  qoses  = opts |> Keyword.fetch!(:qoses)
+def handle_call({:subscribe, opts}, _from, s) do
+  do_subscribe(s, opts)
+end
 
-  message = Message.subscribe(id, topics, qoses)
+def handle_call({:publish, opts}, _from, s) do
+  topic  = opts |> Keyword.fetch!(:topic)
+  msg    = opts |> Keyword.fetch!(:message)
+  dup    = opts |> Keyword.fetch!(:dup)
+  qos    = opts |> Keyword.fetch!(:qos)
+  retain = opts |> Keyword.fetch!(:retain)
 
-  :ok = state.connection |> Connection.subscribe(message)
-  state = update_packet_id(state)
-  {:reply, :ok, state}
+  {message, state} =
+    case qos do
+      0 ->
+        {Message.publish(topic, msg, dup, qos, retain), s}
+      _ ->
+        id = s.packet_id
+        s = update_packet_id(s)
+        {Message.publish(id, topic, msg, dup, qos, retain), s}
+    end
+
+  :ok = s.connection |> Connection.publish(message)
+  {:reply, :ok, s}
 end
 
 def handle_call(:pop, _from, [h | t]) do
   {:reply, h, t}
 end
 
+def handle_cast(:startup, s) when is_map(s) do
+  connect()
+  report_subscribe()
+end
+
 def handle_cast({:push, h}, t) do
   {:noreply, [h | t]}
+end
+
+def handle_info({:startup}, s) when is_map(s) do
+  opts = Application.get_env(:mcp, Mqtt.Client) |> Keyword.get(:feeds)
+
+  {s, conn_result} = do_connect(s)
+   case conn_result do
+     :ok              -> do_subscribe(s, opts)
+     {:error, reason} -> {:reply, {:error, reason}, s}
+   end
+
+  {:noreply, s}
 end
 
 def handle_info({:sent, %Message.Connect{} = message}, state) do
@@ -145,7 +150,7 @@ def handle_info({:received, %Message.Publish{qos: qos} = message}, state) do
     1 ->
       message = Message.publish_ack message.id
       :ok = state.connection |> Connection.publish_ack(message)
-    _ ->
+    _ -> nil
       # unsure about supporting qos 2 yet
   end
 
@@ -235,34 +240,18 @@ def handle_info({:ping_response_timeout}, state) do
 end
 
 def on_connect([message: message, state: state]) do
-  Logger.info("on_connect")
+  # Logger.info("on_connect")
   true
 end
 
 def on_connect_ack([message: message, state: state]) do
-  Logger.info("on_connect_ack")
+  # Logger.info("on_connect_ack")
   true
 end
 
 def on_subscribed_publish([message: %Message.Publish{} = data, state: s]) do
-  Logger.debug fn -> "message: #{data.message}" end
-  r = Reading.decode!(data.message)
-  log_reading(r)
+  Dispatcher.incoming_message(data.message)
   true
-end
-
-defp log_reading(%Reading{} = r) do
-  if Reading.temperature?(r) do
-    Logger.info fn ->
-      ~s(#{r.host} #{r.device} #{r.friendly_name} #{r.tc} #{r.tf})
-    end
-  end
-
-  if Reading.relhum?(r) do
-    Logger.info fn ->
-      ~s(#{r.host} #{r.device} #{r.friendly_name} #{r.tc} #{r.tf} #{r.rh})
-    end
-  end
 end
 
 def on_publish([message: message, state: state]), do: true
@@ -280,6 +269,57 @@ def on_ping([message: message, state: state]), do: true
 def on_ping_response([message: message, state: state]), do: true
 def on_ping_response_timeout([message: message, state: state]), do: true
 def on_disconnect([message: message, state: state]), do: true
+
+defp do_connect(s) when is_map(s) do
+  opts = Application.get_env(:mcp, Mqtt.Client) |> Keyword.get(:broker)
+
+  {:ok, conn_pid} = Connection.start_link(self())
+
+  host          = opts |> Keyword.fetch!(:host)
+  port          = opts |> Keyword.fetch!(:port)
+  timeout       = opts |> Keyword.get(:timeout, 100)
+  ssl           = opts |> Keyword.get(:ssl, false)
+
+  client_id     = opts |> Keyword.fetch!(:client_id)
+  username      = opts |> Keyword.get(:username, "")
+  password      = opts |> Keyword.get(:password, "")
+  will_topic    = opts |> Keyword.get(:will_topic, "")
+  will_message  = opts |> Keyword.get(:will_message, "")
+  will_qos      = opts |> Keyword.get(:will_qos, 0)
+  will_retain   = opts |> Keyword.get(:will_retain, 0)
+  clean_session = opts |> Keyword.get(:clean_session, 1)
+  keep_alive    = opts |> Keyword.get(:keep_alive, 100)
+
+  # arbritary : based off recommendation on MQTT 3.1.1 spec Line 542/543
+  ping_response_timeout = keep_alive * 2
+
+  message = Message.connect(client_id, username, password,
+                            will_topic, will_message, will_qos,
+                            will_retain, clean_session, keep_alive)
+
+  s = Map.merge(%{connection: conn_pid}, s)
+
+  connect_opts = [host: host, port: port, timeout: timeout, ssl: ssl]
+
+  s = %{s | keep_alive_interval: keep_alive * 1000,
+            ping_response_timeout_interval: ping_response_timeout * 1000}
+
+  conn_result = s.connection |> Connection.connect(message, connect_opts)
+
+  {s, conn_result}
+end
+
+defp do_subscribe(s, opts) when is_map(s) do
+  id     = s.packet_id
+  topics = opts |> Keyword.fetch!(:topics)
+  qoses  = opts |> Keyword.fetch!(:qoses)
+
+  message = Message.subscribe(id, topics, qoses)
+
+  :ok = s.connection |> Connection.subscribe(message)
+  s = s |> update_packet_id()
+  {:reply, :ok, s}
+end
 
 ## Private functions
 defp reset_keep_alive_timer(%{keep_alive_interval: kai,
