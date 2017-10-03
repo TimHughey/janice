@@ -3,12 +3,12 @@ defmodule Mqtt.Dispatcher do
 """
 require Logger
 use GenServer
+import Application, only: [get_env: 2]
 import Process, only: [send_after: 3]
 
 alias Mcp.Cmd
 alias Mcp.Reading
 alias Mqtt.Client
-alias Mqtt.Dispatcher
 
 #  def child_spec(opts) do
 #
@@ -29,10 +29,16 @@ end
 
 def init(s)
 when is_map(s) do
-  Logger.info("#{__MODULE__} init() invoked")
+  case Map.get(s, :autostart, false) do
+    true  -> send_after(self(), {:startup}, 10)
+             send_after(self(), {:timesync_cmd}, 11)
+    false -> nil
+  end
 
-  send_after(self(), {:startup}, 10)
-  send_after(self(), {:timesync_cmd}, 11)
+  log_reading =
+    get_env(:mqtt, Mqtt.Dispatcher) |> Keyword.get(:log_reading, false)
+
+  s = Map.put_new(s, :log_reading, log_reading)
 
   {:ok, s}
 end
@@ -43,7 +49,8 @@ when is_binary(msg) do
   GenServer.cast(__MODULE__, {:incoming_message, msg})
 end
 
-defp log_reading(%Reading{} = r) do
+defp log_reading(%Reading{}, false), do: nil
+defp log_reading(%Reading{} = r, true) do
   if Reading.temperature?(r) do
     Logger.info fn ->
       ~s(#{r.host} #{r.device} #{r.friendly_name} #{r.tc} #{r.tf})
@@ -54,11 +61,6 @@ defp log_reading(%Reading{} = r) do
     Logger.info fn ->
       ~s(#{r.host} #{r.device} #{r.friendly_name} #{r.tc} #{r.tf} #{r.rh})
     end
-  end
-
-  if Reading.startup?(r) do
-    Logger.info("#{__MODULE__} received client startup announcement")
-    send_after(self(), {:timesync_cmd}, 0)
   end
 end
 
@@ -71,7 +73,12 @@ end
 def handle_cast({:incoming_message, msg}, s)
 when is_binary(msg) and is_map(s) do
   r = Reading.decode!(msg)
-  log_reading(r)
+  log_reading(r, s.log_reading)
+
+  if Reading.startup?(r) do
+    Logger.info("received client startup announcement")
+    send_after(self(), {:timesync_cmd}, 0)
+  end
 
   {:noreply, s}
 end
@@ -85,8 +92,8 @@ end
 
 def handle_info({:timesync_cmd}, s)
 when is_map(s) do
-  Logger.info("#{__MODULE__} publishing timesync command")
-  feed = Application.get_env(:mcp, Mqtt.Client) |> Keyword.get(:cmd_feed)
+  # Logger.info("publishing timesync command")
+  feed = get_env(:mqtt, Mqtt.Client) |> Keyword.get(:cmd_feed)
   msg = Cmd.timesync() |> Cmd.json()
   opts = publish_opts(feed, msg)
 

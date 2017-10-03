@@ -1,27 +1,47 @@
-defmodule Mcp.SwitchesTest do
+defmodule Mcp.SwitchTest do
   @moduledoc false
-  use ExUnit.Case, async: false
-  doctest Mcp.Switches
+  use ExUnit.Case, async: true
+  doctest Mcp.Switch
 
-  alias Mcp.Switches
+  alias Mcp.Switch
+  alias Mcp.DevAlias
 
   setup_all do
-    Switches.add(%Switches{friendly_name: "water_pump"})
+    # create a DevAlias for a device to control
+    dev = "ds/29.00112233445566FF"
+    pump1 = %DevAlias{device: "#{dev}:0", friendly_name: "test_pump1",
+                      description: "created for testing"}
+    pump2 = %DevAlias{device: "#{dev}:1", friendly_name: "test_pump2",
+                      description: "created for testing"}
+
+    DevAlias.add(pump1)
+    DevAlias.add(pump2)
+
+    states = [%{pio: 0, state: true}, %{pio: 1, state: false}]
+
+    Switch.add_or_update(%Switch{device: dev, states: states})
     :ok
   end
 
-  test "acknowledge a switch command" do
-    %{cmd_ref: cmd_ref, pio: _} = Switches.off("water_pump")
-    %{cmd_dt: _, uuid: uuid} = cmd_ref
-    {acked_uuid, latency} = Switches.ack_cmd("water_pump", uuid)
+  test "get a switch state by friendly name" do
+    state1 = Switch.state("test_pump1")
+    state2 = Switch.state("test_pump2")
 
-    assert (acked_uuid === uuid) and (latency > 0)
+    assert (state1 == true) and (state2 == false)
   end
 
-  test "hande acknowledge with a non-existent uuid" do
-    {acked_uuid, latency} = Switches.ack_cmd("water_pump", "bad_uuid")
-
-    assert is_nil(acked_uuid) and (latency == 0)
-  end
+  # test "acknowledge a switch command" do
+  #   %{cmd_ref: cmd_ref, state: _} = Switches.off("water_pump")
+  #   %{cmd_dt: _, uuid: uuid} = cmd_ref
+  #   {acked_uuid, latency} = Switches.ack_cmd("water_pump", uuid)
+  #
+  #   assert (acked_uuid === uuid) and (latency > 0)
+  # end
+  #
+  # test "handle acknowledge with a non-existent uuid" do
+  #   {acked_uuid, latency} = Switches.ack_cmd("water_pump", "bad_uuid")
+  #
+  #   assert is_nil(acked_uuid) and (latency == 0)
+  # end
 
 end

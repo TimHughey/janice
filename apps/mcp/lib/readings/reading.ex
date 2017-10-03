@@ -7,7 +7,7 @@ use Timex
 require Logger
 
 alias Poison
-alias Mcp.McrAlias
+alias Mcp.DevAlias
 
 @undef "undef"
 @version 1
@@ -26,8 +26,10 @@ defstruct version: 0,
           tc: nil,
           tf: nil,
           rh: nil,
-          pio: nil,
-          pios: 0,
+          pios: 0,          # switch: num of pios
+          positions: nil,   # switch: array of positions
+          state: nil,       # switch: state of each pio
+          pio: nil,         # switch: pio id (number)
           cmdack: false,
           latency: 0,
           refid: nil,
@@ -40,19 +42,15 @@ Parse a JSON into a Reading
 
  ##Examples:
   iex> json =
-  ...>   ~s({"version": 1, "host": "mcr-macaddr", "device": "ds/29.0000",
+  ...>   ~s({"version": 1, "host": "mcr-macaddr", "device": "ds/29.00000ffff",
   ...>       "mtime": 1506867918, "type": "temp", "tc": 20.0, "tf": 80.0})
   ...> Mcp.Reading.decode!(json) |> Mcp.Reading.metadata?()
   true
 """
 def decode!(json)
 when is_binary(json) do
-  # pre-create necessary atoms
-  %{p0: true, p1: true, p2: true, p3: true, p4: true,
-    p5: true, p6: true, p7: true}
-
   r = Poison.decode!(json, [keys: :atoms!, as: %Mcp.Reading{}])
-  Map.put(r, :friendly_name, McrAlias.friendly_name(r.device))
+  #Map.put(r, :friendly_name, DevAlias.friendly_name(r.device))
 end
 
 @doc ~S"""
@@ -66,7 +64,7 @@ NOTE: 1. As of 2017-10-01 we only support readings from mcr hosts with
 
  ##Examples:
   iex> json =
-  ...>   ~s({"version": 1, "host":"mcr-macaddr", "device":"ds/28.0000",
+  ...>   ~s({"version": 1, "host":"mcr-macaddr", "device":"ds/28.00000ffff",
   ...>       "mtime": 1506867918, "type": "temp", "tc": 20.0, "tf": 80.0})
   ...> Mcp.Reading.decode!(json) |> Mcp.Reading.metadata?()
   true
@@ -118,7 +116,7 @@ Is the Reading a startup announcement?
 
  ##Examples:
   iex> json =
-  ...>   ~s({"version": 0, "host": "other-macaddr",
+  ...>   ~s({"version": 1, "host": "mcr-macaddr",
   ...>       "mtime": 2106, "type": "startup"})
   ...> Mcp.Reading.decode!(json) |> Mcp.Reading.startup?()
   true
@@ -177,7 +175,9 @@ Is the Reading a switch?
   ...>   ~s({"version": 1, "host": "mcr-macaddr",
   ...>       "device": "ds/29.0000", "mtime": 1506867918,
   ...>        "type": "switch",
-  ...>        "pio": [{"p0": true}, {"p1": false}], "pios": 2})
+  ...>        "positions": [{"pio": 0, "state": true},
+  ...>                      {"pio": 1, "state": false}],
+  ...>        "pios": 2})
   ...> Mcp.Reading.decode!(json) |> Mcp.Reading.switch?()
   true
 """
@@ -185,7 +185,7 @@ def switch?(%Reading{} = r) do
   metadata?(r) and
     (r.type === @switch_t) and
     is_binary(r.device) and
-    is_list(r.pio) and
+    is_list(r.positions) and
     r.pios > 0
 end
 
@@ -197,7 +197,9 @@ Is the Reading a cmdack?
   ...>   ~s({"version": 1, "host": "mcr-macaddr",
   ...>       "device": "ds/29.0000", "mtime": 1506867918,
   ...>        "type": "switch",
-  ...>        "pio": [{"p0": true}, {"p1": false}], "pios": 2,
+  ...>        "positions": [{"pio": 0, "state": true},
+  ...>                      {"pio": 1, "state": false}],
+  ...>        "pios": 2,
   ...>        "cmdack": true, "latency": 10, "refid": "uuid"})
   ...> Mcp.Reading.decode!(json) |> Mcp.Reading.cmdack?()
   true

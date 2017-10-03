@@ -2,7 +2,10 @@
 # and its dependencies with the aid of the Mix.Config module.
 use Mix.Config
 
-config :distillery, no_warn_missing: [:distillery]
+config :distillery, no_warn_missing: [:elixir_make, :distillery]
+
+config :mcp, Mcp.Application,
+  build_env: "#{Mix.env}"
 
 config :mcp, Mcp.Repo,
   adapter: Ecto.Adapters.Postgres,
@@ -11,9 +14,12 @@ config :mcp, Mcp.Repo,
   password: System.get_env("MERC_TEST_DB_PASS"),
   hostname: "gabriel.wisslanding.com"
 
-#
-# NOTHING BELOW THIS POINT SHOULD BE DIFFERENT ACROSS envs
-#
 config :mcp, :ecto_repos, [Mcp.Repo]
 
-config :logger, level: :info
+config :logger,
+  backends: [:console],
+  level: :info
+
+config :logger, :console,
+  metadata: [:module],
+  format: "$time $metadata$message\n"

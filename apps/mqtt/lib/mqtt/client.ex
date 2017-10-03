@@ -7,9 +7,9 @@ import Process, only: [send_after: 3]
 alias Hulaaki.Connection
 alias Hulaaki.Message
 
-alias Mqtt.Client
+# alias Mqtt.Client
 alias Mqtt.Dispatcher
-alias Mcp.Reading
+# alias Mcp.Reading
 
 #  def child_spec(opts) do
 #
@@ -22,16 +22,13 @@ alias Mcp.Reading
 #    }
 #  end
 
-def start_link(state) do
-  GenServer.start_link(__MODULE__, state, name: __MODULE__)
-
+def start_link(s) when is_map(s) do
+  GenServer.start_link(__MODULE__, s, name: __MODULE__)
 end
 
 ## Callbacks
 
 def init(s) when is_map(s) do
-  Logger.info("#{__MODULE__} init() invoked")
-
   s = s |>
     Map.put(:packet_id, 1) |>
     Map.put(:keep_alive_interval, nil) |>
@@ -39,7 +36,10 @@ def init(s) when is_map(s) do
     Map.put(:ping_response_timeout_interval, nil) |>
     Map.put(:ping_response_timer_ref, nil)
 
-  send_after(self(), {:startup}, 1)
+    case Map.get(s, :autostart, false) do
+      true  -> send_after(self(), {:startup}, 1)
+      false -> nil
+    end
 
   {:ok, s}
 end
@@ -53,7 +53,7 @@ def get_state do
 end
 
 def report_subscribe do
-  opts = Application.get_env(:mcp, Mqtt.Client) |> Keyword.get(:feeds)
+  opts = Application.get_env(:mqtt, Mqtt.Client) |> Keyword.get(:feeds)
   subscribe(opts)
 end
 
@@ -87,7 +87,7 @@ def handle_call({:publish, opts}, _from, s) do
   qos    = opts |> Keyword.fetch!(:qos)
   retain = opts |> Keyword.fetch!(:retain)
 
-  {message, state} =
+  {message, s} =
     case qos do
       0 ->
         {Message.publish(topic, msg, dup, qos, retain), s}
@@ -115,7 +115,7 @@ def handle_cast({:push, h}, t) do
 end
 
 def handle_info({:startup}, s) when is_map(s) do
-  opts = Application.get_env(:mcp, Mqtt.Client) |> Keyword.get(:feeds)
+  opts = Application.get_env(:mqtt, Mqtt.Client) |> Keyword.get(:feeds)
 
   {s, conn_result} = do_connect(s)
    case conn_result do
@@ -239,39 +239,39 @@ def handle_info({:ping_response_timeout}, state) do
   {:noreply, state}
 end
 
-def on_connect([message: message, state: state]) do
+def on_connect([message: _message, state: _state]) do
   # Logger.info("on_connect")
   true
 end
 
-def on_connect_ack([message: message, state: state]) do
+def on_connect_ack([message: _message, state: _state]) do
   # Logger.info("on_connect_ack")
   true
 end
 
-def on_subscribed_publish([message: %Message.Publish{} = data, state: s]) do
+def on_subscribed_publish([message: %Message.Publish{} = data, state: _s]) do
   Dispatcher.incoming_message(data.message)
   true
 end
 
-def on_publish([message: message, state: state]), do: true
-def on_publish_receive([message: message, state: state]), do: true
-def on_publish_release([message: message, state: state]), do: true
-def on_publish_complete([message: message, state: state]), do: true
-def on_publish_ack([message: message, state: state]), do: true
-def on_subscribe([message: message, state: state]), do: true
-def on_subscribe_ack([message: message, state: state]), do: true
-def on_unsubscribe([message: message, state: state]), do: true
-def on_unsubscribe_ack([message: message, state: state]), do: true
+def on_publish([message: _message, state: _state]), do: true
+def on_publish_receive([message: _message, state: _state]), do: true
+def on_publish_release([message: _message, state: _state]), do: true
+def on_publish_complete([message: _message, state: _state]), do: true
+def on_publish_ack([message: _message, state: _state]), do: true
+def on_subscribe([message: _message, state: _state]), do: true
+def on_subscribe_ack([message: _message, state: _state]), do: true
+def on_unsubscribe([message: _message, state: _state]), do: true
+def on_unsubscribe_ack([message: _message, state: _state]), do: true
 
-def on_subscribed_publish_ack([message: message, state: state]), do: true
-def on_ping([message: message, state: state]), do: true
-def on_ping_response([message: message, state: state]), do: true
-def on_ping_response_timeout([message: message, state: state]), do: true
-def on_disconnect([message: message, state: state]), do: true
+def on_subscribed_publish_ack([message: _message, state: _state]), do: true
+def on_ping([message: _message, state: _state]), do: true
+def on_ping_response([message: _message, state: _state]), do: true
+def on_ping_response_timeout([message: _message, state: _state]), do: true
+def on_disconnect([message: _message, state: _state]), do: true
 
 defp do_connect(s) when is_map(s) do
-  opts = Application.get_env(:mcp, Mqtt.Client) |> Keyword.get(:broker)
+  opts = Application.get_env(:mqtt, Mqtt.Client) |> Keyword.get(:broker)
 
   {:ok, conn_pid} = Connection.start_link(self())
 
@@ -304,9 +304,10 @@ defp do_connect(s) when is_map(s) do
   s = %{s | keep_alive_interval: keep_alive * 1000,
             ping_response_timeout_interval: ping_response_timeout * 1000}
 
-  conn_result = s.connection |> Connection.connect(message, connect_opts)
+  #conn_result = s.connection |> Connection.connect(message, connect_opts)
+  :ok = s.connection |> Connection.connect(message, connect_opts)
 
-  {s, conn_result}
+  {s, :ok}
 end
 
 defp do_subscribe(s, opts) when is_map(s) do

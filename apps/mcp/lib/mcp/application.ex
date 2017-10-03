@@ -6,6 +6,18 @@ defmodule Mcp.Application do
   use Application
 
   def start(_type, _args) do
+    build_env =
+      Application.get_env(:mcp, Mcp.Application) |>
+        Keyword.get(:build_env)
+
+    autostart =
+    case build_env do
+      "dev" -> true
+      _     -> false
+    end
+
+    initial_state = %{autostart: autostart}
+
     # List all child processes to be supervised
     children = [Mcp.Repo]
       # Starts a worker by calling: Mcp.Worker.start_link(arg)

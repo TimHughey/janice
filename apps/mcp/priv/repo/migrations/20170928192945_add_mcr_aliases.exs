@@ -1,14 +1,14 @@
-defmodule Mcp.Repo.Migrations.AddMcrAliasTable do
+defmodule Mcp.Repo.Migrations.AddDevAliasTable do
   @moduledoc false
   use Ecto.Migration
 
   def change do
     current_time = fragment(~s/(now() at time zone 'utc')/)
 
-    drop_if_exists table(:mcr_alias)
-    drop_if_exists index(:mcr_alias, [:device])
-    drop_if_exists index(:mcr_alias, [:friendly_name])
-    create_if_not_exists table(:mcr_alias) do
+    drop_if_exists table(:dev_alias)
+    drop_if_exists index(:dev_alias, [:device])
+    drop_if_exists index(:dev_alias, [:friendly_name])
+    create_if_not_exists table(:dev_alias) do
       add :device, :string, size: 40, null: false
       add :friendly_name, :string, size: 25, null: false
       add :description, :text
@@ -17,9 +17,9 @@ defmodule Mcp.Repo.Migrations.AddMcrAliasTable do
       timestamps()
     end
 
-    create_if_not_exists index(:mcr_alias, [:device], unique: true)
-    create_if_not_exists index(:mcr_alias, [:friendly_name], unique: true)
-    execute("create sequence if not exists seq_mcr_alias minvalue 1 start with 1")
+    create_if_not_exists index(:dev_alias, [:device], unique: true)
+    create_if_not_exists index(:dev_alias, [:friendly_name], unique: true)
+    execute("create sequence if not exists seq_dev_alias minvalue 1 start with 1")
   end
 
 #   add :value, :map, null: false, default: %{}

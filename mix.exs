@@ -7,7 +7,6 @@ defmodule Mercurial.Mixfile do
     [
       apps_path: "apps",
       version: "0.1.0",
-      start_permanent: Mix.env == :prod,
       deps: deps(),
       aliases: aliases(),
       build_embedded: Mix.env == :prod,
@@ -31,7 +30,8 @@ defmodule Mercurial.Mixfile do
      {:distillery, "~> 1.0"},
      {:hulaaki, "~> 0.1.0"},
      {:uuid, "~> 1.1"},
-     {:credo, "> 0.0.0", only: [:dev, :test]}]
+     {:credo, "> 0.0.0", only: [:dev, :test]},
+     {:dialyxir, "~> 0.5", only: [:dev], runtime: false}]
   end
 
   defp aliases do

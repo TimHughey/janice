@@ -1,4 +1,4 @@
-defmodule Mcp.McrAlias do
+defmodule Mcp.DevAlias do
 @moduledoc false
 
 require Logger
@@ -9,10 +9,10 @@ import Mcp.Repo, only: [get_by: 2, insert_or_update: 1]
 import Ecto.Changeset, only: [change: 2]
 import Ecto.Adapters.SQL, only: [query!: 2]
 
-alias Mcp.McrAlias
+alias Mcp.DevAlias
 alias Mcp.Repo
 
-schema "mcr_alias" do
+schema "dev_alias" do
   field :device
   field :friendly_name
   field :description
@@ -26,15 +26,15 @@ Retrieve a friendly name for a device id
 If the device doesn't exist a new friendly_name will be created
 
 ## Examples:
-  iex> Mcp.McrAlias.friendly_name("i2c/f8f005f73fff.01.sht31")
+  iex> Mcp.DevAlias.friendly_name("i2c/f8f005f73fff.01.sht31")
   "relhum"
 
-  iex> Mcp.McrAlias.friendly_name("ds/nodev") |> String.starts_with?("new")
+  iex> Mcp.DevAlias.friendly_name("ds/nodev") |> String.starts_with?("new")
   true
 """
 def friendly_name(device) when is_binary(device) do
-  case get_by(McrAlias, [device: device]) do
-    nil -> %McrAlias{device: device,
+  case get_by(DevAlias, [device: device]) do
+    nil -> %DevAlias{device: device,
                      friendly_name: new_friendly_name(),
                      description: "auto created for unknown device"}
            |> add |> Map.get(:friendly_name)
@@ -48,17 +48,24 @@ def friendly_name(nil), do: nil
 Retrieve a device id for a friendly name
 
 ## Examples:
-  iex> Mcp.McrAlias.device("relhum")
+  iex> Mcp.DevAlias.device("relhum")
   "i2c/f8f005f73fff.01.sht31"
 
-  iex> Mcp.McrAlias.device("unknown")
+  iex> Mcp.DevAlias.device("unknown")
   nil
 
 """
 def device(friendly_name) when is_binary(friendly_name) do
-  case get_by(McrAlias, [friendly_name: friendly_name]) do
+  case get_by(DevAlias, [friendly_name: friendly_name]) do
     nil -> nil
     d -> d.device
+  end
+end
+
+def get_by_friendly_name(friendly_name) when is_binary(friendly_name) do
+  case get_by(DevAlias, [friendly_name: friendly_name]) do
+    nil -> nil
+    d -> d
   end
 end
 
@@ -66,32 +73,32 @@ end
 Retrieve the last time a friendly name was used
 
 ## Examples:
-  iex> Mcp.McrAlias.last_seen("relhum") |> Timex.is_valid?
+  iex> Mcp.DevAlias.last_seen("relhum") |> Timex.is_valid?
   true
 
-  iex> Mcp.McrAlias.last_seen("bad test dev")
+  iex> Mcp.DevAlias.last_seen("bad test dev")
   nil
 """
 def last_seen(friendly_name) when is_binary(friendly_name) do
-  case get_by(McrAlias, [friendly_name: friendly_name]) do
+  case get_by(DevAlias, [friendly_name: friendly_name]) do
     nil -> nil
     d -> d.dt_last_seen
   end
 end
 
 @doc ~S"""
-Add a new McrAlias
+Add a new DevAlias
 
 ## Examples:
-  iex> d = %Mcp.McrAlias{friendly_name: "relhum",
+  iex> d = %Mcp.DevAlias{friendly_name: "relhum",
   ...>                   device: "i2c/f8f005f73fff.01.sht31"}
-  ...> %{friendly_name: friendly_name} = Mcp.McrAlias.add(d)
+  ...> %{friendly_name: friendly_name} = Mcp.DevAlias.add(d)
   ...> friendly_name
   "relhum"
 """
-def add(%McrAlias{} = d) do
+def add(%DevAlias{} = d) do
   to_add =
-    case get_by(McrAlias, friendly_name: d.friendly_name) do
+    case get_by(DevAlias, friendly_name: d.friendly_name) do
       nil -> d
       friendly_name -> friendly_name
     end
@@ -107,11 +114,11 @@ Get a new friendly name
  - useful for creating a new alias for a device id not previously knowns
 
 ## Examples:
-  iex> Mcp.McrAlias.new_friendly_name() |> String.starts_with?("new")
+  iex> Mcp.DevAlias.new_friendly_name() |> String.starts_with?("new")
   true
 """
 def new_friendly_name do
-  query = ~S/ select nextval('seq_mcr_alias') /
+  query = ~S/ select nextval('seq_dev_alias') /
 
   %{rows: [[next_num]]} = query!(Repo, query)
   num_str = next_num |> Integer.to_string() |> String.pad_leading(6, "0")

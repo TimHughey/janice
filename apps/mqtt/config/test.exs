@@ -17,7 +17,7 @@ config :mqtt, Mqtt.Client,
   build_env: "#{Mix.env}"
 
 config :mqtt, Mqtt.Dispatcher,
-  log_reading: false,
+  log_reading: true,
   rpt_feed: "mcr/f/report",
   cmd_feed: "mcr/f/command"
 

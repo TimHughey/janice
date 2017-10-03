@@ -4,13 +4,24 @@ defmodule Mqtt.Application do
   @moduledoc false
 
   use Application
-  alias Mqtt.Client
 
   def start(_type, _args) do
+
+    build_env =
+      Application.get_env(:mqtt, Mqtt.Application) |> Keyword.get(:build_env)
+
+    autostart =
+    case build_env do
+      "dev" -> true
+      _     -> false
+    end
+
+    initial_state = %{autostart: autostart}
+
     # List all child processes to be supervised
     children = [
-      {Mqtt.Client, %{}},
-      {Mqtt.Dispatcher, %{}}]
+      {Mqtt.Client, initial_state},
+      {Mqtt.Dispatcher, initial_state}]
       # Starts a worker by calling: Mqtt.Worker.start_link(arg)
       # {Mqtt.Worker, arg},
 

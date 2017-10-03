@@ -1,16 +1,16 @@
-defmodule Mcp.McrAliasTest do
+defmodule Mcp.DevAliasTest do
   @moduledoc false
   use ExUnit.Case, async: true
-  doctest Mcp.McrAlias
+  doctest Mcp.DevAlias
 
-  alias Mcp.McrAlias
+  alias Mcp.DevAlias
 
   setup_all do
-    McrAlias.add(%McrAlias{friendly_name: "relhum",
+    DevAlias.add(%DevAlias{friendly_name: "relhum",
                            device: "i2c/f8f005f73fff.01.sht31",
                            description: "test relative humidity"})
 
-   McrAlias.add(%McrAlias{friendly_name: "temp_probe1",
+   DevAlias.add(%DevAlias{friendly_name: "temp_probe1",
                           device: "ds/28ffa442711ff",
                           description: "test temp probe"})
     :ok
