@@ -163,10 +163,11 @@ public:
   void printStopReport(const char *func_name = nullptr, uint8_t indent = 2);
 
 protected:
-  bool specialDebugMode = true;
+  bool specialDebugMode = false;
   bool debugMode = false;
   bool infoMode = false;
   bool noticeMode = false;
+  bool discoverLogMode = true;
 
   virtual bool discover();
   bool needDiscover();

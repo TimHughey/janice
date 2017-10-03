@@ -52,9 +52,9 @@ void positionsReading::populateJSON(JsonObject &root) {
   // static char pio_id[_max_pios][2] = {0x00};
 
   root["type"] = "switch";
-  root["pios"] = _pios;
+  root["pio_count"] = _pios;
 
-  JsonArray &pio = root.createNestedArray("positions");
+  JsonArray &pio = root.createNestedArray("states");
 
   // here we have two loop variables
   // 1.  i -> counts the pios upwards

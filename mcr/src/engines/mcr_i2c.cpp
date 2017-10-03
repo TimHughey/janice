@@ -98,18 +98,21 @@ bool mcrI2c::discover() {
       i2cDev_t dev(search_addr, useMultiplexer(), bus);
 
       if (justSeenDevice(dev)) {
-        if (infoMode || specialDebugMode) {
+        if (infoMode || discoverLogMode) {
           logDateTime(__PRETTY_FUNCTION__);
+          log("flagging device as just seen: ");
           dev.debug();
-          log(" already known, flagged as just seen", true);
+          log(" sizeof(i2cDev_t)=");
+          log(sizeof(i2cDev_t), true);
         }
       } else { // device was not known, must addr
         i2cDev_t *new_dev = new i2cDev(dev);
-        if (specialDebugMode) {
+        if (infoMode || discoverLogMode) {
           logDateTime(__PRETTY_FUNCTION__);
-          log(" adding device: ");
+          log("adding device: ");
           dev.debug();
-          log("", true);
+          log(" sizeof(i2cDev_t)=");
+          log(sizeof(i2cDev_t), true);
         }
         addDevice(new_dev);
       }
@@ -121,11 +124,11 @@ bool mcrI2c::discover() {
       bus += 1;                                // the count of search devs
       addrs_index = 0;                         // move to next bus
 
-      if (specialDebugMode) {
-        logDateTime(__PRETTY_FUNCTION__);
-        log("finished scanning bus: ");
-        log((bus - 1), true);
-      }
+      // if (specialDebugMode) {
+      //   logDateTime(__PRETTY_FUNCTION__);
+      //   log("finished scanning bus: ");
+      //   log((bus - 1), true);
+      // }
     } // last bus check
   }   // needDiscover
 

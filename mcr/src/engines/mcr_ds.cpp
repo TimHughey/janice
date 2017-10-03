@@ -89,13 +89,24 @@ bool mcrDS::discover() {
         dsDev_t dev(found_addr, true);
 
         if (justSeenDevice(dev)) {
-          if (infoMode) {
+          if (infoMode || discoverLogMode) {
             logDateTime(__PRETTY_FUNCTION__);
+            log("flagging device as just seen: ");
             dev.debug();
-            log(" already known, flagged as just seen", true);
+            log(" sizeof(dsDev_t)=");
+            log(sizeof(dsDev_t), true);
           }
         } else { // device was not known, must addr
           dsDev_t *new_dev = new dsDev(dev);
+
+          if (infoMode || discoverLogMode) {
+            logDateTime(__PRETTY_FUNCTION__);
+            log("adding device: ");
+            dev.debug();
+            log(" sizeof(dsDev_t)=");
+            log(sizeof(dsDev_t), true);
+          }
+
           addDevice(new_dev);
         }
       } else { // crc check failed
@@ -666,31 +677,36 @@ bool mcrDS::cmdCallback(JsonObject &root) {
   const char *switch_id = root["switch"];
   mcrRefID_t refid = (const char *)root["refid"];
   mcrDevID_t sw(switch_id);
-  const JsonVariant &variant = root.get<JsonVariant>("pio");
-  const JsonArray &pio = variant.as<JsonArray>();
+  const JsonVariant &variant = root.get<JsonVariant>("states");
+  const JsonArray &states = variant.as<JsonArray>();
   uint8_t mask = 0x00;
-  uint8_t state = 0x00;
+  uint8_t tobe_state = 0x00;
 
-  // iterate through the array of pio values
-  for (auto value : pio) {
+  // iterate through the array of new states
+  for (auto element : states) {
     // get a reference to the object from the array
-    const JsonObject &object = value.as<JsonObject>();
+    const JsonObject &requested_state = element.as<JsonObject>();
+
+    const uint8_t bit = atoi(requested_state["pio"]);
+    const bool state = requested_state["state"].as<bool>();
 
     // use ArduionJson ability to iterate through the key/value pairs
-    for (auto kv : object) {
-      uint8_t bit = atoi(kv.key);
-      const bool position = kv.value.as<bool>();
+    // for (auto kv : object) {
+    //   uint8_t bit = atoi(kv.key);
+    //   const bool position = kv.value.as<bool>();
 
-      // set the mask with each bit that should be adjusted
-      mask |= (0x01 << bit);
+    // set the mask with each bit that should be adjusted
+    mask |= (0x01 << bit);
 
-      // set the tobe state with the values those bits should be
-      if (position) {
-        state |= (0x01 << bit);
-      }
+    // set the tobe state with the values those bits should be
+    // if the new_state is true (on) then set the bit,
+    // otherwise leave it unset
+    if (state) {
+      tobe_state |= (0x01 << bit);
     }
   }
-  mcrCmd_t cmd(sw, mask, state, refid);
+
+  mcrCmd_t cmd(sw, mask, tobe_state, refid);
   cmd_queue.push(&cmd);
 #ifdef VERBOSE
   uint8_t pio_count = root["pio_count"];
@@ -699,7 +715,7 @@ bool mcrDS::cmdCallback(JsonObject &root) {
   Serial.print(" pio_count=");
   Serial.print(pio_count);
   Serial.print(" requested_state=");
-  Serial.print(state, HEX);
+  Serial.print(tobe_state, HEX);
   Serial.println();
 #endif
 
