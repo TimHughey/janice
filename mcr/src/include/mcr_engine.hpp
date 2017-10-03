@@ -167,7 +167,7 @@ protected:
   bool debugMode = false;
   bool infoMode = false;
   bool noticeMode = false;
-  bool discoverLogMode = true;
+  bool discoverLogMode = false;
 
   virtual bool discover();
   bool needDiscover();
