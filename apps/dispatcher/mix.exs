@@ -1,11 +1,9 @@
-defmodule Mqtt.Mixfile do
-  @moduledoc """
-  """
+defmodule Dispatcher.Mixfile do
   use Mix.Project
 
   def project do
     [
-      app: :mqtt,
+      app: :dispatcher,
       version: "0.1.0",
       build_path: "../../_build",
       config_path: "../../config/config.exs",
@@ -21,12 +19,13 @@ defmodule Mqtt.Mixfile do
   def application do
     [
       extra_applications: [:logger],
-      mod: {Mqtt.Application, []}
+      mod: {Dispatcher.Application, []}
     ]
   end
 
   # Run "mix help deps" to learn about dependencies.
   defp deps do
-    []
+    [{:command, in_umbrella: true},
+     {:mcp, in_umbrella: true}]
   end
 end

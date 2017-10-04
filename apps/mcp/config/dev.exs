@@ -2,10 +2,14 @@
 # and its dependencies with the aid of the Mix.Config module.
 use Mix.Config
 
-config :distillery, no_warn_missing: [:elixir_make, :distillery]
-
 config :mcp, Mcp.Application,
   build_env: "#{Mix.env}"
+
+config :mcp, Mcp.SoakTest,
+  startup_delay_ms: 1000,
+  periodic_log_first_ms: (1 * 60 * 1000),
+  periodic_log_ms: (15 * 50 * 1000),
+  flash_led_ms: 1000
 
 config :mcp, Mcp.Repo,
   adapter: Ecto.Adapters.Postgres,
@@ -14,12 +18,7 @@ config :mcp, Mcp.Repo,
   password: System.get_env("MERC_TEST_DB_PASS"),
   hostname: "gabriel.wisslanding.com"
 
+config :mcp, Mcp.Switch,
+  logCmdAck: true
+
 config :mcp, :ecto_repos, [Mcp.Repo]
-
-config :logger,
-  backends: [:console],
-  level: :info
-
-config :logger, :console,
-  metadata: [:module],
-  format: "$time $metadata$message\n"

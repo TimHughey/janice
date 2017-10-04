@@ -2,8 +2,6 @@
 # and its dependencies with the aid of the Mix.Config module.
 use Mix.Config
 
-config :distillery, no_warn_missing: [:elixir_make, :distillery]
-
 config :mqtt, Mqtt.Application,
   build_env: "#{Mix.env}"
 
@@ -15,16 +13,3 @@ config :mqtt, Mqtt.Client,
   rpt_feed: "mcr/f/report",
   cmd_feed: "mcr/f/command",
   build_env: "#{Mix.env}"
-
-config :mqtt, Mqtt.Dispatcher,
-  log_reading: true,
-  rpt_feed: "mcr/f/report",
-  cmd_feed: "mcr/f/command"
-
-config :logger,
-  backends: [:console],
-  level: :info
-
-config :logger, :console,
-  metadata: [:module],
-  format: "$time $metadata$message\n"

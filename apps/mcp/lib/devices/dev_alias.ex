@@ -26,7 +26,7 @@ Retrieve a friendly name for a device id
 If the device doesn't exist a new friendly_name will be created
 
 ## Examples:
-  iex> Mcp.DevAlias.friendly_name("i2c/f8f005f73fff.01.sht31")
+  iex> Mcp.DevAlias.friendly_name("i2c/F8F005F73FFF.01.sht31")
   "relhum"
 
   iex> Mcp.DevAlias.friendly_name("ds/nodev") |> String.starts_with?("new")
@@ -49,7 +49,7 @@ Retrieve a device id for a friendly name
 
 ## Examples:
   iex> Mcp.DevAlias.device("relhum")
-  "i2c/f8f005f73fff.01.sht31"
+  "i2c/F8F005F73FFF.01.sht31"
 
   iex> Mcp.DevAlias.device("unknown")
   nil

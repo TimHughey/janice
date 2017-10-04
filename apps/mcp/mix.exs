@@ -63,15 +63,9 @@ defmodule Mcp.Mixfile do
   end
 
   defp deps do
-    [{:httpoison, "~> 0.12"},
-     {:hackney, "~> 1.9"},
-     {:timex, "~> 3.0"},
-     {:poison, "~> 3.1"},
-     {:postgrex, "~> 0.13"},
-     {:ecto, "~> 2.1"},
-     {:timex_ecto, "~> 3.1"},
-     {:distillery, "~> 1.0"},
-     {:credo, "> 0.0.0", only: [:dev, :test]}]
+    [{:command, in_umbrella: true},
+     {:mqtt, in_umbrella: true}]
+
   end
 
   defp aliases do

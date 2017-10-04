@@ -3,13 +3,12 @@ defmodule Mqtt.Client do
 """
 require Logger
 use GenServer
-import Process, only: [send_after: 3]
+
 alias Hulaaki.Connection
 alias Hulaaki.Message
 
-# alias Mqtt.Client
-alias Mqtt.Dispatcher
-# alias Mcp.Reading
+import Application, only: [get_env: 2]
+import Process, only: [send_after: 3]
 
 #  def child_spec(opts) do
 #
@@ -63,6 +62,12 @@ end
 
 def publish(opts) do
   GenServer.call(__MODULE__, {:publish, opts})
+end
+
+def publish_switch_cmd(message) do
+  cmd_feed = Application.get_env(:mqtt, Mqtt.Client) |> Keyword.get(:cmd_feed)
+  opts = [topic: cmd_feed, message: message, dup: 0, qos: 0, retain: 0]
+  publish(opts)
 end
 
 def handle_call(:state, _from, state) do
@@ -250,7 +255,11 @@ def on_connect_ack([message: _message, state: _state]) do
 end
 
 def on_subscribed_publish([message: %Message.Publish{} = data, state: _s]) do
-  Dispatcher.incoming_message(data.message)
+  msg = data.message
+
+  # Logger.info("json=#{msg}")
+
+  GenServer.cast(Dispatcher.InboundMessage, {:incoming_message, msg})
   true
 end
 
@@ -347,6 +356,11 @@ defp update_packet_id(%{packet_id: 65_535} = state) do
 end
 defp update_packet_id(%{packet_id: packet_id} = state) do
   %{state | packet_id: (packet_id + 1)}
+end
+
+defp config(key)
+when is_atom(key) do
+  get_env(:mqtt, Mqtt.Client) |> Keyword.get(key)
 end
 
 end

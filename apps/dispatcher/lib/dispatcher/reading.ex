@@ -1,4 +1,4 @@
-defmodule Mcp.Reading do
+defmodule Dispatcher.Reading do
 @moduledoc """
 """
 
@@ -7,7 +7,6 @@ use Timex
 require Logger
 
 alias Poison
-alias Mcp.DevAlias
 
 @undef "undef"
 @version 1
@@ -26,8 +25,8 @@ defstruct version: 0,
           tc: nil,
           tf: nil,
           rh: nil,
-          pios: 0,          # switch: num of pios
-          positions: nil,   # switch: array of positions
+          pio_count: 0,     # switch: num of unique pio
+          states: nil,      # switch: array of states (for each pio)
           state: nil,       # switch: state of each pio
           pio: nil,         # switch: pio id (number)
           cmdack: false,
@@ -35,7 +34,8 @@ defstruct version: 0,
           refid: nil,
           p0: true, p1: true, p2: true,  # these aren't actually stored at
           p3: true, p4: true, p5: true,  # this level however listing them
-          p6: true, p7: true             # here ensures the atoms are created
+          p6: true, p7: true,            # here ensures the atoms are created
+          json: nil
 
 @doc ~S"""
 Parse a JSON into a Reading
@@ -44,12 +44,13 @@ Parse a JSON into a Reading
   iex> json =
   ...>   ~s({"version": 1, "host": "mcr-macaddr", "device": "ds/29.00000ffff",
   ...>       "mtime": 1506867918, "type": "temp", "tc": 20.0, "tf": 80.0})
-  ...> Mcp.Reading.decode!(json) |> Mcp.Reading.metadata?()
+  ...> Dispatcher.Reading.decode!(json) |> Dispatcher.Reading.metadata?()
   true
 """
 def decode!(json)
 when is_binary(json) do
-  r = Poison.decode!(json, [keys: :atoms!, as: %Mcp.Reading{}])
+  r = Poison.decode!(json, [keys: :atoms!, as: %Dispatcher.Reading{}])
+  Map.put(r, :json, json)
   #Map.put(r, :friendly_name, DevAlias.friendly_name(r.device))
 end
 
@@ -66,18 +67,16 @@ NOTE: 1. As of 2017-10-01 we only support readings from mcr hosts with
   iex> json =
   ...>   ~s({"version": 1, "host":"mcr-macaddr", "device":"ds/28.00000ffff",
   ...>       "mtime": 1506867918, "type": "temp", "tc": 20.0, "tf": 80.0})
-  ...> Mcp.Reading.decode!(json) |> Mcp.Reading.metadata?()
+  ...> Dispatcher.Reading.decode!(json) |> Dispatcher.Reading.metadata?()
   true
 
   iex> json =
   ...>   ~s({"version": 0, "host": "other-macaddr", "device": "ds/28.0000",
   ...>       "mtime": 1506867918, "type": "temp", "tc": 20.0, "tf": 80.0})
-  ...> Mcp.Reading.decode!(json) |> Mcp.Reading.metadata?()
+  ...> Dispatcher.Reading.decode!(json) |> Dispatcher.Reading.metadata?()
   false
 """
 def metadata?(%Reading{} = r) do
-  epoch_first_year = (365 * 24 * 60 * 60) - 1 # seconds since epoch for year 2
-
   r.version === @version and
     is_integer(r.mtime) and
     String.starts_with?(r.host, "mcr") and
@@ -95,13 +94,13 @@ NOTE: 1. We check the mtime to confirm it is greater than epoch + 1 year.
   iex> json =
   ...>   ~s({"version": 1, "host":"mcr-macaddr", "device":"ds/28.0000",
   ...>       "mtime": 1506867918, "type": "temp", "tc": 20.0, "tf": 80.0})
-  ...> Mcp.Reading.decode!(json) |> Mcp.Reading.mtime_good?()
+  ...> Dispatcher.Reading.decode!(json) |> Dispatcher.Reading.mtime_good?()
   true
 
   iex> json =
   ...>   ~s({"version": 0, "host": "other-macaddr",
   ...>       "mtime": 2106, "type": "startup"})
-  ...> Mcp.Reading.decode!(json) |> Mcp.Reading.mtime_good?()
+  ...> Dispatcher.Reading.decode!(json) |> Dispatcher.Reading.mtime_good?()
   false
 """
 
@@ -118,13 +117,13 @@ Is the Reading a startup announcement?
   iex> json =
   ...>   ~s({"version": 1, "host": "mcr-macaddr",
   ...>       "mtime": 2106, "type": "startup"})
-  ...> Mcp.Reading.decode!(json) |> Mcp.Reading.startup?()
+  ...> Dispatcher.Reading.decode!(json) |> Dispatcher.Reading.startup?()
   true
 
   iex> json =
   ...>   ~s({"version": 1, "host":"mcr-macaddr", "device":"ds/28.0000",
   ...>       "mtime": 1506867918, "type": "temp", "tc": 20.0, "tf": 80.0})
-  ...> Mcp.Reading.decode!(json) |> Mcp.Reading.startup?()
+  ...> Dispatcher.Reading.decode!(json) |> Dispatcher.Reading.startup?()
   false
 """
 def startup?(%Reading{} = r) do
@@ -139,7 +138,7 @@ Is the Reading a temperature?
   iex> json =
   ...>   ~s({"version": 1, "host": "mcr-macaddr", "device": "ds/28.0000",
   ...>       "mtime": 1506867918, "type": "temp", "tc": 20.0, "tf": 80.0})
-  ...> Mcp.Reading.decode!(json) |> Mcp.Reading.temperature?()
+  ...> Dispatcher.Reading.decode!(json) |> Dispatcher.Reading.temperature?()
   true
 """
 def temperature?(%Reading{} = r) do
@@ -158,7 +157,7 @@ Is the Reading a relative humidity?
  ...>       "device": "ds/29.0000", "mtime": 1506867918,
  ...>       "type": "relhum",
  ...>       "rh": 56.0})
- ...> Mcp.Reading.decode!(json) |> Mcp.Reading.relhum?()
+ ...> Dispatcher.Reading.decode!(json) |> Dispatcher.Reading.relhum?()
  true
 """
 def relhum?(%Reading{} = r) do
@@ -175,18 +174,18 @@ Is the Reading a switch?
   ...>   ~s({"version": 1, "host": "mcr-macaddr",
   ...>       "device": "ds/29.0000", "mtime": 1506867918,
   ...>        "type": "switch",
-  ...>        "positions": [{"pio": 0, "state": true},
+  ...>        "states": [{"pio": 0, "state": true},
   ...>                      {"pio": 1, "state": false}],
-  ...>        "pios": 2})
-  ...> Mcp.Reading.decode!(json) |> Mcp.Reading.switch?()
+  ...>        "pio_count": 2})
+  ...> Dispatcher.Reading.decode!(json) |> Dispatcher.Reading.switch?()
   true
 """
 def switch?(%Reading{} = r) do
   metadata?(r) and
     (r.type === @switch_t) and
     is_binary(r.device) and
-    is_list(r.positions) and
-    r.pios > 0
+    is_list(r.states) and
+    r.pio_count > 0
 end
 
 @doc ~S"""
@@ -197,11 +196,11 @@ Is the Reading a cmdack?
   ...>   ~s({"version": 1, "host": "mcr-macaddr",
   ...>       "device": "ds/29.0000", "mtime": 1506867918,
   ...>        "type": "switch",
-  ...>        "positions": [{"pio": 0, "state": true},
+  ...>        "states": [{"pio": 0, "state": true},
   ...>                      {"pio": 1, "state": false}],
-  ...>        "pios": 2,
+  ...>        "pio_count": 2,
   ...>        "cmdack": true, "latency": 10, "refid": "uuid"})
-  ...> Mcp.Reading.decode!(json) |> Mcp.Reading.cmdack?()
+  ...> Dispatcher.Reading.decode!(json) |> Dispatcher.Reading.cmdack?()
   true
 """
 def cmdack?(%Reading{} = r) do
@@ -210,5 +209,9 @@ def cmdack?(%Reading{} = r) do
     (r.latency > 0) and
     is_binary(r.refid)
 end
+
+def device(%Reading{} = r), do: r.device
+def states(%Reading{} = r), do: {r.device, r.states}
+def cmdack(%Reading{} = r), do: {r.device, r.states, r.refid, r.latency}
 
 end

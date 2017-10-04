@@ -1,4 +1,6 @@
 defmodule McpTest do
+  @moduledoc """
+  """
   use ExUnit.Case
   doctest Mcp
 

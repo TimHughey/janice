@@ -8,14 +8,22 @@ defmodule Mcp.SwitchTest do
 
   setup_all do
     # create a DevAlias for a device to control
-    dev = "ds/29.00112233445566FF"
+    dev  = "ds/290011223344FF"
+    led1 = "ds/291d1823000000"
+    buzz = "ds/12128521000000"
     pump1 = %DevAlias{device: "#{dev}:0", friendly_name: "test_pump1",
                       description: "created for testing"}
     pump2 = %DevAlias{device: "#{dev}:1", friendly_name: "test_pump2",
                       description: "created for testing"}
+    led1  = %DevAlias{device: "#{led1}:0", friendly_name: "led1",
+                      description: "led created for testing"}
+    buzz  = %DevAlias{device: "#{buzz}:0", friendly_name: "buzzer",
+                      description: "buzzer created for testing"}
 
     DevAlias.add(pump1)
     DevAlias.add(pump2)
+    DevAlias.add(led1)
+    DevAlias.add(buzz)
 
     states = [%{pio: 0, state: true}, %{pio: 1, state: false}]
 
