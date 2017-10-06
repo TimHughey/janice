@@ -30,9 +30,7 @@ when is_map(s) do
 end
 
 # GenServer callbacks
-def handle_info({:flash_led}, s)
-when is_map(s) do
-  Switch.set_state("led1", false)
+def handle_info({:flash_led}, s) do
   Switch.set_state("led1", true)
   Switch.set_state("led1", false)
 

@@ -1,9 +1,11 @@
-defmodule Command.Mixfile do
+defmodule Timeseries.Mixfile do
+  @moduledoc """
+  """
   use Mix.Project
 
   def project do
     [
-      app: :command,
+      app: :timeseries,
       version: "0.1.0",
       build_path: "../../_build",
       config_path: "../../config/config.exs",
@@ -11,6 +13,7 @@ defmodule Command.Mixfile do
       lockfile: "../../mix.lock",
       elixir: "~> 1.5",
       start_permanent: Mix.env == :prod,
+      build_embedded: Mix.env == :prod,
       deps: deps()
     ]
   end
@@ -19,16 +22,17 @@ defmodule Command.Mixfile do
   def application do
     [
       extra_applications: [:logger],
-      mod: {Command.Application, []}
+      mod: {Timeseries.Application, []},
+      # applications: [:instream, :hackney, :poolboy, :poison]
     ]
   end
 
   # Run "mix help deps" to learn about dependencies.
   defp deps do
-    [{:mqtt, in_umbrella: true},
-     {:timex, "~> 3.0"},
-     {:poison, "~> 3.1"},
-     {:distillery, "~> 1.0"},
-     {:credo, "> 0.0.0", only: [:dev, :test]}]
+    [{:instream, "~> 0.16"},
+     {:hackney, "~> 1.1"},
+     {:poison,  "~> 2.0 or ~> 3.0"},
+     {:poolboy, "~> 1.5"}]
+
   end
 end

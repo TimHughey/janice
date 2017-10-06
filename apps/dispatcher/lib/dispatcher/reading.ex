@@ -214,4 +214,6 @@ def device(%Reading{} = r), do: r.device
 def states(%Reading{} = r), do: {r.device, r.states}
 def cmdack(%Reading{} = r), do: {r.device, r.states, r.refid, r.latency}
 
+def as_map(%Reading{} = r), do: Map.from_struct(r)
+
 end

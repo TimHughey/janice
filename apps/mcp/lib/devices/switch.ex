@@ -27,15 +27,18 @@ use Timex.Ecto.Timestamps
 use Ecto.Schema
 
 import Application, only: [get_env: 2]
-import UUID, only: [uuid1: 0]
+import UUID, only: [uuid4: 0]
 import Ecto.Changeset, only: [change: 2]
 
-import Mcp.Repo, only: [get_by: 2, insert_or_update: 1]
+import Ecto.Query, only: [from: 2, where: 3]
+import Mcp.Repo, only: [get_by: 2, insert_or_update: 1, one: 1, insert!: 1,
+                        transaction: 1]
 
 #import Mqtt.Client, only: [publish_switch_cmd: 1]
 
 alias Command.SetSwitch
 alias Mcp.DevAlias
+alias Mcp.SwitchCmd
 alias Mqtt.Client
 
 def before_now do
@@ -43,13 +46,13 @@ def before_now do
   Timex.shift(dt, hours: -3)
 end
 
-schema "switches" do
+schema "switch" do
   field :device, :string
   field :enabled, :boolean, default: true
   field :states, {:array, :map}, default: []
-  field :pending_cmds, {:array, :map}, default: []
   field :dt_last_cmd, Timex.Ecto.DateTime
   field :dt_discovered, Timex.Ecto.DateTime
+  has_many :switch_cmd, Mcp.SwitchCmd
 
   timestamps usec: true
 end
@@ -76,64 +79,80 @@ def add_or_update(%Switch{} = s) do
 end
 
 def acknowledge_cmd({unique_id, states, refid, latency})
-when is_binary(unique_id) and
-  is_list(states) and
-  is_binary(refid) and
-  is_number(latency) do
+when is_binary(unique_id) and is_list(states) and is_binary(refid) and
+is_number(latency) do
+  acknowledge_cmd({unique_id, states, refid, latency}, :transaction)
+end
 
-  sw = get_by_unique_name(unique_id)
-
-  index = Enum.find_index(sw.pending_cmds,
-            fn(x) -> Map.get(x, "refid") === refid end)
-
-  result = ack_cmd_at_index(sw, states, index)
-
-  if config(:logCmdAck) do
-    {acked_refid, rt_latency} = result
-    Logger.info("acked refid: #{acked_refid} dev: #{as_ms(latency)} " <>
-                "rt: #{as_ms(rt_latency)}")
+def acknowledge_cmd({unique_id, states, refid, latency}, :transaction)
+when is_binary(unique_id) and is_list(states) and is_binary(refid) and
+is_number(latency) do
+  transaction fn ->
+    acknowledge_cmd({unique_id, states, refid, latency}, :no_transaction)
   end
-
-  result
 end
 
-defp ack_cmd_at_index(%Switch{}, _, index) when is_nil(index) do
-  {:nil, 0}
-end
+def acknowledge_cmd({unique_id, states, refid, latency}, :no_transaction)
+when is_binary(unique_id) and is_list(states) and is_binary(refid) and
+is_number(latency) do
+  ack_recv_dt = Timex.now()
 
-defp ack_cmd_at_index(%Switch{} = s, states, index)
-when is_list(states) and is_integer(index) do
-  {cmd_to_ack, pending_cmds} = List.pop_at(s.pending_cmds, index)
+  Logger.metadata(switch_ack_refid: refid)
 
-  updates = [pending_cmds: pending_cmds, states: states]
-  {:ok, _} = s |> change(updates) |> insert_or_update
+  query =
+    from(s in Switch,
+      join: c in assoc(s, :switch_cmd),
+      where: s.device == ^unique_id and c.refid == ^refid
+              and c.acked == false,
+      preload: [switch_cmd: c])
 
-  {:ok, acked_cmd_dt} = Map.get(cmd_to_ack, "cmd_dt") |>
-                  Timex.parse("{ISO:Extended}")
-  acked_uuid = Map.get(cmd_to_ack, "refid")
+  # TODO: should handle the case when no switch cmds exist
+  #       break this out into a separate function and use guards
+  sw = one(query)
+  cmdack = Map.get(sw, :switch_cmd) |> hd  # :switch_cmd is a list, get first
 
-  rt_latency = Timex.diff(Timex.now(), acked_cmd_dt)
-  {acked_uuid, rt_latency}
+  rt_latency =
+    (Timex.diff(ack_recv_dt, cmdack.dt_sent) / 1000) |> Float.round(2)
+
+  # latency from mcr is reported in microseconds, convert to millis
+  dev_latency = (latency / 1000) |> Float.round(2)
+
+  cmd_ack_updates = [acked: true, dev_latency: dev_latency,
+                     rt_latency: rt_latency, dt_ack: ack_recv_dt]
+  {:ok, cmdack} = cmdack |> change(cmd_ack_updates) |> insert_or_update
+
+  sw_updates = [states: states]
+  {:ok, updated} = sw |> change(sw_updates) |> insert_or_update
+
+  updated
 end
 
 def set_state(friendly_name, pos)
 when is_binary(friendly_name) and is_boolean(pos) do
-  Logger.metadata(switch_friendly_name: friendly_name)
-
-  get_by_friendly_name(friendly_name) |>
-    device_name_and_pio() |>
-    get_by_unique_name() |>
-    set_state(pos)
+  set_state(friendly_name, pos, :transaction)
 end
 
-def set_state({%Switch{pending_cmds: cmds, states: states} = sw, pio}, pos)
+def set_state(friendly_name, pos, :transaction)
+when is_binary(friendly_name) and is_boolean(pos) do
+  Logger.metadata(switch_friendly_name: friendly_name)
+
+  transaction fn ->
+    get_by_friendly_name(friendly_name) |>
+      device_name_and_pio() |>
+      get_by_unique_name() |>
+      set_state(pos) end
+end
+
+def set_state({%Switch{states: states} = sw, pio}, pos)
 when is_boolean(pos) do
   new_states = update_pio_state(states, pio, pos)
 
-  refid = uuid1()
-  new_cmd = %{refid: refid, cmd_dt: Timex.now()}
-  cmds = [new_cmd | cmds]
-  updates = [states: new_states, pending_cmds: cmds, dt_last_cmd: Timex.now()]
+  refid = uuid4()
+
+  scmd = Ecto.build_assoc(sw, :switch_cmd, refid: refid)
+  insert!(scmd)
+
+  updates = [states: new_states, dt_last_cmd: Timex.now()]
 
   # persist the switch to the database
   {:ok, updated_sw} = sw |> change(updates) |> insert_or_update
@@ -184,10 +203,14 @@ def state({_, _}), do: nil
 
 def update_states({unique_id, states})
 when is_binary(unique_id) and is_list(states) do
+  # Logger.info("update states dev: #{unique_id} #{inspect(states)}")
   add_or_update(unique_id) |> update_states(states)
 end
 
-def update_states(nil, _states), do: nil
+def update_states(nil, _states) do
+  Logger.info("update_states invoked with (nil, _states)")
+end
+
 def update_states(%Switch{} = sw, states) do
   update = [states: states]
   {:ok, updated} = sw |> change(update) |> insert_or_update
@@ -208,11 +231,11 @@ when is_list(states) do
   [get_friendly_names(s, hd(states)) | get_friendly_names(s, tl(states))]
 end
 
-defp get_friendly_names(%Switch{}, %{}), do: []
 defp get_friendly_names(%Switch{} = s, %{"pio" => pio, "state" => _}) do
   device_name = ~s/#{s.device}:#{pio}/
   DevAlias.friendly_name(device_name)
 end
+defp get_friendly_names(%Switch{}, %{}), do: []
 
 # this is the workhorse for retrieving a pio state
 # using recursion we search through the array of pio states
@@ -291,13 +314,13 @@ end
 
 defp as_ms(ms)
 when is_integer(ms) and ms < 1000 do
-  "#{ms}ms"
+  "#{ms}ms" |> String.pad_leading(10)
 end
 
 defp as_ms(ms)
 when is_integer(ms) and ms >= 1000 do
   val = ms / 1000 |> Float.round(2)
-  "#{val}ms"
+  "#{val}ms" |> String.pad_leading(10)
 end
 
 defp config(key)

@@ -8,6 +8,7 @@ import Process, only: [send_after: 3]
 
 alias Dispatcher.Reading
 alias Mcp.Switch
+alias Mcp.Sensor
 
 import Command.Control, only: [send_timesync: 0]
 
@@ -65,7 +66,13 @@ when is_binary(msg) and is_map(s) do
     send_timesync()
   end
 
+  if Reading.temperature?(r) || Reading.relhum?(r) do
+    # Logger.info(msg)
+    Sensor.external_update(Reading.as_map(r))
+  end
+
   if Reading.switch?(r) and not Reading.cmdack?(r) do
+    # Logger.info(msg)
     Switch.update_states(Reading.states(r))
   end
 

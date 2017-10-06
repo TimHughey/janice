@@ -296,7 +296,7 @@ defp do_connect(s) when is_map(s) do
   will_message  = opts |> Keyword.get(:will_message, "")
   will_qos      = opts |> Keyword.get(:will_qos, 0)
   will_retain   = opts |> Keyword.get(:will_retain, 0)
-  clean_session = opts |> Keyword.get(:clean_session, 1)
+  clean_session = opts |> Keyword.get(:clean_session, 0)
   keep_alive    = opts |> Keyword.get(:keep_alive, 100)
 
   # arbritary : based off recommendation on MQTT 3.1.1 spec Line 542/543

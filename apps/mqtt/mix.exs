@@ -12,6 +12,7 @@ defmodule Mqtt.Mixfile do
       deps_path: "../../deps",
       lockfile: "../../mix.lock",
       elixir: "~> 1.5",
+      build_embedded: Mix.env == :prod,
       start_permanent: Mix.env == :prod,
       deps: deps()
     ]
@@ -27,6 +28,14 @@ defmodule Mqtt.Mixfile do
 
   # Run "mix help deps" to learn about dependencies.
   defp deps do
-    []
+    [{:httpoison, "~> 0.12"},
+     {:hackney, "~> 1.9"},
+     {:timex, "~> 3.0"},
+     {:poison, "~> 3.1"},
+     {:distillery, "~> 1.0"},
+     {:hulaaki, "~> 0.1.0"},
+     {:uuid, "~> 1.1"},
+     {:credo, "> 0.0.0", only: [:dev, :test]},
+     {:dialyxir, "~> 0.5", only: [:dev], runtime: false}]
   end
 end

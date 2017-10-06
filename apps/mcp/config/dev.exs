@@ -8,8 +8,8 @@ config :mcp, Mcp.Application,
 config :mcp, Mcp.SoakTest,
   startup_delay_ms: 1000,
   periodic_log_first_ms: (1 * 60 * 1000),
-  periodic_log_ms: (15 * 50 * 1000),
-  flash_led_ms: 1000
+  periodic_log_ms: (15 * 60 * 1000),
+  flash_led_ms: (1000)
 
 config :mcp, Mcp.Repo,
   adapter: Ecto.Adapters.Postgres,
@@ -19,6 +19,6 @@ config :mcp, Mcp.Repo,
   hostname: "gabriel.wisslanding.com"
 
 config :mcp, Mcp.Switch,
-  logCmdAck: true
+  logCmdAck: false
 
 config :mcp, :ecto_repos, [Mcp.Repo]

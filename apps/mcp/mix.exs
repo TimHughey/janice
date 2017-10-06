@@ -64,7 +64,19 @@ defmodule Mcp.Mixfile do
 
   defp deps do
     [{:command, in_umbrella: true},
-     {:mqtt, in_umbrella: true}]
+     {:mqtt, in_umbrella: true},
+     {:timeseries, in_umbrella: true},
+     {:httpoison, "~> 0.12"},
+     {:hackney, "~> 1.9"},
+     {:timex, "~> 3.0"},
+     {:poison, "~> 3.1"},
+     {:postgrex, "~> 0.13"},
+     {:ecto, "~> 2.1"},
+     {:timex_ecto, "~> 3.1"},
+     {:distillery, "~> 1.0"},
+     {:uuid, "~> 1.1"},
+     {:credo, "> 0.0.0", only: [:dev, :test]},
+     {:dialyxir, "~> 0.5", only: [:dev], runtime: false}]
 
   end
 
