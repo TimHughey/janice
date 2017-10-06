@@ -11,14 +11,12 @@ use Timex.Ecto.Timestamps
 use Ecto.Schema
 
 import Application, only: [get_env: 2]
-import UUID, only: [uuid1: 0]
-import Ecto.Changeset, only: [apply_changes: 1, change: 2]
+import Ecto.Changeset, only: [change: 2]
 import Ecto.Query, only: [from: 2, where: 3]
 import Mcp.Repo, only: [insert!: 1, update!: 1, query: 1,
                         transaction: 1, one: 1]
 import Mcp.DevAlias, only: [friendly_name: 1]
 
-alias Mcp.DevAlias
 alias Mcp.SensorTemperature
 alias Mcp.SensorRelHum
 
