@@ -14,7 +14,7 @@ require 'json'
 require 'securerandom'
 require 'socket'
 
-require 'refIDTracker'
+require './refidtracker.rb'
 
 # ---
 # Define MQTT config, mostly from the environment
@@ -67,7 +67,7 @@ CONNECT_INFO = {
 TOPIC = 'mcr/f/report'.freeze
 $stderr.puts "Connecting to #{MQTT_HOST} as #{MQTT_USER} for #{TOPIC}"
 
-def handleClientStartup
+def handleClientStartup(client)
   send_time_sync(client)
   Time.new.to_i # return time for recording last publish time
 end
@@ -111,7 +111,7 @@ def human_us(usec)
   "#{val}#{unit}"
 end
 
-cmd_tracker = new CmdTracker
+cmd_tracker = CmdTracker.new
 
 MQTT::Client.connect(CONNECT_INFO).connect do |client|
   log = File.open('/tmp/merc.log', 'a+')
@@ -138,12 +138,13 @@ MQTT::Client.connect(CONNECT_INFO).connect do |client|
                    end
 
         # msg1 = "#{msg_time} host=#{datum["host"]} "
+				msg0 = " #{data_str}"
         msg1 = "#{msg_time}  "
         # msg2 = " " * (feed.length - 1)
         msg2 = ' '
 
         if datum.key?('startup')
-          last_publish_time = handleClientStartup(datum)
+          last_publish_time = handleClientStartup(client)
           msg2 += "startup=#{datum['startup']}"
         end
 
@@ -152,6 +153,7 @@ MQTT::Client.connect(CONNECT_INFO).connect do |client|
 
           # msg1 += "device=#{datum["device"]} type=#{datum["type"]} time_diff=#{time_diff}"
           msg1 += "#{datum['device']} #{datum['type']} "
+					msg2 = "#{datum["pio"]}"
 
           if datum.key?('cmdack')
             ref_id = datum['refid']
@@ -160,17 +162,18 @@ MQTT::Client.connect(CONNECT_INFO).connect do |client|
             msg1 += "rt_latency=#{human_ms(rt_latency)}"
 
             log.puts msg1
-            log.puts "   #{msg2}"
-            log.puts ' '
             log.fsync
           end
 
-          msg2 = deviceLogMessage(datum)
-
         end
 
+
+				# $stderr.puts msg0
         $stderr.puts msg1
-        $stderr.puts "   #{msg2}"
+
+				if msg2.length > 10
+        	$stderr.puts "   #{msg2}"
+				end
         $stderr.puts ' '
       end
 
@@ -225,7 +228,7 @@ MQTT::Client.connect(CONNECT_INFO).connect do |client|
         }
 
         json = JSON.generate(hash)
-        cmd_tracker[cid] = Time.now
+        cmd_tracker.track(cid)
         client.publish('mcr/f/command', json, qos = 0)
         #		sleep(0.05)
       end
