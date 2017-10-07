@@ -13,7 +13,7 @@ schema "sensor_temperature" do
   field :tc, :float
   field :tf, :float
   field :ttl_ms, :integer
-  belongs_to :sensor, Mcp.Switch
+  belongs_to :sensor, Mcp.Sensor
 
   timestamps usec: true
 end

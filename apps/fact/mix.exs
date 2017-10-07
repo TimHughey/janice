@@ -1,11 +1,11 @@
-defmodule Timeseries.Mixfile do
+defmodule Fact.Mixfile do
   @moduledoc """
   """
   use Mix.Project
 
   def project do
     [
-      app: :timeseries,
+      app: :fact,
       version: "0.1.0",
       build_path: "../../_build",
       config_path: "../../config/config.exs",
@@ -22,7 +22,7 @@ defmodule Timeseries.Mixfile do
   def application do
     [
       extra_applications: [:logger],
-      mod: {Timeseries.Application, []},
+      mod: {Fact.Application, []},
       # applications: [:instream, :hackney, :poolboy, :poison]
     ]
   end
@@ -33,6 +33,5 @@ defmodule Timeseries.Mixfile do
      {:hackney, "~> 1.1"},
      {:poison,  "~> 2.0 or ~> 3.0"},
      {:poolboy, "~> 1.5"}]
-
   end
 end

@@ -9,6 +9,7 @@ import Process, only: [send_after: 3]
 alias Dispatcher.Reading
 alias Mcp.Switch
 alias Mcp.Sensor
+alias Fact.RunMetric
 
 import Command.Control, only: [send_timesync: 0]
 
@@ -71,17 +72,13 @@ when is_binary(msg) and is_map(s) do
     Sensor.external_update(Reading.as_map(r))
   end
 
-  if Reading.switch?(r) and not Reading.cmdack?(r) do
-    # Logger.info(msg)
-    Switch.update_states(Reading.states(r))
-  end
-
-  if Reading.cmdack?(r) do
-    #Logger.info("json: #{r.json}")
-    Switch.acknowledge_cmd(Reading.cmdack(r))
+  if Reading.switch?(r) do
+    Switch.external_update(Reading.as_map(r))
   end
 
   s = %{s | messages_dispatched: s.messages_dispatched + 1}
+  RunMetric.record(module: "#{__MODULE__}", application: "mercurial",
+    metric: "msgs_dispatched", val: s.messages_dispatched)
 
   {:noreply, s}
 end

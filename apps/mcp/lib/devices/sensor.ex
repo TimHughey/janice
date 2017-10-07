@@ -10,19 +10,18 @@ use Timex
 use Timex.Ecto.Timestamps
 use Ecto.Schema
 
-import Application, only: [get_env: 2]
+#import Application, only: [get_env: 2]
 import Ecto.Changeset, only: [change: 2]
-import Ecto.Query, only: [from: 2, where: 3]
-import Mcp.Repo, only: [insert!: 1, update!: 1, query: 1,
-                        transaction: 1, one: 1]
+import Ecto.Query, only: [from: 2]
+import Mcp.Repo, only: [insert!: 1, update!: 1, transaction: 1, one: 1]
 import Mcp.DevAlias, only: [friendly_name: 1]
 
 alias Mcp.SensorTemperature
 alias Mcp.SensorRelHum
 
-alias Timeseries.Temperature
-alias Timeseries.Influx
-alias Timeseries.RelHum
+alias Fact.Fahrenheit
+alias Fact.Celsius
+alias Fact.RelativeHumidity
 
 schema "sensor" do
   field :device, :string
@@ -41,52 +40,42 @@ when is_map(r) do
   s = get_by_device_name(r.device, r.type) |> update_sensor_values(r)
 
   case s.sensor_type do
-    "temp"   -> tf = s.temperature.tf
-                tf = Float.to_string(tf) |> String.pad_leading(8)
+    "temp"   ->
+      Logger.debug fn ->
+        tf = s.temperature.tf
+        tf = Float.to_string(tf) |> String.pad_leading(8)
 
-                tc = s.temperature.tc
-                tc = Float.to_string(tc) |> String.pad_leading(8)
+        tc = s.temperature.tc
+        tc = Float.to_string(tc) |> String.pad_leading(8)
+        ~s/#{fname} #{tf}F #{tc}C/ end
 
-                t = %Temperature{}
-                t = %{t | fields: %{t.fields | val: s.temperature.tf}}
-                t = %{t | tags: %{t.tags | remote_host: r.host}}
-                t = %{t | tags: %{t.tags | device: r.device}}
-                t = %{t | tags: %{t.tags | friendly_name: fname}}
-                t = %{t | timestamp: r.mtime}
+      Fahrenheit.record(remote_host: r.host, device: r.device,
+        friendly_name: fname, mtime: r.mtime, val: s.temperature.tf)
 
-                Influx.write(t, [precision: :seconds])
+      Celsius.record(remote_host: r.host, device: r.device,
+        friendly_name: fname, mtime: r.mtime, val: s.temperature.tc)
 
-                Logger.debug fn -> ~s/#{fname} #{tf}F #{tc}C/ end
-    "relhum" -> tf = s.temperature.tf
-                tf = Float.to_string(tf) |> String.pad_leading(8)
+    "relhum" ->
+      Logger.debug fn ->
+        tf = s.temperature.tf
+        tf = Float.to_string(tf) |> String.pad_leading(8)
 
-                tc = s.temperature.tc
-                tc = Float.to_string(tc) |> String.pad_leading(8)
+        tc = s.temperature.tc
+        tc = Float.to_string(tc) |> String.pad_leading(8)
 
-                rh = s.relhum.rh
-                rh = Float.to_string(rh) |> String.pad_leading(8)
+        rh = s.relhum.rh
+        rh = Float.to_string(rh) |> String.pad_leading(8)
+        ~s/#{fname} #{tf}F #{tc}C #{rh}RH/ end
 
-                t = %Temperature{}
-                t = %{t | fields: %{t.fields | val: s.temperature.tf}}
-                t = %{t | tags: %{t.tags | remote_host: r.host}}
-                t = %{t | tags: %{t.tags | device: r.device}}
-                t = %{t | tags: %{t.tags | friendly_name: fname}}
-                t = %{t | timestamp: r.mtime}
+      Fahrenheit.record(remote_host: r.host, device: r.device,
+        friendly_name: fname, mtime: r.mtime, val: s.temperature.tf)
 
-                Influx.write(t, [precision: :seconds])
+      Celsius.record(remote_host: r.host, device: r.device,
+        friendly_name: fname, mtime: r.mtime, val: s.temperature.tc)
 
-                rh = %RelHum{}
-                rh = %{rh | fields: %{rh.fields | val: s.relhum.rh}}
-                rh = %{rh | tags: %{rh.tags | remote_host: r.host}}
-                rh = %{rh | tags: %{rh.tags | device: r.device}}
-                rh = %{rh | tags: %{rh.tags | friendly_name: fname}}
-                rh = %{rh | timestamp: r.mtime}
-
-                Influx.write(rh, [precision: :seconds])
-
-                Logger.debug fn -> ~s/#{fname} #{tf}F #{tc}C #{rh}RH/ end
+      RelativeHumidity.record(remote_host: r.host, device: r.device,
+        friendly_name: fname, mtime: r.mtime, val: s.relhum.rh)
   end
-
   s
 end
 

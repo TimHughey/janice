@@ -21,21 +21,7 @@ defmodule Mercurial.Mixfile do
   # the apps folder.
   #
   # Run "mix help deps" for examples and options.
-  defp deps do []
-    # [{:httpoison, "~> 0.12"},
-    #  {:hackney, "~> 1.9"},
-    #  {:timex, "~> 3.0"},
-    #  {:poison, "~> 3.1"},
-    #  {:postgrex, "~> 0.13"},
-    #  {:ecto, "~> 2.1"},
-    #  {:timex_ecto, "~> 3.1"},
-    #  {:distillery, "~> 1.0"},
-    #  {:hulaaki, "~> 0.1.0"},
-    #  {:uuid, "~> 1.1"},
-    #  {:instream, "~> 0.16"},
-    #  {:credo, "> 0.0.0", only: [:dev, :test]},
-    #  {:dialyxir, "~> 0.5", only: [:dev], runtime: false}]
-  end
+  defp deps, do: []
 
   defp aliases do
     ["ecto.setup": ["ecto.create", "ecto.migrate", "ecto.seed"],

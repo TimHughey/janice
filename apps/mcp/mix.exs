@@ -65,7 +65,7 @@ defmodule Mcp.Mixfile do
   defp deps do
     [{:command, in_umbrella: true},
      {:mqtt, in_umbrella: true},
-     {:timeseries, in_umbrella: true},
+     {:fact, in_umbrella: true},
      {:httpoison, "~> 0.12"},
      {:hackney, "~> 1.9"},
      {:timex, "~> 3.0"},

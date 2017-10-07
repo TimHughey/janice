@@ -16,7 +16,7 @@ config :mcp, Mcp.Repo,
   database: "merc_test",
   username: "merc_test",
   password: System.get_env("MERC_TEST_DB_PASS"),
-  hostname: "gabriel.wisslanding.com"
+  hostname: "jophiel.wisslanding.com"
 
 config :mcp, Mcp.Switch,
   logCmdAck: false

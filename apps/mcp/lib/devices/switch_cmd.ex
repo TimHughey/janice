@@ -4,18 +4,17 @@ defmodule Mcp.SwitchCmd do
   commands sent for a Switch.
 """
 
-alias __MODULE__
-
 require Logger
 use Timex
 use Timex.Ecto.Timestamps
 use Ecto.Schema
 
 import Application, only: [get_env: 2]
-import UUID, only: [uuid1: 0]
-import Ecto.Changeset, only: [change: 2]
+#import UUID, only: [uuid1: 0]
+#import Ecto.Changeset, only: [change: 2]
 
 import Mcp.Repo, only: [query: 1]
+# alias Mcp.SwitchCmd
 
 #import Mqtt.Client, only: [publish_switch_cmd: 1]
 
@@ -52,6 +51,6 @@ defp check_purge_acked_cmds({:error, e}) do
   0
 end
 
-defp check_purge_acked_cmds({:ok, %{command: delete, num_rows: nr}}), do: nr
+defp check_purge_acked_cmds({:ok, %{command: :delete, num_rows: nr}}), do: nr
 
 end

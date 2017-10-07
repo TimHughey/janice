@@ -1,6 +1,6 @@
-defmodule Timeseries do
+defmodule Fact do
   @moduledoc """
-  Documentation for Timeseries.
+  Documentation for Fact.
   """
 
   @doc """
@@ -8,7 +8,7 @@ defmodule Timeseries do
 
   ## Examples
 
-      iex> Timeseries.hello
+      iex> Fact.hello
       :world
 
   """

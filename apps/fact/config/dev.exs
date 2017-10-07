@@ -2,10 +2,10 @@
 # and its dependencies with the aid of the Mix.Config module.
 use Mix.Config
 
-config :timeseries, Timeseries.Application,
+config :fact, Fact.Application,
   build_env: "#{Mix.env}"
 
-config :timeseries, Timeseries.Influx,
+config :fact, Fact.Influx,
   database:  "mcp_repo",
   host:      "jophiel.wisslanding.com",
   auth:      [method: :basic, username: "mcp_test", password: "mcp_test"],
