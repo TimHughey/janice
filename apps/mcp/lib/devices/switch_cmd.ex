@@ -22,10 +22,10 @@ alias Mcp.SwitchState
 schema "switch_cmd" do
   field :refid, :string
   field :acked, :boolean
-  field :dev_latency, :float
-  field :rt_latency, :float
-  field :dt_sent, Timex.Ecto.DateTime
-  field :dt_ack, Timex.Ecto.DateTime
+  field :dev_latency, :integer
+  field :rt_latency, :integer
+  field :sent_at, Timex.Ecto.DateTime
+  field :ack_at, Timex.Ecto.DateTime
   belongs_to :switch, Mcp.Switch
 
   timestamps usec: true
@@ -40,7 +40,7 @@ def purge_acked_cmds([hours: hrs_ago])
 when hrs_ago < 0 do
 
   sql = ~s/delete from switch_cmd
-              where dt_ack <
+              where ack_at <
               now() at time zone 'utc' - interval '#{hrs_ago} hour'/
 
   query(sql) |> check_purge_acked_cmds()
@@ -55,7 +55,7 @@ def record_cmd([%SwitchState{} = ss_ref | _tail] = list) do
   scmd =
     Ecto.build_assoc(sw, :cmds,
                       refid: uuid1(),
-                      dt_sent: Timex.now()) |> insert!()
+                      sent_at: Timex.now()) |> insert!()
 
   # update the last command datetime on the associated switch
   change(sw, dt_last_cmd: Timex.now()) |> update!()

@@ -30,6 +30,7 @@ import Ecto.Changeset, only: [change: 2]
 import Ecto.Query, only: [from: 2]
 import Mcp.Repo, only: [update!: 1, one: 1, insert!: 1, transaction: 1]
 
+alias Fact.RunMetric
 alias Mcp.DevAlias
 alias Mcp.Switch
 alias Mcp.SwitchState
@@ -43,10 +44,10 @@ end
 schema "switch" do
   field :device, :string
   field :enabled, :boolean, default: true
-  field :dev_latency, :float, default: nil
-  field :dt_last_cmd, Timex.Ecto.DateTime
-  field :dt_discovered, Timex.Ecto.DateTime
-  field :dt_last_seen, Timex.Ecto.DateTime
+  field :dev_latency, :integer, default: nil
+  field :discovered_at, Timex.Ecto.DateTime
+  field :last_cmd_at, Timex.Ecto.DateTime
+  field :last_seen_at, Timex.Ecto.DateTime
   has_many :states, Mcp.SwitchState
   has_many :cmds, Mcp.SwitchCmd
 
@@ -117,16 +118,21 @@ defp acknowledge_individual_cmd(%Switch{cmds: [cmd]} = sw,
                                   %{latency: latency,
                                     msg_recv_dt: msg_recv_dt}) do
 
-  rt_latency =
-    (Timex.diff(msg_recv_dt, cmd.dt_sent) / 1000) |> Float.round(2)
+  rt_latency = Timex.diff(msg_recv_dt, cmd.sent_at)
 
   # latency from mcr is reported in microseconds, convert to millis
-  dev_latency = (latency / 1000) |> Float.round(2)
+  dev_latency = latency
 
   opts = [acked: true, dev_latency: dev_latency,
-            rt_latency: rt_latency, dt_ack: Timex.now()]
+            rt_latency: rt_latency, ack_at: Timex.now()]
 
   change(cmd, opts) |> update!()
+
+  RunMetric.record(module: "#{__MODULE__}",
+    metric: "rt_latency", device: sw.device, val: rt_latency)
+
+  RunMetric.record(module: "#{__MODULE__}",
+    metric: "dev_latency", device: sw.device, val: dev_latency)
 
   sw # return the switch
 end
@@ -153,7 +159,7 @@ when is_binary(device) and pio_count > 0 do
   # let's create a faux switch cmd and immediately ack it so there's
   # at least one cmd.  this helps with later code so there is at least
   # one cmd (less checks)
-  cmds = [%SwitchCmd{refid: uuid1(), acked: true, dt_ack: before_now()}]
+  cmds = [%SwitchCmd{refid: uuid1(), acked: true, ack_at: before_now()}]
 
   sw = %Switch{device: device, cmds: cmds, states: states}
 
@@ -301,14 +307,7 @@ when is_map(r) and is_atom(src) do
     :internal -> SwitchCmd.record_cmd(new_ss) # if update is local, then send
   end
 
-  dev_latency = (r.latency / 1000) |> Float.round(2)
-
-  # TODO: this needs some work to more appropriately handle dev_latency
-  #       and dt_last_seen -- as the code stands now dt_last_seen will
-  #       be updated when changing the state (to turn on/off the pio)
-  #       which doesn't align with the intention of dt_last_seen (to capture)
-  #       the time the device was last seen by mcr
-  change(sw, dev_latency: dev_latency, dt_last_seen: Timex.now()) |>
+  change(sw, last_seen_at: Timex.now()) |>
     update!()
 end
 

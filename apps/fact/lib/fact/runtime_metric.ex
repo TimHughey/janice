@@ -12,9 +12,10 @@ defmodule Fact.RunMetric do
     measurement "run_metric"
 
     tag :module, default: "unknown-module"
-    tag :application, default: "unknown-application"
+    tag :application, default: "mercurial"
     tag :metric, default: "unknown-metric"
     tag :env, default: "#{Mix.env}"
+    tag :device, default: "unkown-device"
 
     field :val
   end
@@ -27,6 +28,7 @@ defmodule Fact.RunMetric do
     f = set_tag(f, opts, :application)
     f = set_tag(f, opts, :module)
     f = set_tag(f, opts, :metric)
+    f = set_tag(f, opts, :device)
     f = set_field(f, opts, :val)
 
     f = %{f | timestamp: Keyword.get(opts, :mtime, def_mtime)}
@@ -38,7 +40,7 @@ defmodule Fact.RunMetric do
     set_tag(map, key, Keyword.get(opts, key))
   end
 
-  defp set_tag(map, _key, nil) when is_map(map), do: map
+  defp set_tag(map, _key, nil), do: map
 
   defp set_tag(map, key, value)
   when is_map(map) and is_atom(key) do
