@@ -7,7 +7,7 @@ config :dispatcher, Dispatcher.Application,
 
 config :dispatcher, Dispatcher.InboundMessage,
   log_reading: false,
-  startup_delay_ms: 200,
+  startup_delay_ms: 5000,
   periodic_log_first_ms: (60 * 60 * 1000),
   periodic_log_ms: (120 * 60 * 1000),
   rpt_feed: "mcr/f/report",

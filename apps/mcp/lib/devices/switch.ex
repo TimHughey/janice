@@ -57,28 +57,45 @@ end
 def external_update(r)
 when is_map(r) do
   Logger.metadata(switch_device: r.device)
-  transaction fn ->
-    # pipeline to handle whatever update we receive
-    # each function in the pipeline will determined what (if anything)
-    # must be done
-    sw = get_by_device_name(r.device, r.pio_count) |>
-          update_switch(r, :external) |> acknowledge_cmd(r)
 
-    # always get every fname to ensure they exist (or are created)
-    get_fnames(sw) end
+  {t, result} =
+    :timer.tc fn ->
+        transaction fn ->
+        # pipeline to handle whatever update we receive
+        # each function in the pipeline will determined what (if anything)
+        # must be done
+        sw = get_by_device_name(r.device, r.pio_count) |>
+              update_switch(r, :external) |> acknowledge_cmd(r)
+
+        # always get every fname to ensure they exist (or are created)
+        get_fnames(sw) end
+      end
+
+  RunMetric.record(module: "#{__MODULE__}",
+    metric: "external_update", device: r.device, val: t)
+
+  result
 end
 
 def set_state(fname, state)
 when is_binary(fname) and is_boolean(state) do
-  dev = DevAlias.get_by_friendly_name(fname)
+  {t, result} =
+    :timer.tc fn ->
+      dev = DevAlias.get_by_friendly_name(fname)
 
-  # save references to what is being attemtped in case there is an
-  # error (or something isn't found)
-  Logger.metadata(switch_fname: fname)
-  Logger.metadata(switch_device: dev.device)
+      # save references to what is being attemtped in case there is an
+      # error (or something isn't found)
+      Logger.metadata(switch_fname: fname)
+      Logger.metadata(switch_device: dev.device)
 
-  transaction fn ->
-    dev |> device_name_and_pio() |> set_state(state, :internal) end
+      transaction fn ->
+        dev |> device_name_and_pio() |> set_state(state, :internal) end
+    end
+
+  RunMetric.record(module: "#{__MODULE__}",
+    metric: "set_state", val: t)
+
+  result
 end
 
 def set_state(%{device: device, pio: pio}, state, src)

@@ -86,6 +86,11 @@ def last_seen(friendly_name) when is_binary(friendly_name) do
   end
 end
 
+def add([]), do: []
+def add([%DevAlias{} = da | rest]) do
+  [add(da)] ++ add(rest)
+end
+
 @doc ~S"""
 Add a new DevAlias
 
