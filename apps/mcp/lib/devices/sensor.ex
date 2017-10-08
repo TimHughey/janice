@@ -37,7 +37,9 @@ end
 def external_update(r)
 when is_map(r) do
   fname = friendly_name(r.device)
-  s = get_by_device_name(r.device, r.type) |> update_sensor_values(r)
+  {:ok, s} = transaction fn ->
+              get_by_device_name(r.device, r.type) |>
+                update_sensor_values(r) end
 
   case s.sensor_type do
     "temp"   ->

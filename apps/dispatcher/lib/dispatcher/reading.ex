@@ -32,10 +32,8 @@ defstruct version: 0,
           cmdack: false,
           latency: 0,
           refid: nil,
-          p0: true, p1: true, p2: true,  # these aren't actually stored at
-          p3: true, p4: true, p5: true,  # this level however listing them
-          p6: true, p7: true,            # here ensures the atoms are created
-          json: nil
+          json: nil,
+          msg_recv_dt: Timex.now()
 
 @doc ~S"""
 Parse a JSON into a Reading
@@ -51,6 +49,7 @@ def decode!(json)
 when is_binary(json) do
   r = Poison.decode!(json, [keys: :atoms!, as: %Dispatcher.Reading{}])
   Map.put(r, :json, json)
+  Map.put(r, :msg_recv_dt, Timex.now())
   #Map.put(r, :friendly_name, DevAlias.friendly_name(r.device))
 end
 

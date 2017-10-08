@@ -38,47 +38,24 @@
 positionsReading::positionsReading(mcrDevID_t &id, time_t mtime,
                                    uint16_t states, uint8_t pios)
     : Reading(id, mtime) {
-  if (pios < (_max_pios + 1)) {
+  if (pios <= _max_pios) {
     _pios = pios;
     _states = states;
   }
 }
 
 void positionsReading::populateJSON(JsonObject &root) {
-  // DEPRECATED!!
-  // must set aside enough memory for all generated pios because ArduinoJson
-  // does not copy the source data and will reference it later when creating
-  // the actual json
-  // static char pio_id[_max_pios][2] = {0x00};
-
   root["type"] = "switch";
   root["pio_count"] = _pios;
 
   JsonArray &pio = root.createNestedArray("states");
 
-  // here we have two loop variables
-  // 1.  i -> counts the pios upwards
-  // 2.  k -> used to access the state bits since the least significant
-  //          bit is for pio 0
-  for (uint8_t i = 0, k = _max_pios; i < _pios; i++, k--) {
-    // char  pio_id[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-    boolean pio_state = (_states & ((uint16_t)0x01 << i));
+  for (uint8_t i = 0; i < _pios; i++) {
+    bool pio_state = (_states & ((uint16_t)0x01 << i));
     JsonObject &item = pio.createNestedObject();
 
     item.set("pio", i);
     item.set("state", pio_state);
-
-    // DEPRECATED!!
-    // pio_id[i][0] = 'p';
-    // itoa(i, &(pio_id[i][1]), 10);
-    // item.set(&(pio_id[i][0]), pio_state);
-
-    // #ifdef VERBOSE
-    //     log(" pio=");
-    //     log(&(pio_id[i][0]));
-    //     log(",");
-    //     log(pio_state);
-    // #endif
   }
 }
 

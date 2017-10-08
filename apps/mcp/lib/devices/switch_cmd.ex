@@ -9,14 +9,15 @@ use Timex
 use Timex.Ecto.Timestamps
 use Ecto.Schema
 
-import Application, only: [get_env: 2]
-#import UUID, only: [uuid1: 0]
-#import Ecto.Changeset, only: [change: 2]
+# import Application, only: [get_env: 2]
+import UUID, only: [uuid1: 0]
+import Ecto.Changeset, only: [change: 2]
+import Mcp.Repo, only: [query: 1, preload: 2, insert!: 1, update!: 1]
 
-import Mcp.Repo, only: [query: 1]
-# alias Mcp.SwitchCmd
+import Mqtt.Client, only: [publish_switch_cmd: 1]
 
-#import Mqtt.Client, only: [publish_switch_cmd: 1]
+alias Command.SetSwitch
+alias Mcp.SwitchState
 
 schema "switch_cmd" do
   field :refid, :string
@@ -44,6 +45,31 @@ when hrs_ago < 0 do
 
   query(sql) |> check_purge_acked_cmds()
 end
+
+def record_cmd([%SwitchState{} = ss_ref | _tail] = list) do
+  ss_ref = preload(ss_ref, :switch)  # ensure the associated switch is loaded
+  sw = ss_ref.switch
+  device = sw.device
+
+  # create and presist a new switch comamnd
+  scmd =
+    Ecto.build_assoc(sw, :cmds,
+                      refid: uuid1(),
+                      dt_sent: Timex.now()) |> insert!()
+
+  # update the last command datetime on the associated switch
+  change(sw, dt_last_cmd: Timex.now()) |> update!()
+
+  # create and publish the actual command to the remote device
+  new_state = SwitchState.as_list_of_maps(list)
+  remote_cmd = SetSwitch.new_cmd(device, new_state, scmd.refid)
+  publish_switch_cmd(SetSwitch.json(remote_cmd))
+
+  list # return the switch states passed in
+end
+#
+# Private functions
+#
 
 defp check_purge_acked_cmds({:error, e}) do
   Logger.warn fn ->

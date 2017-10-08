@@ -73,6 +73,7 @@ when is_binary(msg) and is_map(s) do
   end
 
   if Reading.switch?(r) do
+    # if not Reading.cmdack?(r), do: Logger.info(msg)
     Switch.external_update(Reading.as_map(r))
   end
 
