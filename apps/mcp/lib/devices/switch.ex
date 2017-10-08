@@ -334,6 +334,10 @@ defp update_switch_states([%SwitchState{} | _] = states,
   update_pio_state(states, pio, state) ++ update_switch_states(states, rest_ns)
 end
 
-defp update_switch_states([%SwitchState{} | _], [%{} | _rest_ns]), do: []
-
+defp update_switch_states([%SwitchState{} | _], [%{} | _rest_ns]) do
+  Logger.warn fn ->
+    fname = Logger.metadata() |> Keyword.get(:switch_fname)
+    device = Logger.metadata() |> Keyword.get(:switch_device)
+    ~s/empty map detected in states fname=#{fname} device=#{device}/ end
+end
 end

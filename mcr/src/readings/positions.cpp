@@ -32,6 +32,7 @@
 #include <elapsedMillis.h>
 
 #include "../include/dev_id.hpp"
+#include "../include/mcr_util.hpp"
 #include "../include/positions.hpp"
 #include "../include/reading.hpp"
 
@@ -51,11 +52,11 @@ void positionsReading::populateJSON(JsonObject &root) {
   JsonArray &pio = root.createNestedArray("states");
 
   for (uint8_t i = 0; i < _pios; i++) {
-    bool pio_state = (_states & ((uint16_t)0x01 << i));
+    bool pio_state = (_states & (0x0001 << i));
     JsonObject &item = pio.createNestedObject();
 
-    item.set("pio", i);
-    item.set("state", pio_state);
+    item["pio"] = i;
+    item["state"] = pio_state;
   }
 }
 

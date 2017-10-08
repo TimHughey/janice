@@ -67,15 +67,16 @@ char *Reading::json() {
   // static class variables for conversion to JOSN
   // this implies that a single JSON conversion can be done at any time
   // and the converted JSON must be used or copied before the next
-  StaticJsonBuffer<512> _jsonBuffer;
-  static char _buffer[768] = {0x00};
+  StaticJsonBuffer<1024> _jsonBuffer;
+  static char _buffer[2048] = {0x00};
 
   // yes, i bit paranoid to always clear every buffer before use
-  memset(_buffer, 0x00, sizeof(_buffer));
+  // memset(_buffer, 0x00, sizeof(_buffer));
 
   JsonObject &root = _jsonBuffer.createObject();
   commonJSON(root);
   populateJSON(root);
+
   root.printTo(_buffer, sizeof(_buffer));
 
   return _buffer;

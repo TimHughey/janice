@@ -39,7 +39,7 @@ end
 # GenServer Callbacks
 #
 
-def handle_cast({:timesync_cmd}, s)
+def handle_cast({:timesync}, s)
 when is_map(s) do
   # reuse the code that periodic sending of timesync commands
   send_after(self(), {:timesync_cmd}, 0)
