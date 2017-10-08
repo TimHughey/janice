@@ -58,7 +58,7 @@ end
 
 def handle_info({:periodic_log}, s)
 when is_map(s) do
-  Logger.info("led flashes: #{s.led_flashes}")
+  Logger.debug fn -> ~s/led flashes: #{s.led_flashes}/ end
 
   send_after(self(), {:periodic_log}, config(:periodic_log_ms))
 

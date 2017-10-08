@@ -21,4 +21,9 @@ config :mcp, Mcp.Repo,
 config :mcp, Mcp.Switch,
   logCmdAck: false
 
+config :mcp, Mcp.Janitor,
+  startup_delay_ms: 12_000,
+  purge_switch_cmds_interval_minutes: 2,
+  purge_switch_cmds_older_than_hours: 3
+
 config :mcp, :ecto_repos, [Mcp.Repo]

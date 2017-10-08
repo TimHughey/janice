@@ -21,7 +21,8 @@ def start(_type, _args) do
   # List all child processes to be supervised
   children = [
     Mcp.Repo,
-    {Mcp.SoakTest, initial_state}
+    {Mcp.SoakTest, initial_state},
+    {Mcp.Janitor, initial_state}
   ]
 
   opts = [strategy: :one_for_one, name: Mcp.Supervisor]
