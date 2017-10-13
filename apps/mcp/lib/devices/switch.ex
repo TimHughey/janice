@@ -28,7 +28,7 @@ use Ecto.Schema
 import UUID, only: [uuid1: 0]
 import Ecto.Changeset, only: [change: 2]
 import Ecto.Query, only: [from: 2]
-import Mcp.Repo, only: [update!: 1, one: 1, insert!: 1, transaction: 1]
+import Mcp.Repo, only: [all: 2, update!: 1, one: 1, insert!: 1, transaction: 1, preload: 2]
 
 alias Fact.RunMetric
 alias Mcp.DevAlias
@@ -52,6 +52,10 @@ schema "switch" do
   has_many :cmds, Mcp.SwitchCmd
 
   timestamps usec: true
+end
+
+def all do
+  all(Switch, timeout: 100) |> preload([:states])
 end
 
 def external_update(r)
