@@ -26,7 +26,7 @@ defmodule Dispatcher.Mixfile do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [{:command, in_umbrella: true},
-     {:mcp, in_umbrella: true},
+     # {:mcp, in_umbrella: true},
      {:timex, "~> 3.0"},
      {:poison, "~> 3.1"},
      {:distillery, "~> 1.0"},

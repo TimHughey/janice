@@ -11,13 +11,13 @@ config :mcp, Mcp.SoakTest,
   periodic_log_ms: (15 * 50 * 1000),
   flash_led_ms: 1000
 
-config :db, Mcp.Repo,
+config :mcp, Mcp.Repo,
   adapter: Ecto.Adapters.Postgres,
-  username: "foo",
-  password: "12345",
-  database: "myproject_test",
-  hostname: "localhost",
-  pool: Ecto.Adapters.SQL.Sandbox
+  username: "merc_test",
+  password: "merc_test",
+  database: "merc_test",
+  hostname: "jophiel.wisslanding.com",
+  pool_size: 10
 
 config :mcp, Mcp.Switch,
   logCmdAck: false

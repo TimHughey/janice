@@ -4,11 +4,11 @@ defmodule Mcp.Application do
 @moduledoc false
 
 use Application
+import Application, only: [get_env: 2, get_env: 3]
+import Keyword, only: [get: 2, has_key?: 2]
 
 def start(_type, _args) do
-  build_env =
-    Application.get_env(:mcp, Mcp.Application) |>
-      Keyword.get(:build_env)
+  build_env = get_env(:mcp, Mcp.Application) |> get(:build_env)
 
   autostart =
   case build_env do
@@ -26,7 +26,14 @@ def start(_type, _args) do
   ]
 
   opts = [strategy: :one_for_one, name: Mcp.Supervisor]
-  Supervisor.start_link(children, opts)
+
+  # only start the Supervisor if the database password is set
+  if get_env(:mcp, Mcp.Repo, []) |> has_key?(:password) do
+    Supervisor.start_link(children, opts)
+  else
+    {:error, :no_db_password}
+  end
+
 end
 
 end

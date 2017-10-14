@@ -25,7 +25,7 @@ defmodule Mercurial.Mixfile do
 
   defp aliases do
     ["ecto.setup": ["ecto.create", "ecto.migrate", "ecto.seed"],
-     "ecto.seed": ["run apps/mcp/priv/repo/seeds.exs"],
+     "ecto.seed": ["seed"],
      "ecto.reset": ["ecto.drop", "ecto.setup"]]
   end
 end

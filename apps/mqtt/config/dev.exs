@@ -6,7 +6,7 @@ config :mqtt, Mqtt.Application,
   build_env: "#{Mix.env}"
 
 config :mqtt, Mqtt.Client,
-  broker: [client_id: "mercurial-dev", clean_session: 0,
+  broker: [client_id: "mercurial-dev", clean_session: 1,
            username: "mqtt", password: "mqtt",
            host: "jophiel.wisslanding.com", port: 1883, ssl: false],
   feeds: [topics: ["mcr/f/report"], qoses: [0]],

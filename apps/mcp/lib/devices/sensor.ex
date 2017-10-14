@@ -14,8 +14,9 @@ use Ecto.Schema
 import Ecto.Changeset, only: [change: 2]
 import Ecto.Query, only: [from: 2]
 import Mcp.Repo, only: [insert!: 1, update!: 1, transaction: 1, one: 1]
-import Mcp.DevAlias, only: [friendly_name: 1]
+import Mcp.DevAlias, only: [friendly_name: 1, get_by_friendly_name: 1]
 
+alias Mcp.DevAlias
 alias Mcp.SensorTemperature
 alias Mcp.SensorRelHum
 
@@ -33,6 +34,25 @@ schema "sensor" do
 
   timestamps usec: true
 end
+
+@doc ~S"""
+Retrieve the fahrenheit temperature reading of a device using it's friendly
+name.  Returns nil if the no friendly name exists.
+
+## Examples:
+  iex> Mcp.Sensor.fahrenheit("")
+  "relhum"
+
+  iex> Mcp.DevAlias.friendly_name("ds/nodev") |> String.starts_with?("new")
+  true
+"""
+def fahrenheit(fname)
+when is_binary(fname) do
+  get_by_fname(fname) |> fahrenheit()
+end
+
+def fahrenheit(%Sensor{temperature: [%SensorTemperature{tf: tf}]}), do: tf
+def fahrenheit(_anything), do: nil
 
 def external_update(r)
 when is_map(r) do
@@ -81,6 +101,14 @@ when is_map(r) do
   s
 end
 
+def relhum(fname)
+when is_binary(fname) do
+  get_by_fname(fname) |> relhum()
+end
+
+def relhum(%Sensor{relhum: [%SensorRelHum{rh: rh}]}), do: rh
+def relhum(_anything), do: nil
+
 # here we actuall create a new sensor with a temperature reading
 # and persist it to the database
 defp create_if_does_not_exist(:nil, device, "relhum" = type) do
@@ -103,6 +131,19 @@ end
 # here we handle if the sensor already exists
 defp create_if_does_not_exist(%Sensor{} = s, _fname, _type), do: s
 
+defp get_by_device_name(:nil), do: nil
+defp get_by_device_name(%DevAlias{device: device}) do
+  query =
+    from(s in Sensor,
+      where: s.device == ^device)
+
+  one(query) |> get_by_device_name()
+end
+
+defp get_by_device_name(%Sensor{device: device, sensor_type: temp}) do
+  get_by_device_name(device, temp)
+end
+
 defp get_by_device_name(device, "relhum" = type)
 when is_binary(device) do
   query =
@@ -124,6 +165,11 @@ when is_binary(device) do
       preload: [temperature: t])
 
   one(query) |> create_if_does_not_exist(device, type)
+end
+
+defp get_by_fname(fname)
+when is_binary(fname) do
+  get_by_friendly_name(fname) |> get_by_device_name()
 end
 
 defp update_sensor_values(%Sensor{sensor_type: "temp"} = sensor, r)

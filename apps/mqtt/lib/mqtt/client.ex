@@ -85,7 +85,7 @@ def handle_call({:subscribe, opts}, _from, s) do
   do_subscribe(s, opts)
 end
 
-def handle_call({:publish, opts}, _from, s) do
+def handle_call({:publish, opts}, _from, %{connection: _} = s) do
   topic  = opts |> Keyword.fetch!(:topic)
   msg    = opts |> Keyword.fetch!(:message)
   dup    = opts |> Keyword.fetch!(:dup)
@@ -103,6 +103,12 @@ def handle_call({:publish, opts}, _from, s) do
     end
 
   :ok = s.connection |> Connection.publish(message)
+  {:reply, :ok, s}
+end
+
+def handle_call({:publish, _opts}, _from, s) do
+  Logger.warn fn ->
+    ~s/not connected, publish quietly ignored/ end
   {:reply, :ok, s}
 end
 

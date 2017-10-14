@@ -12,4 +12,5 @@ config :dispatcher, Dispatcher.InboundMessage,
   periodic_log_ms: (120 * 60 * 1000),
   rpt_feed: "mcr/f/report",
   cmd_feed: "mcr/f/command",
-  build_env: "#{Mix.env}"
+  temperature_msgs: {Mcp.Sensor, :external_update},
+  switch_msgs: {Mcp.Switch, :external_update}

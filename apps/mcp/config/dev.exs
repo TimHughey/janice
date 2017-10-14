@@ -13,9 +13,9 @@ config :mcp, Mcp.SoakTest,
 
 config :mcp, Mcp.Repo,
   adapter: Ecto.Adapters.Postgres,
-  database: "merc_test",
-  username: "merc_test",
-  password: System.get_env("MERC_TEST_DB_PASS"),
+  database: "merc_dev",
+  username: "merc_dev",
+  password: "merc_dev",
   hostname: "jophiel.wisslanding.com",
   pool_size: 10
 
@@ -26,5 +26,19 @@ config :mcp, Mcp.Janitor,
   startup_delay_ms: 12_000,
   purge_switch_cmds_interval_minutes: 2,
   purge_switch_cmds_older_than_hours: 3
+
+config :mcp, Mcp.Chamber,
+  autostart_wait_ms: 100,
+  routine_check_ms: 1000
+
+config :mcp, Mcp.Mixtank,
+  autostart_wait_ms: 100,
+  control_temp_ms: 1000,
+  activate_ms: 1000,
+  manage_ms: 1000
+
+config :mcp, Mcp.Dutycycle,
+  autostart_wait_ms: 100,
+  routine_check_ms: 1000
 
 config :mcp, :ecto_repos, [Mcp.Repo]

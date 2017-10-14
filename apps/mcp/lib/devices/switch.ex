@@ -28,18 +28,14 @@ use Ecto.Schema
 import UUID, only: [uuid1: 0]
 import Ecto.Changeset, only: [change: 2]
 import Ecto.Query, only: [from: 2]
-import Mcp.Repo, only: [all: 2, update!: 1, one: 1, insert!: 1, transaction: 1, preload: 2]
+import Mcp.Repo, only: [all: 2, update!: 1, one: 1, insert!: 1,
+                        transaction: 1, preload: 2]
 
 alias Fact.RunMetric
 alias Mcp.DevAlias
 alias Mcp.Switch
 alias Mcp.SwitchState
 alias Mcp.SwitchCmd
-
-def before_now do
-  dt = Timex.to_datetime(Timex.now(), "UTC")
-  Timex.shift(dt, hours: -3)
-end
 
 schema "switch" do
   field :device, :string
@@ -62,7 +58,7 @@ def external_update(r)
 when is_map(r) do
   Logger.metadata(switch_device: r.device)
 
-  {t, result} =
+  {t, {:ok, fnames}} =
     :timer.tc fn ->
         transaction fn ->
         # pipeline to handle whatever update we receive
@@ -78,28 +74,79 @@ when is_map(r) do
   RunMetric.record(module: "#{__MODULE__}",
     metric: "external_update", device: r.device, val: t)
 
-  result
+  fnames
 end
+
+@doc ~S"""
+Get the state of a switch by friendly name
+
+## Examples:
+  iex> state = Mcp.Switch.get_state("led1")
+  iex> is_boolean(state)
+  true
+
+  iex> Mcp.Switch.get_state("foobar")
+  nil
+"""
+def get_state(fname)
+when is_binary(fname) do
+  {t, state} =
+    :timer.tc fn ->
+      fname_to_dev(fname) |> device_name_and_pio() |> get_state() end
+
+  RunMetric.record(module: "#{__MODULE__}",
+    metric: "get_state", val: t)
+
+  state
+end
+
+def get_state(%{device: device, pio: pio}) do
+  %Switch{states: states} = get_by_device_name(device)
+  find_state_by_pio(states, pio) |> get_state()
+end
+
+def get_state(%SwitchState{state: state}), do: state
+def get_state(_dev), do: nil
+
+def get_unack_cmds(fname)
+when is_binary(fname) do
+  {t, cmds} =
+    :timer.tc fn ->
+      fname_to_dev(fname) |> device_name_and_pio() |> get_unack_cmds() end
+
+  RunMetric.record(module: "#{__MODULE__}",
+    metric: "get_state", val: t)
+
+  cmds
+end
+
+def get_unack_cmds(%{device: device, pio: _pio}) do
+  query =
+    from(sw in Switch,
+    join: cmd in assoc(sw, :cmds),
+    join: state in assoc(sw, :states),
+    where: sw.device == ^device and cmd.acked == false,
+    preload: [cmds: cmd, states: state])
+
+  one(query) |> get_unack_cmds()
+end
+
+def get_unack_cmds(%Switch{cmds: cmds}), do: cmds
+def get_unack_cmds(nil), do: []
 
 def set_state(fname, state)
 when is_binary(fname) and is_boolean(state) do
-  {t, result} =
+  {t, {:ok, sw}} =
     :timer.tc fn ->
-      dev = DevAlias.get_by_friendly_name(fname)
-
-      # save references to what is being attemtped in case there is an
-      # error (or something isn't found)
-      Logger.metadata(switch_fname: fname)
-      Logger.metadata(switch_device: dev.device)
-
       transaction fn ->
-        dev |> device_name_and_pio() |> set_state(state, :internal) end
+        fname_to_dev(fname) |> device_name_and_pio() |>
+          set_state(state, :internal) end
     end
 
   RunMetric.record(module: "#{__MODULE__}",
     metric: "set_state", val: t)
 
-  result
+  sw
 end
 
 def set_state(%{device: device, pio: pio}, state, src)
@@ -108,12 +155,11 @@ when is_boolean(state) and is_atom(src) do
   # update_switch code (originally developed for external updates)
   r = %{states: [%{pio: pio, state: state}], latency: 0}
   get_by_device_name(device) |> update_switch(r, src)
-
 end
-
 def set_state(_dev, _pos, _src), do: []
+
 ##
-## HELPERS
+## Internal / private functions
 ##
 
 # if this is not a cmdack then just return the switch
@@ -167,6 +213,13 @@ defp acknowledge_individual_cmd(%Switch{cmds: []} = sw, _r) do
     ~s/cmd_ack found fname=#{fname} device=#{device} refid=#{refid}/ end
 
   sw # always return the switch passed
+end
+
+# create a DateTime that is before now
+# used when creating a new switch
+defp before_now do
+  dt = Timex.to_datetime(Timex.now(), "UTC")
+  Timex.shift(dt, hours: -3)
 end
 
 # if a Switch was not found (indicated by :nil) then create one
@@ -248,6 +301,23 @@ defp find_state_by_pio([], pio) do
   :nil
 end
 
+# lookup up the device alias for a fname
+defp fname_to_dev(fname)
+when is_binary(fname) do
+  dev = DevAlias.get_by_friendly_name(fname)
+
+  # save references to what is being attemtped in case there is an
+  # error (or something isn't found)
+  Logger.metadata(switch_fname: fname)
+  if not is_nil(dev) do
+    Logger.metadata(switch_device: dev.device)
+  else
+    Logger.metadata(switch_device: "[not found]")
+  end
+
+  dev
+end
+
 # retrieve a device from the database
 # pio_count is only used to create a new switch when the device doesn't exist
 # NOTE: ew only preload the switch states from the associations
@@ -312,7 +382,7 @@ defp update_pio_state(:nil, pio, _pos) do
   Logger.warn fn ->
     fname = Logger.metadata() |> Keyword.get(:switch_fname)
     device = Logger.metadata() |> Keyword.get(:switch_device)
-    ~s/pio=#{pio} not found for fname=#{fname} device=#{device}/
+    ~s/pio=#{pio} does not exist for fname=#{fname} device=#{device}/
   end
 
   []  # return an empty list since it's quietly concatenated into nothing!
@@ -338,7 +408,7 @@ defp update_switch(nil, _r, _) do
   Logger.warn fn ->
     fname = Logger.metadata() |> Keyword.get(:switch_fname)
     device = Logger.metadata() |> Keyword.get(:switch_device)
-    ~s/switch not found fname=#{fname} device=#{device}/
+    ~s/unknown switch fname=#{fname} device=#{device}/
   end
   [] # empty list
 end

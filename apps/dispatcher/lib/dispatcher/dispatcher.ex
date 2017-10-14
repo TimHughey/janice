@@ -7,8 +7,6 @@ import Application, only: [get_env: 2]
 import Process, only: [send_after: 3]
 
 alias Dispatcher.Reading
-alias Mcp.Switch
-alias Mcp.Sensor
 alias Fact.RunMetric
 
 import Command.Control, only: [send_timesync: 0]
@@ -68,13 +66,17 @@ when is_binary(msg) and is_map(s) do
   end
 
   if Reading.temperature?(r) || Reading.relhum?(r) do
+    {mod, func} = config(:temperature_msgs)
     # Logger.info(msg)
-    Sensor.external_update(Reading.as_map(r))
+    apply(mod, func, [Reading.as_map(r)])
+    #Sensor.external_update(Reading.as_map(r))
   end
 
   if Reading.switch?(r) do
+    {mod, func} = config(:switch_msgs)
     # if not Reading.cmdack?(r), do: Logger.info(msg)
-    Switch.external_update(Reading.as_map(r))
+    apply(mod, func, [Reading.as_map(r)])
+    #Switch.external_update(Reading.as_map(r))
   end
 
   s = %{s | messages_dispatched: s.messages_dispatched + 1}

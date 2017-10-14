@@ -1,55 +1,80 @@
 defmodule Mcp.SwitchTest do
   @moduledoc false
-  use ExUnit.Case, async: true
-  doctest Mcp.Switch
-
+  use ExUnit.Case, async: false
   alias Mcp.Switch
-  alias Mcp.DevAlias
+  alias Mcp.SwitchCmd
 
   setup_all do
-    # create a DevAlias for a device to control
-    dev  = "ds/290011223344FF"
-    led1 = "ds/291d1823000000"
-    buzz = "ds/12128521000000"
-    pump1 = %DevAlias{device: "#{dev}:0", friendly_name: "test_pump1",
-                      description: "created for testing"}
-    pump2 = %DevAlias{device: "#{dev}:1", friendly_name: "test_pump2",
-                      description: "created for testing"}
-    led1  = %DevAlias{device: "#{led1}:0", friendly_name: "led1",
-                      description: "led created for testing"}
-    buzz  = %DevAlias{device: "#{buzz}:0", friendly_name: "buzzer",
-                      description: "buzzer created for testing"}
-
-    DevAlias.add(pump1)
-    DevAlias.add(pump2)
-    DevAlias.add(led1)
-    DevAlias.add(buzz)
-
-    states = [%{pio: 0, state: true}, %{pio: 1, state: false}]
-
-    Switch.add_or_update(%Switch{device: dev, states: states})
     :ok
   end
 
-  test "get a switch state by friendly name" do
-    state1 = Switch.state("test_pump1")
-    state2 = Switch.state("test_pump2")
+  test "process an external switch update" do
+    r = %{device: "ds/291d1823000000", pio_count: 8, cmdack: false,
+          states: [%{pio: 0, state: true}, %{pio: 1, state: true},
+                   %{pio: 2, state: true}, %{pio: 3, state: true},
+                   %{pio: 4, state: true}, %{pio: 5, state: true},
+                   %{pio: 6, state: true}, %{pio: 7, state: true}]}
 
-    assert (state1 == true) and (state2 == false)
+    fnames = Switch.external_update(r)
+
+    assert is_list(fnames)
   end
 
-  # test "acknowledge a switch command" do
-  #   %{cmd_ref: cmd_ref, state: _} = Switches.off("water_pump")
-  #   %{cmd_dt: _, uuid: uuid} = cmd_ref
-  #   {acked_uuid, latency} = Switches.ack_cmd("water_pump", uuid)
-  #
-  #   assert (acked_uuid === uuid) and (latency > 0)
-  # end
-  #
-  # test "handle acknowledge with a non-existent uuid" do
-  #   {acked_uuid, latency} = Switches.ack_cmd("water_pump", "bad_uuid")
-  #
-  #   assert is_nil(acked_uuid) and (latency == 0)
-  # end
+  test "process an internal switch update (state change)" do
+    sw = Switch.set_state("led1", false)
+
+    assert %Switch{} = sw
+  end
+
+  test "get all switches preloaded with states" do
+    switches = Switch.all()
+
+    assert %Switch{} = hd(switches)
+  end
+
+  test "get switch state by friendly name" do
+    Switch.set_state("led1", false)
+    state = Switch.get_state("led1")
+
+    assert state == false
+  end
+
+  test "get switch state by unknown friendly name" do
+    state = Switch.get_state("foobar")
+
+    assert state == nil
+  end
+
+  test "get switch unack'ed commands" do
+    cmds = Switch.get_unack_cmds("led1")
+
+    assert Enum.count(cmds) >= 0
+  end
+
+  test "get switch unack'ed commands for unknown friendly name" do
+    cmds = Switch.get_unack_cmds("foobar")
+    assert [] == cmds
+  end
+
+  test "process an external switch update with cmdack" do
+    initial_cmds = Switch.get_unack_cmds("led1")
+    %SwitchCmd{sent_at: sent_at, refid: refid} = hd(initial_cmds)
+
+    r = %{device: "ds/291d1823000000", pio_count: 8, cmdack: true,
+          refid: refid,
+          latency: 1000, msg_recv_dt: Timex.shift(sent_at, seconds: 1),
+          states: [%{pio: 0, state: true}, %{pio: 1, state: true},
+                   %{pio: 2, state: true}, %{pio: 3, state: true},
+                   %{pio: 4, state: true}, %{pio: 5, state: true},
+                   %{pio: 6, state: true}, %{pio: 7, state: true}]}
+
+    fnames = Switch.external_update(r)
+
+    cmds = Switch.get_unack_cmds("led1")
+
+    assert Enum.count(cmds) < Enum.count(initial_cmds)
+  end
+
+  doctest Mcp.Switch
 
 end
