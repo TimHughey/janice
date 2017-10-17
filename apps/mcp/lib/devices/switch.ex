@@ -54,6 +54,17 @@ def all do
   all(Switch, timeout: 100) |> preload([:states])
 end
 
+def all(:friendly_names) do
+  all_aliases = DevAlias.all()
+
+  only_switches =
+    Enum.filter(all_aliases,
+      fn(item) -> is_switch?(item.friendly_name) end)
+  
+  Enum.map(only_switches,
+      fn(item) -> item.friendly_name end)
+end
+
 def external_update(r)
 when is_map(r) do
   Logger.metadata(switch_device: r.device)
@@ -123,10 +134,10 @@ end
 def get_unack_cmds(%{device: device, pio: _pio}) do
   query =
     from(sw in Switch,
-    join: cmd in assoc(sw, :cmds),
-    join: state in assoc(sw, :states),
-    where: sw.device == ^device and cmd.acked == false,
-    preload: [cmds: cmd, states: state])
+      join: cmd in assoc(sw, :cmds),
+      join: state in assoc(sw, :states),
+      where: sw.device == ^device and cmd.acked == false,
+      preload: [cmds: cmd, states: state])
 
   one(query) |> get_unack_cmds()
 end
@@ -148,6 +159,23 @@ when is_binary(fname) and is_boolean(state) do
 
   sw
 end
+
+def is_switch?(nil), do: false
+def is_switch?(fname)
+when is_binary(fname) do
+  DevAlias.get_by_friendly_name(fname) |> is_switch?()
+end
+
+def is_switch?(%DevAlias{} = dev) do
+  device_name_and_pio(dev) |> is_switch?()
+end
+
+def is_switch?(%{device: device, pio: _pio}) do
+  from(sw in Switch, where: sw.device == ^device) |>
+    one() |> is_switch?()
+end
+
+def is_switch?(%Switch{}), do: true
 
 def set_state(%{device: device, pio: pio}, state, src)
 when is_boolean(state) and is_atom(src) do
@@ -222,6 +250,18 @@ defp before_now do
   Timex.shift(dt, hours: -3)
 end
 
+defp compound_device_name(_device, []), do: []
+
+defp compound_device_name(device, ss)
+when is_list(ss) do
+  [compound_device_name(device, hd(ss))] ++
+    compound_device_name(device, tl(ss))
+end
+
+defp compound_device_name(device, %SwitchState{pio: pio}) do
+  ~s/#{device}:#{pio}/
+end
+
 # if a Switch was not found (indicated by :nil) then create one
 # and the associated switch states and a faux switch command
 # NOTE: if pio_count is 0 then DO NOT create a switch if not found
@@ -258,13 +298,6 @@ end
 defp create_states(acc, requested_pio)
 when requested_pio < 0, do: acc  # all states created
 
-# parse a compound device name (unique_id and pio) into it's parts
-defp device_name_and_pio(%DevAlias{} = dev) do
-  [unique_id, pio] = String.split(dev.device, ":", parts: 2)
-
-  %{device: unique_id, pio: String.to_integer(pio, 16)}
-end
-
 defp device_name_and_pio(nil) do
   Logger.warn fn ->
     fname = Logger.metadata() |> Keyword.get(:switch_fname)
@@ -273,6 +306,19 @@ defp device_name_and_pio(nil) do
 
   nil
 end
+
+defp device_name_and_pio(%DevAlias{device: device} = dev) do
+  device_name_and_pio(dev, String.contains?(device, ":"))
+end
+
+# parse a compound device name (unique_id and pio) into it's parts
+defp device_name_and_pio(%DevAlias{} = dev, true) do
+  [unique_id, pio] = String.split(dev.device, ":", parts: 2)
+
+  %{device: unique_id, pio: String.to_integer(pio, 16)}
+end
+
+defp device_name_and_pio(%DevAlias{}, false), do: nil
 
 # look at the first state in the list of states and if matches the
 # requested pio then return it -- search complete
@@ -352,9 +398,9 @@ end
 defp get_fnames(_device, []), do: []
 
 # create the compound device name, get (and return) the friendly name
-defp get_fname(device, %SwitchState{pio: pio}) do
-  device_name = ~s/#{device}:#{pio}/
-  DevAlias.friendly_name(device_name)
+defp get_fname(device, %SwitchState{} = ss) do
+  compound_device_name(device, ss) |>
+    DevAlias.friendly_name()
 end
 
 # this is the entry point as it accepts a list of states
@@ -389,7 +435,7 @@ defp update_pio_state(:nil, pio, _pos) do
 end
 
 # update all the switch states based on a map of data
-defp update_switch(%Switch{states: ss} = sw, r, src)
+defp update_switch(%Switch{device: device, states: ss} = sw, r, src)
 when is_map(r) and is_atom(src) do
   new_ss = update_switch_states(ss, r.states)
 
@@ -397,6 +443,9 @@ when is_map(r) and is_atom(src) do
     :external -> nil # when the updates are from the remote, don't send back
     :internal -> SwitchCmd.record_cmd(new_ss) # if update is local, then send
   end
+
+  compound_device_name(device, new_ss) |>
+    DevAlias.just_seen()
 
   change(sw, last_seen_at: Timex.now()) |>
     update!()

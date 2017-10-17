@@ -13,7 +13,7 @@ use Ecto.Schema
 #import Application, only: [get_env: 2]
 import Ecto.Changeset, only: [change: 2]
 import Ecto.Query, only: [from: 2]
-import Mcp.Repo, only: [insert!: 1, update!: 1, transaction: 1, one: 1]
+import Mcp.Repo, only: [all: 2, insert!: 1, update!: 1, transaction: 1, one: 1]
 import Mcp.DevAlias, only: [friendly_name: 1, get_by_friendly_name: 1]
 
 alias Mcp.DevAlias
@@ -27,12 +27,22 @@ alias Fact.RelativeHumidity
 schema "sensor" do
   field :device, :string
   field :sensor_type, :string
-  field :dt_reading, Timex.Ecto.DateTime
-  field :dt_last_seen, Timex.Ecto.DateTime
+  field :reading_at, Timex.Ecto.DateTime
+  field :last_seen_at, Timex.Ecto.DateTime
   has_one :temperature, Mcp.SensorTemperature
   has_one :relhum, Mcp.SensorRelHum
 
   timestamps usec: true
+end
+
+def all(:friendly_names) do
+  query =
+    from(s in Sensor,
+      join: dev in DevAlias, on: s.device == dev.device,
+      order_by: dev.friendly_name,
+      select: dev.friendly_name)
+
+  all(query, timeout: 100)
 end
 
 @doc ~S"""
@@ -51,8 +61,10 @@ when is_binary(fname) do
   get_by_fname(fname) |> fahrenheit()
 end
 
-def fahrenheit(%Sensor{temperature: [%SensorTemperature{tf: tf}]}), do: tf
-def fahrenheit(_anything), do: nil
+def fahrenheit(%Sensor{temperature: %SensorTemperature{tf: tf}}), do: tf
+def fahrenheit(%Sensor{} = sensor) do
+  Logger.warn inspect(sensor)
+end
 
 def external_update(r)
 when is_map(r) do
@@ -106,7 +118,7 @@ when is_binary(fname) do
   get_by_fname(fname) |> relhum()
 end
 
-def relhum(%Sensor{relhum: [%SensorRelHum{rh: rh}]}), do: rh
+def relhum(%Sensor{relhum: %SensorRelHum{rh: rh}}), do: rh
 def relhum(_anything), do: nil
 
 # here we actuall create a new sensor with a temperature reading
@@ -115,7 +127,7 @@ defp create_if_does_not_exist(:nil, device, "relhum" = type) do
   r = %SensorRelHum{}
   t = %SensorTemperature{}
   s = %Sensor{device: device, sensor_type: type,
-              dt_last_seen: Timex.now(), relhum: r, temperature: t}
+              last_seen_at: Timex.now(), relhum: r, temperature: t}
 
   insert!(s)
 end
@@ -123,7 +135,7 @@ end
 defp create_if_does_not_exist(:nil, device, "temp" = type) do
   t = %SensorTemperature{}
   s = %Sensor{device: device, sensor_type: type,
-              dt_last_seen: Timex.now(), temperature: t}
+              last_seen_at: Timex.now(), temperature: t}
 
   insert!(s)
 end
@@ -188,8 +200,10 @@ end
 defp update_sensor_datetimes(%Sensor{} = sensor, r)
 when is_map(r) do
   dt_reported = Timex.from_unix(r.mtime)
-  scs = change(sensor, dt_reading: dt_reported, dt_last_seen: dt_reported)
+  scs = change(sensor, reading_at: dt_reported, last_seen_at: dt_reported)
   update!(scs)
+
+  DevAlias.just_seen(sensor.device)
 
   sensor
 end

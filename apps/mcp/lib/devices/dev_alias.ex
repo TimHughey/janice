@@ -5,9 +5,11 @@ require Logger
 use Timex
 use Timex.Ecto.Timestamps
 use Ecto.Schema
-import Mcp.Repo, only: [get_by: 2, insert_or_update: 1]
-import Ecto.Changeset, only: [change: 2]
 import Ecto.Adapters.SQL, only: [query!: 2]
+import Ecto.Changeset, only: [change: 2]
+import Ecto.Query, only: [from: 2]
+import Mcp.Repo, only: [all: 2, get_by: 2, insert_or_update: 1,
+                        one: 1, update!: 1]
 
 alias Mcp.DevAlias
 alias Mcp.Repo
@@ -16,9 +18,19 @@ schema "dev_alias" do
   field :device
   field :friendly_name
   field :description
-  field :dt_last_seen, Timex.Ecto.DateTime
+  field :last_seen_at, Timex.Ecto.DateTime
 
   timestamps usec: true
+end
+
+def all do
+  from(dev in DevAlias, order_by: :friendly_name) |>
+    all(timeout: 100)
+end
+
+def all(:friendly_names) do
+  from(dev in DevAlias, order_by: :friendly_name, select: dev.friendly_name) |>
+    all(timeout: 100)
 end
 
 @doc ~S"""
@@ -70,6 +82,31 @@ def get_by_friendly_name(friendly_name) when is_binary(friendly_name) do
 end
 
 @doc ~S"""
+Mark an alias as just seen
+"""
+def just_seen(id)
+when is_binary(id) do
+  query =
+    from(dev in DevAlias,
+      where: (dev.device == ^id) or (dev.friendly_name == ^id))
+ 
+  one(query) |> just_seen()
+end
+
+def just_seen(%DevAlias{} = dev) do
+  change(dev, last_seen_at: Timex.now()) |> update!()
+end 
+
+def just_seen([]), do: []
+
+def just_seen(ids)
+when is_list(ids) do
+  [just_seen(hd(ids))] ++ just_seen(tl(ids))
+end
+
+def just_seen(nil), do: nil
+
+@doc ~S"""
 Retrieve the last time a friendly name was used
 
 ## Examples:
@@ -82,7 +119,7 @@ Retrieve the last time a friendly name was used
 def last_seen(friendly_name) when is_binary(friendly_name) do
   case get_by(DevAlias, [friendly_name: friendly_name]) do
     nil -> nil
-    d -> d.dt_last_seen
+    d -> d.last_seen_at
   end
 end
 
@@ -108,7 +145,7 @@ def add(%DevAlias{} = d) do
       friendly_name -> friendly_name
     end
 
-  update = [dt_last_seen: Timex.now()]
+  update = [last_seen_at: Timex.now()]
 
   {:ok, added} = to_add |> change(update) |> insert_or_update
   added

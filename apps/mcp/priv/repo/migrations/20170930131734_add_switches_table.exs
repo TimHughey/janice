@@ -14,8 +14,8 @@ def change do
     add :device, :string, size: 40, null: false
     add :enabled, :boolean, null: false, default: true
     add :states, {:array, :map}, null: false, default: []
-    add :dt_last_cmd, :utc_datetime, default: before_now
-    add :dt_discovered, :utc_datetime, default: current_time
+    add :last_cmd_at, :utc_datetime, default: before_now
+    add :discovered_at, :utc_datetime, default: current_time
 
     timestamps()
     end
