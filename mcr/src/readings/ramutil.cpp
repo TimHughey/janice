@@ -44,6 +44,7 @@ ramUtilReading::ramUtilReading(uint16_t free_ram, time_t mtime)
 void ramUtilReading::populateJSON(JsonObject &root) {
   root["type"] = "stats";
   root["freeram"] = _free_ram;
+  root["maxram"] = _max_ram;
 }
 
 #endif // __cplusplus
