@@ -7,6 +7,7 @@ import Application, only: [get_env: 2]
 import Process, only: [send_after: 3]
 
 alias Dispatcher.Reading
+alias Fact.FreeRamStat
 alias Fact.RunMetric
 
 import Command.Control, only: [send_timesync: 0]
@@ -77,6 +78,11 @@ when is_binary(msg) and is_map(s) do
     # if not Reading.cmdack?(r), do: Logger.info(msg)
     apply(mod, func, [Reading.as_map(r)])
     #Switch.external_update(Reading.as_map(r))
+  end
+
+  if Reading.free_ram_stat?(r) do
+    # Logger.info("#{msg}")
+    FreeRamStat.record(remote_host: r.host, val: r.freeram)
   end
 
   s = %{s | messages_dispatched: s.messages_dispatched + 1}

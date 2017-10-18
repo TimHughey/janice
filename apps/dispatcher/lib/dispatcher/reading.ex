@@ -14,6 +14,7 @@ alias Poison
 @temp_t "temp"
 @switch_t "switch"
 @relhum_t "relhum"
+@mcr_stat_t "stats"
 
 @derive [Poison.Encoder]
 defstruct version: 0,
@@ -33,7 +34,8 @@ defstruct version: 0,
           latency: 0,
           refid: nil,
           json: nil,
-          msg_recv_dt: Timex.now()
+          msg_recv_dt: Timex.now(),
+          freeram: nil
 
 @doc ~S"""
 Parse a JSON into a Reading
@@ -186,6 +188,12 @@ def switch?(%Reading{} = r) do
     is_list(r.states) and
     r.pio_count > 0
 end
+
+def free_ram_stat?(%Reading{} = r) do
+  metadata?(r) and
+    (r.type == @mcr_stat_t) and
+    is_integer(r.freeram)
+end    
 
 @doc ~S"""
 Is the Reading a cmdack?
