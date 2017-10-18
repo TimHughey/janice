@@ -1,4 +1,6 @@
 defmodule Dispatcher.Mixfile do
+  @moduledoc """
+  """
   use Mix.Project
 
   def project do

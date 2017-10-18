@@ -10,6 +10,7 @@
 #include "include/mcr_i2c.hpp"
 #include "include/mcr_mqtt.hpp"
 #include "include/mcr_util.hpp"
+#include "include/ramUtil.hpp"
 
 // boards 32u4, M0, and 328p
 #define LED 13
@@ -131,6 +132,7 @@ elapsedMillis loop_duration;
 void loop() {
   static bool first_entry = true;
   static const time_t _loop_run_warning = (150 * 1000); // 150ms
+  static elapsedMillis report_stats;
   elapsedMicros loop_elapsed;
 
   if (first_entry) {
@@ -152,6 +154,13 @@ void loop() {
     logDateTime(__PRETTY_FUNCTION__);
     log("[WARNING] elapsed time ");
     logElapsedMicros(loop_elapsed, true);
+  }
+
+  if (report_stats > 10000) {
+    ramUtilReading_t free_ram(mcrUtil::freeRAM());
+    mqtt->publish(&free_ram);
+
+    report_stats = 0;
   }
 }
 
