@@ -12,7 +12,7 @@ defmodule Mcp.Repo.Migrations.AddDevAliasTable do
       add :device, :string, size: 40, null: false
       add :friendly_name, :string, size: 25, null: false
       add :description, :text
-      add :dt_last_seen, :utc_datetime, default: current_time
+      add :last_seen_at, :utc_datetime, default: current_time
 
       timestamps()
     end

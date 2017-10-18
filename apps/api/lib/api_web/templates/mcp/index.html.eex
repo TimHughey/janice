@@ -1,0 +1,25 @@
+<div class="jumbotron">
+  <h2>Device Aliases (<%= @all_fnames_count %>)</h2>
+</div>
+
+<div class="row marketing">
+  <div class="col-lg-6">
+    <h4>Switches (<%= @switch_fnames_count %>)</h4>
+    <%= for fname <- friendly_names @switch_fnames do %>
+        <p><a href="<%= mcp_path @conn, :show, fname %>"><%= fname %></a></p>
+    <% end %>
+  </div>
+
+  <div class="col-lg-6">
+    <h4>Sensors (<%= @sensor_fnames_count %>)</h4>
+    <%= for fname <- friendly_names @sensor_fnames do %>
+        <p><a href="<%= mcp_path @conn, :show, fname %>"><%= fname %></a></p>
+    <% end %>
+    <hr>
+    <h4>No Device (<%= @unknown_fnames_count %>)</h4>
+    <%= for fname <- friendly_names @unknown_fnames do %>
+      <p><%= fname %></p>
+    <% end %>
+
+  </div>
+</div>

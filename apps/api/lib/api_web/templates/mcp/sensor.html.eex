@@ -1,0 +1,11 @@
+<div class="jumbotron">
+  <h2> <%= @fname %></h2>
+  </div>
+<div class="col-lg-6">
+  <p><a href="<%= mcp_path @conn, :index %>">Back to All</a></p>
+  <p>Friendly Name: <b><%= @fname%></b>
+  <p>Device: <b><%= @device %></b>
+  <p>Last Seen: <b><%= @last_seen %></b>
+  <p>Fahrenheit: <b><%= @fahrenheit %></b>
+  <p>Relative Humidity: <b><%= @relhum %></b>
+  </div>

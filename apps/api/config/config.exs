@@ -12,7 +12,7 @@ config :api,
 
 # Configures the endpoint
 config :api, ApiWeb.Endpoint,
-  url: [host: "localhost"],
+  url: [host: "localhost", path: "/phx"],
   secret_key_base: "Nr0WqN1rfq3nMe65MT0sHeGdB2Xt4ybhkdeFR52muvHYMV7ULkj2Pw50Qc7vI9MZ",
   render_errors: [view: ApiWeb.ErrorView, accepts: ~w(html json)],
   pubsub: [name: Api.PubSub,

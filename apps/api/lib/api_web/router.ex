@@ -17,6 +17,8 @@ defmodule ApiWeb.Router do
     pipe_through :browser # Use the default browser stack
 
     get "/", PageController, :index
+    get "/mcp", McpController, :index
+    get "/mcp/:fname", McpController, :show
   end
 
   # Add this scope for handling API requests

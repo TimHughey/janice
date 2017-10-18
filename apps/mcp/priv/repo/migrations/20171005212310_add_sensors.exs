@@ -11,22 +11,22 @@ defmodule Mcp.Repo.Migrations.AddSensors do
 
     drop_if_exists table(:sensor)
     drop_if_exists index(:sensor, [:device], unique: true)
-    drop_if_exists index(:sensor, [:dt_reading])
-    drop_if_exists index(:sensor, [:dt_last_seen])
+    drop_if_exists index(:sensor, [:reading_at])
+    drop_if_exists index(:sensor, [:last_seen_at])
 
     create_if_not_exists table(:sensor) do
       add :device, :string, size: 40, null: false
       add :sensor_type, :string, size: 10, null: false, default: "undef"
       add :dev_latency, :float, null: true, default: nil
-      add :dt_reading, :utc_datetime, default: before_now
-      add :dt_last_seen, :utc_datetime, default: current_time
+      add :reading_at, :utc_datetime, default: before_now
+      add :last_seen_at, :utc_datetime, default: current_time
 
       timestamps()
     end
 
     create_if_not_exists index(:sensor, [:device], unique: true)
-    create_if_not_exists index(:sensor, [:dt_reading])
-    create_if_not_exists index(:sensor, [:dt_last_seen])
+    create_if_not_exists index(:sensor, [:reading_at])
+    create_if_not_exists index(:sensor, [:last_seen_at])
 
     ##
     ## SensorTemperature
