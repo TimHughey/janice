@@ -36,6 +36,8 @@
 #include "../include/readings.hpp"
 #include "../include/ref_id.hpp"
 
+Reading::Reading(time_t mtime) { _mtime = mtime; }
+
 Reading::Reading(mcrDevID_t &id, time_t mtime) {
   _id = id;
   _mtime = mtime;

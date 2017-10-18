@@ -67,8 +67,9 @@ protected:
 
 public:
   // default constructor, Reading type undefined
-  Reading() {}
+  Reading(){};
   Reading(mcrDevID_t &id, time_t mtime = now());
+  Reading(time_t mtime = now());
   virtual ~Reading(){};
 
   void setCmdAck(time_t latency, const char *refid_raw = NULL);
