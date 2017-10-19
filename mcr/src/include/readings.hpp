@@ -20,10 +20,10 @@
 
 #ifdef __cplusplus
 
-#include "reading.hpp"
+#include "../readings/reading.hpp"
 
-#include "celsius.hpp"
-#include "humidity.hpp"
-#include "positions.hpp"
+#include "../readings/celsius.hpp"
+#include "../readings/humidity.hpp"
+#include "../readings/positions.hpp"
 
 #endif

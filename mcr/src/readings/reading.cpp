@@ -31,10 +31,10 @@
 #include <WiFi101.h>
 #include <elapsedMillis.h>
 
-#include "../include/dev_id.hpp"
-#include "../include/mcr_util.hpp"
-#include "../include/readings.hpp"
-#include "../include/ref_id.hpp"
+#include "../devs/id.hpp"
+#include "../misc/util.hpp"
+#include "../misc/refid.hpp"
+#include "reading.hpp"
 
 Reading::Reading(time_t mtime) { _mtime = mtime; }
 

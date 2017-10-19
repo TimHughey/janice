@@ -1,5 +1,5 @@
 /*
-    ref_id.hpp - Master Control Remote Reference ID (aka UUID)
+    refid.hpp - Master Control Remote Reference ID (aka UUID)
     Copyright (C) 2017  Tim Hughey
 
     This program is free software: you can redistribute it and/or modify
@@ -26,8 +26,8 @@
 #include <WProgram.h>
 #endif
 
-#include "../include/mcr_util.hpp"
-#include "../include/ref_id.hpp"
+#include "util.hpp"
+#include "refid.hpp"
 
 mcrRefID::mcrRefID(const char *id) { this->initAndCopy(id); };
 

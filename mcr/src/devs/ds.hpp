@@ -29,8 +29,8 @@
 #include <WProgram.h>
 #endif
 
-#include "../include/mcr_dev.hpp"
-#include "../include/ref_id.hpp"
+#include "../misc/refid.hpp"
+#include "base.hpp"
 
 typedef class dsDev dsDev_t;
 

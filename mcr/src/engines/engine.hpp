@@ -1,5 +1,5 @@
 /*
-    mcr_engine.hpp - Master Control Remote Dallas Semiconductor
+    engine.hpp - Master Control Remote Dallas Semiconductor
     Copyright (C) 2017  Tim Hughey
 
     This program is free software: you can redistribute it and/or modify
@@ -34,11 +34,11 @@
 #include <cppQueue.h>
 #include <elapsedMillis.h>
 
-#include "mcr_cmd.hpp"
-#include "mcr_dev.hpp"
-#include "mcr_mqtt.hpp"
-#include "mcr_type.hpp"
-#include "mcr_util.hpp"
+#include "../cmds/cmd.hpp"
+#include "../devs/base.hpp"
+#include "../include/mcr_types.hpp"
+#include "../misc/util.hpp"
+#include "../protocols/mqtt.hpp"
 
 #define mcr_engine_version_1 1
 

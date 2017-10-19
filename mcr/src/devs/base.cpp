@@ -25,11 +25,11 @@
 #include <WProgram.h>
 #endif
 
-#include "../include/dev_addr.hpp"
-#include "../include/dev_id.hpp"
-#include "../include/mcr_dev.hpp"
-#include "../include/mcr_util.hpp"
 #include "../include/readings.hpp"
+#include "../misc/util.hpp"
+#include "addr.hpp"
+#include "id.hpp"
+#include "base.hpp"
 
 mcrDev::mcrDev(
     mcrDevAddr_t &addr) { // construct a new mcrDev with only an address

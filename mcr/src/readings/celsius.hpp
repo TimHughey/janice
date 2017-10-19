@@ -35,7 +35,7 @@
 #include <ArduinoJson.h>
 #include <elapsedMillis.h>
 
-#include "dev_id.hpp"
+#include "../devs/id.hpp"
 #include "reading.hpp"
 
 typedef class celsiusReading celsiusReading_t;

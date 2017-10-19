@@ -26,10 +26,10 @@
 #include <WProgram.h>
 #endif
 
-#include "../include/i2c_dev.hpp"
-#include "../include/mcr_dev.hpp"
-#include "../include/mcr_util.hpp"
 #include "../include/readings.hpp"
+#include "../misc/util.hpp"
+#include "i2c.hpp"
+#include "base.hpp"
 
 const char *i2cDev::i2cDevDesc(uint8_t addr) {
   switch (addr) {

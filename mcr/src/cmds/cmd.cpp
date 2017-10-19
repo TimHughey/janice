@@ -28,9 +28,9 @@
 
 #include <TimeLib.h>
 
-#include "../include/mcr_cmd.hpp"
-#include "../include/mcr_dev.hpp"
-#include "../include/mcr_util.hpp"
+#include "../devs/base.hpp"
+#include "../misc/util.hpp"
+#include "cmd.hpp"
 
 mcrCmd::mcrCmd(mcrDevID_t &id, uint8_t mask, uint8_t state) {
   _dev_id = id;

@@ -36,7 +36,7 @@
 #include <WiFi101.h>
 #include <elapsedMillis.h>
 
-#include "readings.hpp"
+#include "../include/readings.hpp"
 
 #define mcr_mqtt_version_1 1
 

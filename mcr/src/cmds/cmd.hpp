@@ -1,5 +1,5 @@
 /*
-    humidity.hpp - Master Control Remote Relative Humidity Reading
+    mcr_cmd.h - Master Control Remote Switch Command
     Copyright (C) 2017  Tim Hughey
 
     This program is free software: you can redistribute it and/or modify
@@ -18,8 +18,8 @@
     https://www.wisslanding.com
 */
 
-#ifndef humidity_reading_h
-#define humidity_reading_h
+#ifndef mcr_cmd_h
+#define mcr_cmd_h
 
 #ifdef __cplusplus
 
@@ -29,26 +29,40 @@
 #include <WProgram.h>
 #endif
 
-#include <ArduinoJson.h>
 #include <TimeLib.h>
 
-#include "celsius.hpp"
-#include "dev_id.hpp"
+#include "../devs/base.hpp"
+#include "../misc/util.hpp"
+#include "../misc/refid.hpp"
 
-typedef class humidityReading humidityReading_t;
+typedef class mcrCmd mcrCmd_t;
 
-class humidityReading : public celsiusReading {
+class mcrCmd {
 private:
-  // actual reading data
-  float _relhum = 0.0;
+  static const uint8_t _max_len = 30;
+  mcrDevID_t _dev_id;
+  uint8_t _state = 0x00;
+  uint8_t _mask = 0x00;
+  elapsedMicros _latency = 0;
+  time_t _mtime = now();
+  mcrRefID_t _refid; // example: 2d931510-d99f-494a-8c67-87feb05e1594
 
 public:
-  // undefined reading
-  humidityReading(mcrDevID_t &id, time_t mtime, float celsius, float relhum);
+  mcrCmd() {}
 
-protected:
-  void populateJSON(JsonObject &root);
+  mcrCmd(mcrDevID_t &id, uint8_t mask, uint8_t state, mcrRefID_t &cmd);
+  mcrCmd(mcrDevID_t &id, uint8_t mask, uint8_t state);
+
+  mcrDevID_t &dev_id();
+  uint8_t state();
+  uint8_t mask();
+  time_t latency();
+  mcrRefID_t &refID();
+
+  static const uint8_t size();
+
+  void printLog(bool newline = false);
 };
 
 #endif // __cplusplus
-#endif // temp_reading_h
+#endif // mcr_cmd_h

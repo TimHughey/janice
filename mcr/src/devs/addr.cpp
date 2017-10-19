@@ -26,8 +26,8 @@
 #include <WProgram.h>
 #endif
 
-#include "../include/dev_addr.hpp"
-#include "../include/mcr_util.hpp"
+#include "../misc/util.hpp"
+#include "addr.hpp"
 
 // construct a very simple device address of only one byte
 mcrDevAddr::mcrDevAddr(uint8_t addr) { _addr[0] = addr, _len = 1; }

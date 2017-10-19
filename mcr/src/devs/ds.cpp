@@ -28,11 +28,11 @@
 
 #include <OneWire.h>
 
-#include "../include/dev_addr.hpp"
-#include "../include/ds_dev.hpp"
-#include "../include/mcr_dev.hpp"
-#include "../include/mcr_util.hpp"
-#include "../include/ref_id.hpp"
+#include "../misc/util.hpp"
+#include "../misc/refid.hpp"
+#include "addr.hpp"
+#include "ds.hpp"
+#include "base.hpp"
 
 dsDev::dsDev(mcrDevAddr_t &addr, bool power) : mcrDev(addr) {
   char buff[_id_len] = {0x00};

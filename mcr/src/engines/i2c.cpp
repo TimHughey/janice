@@ -34,10 +34,10 @@
 #include <WiFi101.h>
 #include <Wire.h>
 
-#include "../include/mcr_dev.hpp"
-#include "../include/mcr_i2c.hpp"
-#include "../include/mcr_mqtt.hpp"
+#include "../devs/base.hpp"
 #include "../include/readings.hpp"
+#include "../protocols/mqtt.hpp"
+#include "i2c.hpp"
 
 mcrI2c::mcrI2c(mcrMQTT_t *mqtt) : mcrEngine(mqtt) {
   // power up the i2c devices

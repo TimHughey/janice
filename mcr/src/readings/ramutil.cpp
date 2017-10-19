@@ -31,10 +31,10 @@
 #include <WiFi101.h>
 #include <elapsedMillis.h>
 
-#include "../include/mcr_dev.hpp"
-#include "../include/mcr_util.hpp"
-#include "../include/ramutil.hpp"
-#include "../include/reading.hpp"
+#include "../devs/base.hpp"
+#include "../misc/util.hpp"
+#include "ramutil.hpp"
+#include "reading.hpp"
 
 ramUtilReading::ramUtilReading(uint16_t free_ram, time_t mtime)
     : Reading(mtime) {

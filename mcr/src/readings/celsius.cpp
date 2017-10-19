@@ -31,8 +31,8 @@
 #include <ArduinoJson.h>
 #include <elapsedMillis.h>
 
-#include "../include/celsius.hpp"
-#include "../include/dev_id.hpp"
+#include "../devs/id.hpp"
+#include "celsius.hpp"
 
 celsiusReading::celsiusReading(mcrDevID_t &id, time_t mtime, float celsius)
     : Reading(id, mtime) {

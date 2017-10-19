@@ -30,10 +30,10 @@
 #include <OneWire.h>
 #include <cppQueue.h>
 
-#include "../include/mcr_cmd.hpp"
-#include "../include/mcr_ds.hpp"
-#include "../include/mcr_engine.hpp"
+#include "../cmds/cmd.hpp"
 #include "../include/readings.hpp"
+#include "ds.hpp"
+#include "engine.hpp"
 
 // this must be a global (at least to this file) due to the MQTT callback
 // static.  i really don't like this.  TODO fix MQTT library

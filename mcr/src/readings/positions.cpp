@@ -31,10 +31,10 @@
 #include <WiFi101.h>
 #include <elapsedMillis.h>
 
-#include "../include/dev_id.hpp"
-#include "../include/mcr_util.hpp"
-#include "../include/positions.hpp"
-#include "../include/reading.hpp"
+#include "../devs/id.hpp"
+#include "../misc/util.hpp"
+#include "positions.hpp"
+#include "reading.hpp"
 
 positionsReading::positionsReading(mcrDevID_t &id, time_t mtime,
                                    uint16_t states, uint8_t pios)

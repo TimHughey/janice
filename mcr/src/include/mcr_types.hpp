@@ -1,5 +1,5 @@
 /*
-    positions.hpp - Master Control Remote Relative Humidity Reading
+    engine.hpp - Master Control Remote Dallas Semiconductor
     Copyright (C) 2017  Tim Hughey
 
     This program is free software: you can redistribute it and/or modify
@@ -18,42 +18,26 @@
     https://www.wisslanding.com
 */
 
-#ifndef positions_reading_h
-#define positions_reading_h
+#ifndef mcr_type_hpp
+#define mcr_type_hpp
 
 #ifdef __cplusplus
-
 #if ARDUINO >= 100
 #include <Arduino.h>
 #else
 #include <WProgram.h>
 #endif
 
-#include <ArduinoJson.h>
-#include <TimeLib.h>
-#include <WiFi101.h>
-#include <elapsedMillis.h>
-
-#include "dev_id.hpp"
-#include "reading.hpp"
-
-typedef class positionsReading positionsReading_t;
-
-class positionsReading : public Reading {
-private:
-  static const uint16_t _max_pios = 16;
-  // actual reading data
-  uint8_t _pios = 0;
-  uint16_t _states = 0x0000;
-
-public:
-  // undefined reading
-  positionsReading(mcrDevID_t &id, time_t mtime, uint16_t states, uint8_t pios);
-  uint16_t state() { return _states; }
-
-protected:
-  virtual void populateJSON(JsonObject &root);
-};
+typedef enum {
+  IDLE,
+  INIT,
+  DISCOVER,
+  CONVERT,
+  REPORT,
+  CMD,
+  CMD_ACK,
+  STATS
+} mcrEngineState_t;
 
 #endif // __cplusplus
-#endif // positions_reading_h
+#endif // mcr_type_h

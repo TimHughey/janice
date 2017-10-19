@@ -32,8 +32,8 @@
 #include <TimeLib.h>
 #include <elapsedMillis.h>
 
-#include "dev_id.hpp"
-#include "ref_id.hpp"
+#include "../devs/id.hpp"
+#include "../misc/refid.hpp"
 
 typedef class Reading Reading_t;
 class Reading {

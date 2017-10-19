@@ -34,11 +34,11 @@
 #include <TimeLib.h>
 #include <elapsedMillis.h>
 
-#include "ds_dev.hpp"
-#include "mcr_cmd.hpp"
-#include "mcr_engine.hpp"
-#include "mcr_mqtt.hpp"
-#include "readings.hpp"
+#include "../cmds/cmd.hpp"
+#include "../devs/ds.hpp"
+#include "../include/readings.hpp"
+#include "../protocols/mqtt.hpp"
+#include "engine.hpp"
 
 #define mcr_ds_version_1 1
 

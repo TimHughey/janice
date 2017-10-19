@@ -1,5 +1,5 @@
 /*
-    dev_id.hpp - Master Control Remote Device ID
+    id.hpp - Master Control Remote Device ID
     Copyright (C) 2017  Tim Hughey
 
     This program is free software: you can redistribute it and/or modify
@@ -26,8 +26,8 @@
 #include <WProgram.h>
 #endif
 
-#include "../include/dev_id.hpp"
-#include "../include/mcr_util.hpp"
+#include "../misc/util.hpp"
+#include "id.hpp"
 
 mcrDevID::mcrDevID(const char *id) { this->initAndCopy(id); };
 

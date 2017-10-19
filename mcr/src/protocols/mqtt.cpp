@@ -26,9 +26,9 @@
 #include <WProgram.h>
 #endif
 
-#include "../include/mcr_mqtt.hpp"
-#include "../include/mcr_util.hpp"
 #include "../include/readings.hpp"
+#include "../misc/util.hpp"
+#include "mqtt.hpp"
 
 static uint8_t cmd_callback_count = 0;
 static cmdCallback_t cmd_callback[10] = {nullptr};

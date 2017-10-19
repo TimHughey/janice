@@ -26,10 +26,10 @@
 
 #include <OneWire.h>
 
-#include "../include/mcr_cmd.hpp"
-#include "../include/mcr_engine.hpp"
-#include "../include/mcr_util.hpp"
+#include "../cmds/cmd.hpp"
 #include "../include/readings.hpp"
+#include "../misc/util.hpp"
+#include "engine.hpp"
 
 mcrEngine::mcrEngine(mcrMQTT *mqtt) {
 

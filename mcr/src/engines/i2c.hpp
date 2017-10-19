@@ -31,13 +31,13 @@
 
 #include <Wire.h>
 
-#include "dev_addr.hpp"
-#include "dev_id.hpp"
-#include "i2c_dev.hpp"
-#include "mcr_engine.hpp"
-#include "mcr_mqtt.hpp"
-#include "mcr_util.hpp"
-#include "readings.hpp"
+#include "../devs/addr.hpp"
+#include "../devs/id.hpp"
+#include "../devs/i2c.hpp"
+#include "../include/readings.hpp"
+#include "../misc/util.hpp"
+#include "../protocols/mqtt.hpp"
+#include "engine.hpp"
 
 #define mcr_i2c_version_1 1
 

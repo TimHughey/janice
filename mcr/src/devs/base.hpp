@@ -28,9 +28,9 @@
 #include <WProgram.h>
 #endif
 
-#include "dev_addr.hpp"
-#include "dev_id.hpp"
-#include "readings.hpp"
+#include "../include/readings.hpp"
+#include "addr.hpp"
+#include "id.hpp"
 
 typedef class mcrDev mcrDev_t;
 class mcrDev {

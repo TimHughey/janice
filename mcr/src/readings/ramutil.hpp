@@ -1,5 +1,5 @@
 /*
-    mcr_engine.hpp - Master Control Remote Dallas Semiconductor
+    ramutil.hpp - Master Control Remote Relative Humidity Reading
     Copyright (C) 2017  Tim Hughey
 
     This program is free software: you can redistribute it and/or modify
@@ -18,26 +18,40 @@
     https://www.wisslanding.com
 */
 
-#ifndef mcr_type_hpp
-#define mcr_type_hpp
+#ifndef ram_util_reading_h
+#define ram_util_reading_h
 
 #ifdef __cplusplus
+
 #if ARDUINO >= 100
 #include <Arduino.h>
 #else
 #include <WProgram.h>
 #endif
 
-typedef enum {
-  IDLE,
-  INIT,
-  DISCOVER,
-  CONVERT,
-  REPORT,
-  CMD,
-  CMD_ACK,
-  STATS
-} mcrEngineState_t;
+#include <ArduinoJson.h>
+#include <TimeLib.h>
+#include <WiFi101.h>
+#include <elapsedMillis.h>
+
+#include "reading.hpp"
+
+typedef class ramUtilReading ramUtilReading_t;
+
+class ramUtilReading : public Reading {
+private:
+  const uint16_t _max_ram = 32 * 1024;
+  // actual reading data
+  uint16_t _free_ram = 0;
+
+public:
+  // undefined reading
+  ramUtilReading(uint16_t free_ram, time_t mtime = now());
+  uint16_t freeRAM() { return _free_ram; }
+
+protected:
+  virtual void populateJSON(JsonObject &root);
+};
 
 #endif // __cplusplus
-#endif // mcr_type_h
+#endif // ram_util_reading_h

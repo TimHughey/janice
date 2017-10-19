@@ -1,5 +1,5 @@
 /*
-    dev_id.hpp - Master Control Remote Address of Device
+    id.hpp - Master Control Remote Address of Device
     Copyright (C) 2017  Tim Hughey
 
     This program is free software: you can redistribute it and/or modify
