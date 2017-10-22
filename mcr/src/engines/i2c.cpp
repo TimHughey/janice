@@ -443,7 +443,7 @@ bool mcrI2c::detectDev(mcrDevAddr_t &addr, bool use_multiplexer, uint8_t bus) {
     break;
 
   case 0x5C: // AM2315 needs to be woken up
-    Wire.endTransmission(true);
+    Wire.endTransmission();
     delay(2);
     Wire.beginTransmission(addr.firstAddressByte());
   }
@@ -480,20 +480,20 @@ bool mcrI2c::detectDev(mcrDevAddr_t &addr, bool use_multiplexer, uint8_t bus) {
 bool mcrI2c::detectMultiplexer() {
   _use_multiplexer = false;
 
-  if (debugMode) {
+  if (discoverLogMode || debugMode) {
     logDateTime(__PRETTY_FUNCTION__);
-    log("detecting TCA9514B i2c bus multiplexer...");
+    log("detecting TCA9514B i2c bus multiplexer: ");
   }
   // let's see if there's a multiplexer available
   mcrDevAddr_t multiplexer_dev(0x70);
   if (detectDev(multiplexer_dev)) {
-    if (debugMode)
+    if (discoverLogMode || debugMode)
       log(" found", true);
 
     _use_multiplexer = true;
   } else {
-    if (debugMode)
-      log(" not found");
+    if (discoverLogMode || debugMode)
+      log(" not found", true);
   }
 
   return _use_multiplexer;
