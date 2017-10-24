@@ -49,7 +49,7 @@ Parse a JSON into a Reading
 """
 def decode!(json)
 when is_binary(json) do
-  r = Poison.decode!(json, [keys: :atoms!, as: %Dispatcher.Reading{}])
+  r = Poison.decode!(json, [keys: :atoms, as: %Dispatcher.Reading{}])
   Map.put(r, :json, json)
   Map.put(r, :msg_recv_dt, Timex.now())
   #Map.put(r, :friendly_name, DevAlias.friendly_name(r.device))

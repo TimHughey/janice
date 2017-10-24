@@ -10,6 +10,7 @@ use Mix.Releases.Config,
     # This sets the default release built by `mix release`
     default_release: :default,
     # This sets the default environment used by `mix release`
+    # default_environment: Mix.env()
     default_environment: :prod 
 
 # For a full list of config options for both releases
@@ -30,14 +31,13 @@ environment :dev do
   # dev mode.
   set dev_mode: true
   set include_erts: false
-  set cookie: :"mcp"
+  set cookie: :"~m5l{}|7BQlj!r_[Q]T(QP,M|e6EbHlQF;?b.h2t{[e,{]w@4nqJ5x2(L~n<?G?f"
 end
 
 environment :prod do
   set include_erts: true
   set include_src: false
-  set cookie: :"HBNOCPVGGIOZRUMPYCPY"
-  set vm_args: "rel/vm.args"
+  set cookie: :"iK0o`UAfI1F_%{eM6E:8p$V$Vwx&,uhVuUr?sQ5pB}_t{Wgn&y60d8s{rhqBwVde"
 end
 
 # You may define one or more releases in this file.
@@ -46,11 +46,15 @@ end
 # will be used by default
 
 release :mercurial do
-  # set version: current_version(:mas_con_pro) 
-  set version: "0.1.0" 
+  set version: "0.1.0"
   set applications: [
     :runtime_tools,
-    mcp: :permanent
+    api: :permanent,
+    command: :permanent,
+    dispatcher: :permanent,
+    fact: :permanent,
+    mcp: :permanent,
+    mqtt: :permanent
   ]
 end
 
