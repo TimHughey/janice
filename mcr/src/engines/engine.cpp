@@ -62,6 +62,18 @@ bool mcrEngine::init() {
   return rc;
 }
 
+const uint8_t mcrEngine::numKnownDevices() {
+  uint8_t dev_count = 0;
+
+  for (uint8_t i = 0; i < maxDevices(); i++) {
+    if (_known_devs[i] != nullptr) {
+      dev_count = dev_count + 1;
+    }
+  }
+
+  return dev_count;
+}
+
 bool mcrEngine::loop() {
   resetLoopRuntime();
 
@@ -355,8 +367,8 @@ mcrDev_t *mcrEngine::getFirstKnownDevice() {
 mcrDev_t *mcrEngine::getNextKnownDevice() {
   mcrDev_t *found_dev = nullptr;
 
-  if (_next_known_index >= maxDevices()) // bail out if we've reached
-    return nullptr;                      // the end of possible known devices
+  if (_next_known_index >= (maxDevices() - 1)) // bail out if we've reached
+    return nullptr; // the end of possible known devices
 
   for (; ((_next_known_index < maxDevices()) && (found_dev == nullptr));
        _next_known_index++) {
