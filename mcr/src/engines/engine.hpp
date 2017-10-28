@@ -127,6 +127,7 @@ public:
   mcrDev_t *getNextKnownDevice();
   mcrDev_t *getDevice(mcrDevAddr_t &addr);
   mcrDev_t *getDevice(mcrDevID_t &id);
+  const uint8_t numKnownDevices();
 
   // state helper methods (grouped together for readability)
   bool isDiscoveryActive();

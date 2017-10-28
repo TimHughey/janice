@@ -225,26 +225,33 @@ bool mcrDS::convert() {
     // start a temperature conversion if one isn't already in-progress
     // TODO only handles powered devices as of 2017-09-11
     if (isIdle()) {
-      ds->reset();
-      ds->skip();         // address all devices
-      ds->write(0x44, 1); // start conversion
-      delay(1);           // give the sensors an opportunity to start conversion
+      if (numKnownDevices() > 0) { // only do a convert if there are devices
+        ds->reset();
+        ds->skip();         // address all devices
+        ds->write(0x44, 1); // start conversion
+        delay(1); // give the sensors an opportunity to start conversion
+      }
 
       printStartConvert(__PRETTY_FUNCTION__);
-
       startConvert();
     }
 
-    // bus is held low during temp convert
-    // so if the bus reads high then temp convert is complete
-    if (isConvertActive() && (ds->read_bit() > 0x00)) {
-      idle(__PRETTY_FUNCTION__);
+    // temperature devices how the bus low during the convert
+    if (isConvertActive()) {
+      bool finished = false;
 
-      printStopConvert(__PRETTY_FUNCTION__);
-    } else if (convertTimeout()) {
-      idle(__PRETTY_FUNCTION__);
+      if (ds->read_bit() > 0x00) { // bus is high means convert finished
+        finished = true;
+      } else if (convertTimeout()) { // has the max convert time elapsed?
+        finished = true;
+      } else if (numKnownDevices() == 0) { // there are no known devices
+        finished = true;
+      }
 
-      printStopConvert(__PRETTY_FUNCTION__);
+      if (finished) {
+        idle(__PRETTY_FUNCTION__);
+        printStopConvert(__PRETTY_FUNCTION__);
+      }
     }
   }
   return rc;
