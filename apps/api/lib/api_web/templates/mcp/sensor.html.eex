@@ -5,6 +5,7 @@
   <p><a href="<%= mcp_path @conn, :index %>">Back to All</a></p>
   <p>Friendly Name: <b><%= @fname%></b>
   <p>Device: <b><%= @device %></b>
+  <p>First Seen: <b><%= @first_seen %></b>
   <p>Last Seen: <b><%= @last_seen %></b>
   <p>Fahrenheit: <b><%= @fahrenheit %></b>
   <p>Relative Humidity: <b><%= @relhum %></b>

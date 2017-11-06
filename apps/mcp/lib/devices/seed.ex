@@ -3,6 +3,7 @@ defmodule Mix.Tasks.Seed do
 @moduledoc """
   Seeds the Mercurial database
 """
+require Logger
 use Mix.Task
 
 alias Mcp.DevAlias
@@ -10,14 +11,10 @@ alias Mcp.DevAlias
 
 def run(_args) do
   Mix.Task.run "app.start", []
-
-  if Mix.env == :dev or Mix.env == :test do
-    dev_aliases(Mix.env) |> seed_dev_alias()
-  end
+  dev_aliases(Mix.env) |> seed_dev_alias()
 end
 
-def dev_aliases(env)
-when env == :dev or env == :test do
+def dev_aliases(_env) do
   [{"ds/291d1823000000:0", "led1", "dev led"},
    {"ds/12128521000000:0", "buzzer", "dev buzzer"},
    {"ds/28ff5733711604", "temp_probe1_dev", "dev temp probe1"},
@@ -73,9 +70,11 @@ end
 
 def seed_dev_alias([]), do: []
 def seed_dev_alias({device, fname, desc}) do
+  Logger.info "seeding #{device} #{fname}"
   %DevAlias{device: device, friendly_name: fname, description: desc} |>
     DevAlias.add()
 end
+
 def seed_dev_alias([da | list]) do
   [seed_dev_alias(da)] ++ seed_dev_alias(list)
 end

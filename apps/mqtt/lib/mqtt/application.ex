@@ -12,8 +12,9 @@ defmodule Mqtt.Application do
 
     autostart =
     case build_env do
-      "dev" -> true
-      _     -> false
+      "dev"   -> true
+      "prod"  -> true
+      _       -> false
     end
 
     initial_state = %{autostart: autostart}

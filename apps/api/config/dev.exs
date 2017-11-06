@@ -8,6 +8,7 @@ use Mix.Config
 # with brunch.io to recompile .js and .css sources.
 config :api, ApiWeb.Endpoint,
   http: [port: 4000],
+  url: [scheme: "https", host: "api.wisslanding.com", port: 443],
   debug_errors: true,
   code_reloader: true,
   check_origin: false,

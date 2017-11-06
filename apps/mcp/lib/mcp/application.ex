@@ -12,8 +12,8 @@ def start(_type, _args) do
 
   autostart =
   case build_env do
-    "dev" -> true
-    _     -> false
+    "test"  -> false 
+    _       -> true 
   end
 
   initial_state = %{autostart: autostart}

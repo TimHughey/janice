@@ -27,15 +27,18 @@ defmodule ApiWeb.McpController do
   def show(conn, %{"fname" => fname}) do
 
     %DevAlias{device: device,
-              last_seen_at: last_seen} = DevAlias.get_by_friendly_name(fname)
+              last_seen_at: last_seen,
+              inserted_at: inserted_at} = DevAlias.get_by_friendly_name(fname)
 
     if Switch.is_switch?(fname) do
       render conn, "switch.html",
         fname: fname, device: device, last_seen: last_seen,
+        first_seen: inserted_at,
         state: Switch.get_state(fname) 
     else
       render conn, "sensor.html",
         fname: fname, device: device, last_seen: last_seen,
+        first_seen: inserted_at,
         fahrenheit: Sensor.fahrenheit(fname),
         relhum: Sensor.relhum(fname) 
 
