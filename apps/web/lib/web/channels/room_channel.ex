@@ -1,5 +1,7 @@
-defmodule ApiWeb.RoomChannel do
-  use ApiWeb, :channel
+defmodule Web.RoomChannel do
+  @moduledoc """
+  """
+  use Web, :channel
 
   def join("room:lobby", payload, socket) do
     if authorized?(payload) do

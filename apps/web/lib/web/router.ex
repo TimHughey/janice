@@ -17,10 +17,14 @@ defmodule Web.Router do
     pipe_through :browser # Use the default browser stack
 
     get "/", PageController, :index
+    get "/mercurial", McpController, :index
+    get "/mercurial/:fname", McpController, :index
   end
 
   # Other scopes may use custom stacks.
-  # scope "/api", Web do
-  #   pipe_through :api
-  # end
+  scope "/mercurial/api", Web do
+    pipe_through :api
+    resources "/switches/lastseen", SwitchesLastSeenController,
+      only: [:index]
+  end
 end

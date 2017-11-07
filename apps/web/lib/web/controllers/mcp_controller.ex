@@ -1,6 +1,8 @@
-defmodule ApiWeb.McpController do
-  use ApiWeb, :controller
-  
+defmodule Web.McpController do
+  @moduledoc """
+  """
+  use Web, :controller
+
   alias Mcp.DevAlias
   alias Mcp.Sensor
   alias Mcp.Switch
@@ -9,7 +11,7 @@ defmodule ApiWeb.McpController do
     all_fnames = DevAlias.all(:friendly_names) |> MapSet.new()
     switch_fnames = Switch.all(:friendly_names)
     sensor_fnames = Sensor.all(:friendly_names)
-  
+
     known_fnames = (switch_fnames ++ sensor_fnames) |> MapSet.new()
     unknown_fnames =
       MapSet.difference(all_fnames, known_fnames) |> Enum.sort()
@@ -21,7 +23,7 @@ defmodule ApiWeb.McpController do
       sensor_fnames: sensor_fnames,
       sensor_fnames_count: Enum.count(sensor_fnames),
       unknown_fnames: unknown_fnames,
-      unknown_fnames_count: Enum.count(unknown_fnames) 
+      unknown_fnames_count: Enum.count(unknown_fnames)
   end
 
   def show(conn, %{"fname" => fname}) do
@@ -34,13 +36,13 @@ defmodule ApiWeb.McpController do
       render conn, "switch.html",
         fname: fname, device: device, last_seen: last_seen,
         first_seen: inserted_at,
-        state: Switch.get_state(fname) 
+        state: Switch.get_state(fname)
     else
       render conn, "sensor.html",
         fname: fname, device: device, last_seen: last_seen,
         first_seen: inserted_at,
         fahrenheit: Sensor.fahrenheit(fname),
-        relhum: Sensor.relhum(fname) 
+        relhum: Sensor.relhum(fname)
 
     end
   end

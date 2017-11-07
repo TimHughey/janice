@@ -1,5 +1,5 @@
-defmodule ApiWeb.SwitchesLastSeenView do
-  use ApiWeb, :view
+defmodule Web.SwitchesLastSeenView do
+  use Web, :view
 
   alias Mcp.Switch
 
@@ -14,6 +14,6 @@ defmodule ApiWeb.SwitchesLastSeenView do
       id: sw.id,
       device: sw.device,
       last_seen: sw.last_seen_at
-    } 
+    }
   end
 end
