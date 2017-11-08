@@ -8,14 +8,16 @@ use Mix.Config
 # General application configuration
 config :web,
   namespace: Web,
-  ecto_repos: [Web.Repo]
+  ecto_repos: [Mcp.Repo]
 
 # Configures the endpoint
 config :web, Web.Endpoint,
+  #url: [host: "localhost", path: "/mercurial"],
   url: [host: "localhost"],
   secret_key_base: "F+nBtFWds844L6U1OrfNhZcui+qPsPZYB6E5GM1H1skAdb14Jnmp14nLUKYNjmbH",
   render_errors: [view: Web.ErrorView, accepts: ~w(html json)],
   pubsub: [name: Web.PubSub,
+           pool_size: 1,
            adapter: Phoenix.PubSub.PG2]
 
 # Configures Elixir's Logger

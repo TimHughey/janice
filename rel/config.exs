@@ -49,7 +49,7 @@ release :mercurial do
   set version: "0.1.0"
   set applications: [
     :runtime_tools,
-    api: :permanent,
+    web: :permanent,
     command: :permanent,
     dispatcher: :permanent,
     fact: :permanent,

@@ -13,12 +13,12 @@ defmodule Web.Router do
     plug :accepts, ["json"]
   end
 
-  scope "/", Web do
+  scope "/mercurial", Web do
     pipe_through :browser # Use the default browser stack
 
-    get "/", PageController, :index
-    get "/mercurial", McpController, :index
-    get "/mercurial/:fname", McpController, :index
+    # get "/", PageController, :index
+    get "/", McpController, :index
+    get "/:fname", McpController, :show
   end
 
   # Other scopes may use custom stacks.
