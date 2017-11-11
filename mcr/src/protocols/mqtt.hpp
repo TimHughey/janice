@@ -63,10 +63,18 @@ private:
   PubSubClient mqtt;
   elapsedMillis lastLoop;
 
+#ifdef PROD_BUILD
   const char *_user = "mqtt";
   const char *_pass = "mqtt";
-  const char *_rpt_feed = "mcr/f/report";
-  const char *_cmd_feed = "mcr/f/command";
+  const char *_rpt_feed = "prod/mcr/f/report";
+  const char *_cmd_feed = "prod/mcr/f/command";
+#else
+  const char *_user = "mqtt";
+  const char *_pass = "mqtt";
+  const char *_rpt_feed = "dev/mcr/f/report";
+  const char *_cmd_feed = "dev/mcr/f/command";
+#endif
+
   const int _msg_version = 1;
 
   uint8_t _min_loop_ms = 10;

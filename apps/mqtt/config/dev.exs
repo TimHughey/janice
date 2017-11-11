@@ -10,6 +10,6 @@ config :mqtt, Mqtt.Client,
            username: "mqtt", password: "mqtt",
            host: "jophiel.wisslanding.com", port: 1883, ssl: false],
   feeds: [topics: ["mcr/f/report"], qoses: [0]],
-  rpt_feed: "mcr/f/report",
-  cmd_feed: "mcr/f/command",
+  rpt_feed: "dev/mcr/f/report",
+  cmd_feed: "dev/mcr/f/command",
   build_env: "#{Mix.env}"
