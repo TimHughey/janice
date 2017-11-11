@@ -19,7 +19,8 @@ end
 def init(s)
 when is_map(s) do
   case Map.get(s, :autostart, false) do
-    true  -> send_after(self(), {:startup}, config(:startup_delay_ms))
+    true  -> delay = config(:startup_delay_ms)
+             if delay > 0 do send_after(self(), {:startup}, delay) end
     false -> nil
   end
 

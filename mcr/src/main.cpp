@@ -1,10 +1,10 @@
+#include <Adafruit_SleepyDog.h>
+#include <ArduinoJson.h>
 #include <SPI.h>
 #include <TimeLib.h>
 #include <WiFi101.h>
 #include <Wire.h>
 #include <elapsedMillis.h>
-// #include <Adafruit_SleepyDog.h>
-#include <ArduinoJson.h>
 
 #include "engines/ds.hpp"
 #include "engines/i2c.hpp"
@@ -96,7 +96,7 @@ void setup() {
   Serial.print("mcrID: ");
   Serial.println(mcrUtil::hostID());
 
-  // Watchdog.enable(5000);
+  Watchdog.enable(20000);
   setSyncInterval(120); // setting a high time sync interval since we rely on
                         // updates via MQTT
 
@@ -148,7 +148,7 @@ void loop() {
   statusIndicator();
   mcrUtil::printFreeMem(__PRETTY_FUNCTION__, 15);
 
-  // Watchdog.reset();
+  Watchdog.reset();
 
   if (loop_elapsed > (_loop_run_warning)) {
     logDateTime(__PRETTY_FUNCTION__);

@@ -6,7 +6,7 @@ config :mcp, Mcp.Application,
   build_env: "#{Mix.env}"
 
 config :mcp, Mcp.SoakTest,
-  startup_delay_ms: 12_000,
+  startup_delay_ms: 0,  # don't start
   periodic_log_first_ms: (30 * 60 * 1000),
   periodic_log_ms: (60 * 60 * 1000),
   flash_led_ms: (3 * 1000)
@@ -15,7 +15,7 @@ config :mcp, Mcp.Repo,
   adapter: Ecto.Adapters.Postgres,
   database: System.get_env("MERC_DB_NAME"),
   username: System.get_env("MERC_DB_USER"),
-  password: System.get_env("MERC_DB_PASSWD"), 
+  password: System.get_env("MERC_DB_PASSWD"),
   hostname: "jophiel.wisslanding.com",
   pool_size: 10
 
