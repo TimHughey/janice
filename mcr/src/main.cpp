@@ -148,7 +148,11 @@ void loop() {
   statusIndicator();
   mcrUtil::printFreeMem(__PRETTY_FUNCTION__, 15);
 
-  Watchdog.reset();
+  // if WiFi is connected then reset the Watchdog
+  // otherwise the watchdog will provide for an auto restart
+  if (WiFi.status() == WL_CONNECTED) {
+    Watchdog.reset();
+  }
 
   if (loop_elapsed > (_loop_run_warning)) {
     logDateTime(__PRETTY_FUNCTION__);

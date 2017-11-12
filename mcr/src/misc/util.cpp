@@ -167,7 +167,10 @@ void mcrUtil::printNet(const char *func) {
   Serial.print(ip);
 
   Serial.print(" MAC=");
-  Serial.println(mcrUtil::macAddress());
+  Serial.print(mcrUtil::macAddress());
+
+  Serial.print(" FW=");
+  Serial.println(WiFi.firmwareVersion());
 }
 
 void mcrUtil::printFreeMem(const char *func, uint8_t secs) {
