@@ -1,6 +1,7 @@
 defmodule Web.McpController do
   @moduledoc """
   """
+  use Timex
   use Web, :controller
 
   alias Mcp.DevAlias
@@ -32,14 +33,18 @@ defmodule Web.McpController do
               last_seen_at: last_seen,
               inserted_at: inserted_at} = DevAlias.get_by_friendly_name(fname)
 
+    last_seen_secs = Timex.diff(Timex.now(), last_seen, :seconds)
+
     if Switch.is_switch?(fname) do
       render conn, "switch.html",
         fname: fname, device: device, last_seen: last_seen,
+        last_seen_secs: last_seen_secs,
         first_seen: inserted_at,
         state: Switch.get_state(fname)
     else
       render conn, "sensor.html",
         fname: fname, device: device, last_seen: last_seen,
+        last_seen_secs: last_seen_secs,
         first_seen: inserted_at,
         fahrenheit: Sensor.fahrenheit(fname),
         relhum: Sensor.relhum(fname)

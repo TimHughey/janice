@@ -8,6 +8,6 @@ config :command, Command.Application,
 config :command, Command.Control,
   startup_delay_ms: 200,
   periodic_timesync_ms: (5 * 60 * 1000),
-  rpt_feed: "mcr/f/report",
-  cmd_feed: "mcr/f/command",
+  rpt_feed: "prod/mcr/f/report",
+  cmd_feed: "prod/mcr/f/command",
   build_env: "#{Mix.env}"

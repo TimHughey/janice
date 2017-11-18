@@ -6,12 +6,30 @@ defmodule Mix.Tasks.Seed do
 require Logger
 use Mix.Task
 
+alias Mcp.Chamber
 alias Mcp.DevAlias
 #alias Mcp.Sensor
 
 def run(_args) do
   Mix.Task.run "app.start", []
   dev_aliases(Mix.env) |> seed_dev_alias()
+end
+
+def chambers(_env) do
+  [%Chamber{name: "main grow", description: "production",
+            enable: true,
+            temp_sensor_pri: "grow_pri_sensor",
+            temp_sensor_sec: "grow_sec_sensor",
+            temp_setpt: 80,
+            heat_sw: "grow_heater", heat_control_ms: 20_000,
+            relh_sensor: "grow_pri_sensor", relh_setpt: 93,
+            relh_sw: "grow_mist", relh_control_ms: 15_000,
+            relh_freq_ms: 2_376_000,
+            relh_dur_ms: 60_000,
+            air_stir_sw: "grow_stir", air_stir_temp_diff: 0.5,
+            fresh_air_sw: "grow_fresh_air",
+            fresh_air_freq_ms: 3_240_000, fresh_air_dur_ms: 360_000,
+            warm: true, mist: true, fae: true, stir: true}]
 end
 
 def dev_aliases(_env) do

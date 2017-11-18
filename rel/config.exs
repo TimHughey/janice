@@ -31,13 +31,14 @@ environment :dev do
   # dev mode.
   set dev_mode: true
   set include_erts: false
-  set cookie: :"~m5l{}|7BQlj!r_[Q]T(QP,M|e6EbHlQF;?b.h2t{[e,{]w@4nqJ5x2(L~n<?G?f"
+  set cookie: :"mercurial"
 end
 
 environment :prod do
   set include_erts: true
   set include_src: false
-  set cookie: :"iK0o`UAfI1F_%{eM6E:8p$V$Vwx&,uhVuUr?sQ5pB}_t{Wgn&y60d8s{rhqBwVde"
+  set cookie: :"augury-kinship-swain-circus"
+  set vm_args: "rel/vm.args"
 end
 
 # You may define one or more releases in this file.

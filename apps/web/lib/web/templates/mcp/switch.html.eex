@@ -7,5 +7,6 @@
   <p>Device: <b><%= @device %></b>
   <p>First Seen: <b><%= @first_seen %></b>
   <p>Last Seen: <b><%= @last_seen %></b>
+  <p>Last Seen (secs): <b><%= @last_seen_secs %>s</b>
   <p>State: <b><%= @state %></b>
   </div>
