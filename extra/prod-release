@@ -1,0 +1,20 @@
+#!/bin/zsh
+
+BASE=${HOME}/devel/mercurial
+WEB=${BASE}/apps/web
+
+[[ ! -x $BASE ]] && exit 1
+
+rm -f $BASE/erl_crash.dump
+
+mix clean --only=prod
+env MIX_ENV=prod mix compile
+
+cd $WEB/assets
+brunch build --production
+
+cd $WEB
+env MIX_ENV=prod mix phx.digest
+
+cd $BASE
+env MIX_ENV=prod mix release --env=prod

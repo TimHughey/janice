@@ -1,0 +1,4 @@
+3,reefwater change,"reefwater change mode (full pump, no air)",f,ts_mixtank,ts_display_tank,mixtank_heater,f,mixtank_air,f,0,3600000,mixtank_pump,t,3600000,0,2017-10-27 12:13:38.333445,2017-04-06 18:00:50.540125,2017-10-27 08:13:48.885262
+2,reefwater fill,reefwater fill mode (pump only),f,ts_mixtank,ts_display_tank,mixtank_heater,f,mixtank_air,f,0,3600000,mixtank_pump,t,600000,3000000,2017-10-27 12:13:39.13945,2017-04-06 13:36:38.603968,2017-10-27 08:13:48.885262
+4,reefwater minimal,"reefwater minimal mode (minimal pump, minimal air)",f,ts_mixtank,ts_display_tank,mixtank_heater,f,mixtank_air,f,60000,18000000,mixtank_pump,f,60000,18000000,2017-10-08 18:36:54.934142,2017-04-06 18:02:19.795442,2017-10-08 14:37:00.80261
+1,reefwater mix,"reefwater mix mode (air, pump)",t,ts_mixtank,ts_display_tank,mixtank_heater,f,mixtank_air,t,600000,180000,mixtank_pump,t,2700000,60000,2017-11-12 04:52:51.13742,2016-03-26 21:24:09.995738,2017-11-12 04:52:51.137493
