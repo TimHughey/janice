@@ -1,4 +1,4 @@
-#include <Adafruit_SleepyDog.h>
+// #include <Adafruit_SleepyDog.h>
 #include <ArduinoJson.h>
 #include <SPI.h>
 #include <TimeLib.h>
@@ -41,7 +41,7 @@ const char pass[] = "I once was a porch kitty."; // your network password
 
 int wifiStatus = WL_IDLE_STATUS; // the WiFi radio's status
 
-char mcrID[25];
+// char mcrID[25];
 
 #define MQTT_SERVER "jophiel.wisslanding.com"
 #define MQTT_PORT 1883
@@ -96,9 +96,8 @@ void setup() {
   Serial.print("mcrID: ");
   Serial.println(mcrUtil::hostID());
 
-  Watchdog.enable(20000);
   setSyncInterval(120); // setting a high time sync interval since we rely on
-                        // updates via MQTT
+  // updates via MQTT
 
   logDateTime(__PRETTY_FUNCTION__);
   Serial.print("mcrMQTT");
@@ -126,6 +125,8 @@ void setup() {
   mcrUtil::printFreeMem(__PRETTY_FUNCTION__, 0);
   logDateTime(__PRETTY_FUNCTION__);
   Serial.println("completed, transition to main::loop()");
+
+  // Watchdog.enable(20000);
 }
 
 elapsedMillis loop_duration;
@@ -151,7 +152,7 @@ void loop() {
   // if WiFi is connected then reset the Watchdog
   // otherwise the watchdog will provide for an auto restart
   if (WiFi.status() == WL_CONNECTED) {
-    Watchdog.reset();
+    // Watchdog.reset();
   }
 
   if (loop_elapsed > (_loop_run_warning)) {

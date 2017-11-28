@@ -44,7 +44,7 @@ protected:
   static const uint8_t _desc_len = 15; // max length of desciption
 
   char _desc[_desc_len] = {0x00}; // desciption of the device
-  Reading_t *_reading = NULL;
+  Reading_t *_reading = nullptr;
 
   time_t _created_mtime = now();
   time_t _last_seen = 0; // mtime of last time this device was discovered

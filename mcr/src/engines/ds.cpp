@@ -319,7 +319,7 @@ bool mcrDS::readDevice(mcrDevID_t &id) {
 
 // specific device scratchpad methods
 bool mcrDS::readDS1820(dsDev *dev, celsiusReading_t **reading) {
-  byte data[9];
+  byte data[9] = {0x00};
   bool type_s = false;
   bool rc = true;
 
@@ -327,8 +327,6 @@ bool mcrDS::readDS1820(dsDev *dev, celsiusReading_t **reading) {
     dev->printPresenceFailed(__PRETTY_FUNCTION__);
     return false;
   };
-
-  memset(data, 0x00, sizeof(data));
 
   switch (dev->family()) {
   case 0x10:

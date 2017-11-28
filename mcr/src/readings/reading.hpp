@@ -52,12 +52,6 @@ private:
   bool _cmd_ack = false;
   time_t _latency = 0;
 
-  // // static class variables for conversion to JOSN
-  // // this implies that a single JSON conversion can be done at any time
-  // // and the converted JSON must be used or copied before the next
-  // static StaticJsonBuffer<512> _jsonBuffer;
-  // static char _buffer[768];
-
   // internal performance metric tracking
   elapsedMicros json_elapsed;
 

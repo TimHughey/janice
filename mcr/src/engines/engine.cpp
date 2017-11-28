@@ -31,6 +31,12 @@
 #include "../misc/util.hpp"
 #include "engine.hpp"
 
+// FIXME: For some unknown reason new Queue results in a hang
+//        so, as a workaround, we will statically allocate a single queue.
+//        This implies that only one instantied class of mcrEngine can handle
+//        command acks
+static Queue queue = Queue(sizeof(mcrCmd_t), 10, FIFO);
+
 mcrEngine::mcrEngine(mcrMQTT *mqtt) {
 
   _mqtt = mqtt;
@@ -53,7 +59,11 @@ uint16_t mcrEngine::devCount() { return _dev_count; };
 bool mcrEngine::init() {
   bool rc = true;
 
-  _pending_ack_q = new Queue(sizeof(mcrCmd_t), 10, FIFO);
+  // Serial.print("before new Queue, sizeof(mcrCmd_t)=");
+  // Serial.print(sizeof(mcrCmd_t));
+  // _pending_ack_q = new Queue(sizeof(mcrCmd_t), 10, FIFO);
+  _pending_ack_q = &queue; // See FIXME above!!
+  // Serial.print(" after new Queue");
 
   if (_pending_ack_q == nullptr) {
     rc = false;

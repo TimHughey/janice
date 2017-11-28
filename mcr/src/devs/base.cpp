@@ -28,8 +28,8 @@
 #include "../include/readings.hpp"
 #include "../misc/util.hpp"
 #include "addr.hpp"
-#include "id.hpp"
 #include "base.hpp"
+#include "id.hpp"
 
 mcrDev::mcrDev(
     mcrDevAddr_t &addr) { // construct a new mcrDev with only an address
@@ -43,7 +43,7 @@ mcrDev::mcrDev(mcrDevID_t &id, mcrDevAddr_t &addr) {
 
 // base class will handle deleteing the reading, if needed
 mcrDev::~mcrDev() {
-  if (_reading != NULL)
+  if (_reading != nullptr)
     delete _reading;
 }
 
@@ -62,8 +62,10 @@ void mcrDev::setID(char *id) { _id = id; }
 
 // updaters
 void mcrDev::setReading(Reading_t *reading) {
-  if (_reading != NULL)
+  if (_reading != nullptr) {
     delete _reading;
+  }
+
   _reading = reading;
 };
 

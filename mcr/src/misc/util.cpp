@@ -49,7 +49,7 @@ char *mcrUtil::macAddress() {
 };
 
 const char *mcrUtil::hostID() {
-  static char _host_id[17] = {0x00};
+  static char _host_id[20] = {0x00};
 
   if (_host_id[0] == 0x00) {
     char *macAddress = mcrUtil::macAddress();
