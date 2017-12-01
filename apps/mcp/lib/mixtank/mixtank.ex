@@ -303,7 +303,7 @@ defmodule Mcp.Mixtank do
 
   @spec init(Map.t) :: {:ok, Map.t}
   def init(s) when is_map(s) do
-    autostart_ms = config(:startup_delay_ms)
+    autostart_ms = config(:autostart_wait_ms)
 
     case Map.get(s, :autostart, false) do
       true  -> if autostart_ms > 0 do
