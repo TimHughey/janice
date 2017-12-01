@@ -62,7 +62,7 @@ when is_binary(msg) and is_map(s) do
   log_reading(r, s.log_reading)
 
   if Reading.startup?(r) do
-    Logger.info("#{r.host} announced startup")
+    Logger.info("#{r.host} version #{r.version} announced startup")
     send_timesync()
   end
 

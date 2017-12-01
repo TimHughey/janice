@@ -21,6 +21,7 @@ defmodule Mcp.Chamber do
     """
 
   require Logger
+  use GenServer
   use Timex.Ecto.Timestamps
   use Ecto.Schema
   use Timex
@@ -33,7 +34,7 @@ defmodule Mcp.Chamber do
 
   alias Mcp.Chamber
   alias Mcp.{Repo, Sensor}
-  alias Mcp.Chamber.{ServerState, RunState, AutoPopulate, Device}
+  alias Mcp.Chamber.{ServerState, RunState, Device}
 
   @vsn 1
 
@@ -446,26 +447,32 @@ defmodule Mcp.Chamber do
   # GenServer start, init and stop
   #
 
-  def start_link(_args) do
-    GenServer.start_link(Mcp.Chamber, %RunState{}, name: Mcp.Chamber)
+  def start_link(args) do
+    GenServer.start_link(Mcp.Chamber, args, name: Mcp.Chamber)
   end
 
   @start_msg {:start}
-  @spec init(map) :: %Mcp.Chamber.ServerState{}
-  def init(_opts) do
-    s = %ServerState{} |>
-        ServerState.kickstart() |>
-        ServerState.known_chambers(all_chambers())
+  @spec init(Map.t) :: {:ok, Map.t}
+  def init(s) when is_map(s) do
+    state =
+      %ServerState{} |>
+      ServerState.kickstart() |>
+      ServerState.known_chambers(all_chambers()) |>
+      Kernel.struct(s)
 
-    auto_populate = get_env(:mcp, Mcp.Chamber) |> get(:auto_populate)
-    AutoPopulate.populate(auto_populate)
+    autostart_ms =
+      get_env(:mcp, Mcp.Chamber) |> get(:autostart_wait_ms)
 
-    autostart_wait_ms = get_env(:mcp, Mcp.Chamber) |> get(:autostart_wait_ms)
-    send_after(self(), @start_msg, autostart_wait_ms)
+    case Map.get(s, :autostart, false) do
+        true  -> if autostart_ms > 0 do
+                   send_after(self(), @start_msg, autostart_ms)
+                 end
+        false -> nil
+    end
 
     Logger.info("init()")
 
-    {:ok, s}
+    {:ok, state}
   end
 
   def stop do

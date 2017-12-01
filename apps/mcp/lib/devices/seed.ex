@@ -8,11 +8,17 @@ use Mix.Task
 
 alias Mcp.Chamber
 alias Mcp.DevAlias
+alias Mcp.Dutycycle
+alias Mcp.Mixtank
+alias Mcp.Repo
 #alias Mcp.Sensor
 
 def run(_args) do
   Mix.Task.run "app.start", []
   dev_aliases(Mix.env) |> seed_dev_alias()
+  chambers(Mix.env) |> seed()
+  dutycycles(Mix.env) |> seed()
+  mixtanks(Mix.env) |> seed()
 end
 
 def chambers(_env) do
@@ -29,10 +35,53 @@ def chambers(_env) do
             air_stir_sw: "grow_stir", air_stir_temp_diff: 0.5,
             fresh_air_sw: "grow_fresh_air",
             fresh_air_freq_ms: 3_240_000, fresh_air_dur_ms: 360_000,
-            warm: true, mist: true, fae: true, stir: true}]
+            warm: true, mist: true, fae: true, stir: true},
+   %Chamber{name: "womb", description: "production womb",
+             enable: true,
+             temp_sensor_pri: "womb_pri_sensor",
+             temp_sensor_sec: "womb_sec_sensor",
+             temp_setpt: 80,
+             heat_sw: "shroom2_heat", heat_control_ms: 20_000,
+             relh_sensor: "womb_pri_sensor", relh_setpt: 93,
+             relh_sw: "no_device", relh_control_ms: 15_000,
+             relh_freq_ms: 2_376_000,
+             relh_dur_ms: 60_000,
+             air_stir_sw: "shroom2_stir", air_stir_temp_diff: 0.5,
+             fresh_air_sw: "no_device",
+             fresh_air_freq_ms: 3_240_000, fresh_air_dur_ms: 360_000,
+             warm: true, mist: false, fae: false, stir: true}]
+end
+
+def dutycycles(_env) do
+  [%Dutycycle{name: "buzzer",
+     description: "dutycycle test case",
+     enable: false, device_sw: "buzzer",
+     run_ms: 1000, idle_ms: 60 * 1000},
+   %Dutycycle{name: "sump vent",
+     description: "sump vent",
+     enable: false, device_sw: "sump_vent",
+     run_ms: 20 * 60 * 1000, idle_ms: 2 * 60 * 1000},
+   %Dutycycle{name: "basement circulation",
+     description: "basement circulation fan",
+     enable: true, device_sw: "basement_fan",
+     run_ms: 15 * 60 * 1000, idle_ms: 60 * 1000},
+   %Dutycycle{name: "reefmix rodi slow",
+     description: "periodic fill reefmix with rodi water",
+     enable: true, device_sw: "reefmix_rodi_valve",
+     run_ms: 900_000, idle_ms: 300_000},
+   %Dutycycle{name: "reefmix rodi fast",
+     description: "fill mixtank quickly",
+     enable: false, device_sw: "reefmix_rodi_valve",
+     run_ms: 3_600_000, idle_ms: 120_000}]
+#     %Dutycycle{name: "proxr test", description: "proxr test", enable: true,
+#       device_sw: "proxr_test", run_ms: 3*60*1000, idle_ms: 2*60*1000}
 end
 
 def dev_aliases(_env) do
+  # feather2 (ext antenna, pins): mcr.f8f005f73b53
+  # attic MCR: mcr.
+  # original MCR: mcr.f8f005f7401d
+  # basement MCR
   [{"ds/291d1823000000:0", "led1", "dev led"},
    {"ds/12128521000000:0", "buzzer", "dev buzzer"},
    {"ds/28ff5733711604", "temp_probe1_dev", "dev temp probe1"},
@@ -49,6 +98,7 @@ def dev_aliases(_env) do
    {"ds/28eef33c231500", "hvac2_low_side", "hvac2 compressor low side"},
    # PRODUCTION - basement
    {"ds/28fffd77711604", "basement", "basement ambient"},
+   {"i2c/f8f005e944e2.00.sht31", "basement_rh", "basement relative humidity"},
    {"ds/28ffbcda471603", "workbench", "workbench ambient"},
    {"ds/28ff61c0711603", "exterior_ne", "northeast exterior"},
    {"ds/28ffce823c0400", "exterior_se", "southeast exterior"},
@@ -60,6 +110,7 @@ def dev_aliases(_env) do
    {"ds/28ffda99521604", "hvac1_high_side", "hvac1 compressor high side"},
    {"ds/28ff2c62521604", "hvac1_low_side", "hvac1 compressor low side"},
    # PRODUCTION - chambers
+   {"i2c/f8f005e944e2.01.am2315", "chamber1_pri", "grow chamber primary"},
    {"ds/28ffe865711604", "mist_tank", "chamber mist tank"},
    {"ds/28ffe4ad471603", "chamber1_sec", "grow chamber secondary"},
    {"ds/28ffc7fc701605", "chamber1_exhaust", "grow chamber exhaust"},
@@ -84,6 +135,58 @@ def dev_aliases(_env) do
    {"ds/29463408000000:6", "shroom1_air", "chamber1 air pump (io1)"},
    {"ds/29463408000000:7", "am2315_pwr", "am2315 power"},
    {"ds/12197521000000:1", "mixtank_pump", "reef mixtank circ pump (sys_buzzer)"}]
+end
+
+def mixtanks(_env) do
+  [%Mixtank{name: "reefmix change",
+    description: "reefwater change mode (full pump, no air)",
+    enable: :false,
+    sensor: "ts_mixtank", ref_sensor: "ts_display_tank",
+    heat_sw: "mixtank_heater",
+    air_sw: "mixtank_air",
+    air_run_ms: 0, air_idle_ms: 3_600_000,
+    pump_sw: "mixtank_pump",
+    pump_run_ms: 3_600_000, pump_idle_ms: 0,
+    state_at: Timex.now()},
+  %Mixtank{name: "reefmix fill",
+    description: "reefwater fill mode (pump only, no air)",
+    enable: :false,
+    sensor: "ts_mixtank", ref_sensor: "ts_display_tank",
+    heat_sw: "mixtank_heater",
+    air_sw: "mixtank_air",
+    air_run_ms: 0, air_idle_ms: 3_600_000,
+    pump_sw: "mixtank_pump",
+    pump_run_ms: 60 * 60 * 1000, pump_idle_ms: 60 * 1000,
+    state_at: Timex.now()},
+  %Mixtank{name: "reefmix minimal",
+    description: "reefwater minimal mode (pump minimal, air minimal)",
+    enable: :false,
+    sensor: "ts_mixtank", ref_sensor: "ts_display_tank",
+    heat_sw: "mixtank_heater",
+    air_sw: "mixtank_air",
+    air_run_ms: 10 * 60 * 1000, air_idle_ms: 4 * 60 * 60 * 1000,
+    pump_sw: "mixtank_pump",
+    pump_run_ms: 10 * 60 * 1000, pump_idle_ms: 4 * 60 * 60 * 1000,
+    state_at: Timex.now()},
+  %Mixtank{name: "reefmix mix",
+    description: "reefwater mix mode (pump max, air max)",
+    enable: :false,
+    sensor: "ts_mixtank", ref_sensor: "ts_display_tank",
+    heat_sw: "mixtank_heater",
+    air_sw: "mixtank_air",
+    air_run_ms: 4 * 60 * 60 * 1000, air_idle_ms: 5 * 60 * 1000,
+    pump_sw: "mixtank_pump",
+    pump_run_ms: 4 * 60 * 60 * 1000, pump_idle_ms: 5 * 60 * 1000,
+    state_at: Timex.now()}]
+end
+
+def seed([]), do: []
+def seed(%{__struct__: type, name: name} = thing) do
+  Logger.info "seeding #{type} #{name}"
+  Repo.insert(thing)
+end
+def seed([thing | list]) do
+  [seed(thing)] ++ seed(list)
 end
 
 def seed_dev_alias([]), do: []

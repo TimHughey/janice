@@ -27,6 +27,7 @@ defmodule Mcp.Mixtank do
   @vsn 1
 
   require Logger
+  use GenServer
   use Timex.Ecto.Timestamps
   use Ecto.Schema
   use Timex
@@ -40,6 +41,7 @@ defmodule Mcp.Mixtank do
   import Ecto.Query, only: [from: 2]
   import Application, only: [get_env: 2]
   import Keyword, only: [get: 2]
+  import Process, only: [send_after: 3]
 
   defmodule State do
     @moduledoc """
@@ -67,6 +69,7 @@ defmodule Mcp.Mixtank do
     @ok :ok
 
     defstruct kickstarted: %{@ts => Timex.zero, @status => @never},
+      autostart: false,
       known_mixtanks: %{@ts => Timex.zero, @names => [], @count => 0},
       tanks: %{}
 
@@ -280,7 +283,7 @@ defmodule Mcp.Mixtank do
     timestamps usec: true
   end
 
-  @init_msg :init
+  @init_msg {:init}
   @pump_off_msg :pump_off
   @pump_on_msg :pump_on
   @air_off_msg :air_off
@@ -294,48 +297,28 @@ defmodule Mcp.Mixtank do
   @doc """
   Traditional implemenation of start_link
   """
-  def start_link(_args) do
-    GenServer.start_link(Mcp.Mixtank, %State{}, name: Mcp.Mixtank)
+  def start_link(args) do
+    GenServer.start_link(Mcp.Mixtank, args, name: Mcp.Mixtank)
   end
 
   @spec init(Map.t) :: {:ok, Map.t}
-  def init(state) when is_map(state) do
-    auto_populate()
-    send_after(@init_msg, 100)
+  def init(s) when is_map(s) do
+    autostart_ms = config(:startup_delay_ms)
+
+    case Map.get(s, :autostart, false) do
+      true  -> if autostart_ms > 0 do
+                 send_after(self(), @init_msg, autostart_ms)
+               end
+      false -> nil
+    end
+
+    state = Kernel.struct(%State{}, s)
 
     {:ok, state}
   end
 
   def stop do
     GenServer.stop(Mcp.Mixtank)
-  end
-
-  def default_mixtanks do
-    [%Mixtank{name: "reefmix", description: "reef saltwater mix tank",
-      enable: :true,
-      sensor: "ts_mixtank", ref_sensor: "ts_display_tank",
-      heat_sw: "mixtank_heater",
-      air_sw: "mixtank_air",
-      air_run_ms: 5 * 60 * 1000, air_idle_ms: 5 * 60 * 1000,
-      pump_sw: "mixtank_pump",
-      pump_run_ms: 30 * 60 * 1000, pump_idle_ms: 1 * 60 * 1000,
-      state_at: Timex.now()}]
-  end
-
-  def auto_populate do
-    query = from s in Mixtank, select: s.id
-    db_count  = query |> Repo.all() |> Enum.count()
-    def_count = Enum.count(default_mixtanks())
-
-    mixtanks =
-      case db_count do
-        x when x < def_count -> default_mixtanks()
-        _rest -> []
-    end
-
-    for mixtank <- mixtanks do
-      mixtank |> load() |> persist()
-    end |> Enum.count
   end
 
   defp load(%Mixtank{name: :nil}), do: :nil
@@ -351,13 +334,13 @@ defmodule Mcp.Mixtank do
     end
   end
 
-  defp persist(%Mixtank{name: :nil}), do: :nil
-  defp persist(%Mixtank{} = mixtank) do
-    cs = Changeset.change(mixtank, state_at: Timex.now())
-    cs = Changeset.unique_constraint(cs, :name)
-
-    Repo.insert_or_update cs
-  end
+  # defp persist(%Mixtank{name: :nil}), do: :nil
+  # defp persist(%Mixtank{} = mixtank) do
+  #   cs = Changeset.change(mixtank, state_at: Timex.now())
+  #   cs = Changeset.unique_constraint(cs, :name)
+  #
+  #   Repo.insert_or_update cs
+  # end
 
   #defp enable_by_name(%State{} = state, :nil), do: state
   #defp enable_by_name(%State{} = state, name) when is_binary(name) do
@@ -704,6 +687,11 @@ defmodule Mcp.Mixtank do
     Logger.warn("#{__MODULE__}: code_change from old vsn #{old_vsn}")
 
     {:ok, state}
+  end
+
+  defp config(key)
+  when is_atom(key) do
+    get_env(:mcp, Mcp.Mixtank) |> Keyword.get(key)
   end
 
   defp get_all_mixtanks do

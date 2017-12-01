@@ -42,7 +42,8 @@ defmodule Mcp.Chamber.ServerState do
     defstruct kickstarted: %{@ts => Timex.zero(), @status => @never},
       known_chambers: %{@ts => Timex.zero(), @names => []},
       chambers: %{},
-      routine_check: %{@ts => Timex.zero(), @status => @never}
+      routine_check: %{@ts => Timex.zero(), @status => @never},
+      autostart: false
 
       # chamber run state example:
       #   "name" => %{  heater: %Device{},

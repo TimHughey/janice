@@ -23,6 +23,7 @@ defmodule Mcp.Dutycycle do
   """
 
   require Logger
+  use GenServer
   use Timex.Ecto.Timestamps
   use Ecto.Schema
   use Timex
@@ -50,7 +51,7 @@ defmodule Mcp.Dutycycle do
 
     defstruct kickstarted: %{@ts => Timex.zero, @status => @never},
       known_dutycycles: %{@ts => Timex.zero, @names => []},
-      cycles: %{}
+      cycles: %{}, autostart: false
 
     def set_known_dutycycles(%State{} = state, n) when is_list(n) do
       state = clean_orphans(state, n, state.known_dutycycles.names)
@@ -135,18 +136,29 @@ defmodule Mcp.Dutycycle do
 
   @known_dutycycles_msg :known_dutycycles_msg
 
-  def start_link(_args) do
-    GenServer.start_link(Mcp.Dutycycle, %State{}, name: Mcp.Dutycycle)
+  def start_link(args) do
+    GenServer.start_link(Mcp.Dutycycle, args, name: Mcp.Dutycycle)
   end
 
-  def init(state) do
-    state = State.kickstarted(state)
-    state = State.set_known_dutycycles(state, get_all_dutycycles())
+  @spec init(Map.t) :: {:ok, Map.t}
+  def init(s) when is_map(s) do
+    state =
+      %State{} |>
+      State.kickstarted() |>
+      State.set_known_dutycycles(get_all_dutycycles()) |>
+      Kernel.struct(s)
 
-    auto_populate()
     autostart_ms =
       get_env(:mcp, Mcp.Dutycycle) |> get(:autostart_wait_ms, 1000)
-    Process.send_after(self(), {:start}, autostart_ms)
+
+    case Map.get(s, :autostart, false) do
+      true  -> if autostart_ms > 0 do
+                 Process.send_after(self(), {:start}, autostart_ms)
+               end
+      false -> nil
+    end
+
+    Logger.info("init()")
 
     {:ok, state}
   end
@@ -169,60 +181,19 @@ defmodule Mcp.Dutycycle do
     Repo.insert(dutycycle)
   end
 
-  def default_dutycycles do
-    [%Dutycycle{name: "buzzer",
-       description: "dutycycle test case",
-       enable: false, device_sw: "buzzer",
-       run_ms: 1000, idle_ms: 60 * 1000},
-     %Dutycycle{name: "sump vent",
-       description: "sump vent",
-       enable: false, device_sw: "sump_vent",
-       run_ms: 20 * 60 * 1000, idle_ms: 2 * 60 * 1000},
-     %Dutycycle{name: "basement circulation",
-       description: "basement circulation fan",
-       enable: true, device_sw: "basement_fan",
-       run_ms: 15 * 60 * 1000, idle_ms: 60 * 1000},
-     %Dutycycle{name: "reefmix rodi slow",
-       description: "periodic fill reefmix with rodi water",
-       enable: true, device_sw: "reefmix_rodi_valve",
-       run_ms: 5 * 60 * 1000, idle_ms: 5 * 60 * 1000},
-     %Dutycycle{name: "reefmix rodi fast",
-       description: "fill mixtank quickly",
-       enable: false, device_sw: "reefmix_rodi_valve",
-       run_ms: 60 * 60 * 1000, idle_ms: 5 * 60 * 1000}]
-#     %Dutycycle{name: "proxr test", description: "proxr test", enable: true,
-#       device_sw: "proxr_test", run_ms: 3*60*1000, idle_ms: 2*60*1000}
-  end
-
-  def auto_populate do
-    query = from d in Dutycycle, select: d.id
-    db_count  = query |> Repo.all() |> Enum.count
-    def_count = Enum.count(default_dutycycles())
-
-    dutycycles =
-      case db_count do
-        x when x < def_count -> default_dutycycles()
-        _rest -> []
-    end
-
-    for dutycycle <- dutycycles do
-      dutycycle |> load() |> persist()
-    end |> Enum.count
-  end
-
-  defp load(%Dutycycle{name: :nil}), do: :nil
-  defp load(%Dutycycle{} = dutycycle) do
-    case Repo.get_by Dutycycle, name: dutycycle.name do
-      :nil   -> dutycycle
-      found  -> found
-    end
-  end
-
-  defp persist(%Dutycycle{name: :nil}), do: :nil
-  defp persist(%Dutycycle{} = dutycycle) do
-    dutycycle |> Changeset.change(%{state_at: Timex.now()}) |>
-      Changeset.unique_constraint(:name) |> Repo.insert_or_update()
-  end
+  # defp load(%Dutycycle{name: :nil}), do: :nil
+  # defp load(%Dutycycle{} = dutycycle) do
+  #   case Repo.get_by Dutycycle, name: dutycycle.name do
+  #     :nil   -> dutycycle
+  #     found  -> found
+  #   end
+  # end
+  #
+  # defp persist(%Dutycycle{name: :nil}), do: :nil
+  # defp persist(%Dutycycle{} = dutycycle) do
+  #   dutycycle |> Changeset.change(%{state_at: Timex.now()}) |>
+  #     Changeset.unique_constraint(:name) |> Repo.insert_or_update()
+  # end
 
   defp control_device(dutycycle, power)
   when is_boolean(power) do

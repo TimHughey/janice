@@ -95,20 +95,24 @@ void mcrMQTT::announceStartup() {
   const int json_buffer_max = 512;
   const int json_max = 1024;
 
-  // since this is a one-time only action let's use dynamic memory
+  // since this is a one-time only action we'll use the stack
   StaticJsonBuffer<json_buffer_max> jsonBuffer;
-  char *buffer = new char[json_max];
+  char buffer[json_max] = {0x00};
 
   JsonObject &root = jsonBuffer.createObject();
-  root["version"] = 1;
   root["host"] = mcrUtil::hostID();
   root["type"] = "startup";
   root["mtime"] = millis();
 
+#ifdef GIT_REV
+#define STRING(s) #s
+  root["version"] = STRING(GIT_REV);
+#else
+  root["version"] = "undef";
+#endif
+
   root.printTo(buffer, json_max);
   publish(buffer);
-
-  delete buffer;
 }
 
 void mcrMQTT::publish(Reading_t *reading) {

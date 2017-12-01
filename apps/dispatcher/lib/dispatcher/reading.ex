@@ -193,7 +193,7 @@ def free_ram_stat?(%Reading{} = r) do
   metadata?(r) and
     (r.type == @mcr_stat_t) and
     is_integer(r.freeram)
-end    
+end
 
 @doc ~S"""
 Is the Reading a cmdack?

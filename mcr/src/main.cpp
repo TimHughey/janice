@@ -1,4 +1,4 @@
-// #include <Adafruit_SleepyDog.h>
+#include <Adafruit_SleepyDog.h>
 #include <ArduinoJson.h>
 #include <SPI.h>
 #include <TimeLib.h>
@@ -29,7 +29,9 @@ void printFreeMem(uint8_t secs);
 void printWiFiData();
 void printCurrentNet();
 
-// #define ALT_WIFI
+#ifdef WATCHDOG_TIMEOUT
+#define USE_WATCHDOG
+#endif
 
 #ifdef ALT_WIFI
 const char ssid[] = "TravelerVI";
@@ -126,7 +128,9 @@ void setup() {
   logDateTime(__PRETTY_FUNCTION__);
   Serial.println("completed, transition to main::loop()");
 
-  // Watchdog.enable(20000);
+#ifdef USE_WATCHDOG
+  Watchdog.enable(WATCHDOG_TIMEOUT);
+#endif
 }
 
 elapsedMillis loop_duration;
@@ -149,11 +153,13 @@ void loop() {
   statusIndicator();
   mcrUtil::printFreeMem(__PRETTY_FUNCTION__, 15);
 
-  // if WiFi is connected then reset the Watchdog
-  // otherwise the watchdog will provide for an auto restart
+// if WiFi is connected then reset the Watchdog
+// otherwise the watchdog will provide for an auto restart
+#ifdef USE_WATCHDOG
   if (WiFi.status() == WL_CONNECTED) {
-    // Watchdog.reset();
+    Watchdog.reset();
   }
+#endif
 
   if (loop_elapsed > (_loop_run_warning)) {
     logDateTime(__PRETTY_FUNCTION__);

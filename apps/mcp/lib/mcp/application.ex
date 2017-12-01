@@ -12,8 +12,8 @@ def start(_type, _args) do
 
   autostart =
   case build_env do
-    "test"  -> false 
-    _       -> true 
+    "test"  -> false
+    _       -> true
   end
 
   initial_state = %{autostart: autostart}
@@ -22,7 +22,10 @@ def start(_type, _args) do
   children = [
     Mcp.Repo,
     {Mcp.SoakTest, initial_state},
-    {Mcp.Janitor, initial_state}
+    {Mcp.Janitor, initial_state},
+    {Mcp.Dutycycle, initial_state},
+    {Mcp.Mixtank, initial_state},
+    {Mcp.Chamber, initial_state}
   ]
 
   opts = [strategy: :one_for_one, name: Mcp.Supervisor]
