@@ -9,7 +9,6 @@ require Logger
 alias Poison
 
 @undef "undef"
-@version 1
 @startup_t "startup"
 @temp_t "temp"
 @switch_t "switch"
@@ -17,7 +16,7 @@ alias Poison
 @mcr_stat_t "stats"
 
 @derive [Poison.Encoder]
-defstruct version: 0,
+defstruct version: "undef",
           host: @undef,
           device: nil,
           friendly_name: nil,
@@ -78,8 +77,7 @@ NOTE: 1. As of 2017-10-01 we only support readings from mcr hosts with
   false
 """
 def metadata?(%Reading{} = r) do
-  r.version === @version and
-    is_integer(r.mtime) and
+  is_integer(r.mtime) and
     String.starts_with?(r.host, "mcr") and
     is_binary(r.type)
 end
