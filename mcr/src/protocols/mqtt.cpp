@@ -105,8 +105,9 @@ void mcrMQTT::announceStartup() {
   root["mtime"] = millis();
 
 #ifdef GIT_REV
-#define STRING(s) #s
-  root["version"] = STRING(GIT_REV);
+#define MCR_VERSION(s) (const char *)AS_STRING(s)
+#define AS_STRING(s) #s
+  root["version"] = MCR_VERSION(GIT_REV);
 #else
   root["version"] = "undef";
 #endif
