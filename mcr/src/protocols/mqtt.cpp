@@ -28,6 +28,7 @@
 
 #include "../include/readings.hpp"
 #include "../misc/util.hpp"
+#include "../misc/version.hpp"
 #include "mqtt.hpp"
 
 static uint8_t cmd_callback_count = 0;
@@ -103,6 +104,7 @@ void mcrMQTT::announceStartup() {
   root["host"] = mcrUtil::hostID();
   root["type"] = "startup";
   root["mtime"] = millis();
+  root["version"] = Version::string();
 
 #ifdef GIT_REV
 #define MCR_VERSION(s) (const char *)AS_STRING(s)

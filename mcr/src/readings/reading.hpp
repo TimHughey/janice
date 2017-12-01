@@ -34,6 +34,7 @@
 
 #include "../devs/id.hpp"
 #include "../misc/refid.hpp"
+#include "../misc/version.hpp"
 
 typedef class Reading Reading_t;
 class Reading {
@@ -45,7 +46,7 @@ private:
   mcrDevID_t _id;
   time_t _mtime = now(); // time the reading was measureed
   reading_t _type = UNDEF;
-  uint8_t _version = 1;
+  const char *_version = Version::string();
 
   // tracking info
   mcrRefID_t _refid;
