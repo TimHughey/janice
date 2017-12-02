@@ -47,7 +47,7 @@ end
 # will be used by default
 
 release :mercurial do
-  set version: "0.1.0"
+  set version: current_version(:mcp) 
   set applications: [
     :runtime_tools,
     web: :permanent,

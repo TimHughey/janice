@@ -24,8 +24,12 @@ defmodule Mcp.Mixfile do
   use Mix.Project
 
   def project do
+    {result, _exit_code} = System.cmd("git", ["rev-parse", "--short", "HEAD"])
+
+    git_sha = String.trim(result)
+
     [app: :mcp,
-     version: "0.1.0",
+     version: "0.1.1-#{git_sha}",
      build_path: "../../_build",
      config_path: "../../config/config.exs",
      deps_path: "../../deps",

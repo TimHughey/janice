@@ -4,11 +4,12 @@ defmodule Mercurial.Mixfile do
   use Mix.Project
 
   def project do
-    {git_sha, _exit_code} = System.cmd("git", ["rev-parse", "--short", "HEAD"])
+    {result, _exit_code} = System.cmd("git", ["rev-parse", "--short", "HEAD"])
+    git_sha = String.trim(result)
 
     [
       apps_path: "apps",
-      version: "0.1.0-#{git_sha}",
+      version: "0.1.1-#{git_sha}",
       git_sha: "#{git_sha}",
       source_url: "https://github.com/TimHughey/mercurial",
       name: "Mercurial",

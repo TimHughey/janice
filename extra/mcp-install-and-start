@@ -1,0 +1,42 @@
+#!/bin/zsh
+
+	if [[ $1 == "--clean" ]]; then
+		clean=1
+	fi
+
+	setopt local_options rm_star_silent
+	
+	# configuration variables
+	mcp_base=/usr/local/mcp
+	mcp_bin=$mcp_base/bin
+	release=/run/mcp/mcp.tar.gz
+
+	if [[ -f $release ]]; then
+		$mcp_bin/mcp ping 1> /dev/null 2>&1
+		if [[ $? -eq 0 ]]; then
+			print -n "stopping mcp before install..." && $mcp_base/bin/mcp stop 1> /dev/null 2>&1 && print " done."
+		fi
+
+		if [[ $? -eq 0 ]]; then
+			if [[ $clean -eq 1 ]]; then
+				print -n "cleaning up $mcp_base..." && rm -rf $mcp_base/* && print " done."
+			else
+				print "won't clean existing release, use --clean to do so"
+			fi
+
+			print -n "untarring $release..." && tar -C $mcp_base -xf $release && print " done." 
+
+				if [[ $? -eq 0 ]]; then
+					print -n "removing deploy tar..." && rm -f $release && print " done."
+					print "starting mcp then running tail. (use CTRL+C to stop)"
+
+					mcp start
+					sleep 2
+					tail -f $mcp_base/var/log/erlang.*(om[1])
+				fi	
+		fi
+	else
+		print "deploy tar $release doesn't exist, doing nothing."
+		return 1	
+	fi
+}
