@@ -28,10 +28,10 @@
                 <a href="<%= mcp_path @conn, :show, fname %>"><%= fname %></a>
               </tr></td>
           <% end %>
-        <% else %>
-          <h3>No Switches</h3>
-        <% end %>
-      </table>
+        </table>
+      <% else %>
+        <h3>No Switches</h3>
+      <% end %>
     </div>
 
     <div class="tab-pane fade" id="sensors" role="tabpanel" aria-labelledby="sensors-tab">
@@ -42,9 +42,10 @@
               <a href="<%= mcp_path @conn, :show, fname %>"><%= fname %></a>
             </tr></td>
           <% end %>
-        <% else %>
-          <h3>No Sensors</h3>
-        <% end %>
+          </table>
+      <% else %>
+        <h3>No Sensors</h3>
+      <% end %>
     </div>
   </div>
 </div>
