@@ -28,17 +28,17 @@ config :mcp, Mcp.Janitor,
   purge_switch_cmds_older_than_hours: 3
 
 config :mcp, Mcp.Chamber,
-  autostart_wait_ms: 100,
+  autostart_wait_ms: 0,
   routine_check_ms: 1000
 
 config :mcp, Mcp.Mixtank,
-  autostart_wait_ms: 100,
+  autostart_wait_ms: 0,
   control_temp_ms: 1000,
   activate_ms: 1000,
   manage_ms: 1000
 
 config :mcp, Mcp.Dutycycle,
-  autostart_wait_ms: 100,
+  autostart_wait_ms: 0,
   routine_check_ms: 1000
 
 config :mcp, :ecto_repos, [Mcp.Repo]
