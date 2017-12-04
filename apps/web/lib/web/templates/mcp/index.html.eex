@@ -1,25 +1,46 @@
-<div class="jumbotron">
-  <h2>Device Aliases (<%= @all_fnames_count %>)</h2>
+<div class="container">
+  <div class="col-xs-12 col-md-12 text-center">
+    <h2>Device Aliases (<%= @all_fnames_count %>)</h2>
 </div>
 
-<div class="row marketing">
-  <div class="col-lg-6">
-    <h4>Switches (<%= @switch_fnames_count %>)</h4>
-    <%= for fname <- friendly_names @switch_fnames do %>
-        <p><a href="<%= mcp_path @conn, :show, fname %>"><%= fname %></a></p>
-    <% end %>
-  </div>
+<div id="exTab1" class="col">
+  <nav class="nav nav-tabs" id="mainTabs" role="tablist">
+    <a class="nav-link active" id="nodevice-tab" data-toggle="tab" href="#nodevice" role="tab" aria-controls="nodevice" aria-selected="true">No Device (<%= @unknown_fnames_count %>)</a>
+    <a class="nav-link" id="switches-tab" data-toggle="tab" href="#switches" role="tab" aria-controls="switches" aria-selected="true">Switches (<%= @switch_fnames_count %>)</a>
+    <a class="nav-link" id="sensors-tab" data-toggle="tab" href="#sensors" tole="tab" aria-controls="sensors" aria-selected="true">Sensors (<%= @sensor_fnames_count %>)</a>
+  </nav>
 
-  <div class="col-lg-6">
-    <h4>Sensors (<%= @sensor_fnames_count %>)</h4>
-    <%= for fname <- friendly_names @sensor_fnames do %>
-        <p><a href="<%= mcp_path @conn, :show, fname %>"><%= fname %></a></p>
-    <% end %>
-    <hr>
-    <h4>No Device (<%= @unknown_fnames_count %>)</h4>
-    <%= for fname <- friendly_names @unknown_fnames do %>
-      <p><%= fname %></p>
-    <% end %>
+  <div class="tab-content" id="tab-content">
 
+    <div class="tab-pane fade show active" id="nodevice" role="tabpanel" aria-labelledby="nodevice-tab">
+      <table class="table">
+      <%= for fname <- friendly_names @unknown_fnames do %>
+        <tr><td><%= fname %></td></tr>
+      <% end %>
+      </table>
+    </div>
+
+    <div class="tab-pane fade" id="switches" role="tabpanel" aria-labelledby="switches-tab">
+      <%= if @switch_fnames_count > 0 do %>
+        <table class="table">
+          <%= for fname <- friendly_names @switch_fnames do %>
+              <td><a href="<%= mcp_path @conn, :show, fname %>"><%= fname %></a></td>
+          <% end %>
+        <% else %>
+          <h3>No Switches</h3>
+        <% end %>
+      </table>
+    </div>
+
+    <div class="tab-pane fade" id="sensors" role="tabpanel" aria-labelledby="sensors-tab">
+      <%= if @sensor_fnames_count > 0 do %>
+        <table class="table">
+          <%= for fname <- friendly_names @sensor_fnames do %>
+            <p><a href="<%= mcp_path @conn, :show, fname %>"><%= fname %></a></p> %>
+          <% end %>
+        <% else %>
+          <h3>No Sensors</h3>
+        <% end %>
+    </div>
   </div>
 </div>

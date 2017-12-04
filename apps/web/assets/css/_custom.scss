@@ -1,0 +1,69 @@
+body {
+  font-family: 'Roboto Slab', serif;
+}
+
+header {
+ border-top: 9px solid #222222;
+}
+
+.circle {
+   font-weight:bold;
+   font-style: italic;
+   position: relative;
+   border-radius: 100%;
+   background: #f84342;
+   border: 1px solid #F7F7F7;
+   width: 80px;
+   height: 80px;
+   margin: 10px 10px;
+   text-align: center;
+   color: #FFF;
+   font-size: 10px;
+   line-height: 16px;
+   cursor: pointer;
+   transform:rotate(11deg);
+   -ms-transform:rotate(11deg); /* IE 9 */
+   -webkit-transform:rotate(11deg); /* Opera, Chrome, and Safari */
+   font-family: "Helvetica Neue", Helvetica, sans-serif;
+   font-weight:200;
+   font-size:14px;
+}
+
+.clear {
+ clear:both;
+}
+
+hr {
+ margin:0;
+}
+
+/* tabbed view */
+#exTab1 .tab-content {
+ color : white;
+ background-color: #428bca;
+ padding : 5px 15px;
+}
+
+#exTab2 h3 {
+ color : white;
+ background-color: #428bca;
+ padding : 5px 15px;
+}
+
+/* remove border radius for the tab */
+
+#exTab1 .nav-pills > li > a {
+ border-radius: 0;
+}
+
+/* change border radius for the tab , apply corners on top*/
+
+#exTab3 .nav-pills > li > a {
+ border-radius: 4px 4px 0 0 ;
+}
+
+#exTab3 .tab-content {
+ color : white;
+ background-color: #428bca;
+ padding : 5px 15px;
+}

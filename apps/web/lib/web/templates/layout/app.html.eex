@@ -9,27 +9,56 @@
 
     <title>Hello Web!</title>
     <link rel="stylesheet" href="<%= static_path(@conn, "/css/app.css") %>">
+    <link href='http://fonts.googleapis.com/css?family=Roboto+Slab:400,100,300,700' rel='stylesheet' type='text/css'>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js"></script>
+    <!-- <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script> -->
   </head>
 
-  <body>
-    <div class="container">
-      <header class="header">
-        <nav role="navigation">
-          <ul class="nav nav-pills pull-right">
-            <li><a href="http://www.phoenixframework.org/docs">Get Started</a></li>
-          </ul>
-        </nav>
-        <span class="logo"></span>
-      </header>
+  <body class="Site">
+    <header>
+      <div class="row">
+      <div class="col-4">
+        <div class="circle">
+          <br />
+          Wiss
+          <br />
+          Landing
+          <br />
+          Mercurial
+        </div>
+      </div>
 
-      <p class="alert alert-info" role="alert"><%= get_flash(@conn, :info) %></p>
-      <p class="alert alert-danger" role="alert"><%= get_flash(@conn, :error) %></p>
+      <div class="col-4 text-center">
+        <h1>Begin HERE</h1>
+      </div>
 
-      <main role="main">
-        <%= render @view_module, @view_template, assigns %>
-      </main>
+      <div class="col-4 text-right">
+        LINKS HERE
+      </div>
+    </div>
+    </header>
 
-    </div> <!-- /container -->
-    <script src="<%= static_path(@conn, "/js/app.js") %>"></script>
+  <hr class="clear col"/>
+
+    <main class="Site-Content">
+      <%= render @view_module, @view_template, assigns %>
+    </main>
+
+<footer>
+  <div class="row">
+  <div class="col text-left">
+    LEFT SIDE
+  </div>
+  <div class="col text-right">
+    RIGHT SIDE
+  </div>
+</div>
+</footer>
+
+
+
+
   </body>
 </html>
