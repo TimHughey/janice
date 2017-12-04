@@ -9,6 +9,7 @@ use Mix.Config
 config :web, Web.Endpoint,
   http: [port: 4000],
   #url: [scheme: "https", url: "www.wisslanding.com", port: 443],
+  static_url: [path: "/mercurial"],
   debug_errors: true,
   code_reloader: true,
   check_origin: false,
@@ -41,5 +42,3 @@ config :web, Web.Endpoint,
       ~r{lib/web/templates/.*(eex)$}
     ]
   ]
-
-
