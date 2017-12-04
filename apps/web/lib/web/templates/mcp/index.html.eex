@@ -24,7 +24,9 @@
       <%= if @switch_fnames_count > 0 do %>
         <table class="table">
           <%= for fname <- friendly_names @switch_fnames do %>
-              <td><a href="<%= mcp_path @conn, :show, fname %>"><%= fname %></a></td>
+              <tr><td>
+                <a href="<%= mcp_path @conn, :show, fname %>"><%= fname %></a>
+              </tr></td>
           <% end %>
         <% else %>
           <h3>No Switches</h3>
@@ -36,7 +38,9 @@
       <%= if @sensor_fnames_count > 0 do %>
         <table class="table">
           <%= for fname <- friendly_names @sensor_fnames do %>
-            <p><a href="<%= mcp_path @conn, :show, fname %>"><%= fname %></a></p> %>
+            <tr><td>
+              <a href="<%= mcp_path @conn, :show, fname %>"><%= fname %></a>
+            </tr></td>
           <% end %>
         <% else %>
           <h3>No Sensors</h3>
