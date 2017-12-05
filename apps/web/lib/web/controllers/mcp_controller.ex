@@ -28,7 +28,8 @@ defmodule Web.McpController do
       sensor_fnames_count: Enum.count(sensor_fnames),
       unknown_fnames: unknown_fnames,
       unknown_fnames_count: Enum.count(unknown_fnames),
-      unknown: unknown
+      unknown: unknown,
+      sensors: sensors
   end
 
   def show(conn, %{"fname" => fname}) do
