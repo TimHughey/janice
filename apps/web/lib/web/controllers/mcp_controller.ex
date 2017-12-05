@@ -79,7 +79,7 @@ defmodule Web.McpController do
 
   defp switch_details(fname) do
     a = DevAlias.get_by_friendly_name(fname)
-    s = Switch.get(:device, a.device)
+    s = Switch.get(:friendly_name, fname)
 
     switch_map_details(a, s)
   end
