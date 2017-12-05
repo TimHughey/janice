@@ -82,7 +82,7 @@
                   <td><%= s.device %></td>
                   <td><%= s.type %></td>
                   <td><%= s.desc %></td>
-                  <td><%= s.last_seen_secs %></td>
+                  <td><%= s.last_seen_secs %> secs</td>
                   <td><%= s.reading_at %></td>
                   <td><%= s.last_seen_at %></td>
                 </tr>
