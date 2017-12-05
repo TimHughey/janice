@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="Tim Hughey">
+
+    <title>Mercurial</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="<%= static_path(@conn, "/css/app.css") %>">
+    <link href='http://fonts.googleapis.com/css?family=Roboto+Slab:400,100,300,700' rel='stylesheet' type='text/css'>
+  </head>
+
+  <body class="Site">
+    <header>
+      <div class="row">
+      <div class="col-4">
+        <div class="circle">
+          <br />
+          Wiss
+          <br />
+          Landing
+          <br />
+          Mercurial
+        </div>
+      </div>
+
+      <div class="col-4 text-center">
+        <h1>Begin HERE</h1>
+      </div>
+
+      <div class="col-4 text-right">
+        LINKS HERE
+      </div>
+    </div>
+    </header>
+
+  <hr class="clear col"/>
+
+    <main class="Site-Content">
+      <%= render @view_module, @view_template, assigns %>
+    </main>
+
+<footer>
+  <div class="row">
+  <div class="col footer-text ml-3 text-left">
+    &copy; 2018 Tim Hughey
+  </div>
+  <div class="col footer-text mr-3 text-right">
+    Authorized use only
+  </div>
+</div>
+</footer>
+
+
+
+
+  </body>
+</html>

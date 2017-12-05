@@ -113,6 +113,11 @@ when is_map(r) do
   s
 end
 
+def get(:friendly_name, fname)
+when is_binary(fname) do
+  get_by_fname(fname)
+end
+
 def relhum(fname)
 when is_binary(fname) do
   get_by_fname(fname) |> relhum()

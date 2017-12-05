@@ -1,13 +1,67 @@
 body {
-  font-family: 'Roboto Slab', serif;
+  font-family: 'Roboto Slab', serif !important;
+  padding-top: 20px;
 }
 
 header {
  border-top: 9px solid #222222;
 }
 
+.footer {
+  padding-top: 40px;
+  padding-bottom: 40px;
+  margin-top: 40px;
+  border-top: 1px solid #eee;
+}
+
+/* Main marketing message and sign up button */
+.jumbotron {
+  text-align: center;
+  background-color: transparent;
+}
+.jumbotron .btn {
+  padding: 14px 24px;
+  font-size: 21px;
+}
+
+.navbar {
+  background-image: -webkit-gradient(linear, left top, left bottom, from(#f7f7f7),to(#eee));
+  background-image: -webkit-linear-gradient(top, #f7f7f7 0%,#eee 100%);
+  background-image: -o-linear-gradient(top, #f7f7f7 0%,#eee 100%);
+  background-image: linear-gradient(to bottom, #f7f7f7 0%,#eee 100%);
+  border: 1px solid #e5e5e5;
+}
+
+@media (min-width: 768px) {
+  .navbar-nav {
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -ms-flexbox;
+    display: flex;
+  }
+
+  .navbar-nav .nav-item {
+    -webkit-box-flex: 1;
+    -webkit-flex: 1 0 auto;
+        -ms-flex: 1 0 auto;
+            flex: 1 0 auto;
+  }
+}
+
+/* Responsive: Portrait tablets and up */
+@media screen and (min-width: 768px) {
+  /* Remove the padding we set earlier */
+  .masthead,
+  .marketing,
+  .footer {
+    padding-right: 0;
+    padding-left: 0;
+  }
+}
+
+
 .circle {
-   font-weight:bold;
+   font-weight: bold;
    font-style: italic;
    position: relative;
    border-radius: 100%;
@@ -35,4 +89,28 @@ header {
 
 hr {
  margin:0;
+}
+
+.footer-text {
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.alias-text {
+  font-size: 150%;
+  font-weight: bold;
+  vertical-align: middle;
+}
+
+.alias-count {
+  font-size: 112%;
+  font-weight: bolder;
+  color: #f84324;
+  vertical-align: middle;
+  align-content: center;
+}
+
+.sensor-table {
+  font-size: 75%;
+  font-weight: normal;
 }

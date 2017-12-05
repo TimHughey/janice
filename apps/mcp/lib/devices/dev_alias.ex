@@ -89,13 +89,13 @@ when is_binary(id) do
   query =
     from(dev in DevAlias,
       where: (dev.device == ^id) or (dev.friendly_name == ^id))
- 
+
   one(query) |> just_seen()
 end
 
 def just_seen(%DevAlias{} = dev) do
   change(dev, last_seen_at: Timex.now()) |> update!()
-end 
+end
 
 def just_seen([]), do: []
 

@@ -17,6 +17,9 @@ defmodule Web.McpController do
     unknown_fnames =
       MapSet.difference(all_fnames, known_fnames) |> Enum.sort()
 
+    unknown = Enum.map(unknown_fnames, fn(x) -> dev_alias_details(x) end)
+    sensors = Enum.map(sensor_fnames, fn(x) -> sensor_details(x) end)
+
     render conn, "index.html",
       all_fnames_count: Enum.count(all_fnames),
       switch_fnames: switch_fnames,
@@ -24,7 +27,8 @@ defmodule Web.McpController do
       sensor_fnames: sensor_fnames,
       sensor_fnames_count: Enum.count(sensor_fnames),
       unknown_fnames: unknown_fnames,
-      unknown_fnames_count: Enum.count(unknown_fnames)
+      unknown_fnames_count: Enum.count(unknown_fnames),
+      unknown: unknown
   end
 
   def show(conn, %{"fname" => fname}) do
@@ -50,5 +54,23 @@ defmodule Web.McpController do
         relhum: Sensor.relhum(fname)
 
     end
+  end
+
+  defp dev_alias_details(fname) do
+    a = DevAlias.get_by_friendly_name(fname)
+    %{device: a.device, fname: a.friendly_name, desc: a.description,
+      last_seen_at: Timex.format!(a.last_seen_at, "{ISO:Extended:Z}")}
+  end
+
+  defp sensor_details(fname) do
+    a = DevAlias.get_by_friendly_name(fname)
+
+    last_seen_secs = Timex.diff(Timex.now(), a.last_seen_at, :seconds)
+
+    s = Sensor.get(:friendly_name, fname)
+    %{device: s.device, fname: fname, desc: a.description,
+      type: s.sensor_type,
+      reading_at: s.reading_at, last_seen_at: s.last_seen_at,
+      last_seen_secs: last_seen_secs}
   end
 end

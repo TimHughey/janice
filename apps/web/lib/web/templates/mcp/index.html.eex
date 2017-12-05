@@ -1,51 +1,98 @@
 <div class="container">
-  <div class="col-xs-12 col-md-12 text-center">
-    <h2>Device Aliases (<%= @all_fnames_count %>)</h2>
-</div>
+  <div class="col text-center">
+    <span class="alias-text">Device Aliases </span>
+    <span class="alias-count">(<%= @all_fnames_count %>)</span>
+  </div>
 
-<div id="exTab1" class="col">
-  <nav class="nav nav-tabs" id="mainTabs" role="tablist">
-    <a class="nav-link active" id="nodevice-tab" data-toggle="tab" href="#nodevice" role="tab" aria-controls="nodevice" aria-selected="true">No Device (<%= @unknown_fnames_count %>)</a>
-    <a class="nav-link" id="switches-tab" data-toggle="tab" href="#switches" role="tab" aria-controls="switches" aria-selected="true">Switches (<%= @switch_fnames_count %>)</a>
-    <a class="nav-link" id="sensors-tab" data-toggle="tab" href="#sensors" tole="tab" aria-controls="sensors" aria-selected="true">Sensors (<%= @sensor_fnames_count %>)</a>
-  </nav>
+  <div id="accordion" role="tablist">
+    <div class="card">
+      <div class="card-header" role="tab" id="headingNoDevice">
+        <h5 class="mb-0">
+          <a data-toggle="collapse" href="#collapseNoDevice" aria-expanded="false" aria-controls="collapseNoDevice">
+            No Device</a>
+            <small> (<%= @unknown_fnames_count %>)</small>
+        </h5>
+      </div>
 
-  <div class="tab-content" id="tab-content">
-
-    <div class="tab-pane fade show active" id="nodevice" role="tabpanel" aria-labelledby="nodevice-tab">
-      <table class="table">
-      <%= for fname <- friendly_names @unknown_fnames do %>
-        <tr><td><%= fname %></td></tr>
-      <% end %>
-      </table>
-    </div>
-
-    <div class="tab-pane fade" id="switches" role="tabpanel" aria-labelledby="switches-tab">
-      <%= if @switch_fnames_count > 0 do %>
-        <table class="table">
-          <%= for fname <- friendly_names @switch_fnames do %>
-              <tr><td>
-                <a href="<%= mcp_path @conn, :show, fname %>"><%= fname %></a>
-              </tr></td>
-          <% end %>
-        </table>
-      <% else %>
-        <h3>No Switches</h3>
-      <% end %>
-    </div>
-
-    <div class="tab-pane fade" id="sensors" role="tabpanel" aria-labelledby="sensors-tab">
-      <%= if @sensor_fnames_count > 0 do %>
-        <table class="table">
-          <%= for fname <- friendly_names @sensor_fnames do %>
-            <tr><td>
-              <a href="<%= mcp_path @conn, :show, fname %>"><%= fname %></a>
-            </tr></td>
-          <% end %>
+      <div id="collapseNoDevice" class="collapse" role="tabpanel" aria-labelledby="headingNoDevice" data-parent="#accordion">
+        <div class="card-body">
+          <table class="table sensor-table">
+            <th>Alias</th>
+            <th>Device</th>
+            <th>Description</th>
+            <th>Last Seen At</th>
+            <%= for a <- @unknown do %>
+              <tr>
+                <td><%= a.fname %></td>
+                <td><%= a.device %></td>
+                <td><%= a.desc %></td>
+                <td><%= a.last_seen_at %></td>
+              </tr>
+            <% end %>
           </table>
-      <% else %>
-        <h3>No Sensors</h3>
-      <% end %>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header" role="tab" id="headingSwitches">
+        <h5 class="mb-0">
+          <a class="collapsed" data-toggle="collapse" href="#collapseSwitches" aria-expanded="false" aria-controls="collapseSwitches">
+            Switches</a>
+          <small> (<%= @switch_fnames_count %>)</small>
+        </h5>
+      </div>
+      <div id="collapseSwitches" class="collapse" role="tabpanel" aria-labelledby="headingSwitches" data-parent="#accordion">
+        <div class="card-body">
+          <%= if @switch_fnames_count > 0 do %>
+            <table class="table">
+              <%= for fname <- friendly_names @switch_fnames do %>
+                  <tr><td>
+                    <a href="<%= mcp_path @conn, :show, fname %>"><%= fname %></a>
+                  </tr></td>
+              <% end %>
+            </table>
+          <% else %>
+            <h3>No Switches</h3>
+          <% end %>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header" role="tab" id="headingSensors">
+        <h5 class="mb-0">
+          <a class="collapsed" data-toggle="collapse" href="#collapseSensors" aria-expanded="false" aria-controls="collapseSensors">
+            Sensors</a>
+            <small> (<%= @sensor_fnames_count %>)</small>
+        </h5>
+      </div>
+      <div id="collapseSensors" class="collapse" role="tabpanel" aria-labelledby="headingSensors" data-parent="#accordion">
+        <div class="card-body">
+          <%= if @sensor_fnames_count > 0 do %>
+            <table class="table sensor-table">
+              <th>Alias</th>
+              <th>Device</th>
+              <th>Type</th>
+              <th>Description</th>
+              <th>Last Seen</th>
+              <th>Reading At</th>
+              <th>Last Seen At</th>
+              <%= for s <- @sensors do %>
+                <tr>
+                  <td><%= s.fname %></td>
+                  <td><%= s.device %></td>
+                  <td><%= s.type %></td>
+                  <td><%= s.desc %></td>
+                  <td><%= s.last_seen_secs %></td>
+                  <td><%= s.reading_at %></td>
+                  <td><%= s.last_seen_at %></td>
+                </tr>
+              <% end %>
+            </table>
+          <% else %>
+            <h3>No Sensors</h3>
+          <% end %>
+        </div>
+      </div>
     </div>
   </div>
 </div>
