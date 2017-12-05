@@ -79,18 +79,31 @@ defmodule Web.McpController do
 
   defp switch_details(fname) do
     a = DevAlias.get_by_friendly_name(fname)
-
-    last_seen_secs = Timex.diff(Timex.now(), a.last_seen_at, :seconds)
-
     s = Switch.get(:device, a.device)
+    
+    switch_map_details(a, s)
+  end
+
+  defp switch_map_details(%DevAlias{} = a, %Switch{} = s) do
+    last_seen_secs = Timex.diff(Timex.now(), a.last_seen_at, :seconds)
     last_cmd_secs = Timex.diff(Timex.now(), s.last_cmd_at, :seconds)
 
-    %{device: a.device, fname: fname, desc: a.description,
+    %{device: a.device, fname: a.friendly_name, desc: a.description,
       enabled: s.enabled, dev_latency: s.dev_latency,
       discovered_at: Timex.format(s.discovered_at, "{ISO:Extended:Z}"),
       last_cmd_secs: last_cmd_secs,
       last_seen_secs: last_seen_secs,
       last_seen_at: Timex.format(s.last_seen_at, "{ISO:Extended:Z}"),
       state: Switch.get_state(fname)}
+  end
+
+  defp switch_map_details(%DevAlias{} = a, _any) do
+    %{device: a.device, fname: a.friendly_name, desc: a.description,
+      enabled: "?", dev_latency: "?",
+      discovered_at: "?",
+      last_cmd_secs: "?",
+      last_seen_secs: "?",
+      last_seen_at: "?",
+      state: "?"}
   end
 end
