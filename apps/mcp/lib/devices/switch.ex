@@ -60,7 +60,7 @@ def all(:friendly_names) do
   only_switches =
     Enum.filter(all_aliases,
       fn(item) -> is_switch?(item.friendly_name) end)
-  
+
   Enum.map(only_switches,
       fn(item) -> item.friendly_name end)
 end
@@ -86,6 +86,11 @@ when is_map(r) do
     metric: "external_update", device: r.device, val: t)
 
   fnames
+end
+
+def get(:device, dev)
+when is_binary(dev) do
+  get_by_device_name(dev)
 end
 
 @doc ~S"""

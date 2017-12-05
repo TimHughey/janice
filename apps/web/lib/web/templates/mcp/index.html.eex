@@ -44,11 +44,28 @@
       <div id="collapseSwitches" class="collapse" role="tabpanel" aria-labelledby="headingSwitches" data-parent="#accordion">
         <div class="card-body">
           <%= if @switch_fnames_count > 0 do %>
-            <table class="table">
-              <%= for fname <- friendly_names @switch_fnames do %>
-                  <tr><td>
-                    <a href="<%= mcp_path @conn, :show, fname %>"><%= fname %></a>
-                  </tr></td>
+            <table class="table sensor-table">
+              <th>Alias</th>
+              <th>Device</th>
+              <th>Enabled</th>
+              <th>Description</th>
+              <th>Dev Latency</th>
+              <th>Last Cmd</th>
+              <th>Last Seen</th>
+              <th>State</th>
+              <th>Last Seen At</th>
+              <%= for s <- @switches do %>
+                <tr>
+                  <td><%= s.fname %></td>
+                  <td><%= s.device %></td>
+                  <td><%= s.enabled %></td>
+                  <td><%= s.desc %></td>
+                  <td><%= s.dev_latency %></td>
+                  <td><%= s.last_cmd_secs %> secs</td>
+                  <td><%= s.last_seen_secs %> secs</td>
+                  <td><%= s.state %></td>
+                  <td><%= s.last_seen_at %></td>
+                </tr>
               <% end %>
             </table>
           <% else %>

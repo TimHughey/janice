@@ -19,6 +19,7 @@ defmodule Web.McpController do
 
     unknown = Enum.map(unknown_fnames, fn(x) -> dev_alias_details(x) end)
     sensors = Enum.map(sensor_fnames, fn(x) -> sensor_details(x) end)
+    switches = Enum.map(switch_fnames, fn(x) -> switch_details(x) end)
 
     render conn, "index.html",
       all_fnames_count: Enum.count(all_fnames),
@@ -29,7 +30,8 @@ defmodule Web.McpController do
       unknown_fnames: unknown_fnames,
       unknown_fnames_count: Enum.count(unknown_fnames),
       unknown: unknown,
-      sensors: sensors
+      sensors: sensors,
+      switches: switches
   end
 
   def show(conn, %{"fname" => fname}) do
@@ -73,5 +75,22 @@ defmodule Web.McpController do
       type: s.sensor_type,
       reading_at: s.reading_at, last_seen_at: s.last_seen_at,
       last_seen_secs: last_seen_secs}
+  end
+
+  defp switch_details(fname) do
+    a = DevAlias.get_by_friendly_name(fname)
+
+    last_seen_secs = Timex.diff(Timex.now(), a.last_seen_at, :seconds)
+
+    s = Switch.get(:device, a.device)
+    last_cmd_secs = Timex.diff(Timex.now(), s.last_cmd_at, :seconds)
+
+    %{device: a.device, fname: fname, desc: a.description,
+      enabled: s.enabled, dev_latency: s.dev_latency,
+      discovered_at: Timex.format(s.discovered_at, "{ISO:Extended:Z}"),
+      last_cmd_secs: last_cmd_secs,
+      last_seen_secs: last_seen_secs,
+      last_seen_at: Timex.format(s.last_seen_at, "{ISO:Extended:Z}"),
+      state: Switch.get_state(fname)}
   end
 end
