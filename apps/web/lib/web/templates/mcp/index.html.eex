@@ -53,7 +53,6 @@
               <th>Last Cmd</th>
               <th>Last Seen</th>
               <th>State</th>
-              <th>Last Seen At</th>
               <%= for s <- @switches do %>
                 <tr>
                   <td><%= s.fname %></td>
@@ -61,10 +60,9 @@
                   <td><%= s.enabled %></td>
                   <td><%= s.desc %></td>
                   <td><%= s.dev_latency %></td>
-                  <td><%= s.last_cmd_secs %> secs</td>
-                  <td><%= s.last_seen_secs %> secs</td>
+                  <td><%= s.last_cmd_secs %></td>
+                  <td><%= s.last_seen_secs %></td>
                   <td><%= s.state %></td>
-                  <td><%= s.last_seen_at %></td>
                 </tr>
               <% end %>
             </table>
@@ -99,7 +97,7 @@
                   <td><%= s.device %></td>
                   <td><%= s.type %></td>
                   <td><%= s.desc %></td>
-                  <td><%= s.last_seen_secs %> secs</td>
+                  <td><%= s.last_seen_secs %></td>
                   <td><%= s.reading_at %></td>
                   <td><%= s.last_seen_at %></td>
                 </tr>

@@ -90,7 +90,7 @@ end
 
 def get(:friendly_name, fname)
 when is_binary(fname) do
-  %{device: dev, _} = fname_to_dev(fname) |> device_name_and_pio()
+  %{device: dev} = fname_to_dev(fname) |> device_name_and_pio()
   get_by_device_name(dev)
 end
 
