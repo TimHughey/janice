@@ -15,6 +15,7 @@ EXTRA=$BASE/extra
 
 cd $BASE
 
+run_cmd git pull
 run_cmd $EXTRA/prod-release 
 run_cmd $EXTRA/merc-deploy 
 run_cmd $EXTRA/merc-install-and-start 

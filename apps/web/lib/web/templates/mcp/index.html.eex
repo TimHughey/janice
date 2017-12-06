@@ -93,7 +93,6 @@
                 <th>Description</th>
                 <th>Last Seen</th>
                 <th>Reading At</th>
-                <th>Last Seen At</th>
               </bold>
               <%= for s <- @sensors do %>
                 <tr>
