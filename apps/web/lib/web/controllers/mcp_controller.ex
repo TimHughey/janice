@@ -61,8 +61,12 @@ defmodule Web.McpController do
 
   defp dev_alias_details(fname) do
     a = DevAlias.get_by_friendly_name(fname)
+    tz = Timezone.local
+    last_seen_at = Timezone.convert(a.last_seen_at, tz)
+
     %{device: a.device, fname: a.friendly_name, desc: a.description,
-      last_seen_at: Timex.format!(a.last_seen_at, "{ISO:Extended:Z}")}
+      last_seen_secs: humanize_secs(last_seen_at),
+      last_seen_at: Timex.format!(last_seen_at, "{UNIX}")}
   end
 
   defp sensor_details(fname) do
@@ -73,7 +77,8 @@ defmodule Web.McpController do
     s = Sensor.get(:friendly_name, fname)
     %{device: s.device, fname: fname, desc: a.description,
       type: s.sensor_type,
-      reading_at: s.reading_at, last_seen_at: s.last_seen_at,
+      reading_at: s.reading_at,
+      last_seen_at: s.last_seen_at,
       last_seen_secs: humanize_secs(last_seen_secs)}
   end
 
@@ -85,14 +90,11 @@ defmodule Web.McpController do
   end
 
   defp switch_map_details(%DevAlias{} = a, %Switch{} = s) do
-    last_seen_secs = Timex.diff(Timex.now(), a.last_seen_at, :seconds)
-    last_cmd_secs = Timex.diff(Timex.now(), s.last_cmd_at, :seconds)
-
     %{device: a.device, fname: a.friendly_name, desc: a.description,
       enabled: s.enabled, dev_latency: s.dev_latency,
       discovered_at: Timex.format!(s.discovered_at, "{ISO:Extended:Z}"),
-      last_cmd_secs: humanize_secs(last_cmd_secs),
-      last_seen_secs: humanize_secs(last_seen_secs),
+      last_cmd_secs: humanize_secs(s.last_cmd_at),
+      last_seen_secs: humanize_secs(s.last_seen_at),
       last_seen_at: Timex.format!(s.last_seen_at, "{ISO:Extended:Z}"),
       state: Switch.get_state(a.friendly_name)}
   end
@@ -107,7 +109,11 @@ defmodule Web.McpController do
       state: "?"}
   end
 
-  # one (1) week: 604_800  
+  defp humanize_secs(%DateTime{} = dt) do
+    Timex.diff(Timex.now(), dt, :seconds) |> humanize_secs
+  end
+
+  # one (1) week: 604_800
   # one (1) day : 86,400
   # one (1) hour: 3_600
 
@@ -125,7 +131,7 @@ defmodule Web.McpController do
   when secs >= 3_600 do
     ">1 hr"
   end
- 
+
   defp humanize_secs(secs)
   when secs >= 60 do
     ">1 min"
@@ -133,6 +139,6 @@ defmodule Web.McpController do
 
   defp humanize_secs(secs) do
     "#{secs} secs"
-  end 
-  
+  end
+
 end
