@@ -31,6 +31,17 @@ when is_map(s) do
   {:ok, s}
 end
 
+@manual_start_msg {:manual_start}
+def manual_start do
+  GenServer.call(Mcp.SoakTest, @manual_start_msg)
+end
+
+def handle_call(@manual_start_msg, _from, s) do
+  send_after(self(), {:manual_start}, 1)
+
+  {:reply, [], s}
+end
+
 # GenServer callbacks
 def handle_info({:flash_led}, s) do
   dev = "led1"
