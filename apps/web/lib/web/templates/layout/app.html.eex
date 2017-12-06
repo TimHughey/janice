@@ -11,7 +11,7 @@
 
     <!-- Bootstrap core CSS -->
     <link rel="stylesheet" href="<%= static_path(@conn, "/css/app.css") %>">
-    <link href="https://fonts.googleapis.com/css?family=Stoke|Roboto+Slab|Inconsolata|Acme|Rokkitt" rel="stylesheet" type='text/css' crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/css?family=Permanent+Marker|Inconsolata|Acme|Rokkitt" rel="stylesheet" type='text/css' crossorigin="anonymous">
   </head>
 
   <body>

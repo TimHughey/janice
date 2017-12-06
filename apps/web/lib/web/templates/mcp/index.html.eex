@@ -21,6 +21,7 @@
               <th>Alias</th>
               <th>Device</th>
               <th>Description</th>
+              <th>Last Seen</th>
               <th>Last Seen At</th>
             </bold>
             <%= for a <- @unknown do %>
@@ -28,6 +29,7 @@
                 <td><%= a.fname %></td>
                 <td><%= a.device %></td>
                 <td><%= a.desc %></td>
+                <td><%= a.last_seen_secs %></td>
                 <td><%= a.last_seen_at %></td>
               </tr>
             <% end %>
