@@ -17,10 +17,12 @@
       <div id="collapseNoDevice" class="collapse" role="tabpanel" aria-labelledby="headingNoDevice" data-parent="#accordion">
         <div class="card-body">
           <table class="table device-table">
-            <th>Alias</th>
-            <th>Device</th>
-            <th>Description</th>
-            <th>Last Seen At</th>
+            <bold>
+              <th>Alias</th>
+              <th>Device</th>
+              <th>Description</th>
+              <th>Last Seen At</th>
+            </bold>
             <%= for a <- @unknown do %>
               <tr>
                 <td><%= a.fname %></td>
@@ -84,13 +86,15 @@
         <div class="card-body">
           <%= if @sensor_fnames_count > 0 do %>
             <table class="table device-table">
-              <th>Alias</th>
-              <th>Device</th>
-              <th>Type</th>
-              <th>Description</th>
-              <th>Last Seen</th>
-              <th>Reading At</th>
-              <th>Last Seen At</th>
+              <bold>
+                <th>Alias</th>
+                <th>Device</th>
+                <th>Type</th>
+                <th>Description</th>
+                <th>Last Seen</th>
+                <th>Reading At</th>
+                <th>Last Seen At</th>
+              </bold>
               <%= for s <- @sensors do %>
                 <tr>
                   <td><%= s.fname %></td>
@@ -99,7 +103,6 @@
                   <td><%= s.desc %></td>
                   <td><%= s.last_seen_secs %></td>
                   <td><%= s.reading_at %></td>
-                  <td><%= s.last_seen_at %></td>
                 </tr>
               <% end %>
             </table>
