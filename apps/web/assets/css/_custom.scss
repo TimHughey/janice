@@ -1,10 +1,16 @@
 body {
-  font-family: 'Roboto Slab', serif !important;
+  // font-family: 'Roboto Slab', serif !important;
+  font-family: 'Rokkitt', serif !important;
   padding-top: 20px;
 }
 
 header {
  border-top: 9px solid #222222;
+}
+
+.text-muted {
+  color: #e41111 !important;
+  font-family: 'Stoke', serif;
 }
 
 .footer {
@@ -78,7 +84,7 @@ header {
    transform:rotate(11deg);
    -ms-transform:rotate(11deg); /* IE 9 */
    -webkit-transform:rotate(11deg); /* Opera, Chrome, and Safari */
-   font-family: "Helvetica Neue", Helvetica, sans-serif;
+   font-family: 'Acme', sans-serif;
    font-weight:200;
    font-size:14px;
 }
@@ -92,7 +98,7 @@ hr {
 }
 
 .footer-text {
-  font-weight: bold;
+  font-family: 'Acme', sans-serif;
   font-size: 16px;
 }
 
@@ -110,7 +116,8 @@ hr {
   align-content: center;
 }
 
-.sensor-table {
-  font-size: 75%;
+.device-table {
+  font-family: 'Inconsolata', monospace;
+  font-size: 14px;
   font-weight: normal;
 }

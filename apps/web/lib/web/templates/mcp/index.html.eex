@@ -16,7 +16,7 @@
 
       <div id="collapseNoDevice" class="collapse" role="tabpanel" aria-labelledby="headingNoDevice" data-parent="#accordion">
         <div class="card-body">
-          <table class="table sensor-table">
+          <table class="table device-table">
             <th>Alias</th>
             <th>Device</th>
             <th>Description</th>
@@ -44,7 +44,7 @@
       <div id="collapseSwitches" class="collapse" role="tabpanel" aria-labelledby="headingSwitches" data-parent="#accordion">
         <div class="card-body">
           <%= if @switch_fnames_count > 0 do %>
-            <table class="table sensor-table">
+            <table class="table device-table">
               <th>Alias</th>
               <th>Device</th>
               <th>Enabled</th>
@@ -83,7 +83,7 @@
       <div id="collapseSensors" class="collapse" role="tabpanel" aria-labelledby="headingSensors" data-parent="#accordion">
         <div class="card-body">
           <%= if @sensor_fnames_count > 0 do %>
-            <table class="table sensor-table">
+            <table class="table device-table">
               <th>Alias</th>
               <th>Device</th>
               <th>Type</th>
