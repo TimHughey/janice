@@ -24,6 +24,8 @@ when is_map(s) do
                if delay > 0 do
                  send_after(self(), {:startup}, delay)
                  Map.put_new(s, :running, true)
+               else
+                 Map.put_new(s, :running, false) 
                end
       false -> Map.put_new(s, :running, false)
     end
