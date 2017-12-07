@@ -18,16 +18,18 @@ end
 
 def init(s)
 when is_map(s) do
+  s = Map.put_new(s, :running, false)
+
   s =
     case Map.get(s, :autostart, false) do
       true  -> delay = config(:startup_delay_ms)
                if delay > 0 do
                  send_after(self(), {:startup}, delay)
-                 Map.put_new(s, :running, true)
+                 Map.put(s, :running, true)
                else
-                 Map.put_new(s, :running, false) 
+                 s
                end
-      false -> Map.put_new(s, :running, false)
+      false -> s
     end
 
   s = s |>

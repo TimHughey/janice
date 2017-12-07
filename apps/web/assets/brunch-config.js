@@ -53,11 +53,11 @@ exports.config = {
       ignore: [/vendor/]
     },
     copycat: {
-      "fonts": ["node_modules/font-awesome/fonts"] // copy node_modules/font-awesome/fonts/* to priv/static/fonts/
+      // "fonts": ["node_modules/font-awesome/fonts"] // copy node_modules/font-awesome/fonts/* to priv/static/fonts/
     },
     sass: {
       options: {
-        includePaths: ["node_modules/bootstrap/scss", "node_modules/font-awesome/scss"], // tell sass-brunch where to look for files to @import
+        includePaths: ["node_modules/bootstrap/scss"], // tell sass-brunch where to look for files to @import
         precision: 8 // minimum precision required by bootstrap
       }
     }
@@ -75,7 +75,8 @@ exports.config = {
       $: 'jquery',
       jQuery: 'jquery',
       Tether: 'tether',
-      bootstrap: 'bootstrap-beta' // require Bootstrap JavaScript globally too
+      Popper: 'popper.js',
+      bootstrap: 'bootstrap' // require Bootstrap JavaScript globally too
     }
   }
 };

@@ -17,7 +17,7 @@ defmodule Web.Router do
     pipe_through :browser # Use the default browser stack
 
     # get "/", PageController, :index
-    get "/", PageController, :index
+    get "/", HomeController, :index
   end
 
   scope "/mercurial/mcp", Web do
@@ -25,7 +25,7 @@ defmodule Web.Router do
 
     # get "/", PageController, :index
     get "/", McpController, :index
-    get "/:fname", McpController, :show
+    get "/detail/:type", McpController, :show
   end
 
   # Other scopes may use custom stacks.
