@@ -37,7 +37,7 @@ def manual_start do
 end
 
 def handle_call(@manual_start_msg, _from, s) do
-  send_after(self(), {:manual_start}, 1)
+  send_after(self(), {:startup}, 1)
 
   {:reply, [], s}
 end
