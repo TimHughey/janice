@@ -40,6 +40,10 @@ defmodule Web do
       import Web.Router.Helpers
       import Web.ErrorHelpers
       import Web.Gettext
+
+      def render_shared(template, assigns \\ []) do
+        render(Web.SharedView, template, assigns)
+      end
     end
   end
 

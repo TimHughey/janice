@@ -8,14 +8,18 @@ header {
 }
 
 .text-muted {
-  color: #6111e4 !important;
+  font-family: 'Permanent Marker', cursive;
+}
+
+.text-ready {
+  color: #6111e4;
   font-family: 'Permanent Marker', cursive;
 }
 
 .footer {
-  padding-top: 40px;
-  padding-bottom: 40px;
-  margin-top: 40px;
+  padding-top: 1px;
+  padding-bottom: 11px;
+  margin-top: 15px;
   border-top: 1px solid #eee;
 }
 

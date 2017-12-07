@@ -1,3 +1,5 @@
+<%= render_shared "top_nav.html", assigns %>
+
 <!-- Jumbotron -->
 <div class="jumbotron">
   <h1>This is Mercurial for Wiss Landing</h1>
@@ -23,3 +25,5 @@
     <p><a class="btn btn-primary" href="#" role="button">View details &raquo;</a></p>
   </div>
 </div>
+
+<%= render_shared "footer.html", assigns %>

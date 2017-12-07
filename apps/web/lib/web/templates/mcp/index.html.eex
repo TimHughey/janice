@@ -1,3 +1,5 @@
+<%= render_shared "top_nav.html", assigns %>
+
 <div class="container">
   <div class="col text-center">
     <span class="alias-text">Device Aliases </span>
@@ -115,3 +117,5 @@
     </div>
   </div>
 </div>
+
+<%= render_shared "footer.html", assigns %>

@@ -1,0 +1,11 @@
+<!-- Site footer -->
+<footer class="footer">
+    <div class="row">
+      <div class="col footer-text ml-3 text-left">
+        &copy; 2018 Tim Hughey
+      </div>
+      <div class="col footer-text mr-3 text-right">
+        Authorized use only
+      </div>
+    </div>
+</footer>
