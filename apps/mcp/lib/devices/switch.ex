@@ -221,10 +221,7 @@ defp acknowledge_individual_cmd(%Switch{cmds: [cmd]} = sw,
 
   rt_latency = Timex.diff(msg_recv_dt, cmd.sent_at)
 
-  # latency from mcr is reported in microseconds, convert to millis
-  dev_latency = latency
-
-  opts = [acked: true, dev_latency: dev_latency,
+  opts = [acked: true, dev_latency: latency,
             rt_latency: rt_latency, ack_at: Timex.now()]
 
   change(cmd, opts) |> update!()
@@ -233,9 +230,11 @@ defp acknowledge_individual_cmd(%Switch{cmds: [cmd]} = sw,
     metric: "rt_latency", device: sw.device, val: rt_latency)
 
   RunMetric.record(module: "#{__MODULE__}",
-    metric: "dev_latency", device: sw.device, val: dev_latency)
+    metric: "dev_latency", device: sw.device, val: latency)
 
-  sw # return the switch
+  opts = [dev_latency: latency, last_cmd_at: Timex.now()]
+
+  change(sw, opts) |> update!()  # update the actual sw and return it
 end
 
 # handle the case where there aren't commands to ack

@@ -91,7 +91,8 @@ defmodule Web.McpController do
 
   defp switch_map_details(%DevAlias{} = a, %Switch{} = s) do
     %{device: a.device, fname: a.friendly_name, desc: a.description,
-      enabled: s.enabled, dev_latency: s.dev_latency,
+      enabled: s.enabled,
+      dev_latency: humanize_microsecs(s.dev_latency),
       discovered_at: Timex.format!(s.discovered_at, "{ISO:Extended:Z}"),
       last_cmd_secs: humanize_secs(s.last_cmd_at),
       last_seen_secs: humanize_secs(s.last_seen_at),
@@ -108,6 +109,18 @@ defmodule Web.McpController do
       last_seen_at: "?",
       state: "?"}
   end
+
+  defp humanize_microsecs(us)
+  when is_number(us) and us > 1000 do
+    "#{Float.round(us / 1000.0, 2)} ms"
+  end
+
+  defp humanize_microsecs(us)
+  when is_number(us) do
+    "#{us} us"
+  end
+
+  defp humanize_microsecs(_), do: "-"
 
   defp humanize_secs(%DateTime{} = dt) do
     Timex.diff(Timex.now(), dt, :seconds) |> humanize_secs
