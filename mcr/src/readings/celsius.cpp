@@ -44,7 +44,7 @@ void celsiusReading::populateJSON(JsonObject &root) {
     root["type"] = "temp";         // need to check that the
   }                                // type hasn't been set
   root["tc"] = _celsius;
-  root["tf"] = _celsius * 1.8 + 39.0;
+  root["tf"] = _celsius * 1.8 + 32.0;
 };
 
 #endif // __cplusplus
