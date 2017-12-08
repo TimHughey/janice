@@ -76,6 +76,10 @@ when is_binary(msg) and is_map(s) do
   if Reading.switch?(r) do
     {mod, func} = config(:switch_msgs)
     # if not Reading.cmdack?(r), do: Logger.info(msg)
+    if r.device == "ds/29463408000000" do
+      Logger.debug fn -> "switch: #{r.device} #{inspect(r.states)}" end
+    end
+
     apply(mod, func, [Reading.as_map(r)])
     #Switch.external_update(Reading.as_map(r))
   end

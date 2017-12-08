@@ -92,7 +92,7 @@ def handle_call({:publish, opts}, _from, %{connection: _} = s) do
   qos    = opts |> Keyword.fetch!(:qos)
   retain = opts |> Keyword.fetch!(:retain)
 
-  Logger.info fn -> "outbound: #{msg}" end
+  Logger.debug fn -> "outbound: #{msg}" end
 
   {message, s} =
     case qos do
