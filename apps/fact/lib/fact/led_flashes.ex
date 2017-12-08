@@ -8,7 +8,7 @@ defmodule Fact.LedFlashes do
   import(Fact.Influx, only: [write: 2])
 
   series do
-    database    "mcp_repo"
+    database    "merc_repo"
     measurement "led_flashes"
 
     tag :friendly_name, default: "unknown-friendly"

@@ -61,6 +61,10 @@ config :web, Web.Endpoint,
 #     config :web, Web.Endpoint, server: true
 #
 
+config :logger,
+  backends: [:console],
+  level: :warn
+
 # Finally import the config/prod.secret.exs
 # which should be versioned separately.
 import_config "prod.secret.exs"

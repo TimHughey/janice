@@ -6,7 +6,7 @@ alias Fact.FreeRamStat
 import(Fact.Influx, only: [write: 2])
 
 series do
-  database    "mcp_repo"
+  database    "merc_repo"
   measurement "mcr_stat"
 
   tag :remote_host, default: "unknown-host"

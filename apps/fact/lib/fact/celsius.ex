@@ -7,13 +7,13 @@ alias Fact.Celsius
 import(Fact.Influx, only: [write: 2])
 
 series do
-  database    "mcp_repo"
+  database    "merc_repo"
   measurement "celsius"
 
   tag :remote_host, default: "unknown-host"
   tag :device, default: "unknown-device"
   tag :friendly_name, default: "unknown-friendly"
-  tag :env, default: "dev"
+  tag :env, default: "dev" 
 
   field :val
 end

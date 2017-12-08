@@ -8,7 +8,7 @@ defmodule Fact.RunMetric do
   import(Fact.Influx, only: [write: 2])
 
   series do
-    database    "mcp_repo"
+    database    "merc_repo"
     measurement "run_metric"
 
     tag :module, default: "unknown-module"
