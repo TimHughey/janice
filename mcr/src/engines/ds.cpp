@@ -628,28 +628,26 @@ bool mcrDS::setDS2408(mcrCmd &cmd) {
   positionsReading_t *reading = (positionsReading_t *)dev->reading();
 
   uint8_t mask = cmd.mask();
-  uint8_t tobe_state = 0x00;
-  uint8_t asis_state = 0x00;
+  uint8_t changes = cmd.state();
+  uint8_t asis_state = reading->state();
   uint8_t new_state = 0x00;
 
-  // by applying the negated mask (what to change) to the requested state
-  // we end up with ony the bits that should be set in the new state
-  // since the actual device uses 0 for on and 1 for off
-  tobe_state = ~cmd.state() & mask;
+  // use XOR tricks to apply the state changes to the as_is state using the
+  // mask computed
+  new_state = asis_state ^ ((asis_state ^ changes) & mask);
 
-  // by applying the negated mask to the current state we get the
-  // bits that should be kept
-  asis_state = reading->state() & ~mask;
+  // now negate the new_state since the device actually represents
+  // on = 0
+  // off = 1
 
-  // now, the new state is simply the OR of the tobe and asis states
-  new_state = asis_state | tobe_state;
+  new_state = ~new_state;
 
   ds->reset();
   dev->startWrite();
   ds->select(dev->addr());
   ds->write(0x5A, 1);
-  ds->write(new_state, 1);
-  ds->write(~new_state, 1);
+  ds->write(new_state, 1);  // state to set on the device
+  ds->write(~new_state, 1); // send the negated as a check
 
   uint8_t check[2];
   check[0] = ds->read();
