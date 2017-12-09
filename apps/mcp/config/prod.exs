@@ -42,3 +42,4 @@ config :mcp, Mcp.Dutycycle,
   routine_check_ms: 1000
 
 config :mcp, :ecto_repos, [Mcp.Repo]
+config :mcp, :build_env: "#{Mix.env}"
