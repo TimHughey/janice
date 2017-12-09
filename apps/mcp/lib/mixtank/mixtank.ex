@@ -36,8 +36,7 @@ defmodule Mcp.Mixtank do
   alias Mcp.Repo
   alias Mcp.Sensor
   alias Mcp.Switch
-  #alias Mcp.Influx.Position
-  alias Ecto.Changeset
+  import Ecto.Changeset, only: [change: 2]
   import Ecto.Query, only: [from: 2]
   import Application, only: [get_env: 2]
   import Keyword, only: [get: 2]
@@ -294,6 +293,26 @@ defmodule Mcp.Mixtank do
   @shutdown_msg :shutdown
   @manual_control_msg :manual_control
 
+  def add([]), do: []
+  def add([%Mixtank{} = m | rest]) do
+    [add(m)] ++ add(rest)
+  end 
+
+
+  def add(%Mixtank{} = m) do
+    to_add = 
+      case Repo.get_by(Mixtank, name: m.name) do
+        nil -> m
+        name -> name
+      end
+
+    opts = [state_at: Timex.now()]
+
+    {:ok, added} = to_add |> change(opts) |> Repo.insert_or_update
+    added
+  end
+
+
   @doc """
   Traditional implemenation of start_link
   """
@@ -404,7 +423,7 @@ defmodule Mcp.Mixtank do
 
     Switch.set_state(mixtank.heat_sw, next_position)
     update = [state_at: Timex.now(), heat_state: next_position]
-    mixtank |> Changeset.change(update) |> Repo.update()
+    mixtank |> change(update) |> Repo.update()
 
     # TODO: transition to new Influx
     #mixtank.heat_sw |> Position.new(next_position) |> Position.post()
@@ -435,7 +454,7 @@ defmodule Mcp.Mixtank do
 
     Switch.set_state(mixtank.pump_sw, power)
     update = [state_at: Timex.now(), pump_state: power]
-    mixtank |> Changeset.change(update) |> Repo.update()
+    mixtank |> change(update) |> Repo.update()
   end
 
   defp update_air(mixtank, power)
@@ -443,7 +462,7 @@ defmodule Mcp.Mixtank do
 
     Switch.set_state(mixtank.air_sw, power)
     update = [state_at: Timex.now(), air_state: power]
-    mixtank |> Changeset.change(update) |> Repo.update()
+    mixtank |> change(update) |> Repo.update()
   end
 
   defp start_all(%State{} = state) do

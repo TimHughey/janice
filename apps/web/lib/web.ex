@@ -57,7 +57,7 @@ defmodule Web do
 
   def channel do
     quote do
-      use Phoenix.Channel
+      use Phoenix.Channel, log_join: false, log_handle_in: false
       import Web.Gettext
     end
   end
