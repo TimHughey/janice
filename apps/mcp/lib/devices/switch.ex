@@ -151,21 +151,6 @@ end
 def get_unack_cmds(%Switch{cmds: cmds}), do: cmds
 def get_unack_cmds(nil), do: []
 
-def set_state(fname, state)
-when is_binary(fname) and is_boolean(state) do
-  {t, {:ok, sw}} =
-    :timer.tc fn ->
-      transaction fn ->
-        fname_to_dev(fname) |> device_name_and_pio() |>
-          set_state(state, :internal) end
-    end
-
-  RunMetric.record(module: "#{__MODULE__}",
-    metric: "set_state", val: t)
-
-  sw
-end
-
 def is_switch?(nil), do: false
 def is_switch?(fname)
 when is_binary(fname) do
@@ -182,6 +167,32 @@ def is_switch?(%{device: device, pio: _pio}) do
 end
 
 def is_switch?(%Switch{}), do: true
+
+def set_state(fname, state)
+when is_binary(fname) and is_boolean(state) do
+  {t, {:ok, sw}} =
+    :timer.tc fn ->
+      transaction fn ->
+        fname_to_dev(fname) |> device_name_and_pio() |>
+          set_state(state, :internal) end
+    end
+
+  RunMetric.record(module: "#{__MODULE__}",
+    metric: "set_state", val: t)
+
+  sw
+end
+
+def set_state(fname, state, :lazy)
+when is_binary(fname) and is_boolean(state) do
+  current_state = get_state(fname)
+
+  if current_state != state do
+    set_state(fname, state)
+  else
+    get(:friendly_name, fname)
+  end
+end
 
 def set_state(%{device: device, pio: pio}, state, src)
 when is_boolean(state) and is_atom(src) do

@@ -283,11 +283,14 @@ defmodule Mcp.Mixtank do
   end
 
   # m =
-  #   %Mcp.Mixtank{name: "test mixtank 1", description: "for testing purposes",
-  #        enable: true, sensor: "mixtank1_pri", ref_sensor: "mixtank1_ref",
-  #        heat_sw: "mixtank1_heater",
-  #        air_sw: "mixtank1_air", air_run_ms: 1000, air_idle_ms: 2000,
-  #        pump_sw: "mixtank1_pump", pump_run_ms: 3000, pump_idle_ms: 4000}
+  #   %Mcp.Mixtank{name: "reefwater mix",
+  #        description: "reefwater mix (pump and air)",
+  #        enable: false, sensor: "mixtank", ref_sensor: "display_tank",
+  #        heat_sw: "mixtank_heater",
+  #        air_sw: "mixtank_air",
+  #           air_run_ms: 10 * 60 * 1000, air_idle_ms: 5 * 60 * 1000,
+  #        pump_sw: "mixtank_pump",
+  #           pump_run_ms: 30 * 60 * 1000, pump_idle_ms: 5 * 60 * 1000}
 
   @init_msg {:init}
   @pump_off_msg :pump_off
@@ -412,7 +415,7 @@ defmodule Mcp.Mixtank do
 
     next_position = calc_next_sw_state(val, ref_val)
 
-    Switch.set_state(mixtank.heat_sw, next_position)
+    Switch.set_state(mixtank.heat_sw, next_position, :lazy)
     update = [state_at: Timex.now(), heat_state: next_position]
     mixtank |> change(update) |> Repo.update()
 
@@ -443,7 +446,7 @@ defmodule Mcp.Mixtank do
   defp update_pump(%Mixtank{} = mixtank, power)
   when is_boolean(power) do
 
-    Switch.set_state(mixtank.pump_sw, power)
+    Switch.set_state(mixtank.pump_sw, power, :lazy)
     update = [state_at: Timex.now(), pump_state: power]
     mixtank |> change(update) |> Repo.update()
   end
@@ -451,7 +454,7 @@ defmodule Mcp.Mixtank do
   defp update_air(mixtank, power)
   when is_boolean(power) do
 
-    Switch.set_state(mixtank.air_sw, power)
+    Switch.set_state(mixtank.air_sw, power, :lazy)
     update = [state_at: Timex.now(), air_state: power]
     mixtank |> change(update) |> Repo.update()
   end
