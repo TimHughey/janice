@@ -340,6 +340,7 @@ defmodule Mcp.Mixtank do
     end
 
     state = Kernel.struct(%State{}, s)
+    Logger.info("init()")
 
     {:ok, state}
   end

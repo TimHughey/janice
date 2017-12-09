@@ -3,19 +3,20 @@ defmodule Mqtt.Application do
   # for more information on OTP Applications
   @moduledoc false
 
+  require Logger
   use Application
 
   def start(_type, _args) do
 
-    build_env =
-      Application.get_env(:mqtt, Mqtt.Application) |> Keyword.get(:build_env)
-
     autostart =
-    case build_env do
-      "dev"   -> true
-      "prod"  -> true
-      _       -> false
-    end
+      case Application.fetch_env(:mqtt, :build_env) do
+        {:ok, "dev"}   -> true
+        {:ok, "prod"}  -> true
+        _anything_else -> Logger.warn fn ->
+                            ":mqtt config for :build_env missing!"
+                          end
+                          false
+      end
 
     initial_state = %{autostart: autostart}
 

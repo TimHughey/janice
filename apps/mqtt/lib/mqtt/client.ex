@@ -40,6 +40,8 @@ def init(s) when is_map(s) do
       false -> nil
     end
 
+  Logger.info("init()")
+
   {:ok, s}
 end
 
@@ -52,7 +54,7 @@ def get_state do
 end
 
 def report_subscribe do
-  opts = Application.get_env(:mqtt, Mqtt.Client) |> Keyword.get(:feeds)
+  opts = config(:feeds)
   subscribe(opts)
 end
 
@@ -65,7 +67,7 @@ def publish(opts) do
 end
 
 def publish_switch_cmd(message) do
-  cmd_feed = Application.get_env(:mqtt, Mqtt.Client) |> Keyword.get(:cmd_feed)
+  cmd_feed = config(:cmd_feed)
   opts = [topic: cmd_feed, message: message, dup: 0, qos: 0, retain: 0]
   publish(opts)
 end
@@ -121,6 +123,7 @@ end
 def handle_cast(:startup, s) when is_map(s) do
   connect()
   report_subscribe()
+  Logger.info fn -> "startup()" end
 end
 
 def handle_cast({:push, h}, t) do
@@ -128,7 +131,7 @@ def handle_cast({:push, h}, t) do
 end
 
 def handle_info({:startup}, s) when is_map(s) do
-  opts = Application.get_env(:mqtt, Mqtt.Client) |> Keyword.get(:feeds)
+  opts = config(:feeds)
 
   {s, conn_result} = do_connect(s)
    case conn_result do
@@ -288,7 +291,7 @@ def on_ping_response_timeout([message: _message, state: _state]), do: true
 def on_disconnect([message: _message, state: _state]), do: true
 
 defp do_connect(s) when is_map(s) do
-  opts = Application.get_env(:mqtt, Mqtt.Client) |> Keyword.get(:broker)
+  opts = config(:broker)
 
   {:ok, conn_pid} = Connection.start_link(self())
 

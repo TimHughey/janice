@@ -107,6 +107,8 @@ when is_map(s) do
 
   send_after(self(), {:flash_led}, s.flash_led_ms)
 
+  Logger.info("startup()")
+
   {:noreply, s}
 end
 

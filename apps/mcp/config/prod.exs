@@ -2,9 +2,6 @@
 # and its dependencies with the aid of the Mix.Config module.
 use Mix.Config
 
-config :mcp, Mcp.Application,
-  build_env: "#{Mix.env}"
-
 config :mcp, Mcp.SoakTest,
   startup_delay_ms: 0,  # don't start
   periodic_log_first_ms: (30 * 60 * 1000),
@@ -40,6 +37,3 @@ config :mcp, Mcp.Mixtank,
 config :mcp, Mcp.Dutycycle,
   autostart_wait_ms: 0,
   routine_check_ms: 1000
-
-config :mcp, :ecto_repos, [Mcp.Repo]
-config :mcp, :build_env: "#{Mix.env}"

@@ -16,12 +16,18 @@ alias Mcp.Repo
 def run(_args) do
   Mix.Task.run "app.start", []
   dev_aliases(Mix.env) |> seed_dev_alias()
+  mixtanks(Mix.env) |> seed_mixtank()
   chambers(Mix.env) |> seed()
   dutycycles(Mix.env) |> seed()
   mixtanks(Mix.env) |> seed()
 end
 
-def chambers(_env) do
+def chambers(env)
+when env == :dev or env == :test do
+  []
+end
+
+def chambers(:prod) do
   [%Chamber{name: "main grow", description: "production",
             enable: true,
             temp_sensor_pri: "grow_pri_sensor",
@@ -52,12 +58,16 @@ def chambers(_env) do
              warm: true, mist: false, fae: false, stir: true}]
 end
 
-def dutycycles(_env) do
+def dutycycles(env)
+when env == :dev or env == :test do
   [%Dutycycle{name: "buzzer",
      description: "dutycycle test case",
      enable: false, device_sw: "buzzer",
-     run_ms: 1000, idle_ms: 60 * 1000},
-   %Dutycycle{name: "sump vent",
+     run_ms: 1000, idle_ms: 60 * 1000}]
+end
+
+def dutycycles(:prod) do
+  [%Dutycycle{name: "sump vent",
      description: "sump vent",
      enable: false, device_sw: "sump_vent",
      run_ms: 20 * 60 * 1000, idle_ms: 2 * 60 * 1000},
@@ -73,15 +83,10 @@ def dutycycles(_env) do
      description: "fill mixtank quickly",
      enable: false, device_sw: "reefmix_rodi_valve",
      run_ms: 3_600_000, idle_ms: 120_000}]
-#     %Dutycycle{name: "proxr test", description: "proxr test", enable: true,
-#       device_sw: "proxr_test", run_ms: 3*60*1000, idle_ms: 2*60*1000}
 end
 
-def dev_aliases(_env) do
-  # feather2 (ext antenna, pins): mcr.f8f005f73b53
-  # attic MCR: mcr.
-  # original MCR: mcr.f8f005f7401d
-  # basement MCR
+def dev_aliases(env)
+when env == :dev or env == :test do
   [{"ds/291d1823000000:0", "led1", "dev led"},
    {"ds/12128521000000:0", "buzzer", "dev buzzer"},
    {"ds/28ff5733711604", "temp_probe1_dev", "dev temp probe1"},
@@ -89,7 +94,16 @@ def dev_aliases(_env) do
    {"i2c/f8f005f73b53.04.am2315", "rhum_probe01_dev", "dev i2c probe01"},
    {"i2c/f8f005f73b53.01.sht31", "rhum_chip01_dev", "dev i2c chip01"},
    {"ds/ff000102030405", "tst_temp03", "tst temp 03"},
-   {"ds/ffff0001020304", "tst_temp04", "tst temp 04"},
+   {"ds/ffff0001020304", "tst_temp04", "tst temp 04"}]
+end
+
+def dev_aliases(:prod) do
+  # feather2 (ext antenna, pins): mcr.f8f005f73b53
+  # attic MCR: mcr.
+  # original MCR: mcr.f8f005f7401d
+  # basement MCR
+  [{"ds/291d1823000000:0", "led1", "dev led"},
+   {"ds/12128521000000:0", "buzzer", "dev buzzer"},
    # PRODUCION - attic
    {"ds/28916149060000", "attic", "attic ambient"},
    {"ds/28ffb50cb81401", "hvac2_return", "hvac2 return"},
@@ -137,11 +151,16 @@ def dev_aliases(_env) do
    {"ds/12197521000000:1", "mixtank_pump", "reef mixtank circ pump (sys_buzzer)"}]
 end
 
-def mixtanks(_env) do
+def mixtanks(env)
+when env == :dev or env == :test do
+  []
+end
+
+def mixtanks(:prod) do
   [%Mixtank{name: "reefmix change",
     description: "reefwater change mode (full pump, no air)",
     enable: :false,
-    sensor: "ts_mixtank", ref_sensor: "ts_display_tank",
+    sensor: "mixtank", ref_sensor: "display_tank",
     heat_sw: "mixtank_heater",
     air_sw: "mixtank_air",
     air_run_ms: 0, air_idle_ms: 3_600_000,
@@ -151,7 +170,7 @@ def mixtanks(_env) do
   %Mixtank{name: "reefmix fill",
     description: "reefwater fill mode (pump only, no air)",
     enable: :false,
-    sensor: "ts_mixtank", ref_sensor: "ts_display_tank",
+    sensor: "mixtank", ref_sensor: "display_tank",
     heat_sw: "mixtank_heater",
     air_sw: "mixtank_air",
     air_run_ms: 0, air_idle_ms: 3_600_000,
@@ -161,7 +180,7 @@ def mixtanks(_env) do
   %Mixtank{name: "reefmix minimal",
     description: "reefwater minimal mode (pump minimal, air minimal)",
     enable: :false,
-    sensor: "ts_mixtank", ref_sensor: "ts_display_tank",
+    sensor: "mixtank", ref_sensor: "display_tank",
     heat_sw: "mixtank_heater",
     air_sw: "mixtank_air",
     air_run_ms: 10 * 60 * 1000, air_idle_ms: 4 * 60 * 60 * 1000,
@@ -171,7 +190,7 @@ def mixtanks(_env) do
   %Mixtank{name: "reefmix mix",
     description: "reefwater mix mode (pump max, air max)",
     enable: :false,
-    sensor: "ts_mixtank", ref_sensor: "ts_display_tank",
+    sensor: "mixtank", ref_sensor: "display_tank",
     heat_sw: "mixtank_heater",
     air_sw: "mixtank_air",
     air_run_ms: 4 * 60 * 60 * 1000, air_idle_ms: 5 * 60 * 1000,
@@ -185,8 +204,20 @@ def seed(%{__struct__: type, name: name} = thing) do
   Logger.info "seeding #{type} #{name}"
   Repo.insert(thing)
 end
+
 def seed([thing | list]) do
+
   [seed(thing)] ++ seed(list)
+end
+
+def seed_mixtank([]), do: []
+def seed_mixtank(%Mixtank{} = m) do
+  Logger.info fn -> "seeding mixtank #{m.name}" end
+  Mixtank.add(m)
+end
+
+def seed_mixtank([m | rest]) do
+  [seed_mixtank(m)] ++ seed_mixtank(rest)
 end
 
 def seed_dev_alias([]), do: []

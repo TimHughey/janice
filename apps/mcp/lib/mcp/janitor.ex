@@ -36,6 +36,8 @@ def handle_info({:startup}, s)
 when is_map(s) do
   send_after(self(), {:purge_switch_cmds}, 0)
 
+  Logger.info("startup()")
+
   {:noreply, s}
 end
 

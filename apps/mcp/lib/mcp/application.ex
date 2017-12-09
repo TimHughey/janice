@@ -4,16 +4,15 @@ defmodule Mcp.Application do
 @moduledoc false
 
 use Application
-import Application, only: [get_env: 2, get_env: 3]
-import Keyword, only: [get: 2, has_key?: 2]
+import Application, only: [fetch_env: 2, get_env: 3]
+import Keyword, only: [has_key?: 2]
 
 def start(_type, _args) do
-  build_env = get_env(:mcp, Mcp.Application) |> get(:build_env)
 
   autostart =
-  case build_env do
-    "test"  -> false
-    _       -> true
+  case fetch_env(:mcp, :build_env) do
+    {:ok, "test"}  -> false
+    _anything_else -> true
   end
 
   initial_state = %{autostart: autostart}

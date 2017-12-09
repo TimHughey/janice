@@ -2,14 +2,10 @@
 # and its dependencies with the aid of the Mix.Config module.
 use Mix.Config
 
-config :mqtt, Mqtt.Application,
-  build_env: "#{Mix.env}"
-
 config :mqtt, Mqtt.Client,
-  broker: [client_id: "mercurial-dev", clean_session: 0,
+  broker: [client_id: "mercurial-test", clean_session: 0,
            username: "mqtt", password: "mqtt",
            host: "jophiel.wisslanding.com", port: 1883, ssl: false],
-  feeds: [topics: ["mcr/f/report"], qoses: [0]],
+  feeds: [topics: ["test/mcr/f/report"], qoses: [0]],
   rpt_feed: "test/mcr/f/report",
-  cmd_feed: "test/mcr/f/command",
-  build_env: "#{Mix.env}"
+  cmd_feed: "test/mcr/f/command"

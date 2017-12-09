@@ -28,10 +28,16 @@ when is_map(s) do
 
   s = Map.put_new(s, :log_reading, config(:log_reading))
   s = Map.put_new(s, :messages_dispatched, 0)
+  s = Map.put_new(s, :json_log, nil)
 
   Logger.info("init()")
 
   {:ok, s}
+end
+
+@log_json_msg :log_json
+def log_json(args) do
+  GenServer.cast(Dispatcher.InboundMessage, {@log_json_msg, args})
 end
 
 # internal work functions
@@ -58,6 +64,12 @@ end
 # GenServer callbacks
 def handle_cast({:incoming_message, msg}, s)
 when is_binary(msg) and is_map(s) do
+
+  if is_pid(s.json_log) do
+    log = "#{msg}\n"
+    IO.write(s.json_log, log)
+  end
+
   r = Reading.decode!(msg)
   log_reading(r, s.log_reading)
 
@@ -76,9 +88,6 @@ when is_binary(msg) and is_map(s) do
   if Reading.switch?(r) do
     {mod, func} = config(:switch_msgs)
     # if not Reading.cmdack?(r), do: Logger.info(msg)
-    if r.device == "ds/29463408000000" do
-      Logger.debug fn -> "switch: #{r.device} #{inspect(r.states)}" end
-    end
 
     apply(mod, func, [Reading.as_map(r)])
     #Switch.external_update(Reading.as_map(r))
@@ -96,10 +105,44 @@ when is_binary(msg) and is_map(s) do
   {:noreply, s}
 end
 
+# open the json log if not already open
+def handle_cast({@log_json_msg, true}, %{json_log: nil} = s) do
+  {rc, json_log} = File.open("/tmp/json.log", [:append, :utf8])
+
+  if rc == :ok do
+    Logger.info fn -> "json log opened" end
+  end
+
+  s = %{s | json_log: json_log}
+
+  {:noreply, s}
+end
+
+# if the json log is already open don't do anything
+def handle_cast({@log_json_msg, true}, %{json_log: pid} = s)
+when is_pid(pid) do
+  {:noreply, s}
+end
+
+# if the json log is open then close it
+def handle_cast({@log_json_msg, false}, %{json_log: pid} = s)
+when is_pid(pid) do
+  :ok = File.close(pid)
+
+  s = %{s | json_log: nil}
+
+  {:noreply, s}
+end
+
+# if the json log is already closed then do nothing
+def handle_cast({@log_json_msg, false}, %{json_log: nil} = s) do
+  {:noreply, s}
+end
+
 def handle_info({:startup}, s)
 when is_map(s) do
   send_after(self(), {:periodic_log}, config(:periodic_log_first_ms))
-  # Logger.info("#{Dispatcher.InboundMessage} :startup")
+  Logger.info fn -> "startup()" end
 
   {:noreply, s}
 end
