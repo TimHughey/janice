@@ -282,6 +282,13 @@ defmodule Mcp.Mixtank do
     timestamps usec: true
   end
 
+  # m =
+  #   %Mcp.Mixtank{name: "test mixtank 1", description: "for testing purposes",
+  #        enable: true, sensor: "mixtank1_pri", ref_sensor: "mixtank1_ref",
+  #        heat_sw: "mixtank1_heater",
+  #        air_sw: "mixtank1_air", air_run_ms: 1000, air_idle_ms: 2000,
+  #        pump_sw: "mixtank1_pump", pump_run_ms: 3000, pump_idle_ms: 4000}
+
   @init_msg {:init}
   @pump_off_msg :pump_off
   @pump_on_msg :pump_on
@@ -296,11 +303,10 @@ defmodule Mcp.Mixtank do
   def add([]), do: []
   def add([%Mixtank{} = m | rest]) do
     [add(m)] ++ add(rest)
-  end 
-
+  end
 
   def add(%Mixtank{} = m) do
-    to_add = 
+    to_add =
       case Repo.get_by(Mixtank, name: m.name) do
         nil -> m
         name -> name
@@ -311,7 +317,6 @@ defmodule Mcp.Mixtank do
     {:ok, added} = to_add |> change(opts) |> Repo.insert_or_update
     added
   end
-
 
   @doc """
   Traditional implemenation of start_link
@@ -336,6 +341,15 @@ defmodule Mcp.Mixtank do
     {:ok, state}
   end
 
+  @manual_start_msg {:manual_start}
+  def manual_start do
+    GenServer.call(Mcp.Mixtank, @manual_start_msg)
+  end
+
+  def shutdown do
+    GenServer.call(Mcp.Mixtank, @shutdown_msg)
+  end
+
   def stop do
     GenServer.stop(Mcp.Mixtank)
   end
@@ -352,29 +366,6 @@ defmodule Mcp.Mixtank do
       found  -> found
     end
   end
-
-  # defp persist(%Mixtank{name: :nil}), do: :nil
-  # defp persist(%Mixtank{} = mixtank) do
-  #   cs = Changeset.change(mixtank, state_at: Timex.now())
-  #   cs = Changeset.unique_constraint(cs, :name)
-  #
-  #   Repo.insert_or_update cs
-  # end
-
-  #defp enable_by_name(%State{} = state, :nil), do: state
-  #defp enable_by_name(%State{} = state, name) when is_binary(name) do
-  #  mixtank = load(name)
-  #  update = %{enable: true}
-  #  Changeset.change(mixtank, update) |> Repo.update()
-  #  state
-  #end
-
-  #defp disable_by_name(%State{} = state, :nil), do: state
-  #defp disable_by_name(%State{} = state, name) when is_binary(name) do
-  #  mixtank = load(name)
-  #  update = %{enable: false}
-  #  Changeset.change(mixtank, update) |> Repo.update()
-  #end
 
   defp ensure_inactive(%State{} = state, :nil), do: state
   defp ensure_inactive(%State{} = state, name) when is_binary(name) do
@@ -531,6 +522,12 @@ defmodule Mcp.Mixtank do
     GenServer.call(Mcp.Mixtank, @known_tanks_msg)
   end
 
+  def handle_call(@manual_start_msg, _from, %State{} = s) do
+    send_after(self(), @init_msg, 0)
+
+    {:reply, [], s}
+  end
+
   def handle_call(@known_tanks_msg, _from, %State{} = state) do
     tanks = State.known_mixtanks(state)
     {:reply, tanks, state}
@@ -539,6 +536,10 @@ defmodule Mcp.Mixtank do
   def handle_call(@shutdown_msg, _from, %State{} = state) do
     # get all known mixtanks and ensure they are inactive
     mixtanks = get_all_mixtank_names()
+
+    Logger.info fn ->
+      "shutting down #{inspect(mixtanks)}" end
+
     state = stop_mixtank(state, mixtanks)
 
     {:stop, :graceful, state}
