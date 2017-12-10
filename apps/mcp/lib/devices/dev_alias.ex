@@ -175,7 +175,7 @@ def dump do
 
  strings = Enum.map(a, &as_string/1)
 
- output = "[" <> Enum.join(strings, ",\n") <> "]"
+ output = "  [\n" <> Enum.join(strings, ",\n") <> "\n  ]"
 
  IO.write(pid, output)
 
@@ -183,9 +183,9 @@ def dump do
 end
 
 defp as_string(%DevAlias{} = da) do
-  ~s(%DevAlias{device: "#{da.device}", ) <>
-  ~s(friendly_name: "#{da.friendly_name}", ) <>
-  ~s(description: "#{da.description}"})
+  ~s(   %DevAlias{friendly_name: "#{da.friendly_name}",) <> "\n" <>
+  ~s(     device: "#{da.device}",) <> "\n" <>
+  ~s(     description: "#{da.description}"})
 end
 
 end

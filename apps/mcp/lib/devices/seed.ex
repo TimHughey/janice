@@ -87,14 +87,32 @@ end
 
 def dev_aliases(env)
 when env == :dev or env == :test do
-  [{"ds/291d1823000000:0", "led1", "dev led"},
-   {"ds/12128521000000:0", "buzzer", "dev buzzer"},
-   {"ds/28ff5733711604", "temp_probe1_dev", "dev temp probe1"},
-   {"ds/28ffa442711604", "temp_probe2_dev", "dev temp probe2"},
-   {"i2c/f8f005f73b53.04.am2315", "rhum_probe01_dev", "dev i2c probe01"},
-   {"i2c/f8f005f73b53.01.sht31", "rhum_chip01_dev", "dev i2c chip01"},
-   {"ds/ff000102030405", "tst_temp03", "tst temp 03"},
-   {"ds/ffff0001020304", "tst_temp04", "tst temp 04"}]
+  [
+   %DevAlias{friendly_name: "buzzer",
+     device: "ds/12128521000000:0",
+     description: "dev buzzer"},
+   %DevAlias{friendly_name: "temp_probe1_dev",
+     device: "ds/28ff5733711604",
+     description: "dev temp probe1"},
+   %DevAlias{friendly_name: "temp_probe2_dev",
+     device: "ds/28ffa442711604",
+     description: "dev temp probe2"},
+   %DevAlias{friendly_name: "led1",
+     device: "ds/291d1823000000:0",
+     description: "dev led"},
+   %DevAlias{friendly_name: "tst_temp03",
+     device: "ds/ff000102030405",
+     description: "tst temp 03"},
+   %DevAlias{friendly_name: "tst_temp04",
+     device: "ds/ffff0001020304",
+     description: "tst temp 04"},
+   %DevAlias{friendly_name: "rhum_chip01_dev",
+     device: "i2c/f8f005f73b53.01.sht31",
+     description: "dev i2c chip01"},
+   %DevAlias{friendly_name: "rhum_probe01_dev",
+     device: "i2c/f8f005f73b53.04.am2315",
+     description: "dev i2c probe01"}
+  ]
 end
 
   # feather2 (ext antenna, pins): mcr.f8f005f73b53
@@ -219,10 +237,9 @@ def seed_mixtank([m | rest]) do
 end
 
 def seed_dev_alias([]), do: []
-def seed_dev_alias({device, fname, desc}) do
-  Logger.info "seeding #{device} #{fname}"
-  %DevAlias{device: device, friendly_name: fname, description: desc} |>
-    DevAlias.add()
+def seed_dev_alias(%DevAlias{} = da) do
+  Logger.info fn -> "seeding dev alias #{da.friendly_name}" end
+  DevAlias.add(da)
 end
 
 def seed_dev_alias([da | list]) do

@@ -29,7 +29,7 @@ config :mcp, Mcp.Chamber,
   routine_check_ms: 1000
 
 config :mcp, Mcp.Mixtank,
-  autostart_wait_ms: 1000,
+  autostart_wait_ms: 10_000,
   control_temp_ms: 1000,
   activate_ms: 1000,
   manage_ms: 1000
