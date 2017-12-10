@@ -164,7 +164,28 @@ def new_friendly_name do
 
   %{rows: [[next_num]]} = query!(Repo, query)
   num_str = next_num |> Integer.to_string() |> String.pad_leading(6, "0")
-  "newdev_#{num_str}"
+  "z#{num_str}"
+end
+
+def dump do
+  a = from(dev in DevAlias, order_by: :device) |>
+    all(timeout: 100)
+
+ {:ok, pid} = File.open("/tmp/dev_alias.ex", [:write, :utf8])
+
+ strings = Enum.map(a, &as_string/1)
+
+ output = "[" <> Enum.join(strings, ",\n") <> "]"
+
+ IO.write(pid, output)
+
+ File.close(pid)
+end
+
+defp as_string(%DevAlias{} = da) do
+  ~s(%DevAlias{device: "#{da.device}", ) <>
+  ~s(friendly_name: "#{da.friendly_name}", ) <>
+  ~s(description: "#{da.description}"})
 end
 
 end
