@@ -22,7 +22,7 @@ $( window ).on( "load", pageFullyLoaded );
 
 $( "#collapseNoDevice" ).on('show.bs.collapse', function(event) {
   // alert("clicked!");
-    jQuery.get( "mcp/detail/nodevice", function( data ) {
+    jQuery.get( "detail/nodevice", function( data ) {
       $( "#noDeviceTable" ).html( data ); });
 
       setTimeout(function(){ $('#collapseNoDevice').collapse('hide'); }, 3000);
@@ -30,13 +30,13 @@ $( "#collapseNoDevice" ).on('show.bs.collapse', function(event) {
 
 $( "#collapseSwitches" ).on('show.bs.collapse', function(event) {
   // alert("clicked!");
-    jQuery.get( "mcp/detail/switches", function( data ) {
+    jQuery.get( "detail/switches", function( data ) {
       $( "#switchesTable" ).html( data ); });
 });
 
 $( "#collapseSensors" ).on('show.bs.collapse', function(event) {
   // alert("clicked!");
-    jQuery.get( "mcp/detail/sensors", function( data ) {
+    jQuery.get( "detail/sensors", function( data ) {
       $( "#sensorsTable" ).html( data ); });
 });
 

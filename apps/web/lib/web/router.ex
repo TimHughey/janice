@@ -24,6 +24,8 @@ defmodule Web.Router do
 
     get "/", McpController, :index
     get "/detail/:type", McpController, :show
+    resources "/api/detail/:type", McpDetailController,
+      only: [:index, :show]
   end
 
   # Other scopes may use custom stacks.
