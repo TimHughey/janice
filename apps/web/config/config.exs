@@ -10,9 +10,6 @@ config :web,
   namespace: Web,
   ecto_repos: [Mcp.Repo]
 
-#config :web, :generators,
-#  context_app: :web
-
 # Configures the endpoint
 config :web, Web.Endpoint,
   #url: [host: "localhost", path: "/mercurial"],
