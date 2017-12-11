@@ -77,6 +77,7 @@ exports.config = {
       jQuery: 'jquery',
       Tether: 'tether',
       Popper: 'popper.js',
+      Lazy: 'jquery-lazy',
       bootstrap: 'bootstrap' // require Bootstrap JavaScript globally too
     }
   }

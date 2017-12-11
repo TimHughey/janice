@@ -19,7 +19,6 @@ def run(_args) do
   mixtanks(Mix.env) |> seed_mixtank()
   chambers(Mix.env) |> seed()
   dutycycles(Mix.env) |> seed()
-  mixtanks(Mix.env) |> seed()
 end
 
 def chambers(env)

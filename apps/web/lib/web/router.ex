@@ -16,14 +16,12 @@ defmodule Web.Router do
   scope "/mercurial", Web do
     pipe_through :browser # Use the default browser stack
 
-    # get "/", PageController, :index
     get "/", HomeController, :index
   end
 
   scope "/mercurial/mcp", Web do
     pipe_through :browser # Use the default browser stack
 
-    # get "/", PageController, :index
     get "/", McpController, :index
     get "/detail/:type", McpController, :show
   end

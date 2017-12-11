@@ -17,7 +17,7 @@ defmodule Web.McpController do
     unknown_fnames =
       MapSet.difference(all_fnames, known_fnames) |> Enum.sort()
 
-    unknown = Enum.map(unknown_fnames, fn(x) -> dev_alias_details(x) end)
+    # unknown = Enum.map(unknown_fnames, fn(x) -> dev_alias_details(x) end)
     sensors = Enum.map(sensor_fnames, fn(x) -> sensor_details(x) end)
     switches = Enum.map(switch_fnames, fn(x) -> switch_details(x) end)
 
@@ -29,57 +29,98 @@ defmodule Web.McpController do
       sensor_fnames_count: Enum.count(sensor_fnames),
       unknown_fnames: unknown_fnames,
       unknown_fnames_count: Enum.count(unknown_fnames),
-      unknown: unknown,
       sensors: sensors,
       switches: switches
   end
 
-  def show(conn, %{"fname" => fname}) do
+  def show(conn, %{"type" => "nodevice"}) do
 
-    %DevAlias{device: device,
-              last_seen_at: last_seen,
-              inserted_at: inserted_at} = DevAlias.get_by_friendly_name(fname)
+    all_fnames = DevAlias.all(:friendly_names) |> MapSet.new()
+    switch_fnames = Switch.all(:friendly_names)
+    sensor_fnames = Sensor.all(:friendly_names)
 
-    last_seen_secs = Timex.diff(Timex.now(), last_seen, :seconds)
+    known_fnames = (switch_fnames ++ sensor_fnames) |> MapSet.new()
+    unknown_fnames =
+      MapSet.difference(all_fnames, known_fnames) |> Enum.sort()
 
-    if Switch.is_switch?(fname) do
-      render conn, "switch.html",
-        fname: fname, device: device, last_seen: last_seen,
-        last_seen_secs: last_seen_secs,
-        first_seen: inserted_at,
-        state: Switch.get_state(fname)
-    else
-      render conn, "sensor.html",
-        fname: fname, device: device, last_seen: last_seen,
-        last_seen_secs: last_seen_secs,
-        first_seen: inserted_at,
-        fahrenheit: Sensor.fahrenheit(fname),
-        relhum: Sensor.relhum(fname)
+    unknown = Enum.map(unknown_fnames, fn(x) -> dev_alias_details(x) end)
 
-    end
+    #render conn, "unknown.json", unknown: unknown
+
+    table = ~s(<table class="table device-table" id="noDeviceTable"></table>) <>
+            ~s(<bold><th>Alias</th><th>Device</th><th>Description</th>
+               <th>Last Seen</th><th>Last Seen At</th></bold>) <>
+               Enum.join(unknown, " ")
+
+    text conn, table
+  end
+
+  def show(conn, %{"type" => "sensors"}) do
+    sensor_fnames = Sensor.all(:friendly_names)
+
+    sensors = Enum.map(sensor_fnames, fn(x) -> sensor_details(x) end)
+
+    table = ~s(<table class="table device-table" id="sensorsTable">
+      <bold>
+        <th>Alias</th>
+        <th>Device</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Last Seen</th>
+        <th>Reading At</th>
+      </bold>) <> Enum.join(sensors, " ")
+
+      text conn, table
+  end
+
+  def show(conn, %{"type" => "switches"}) do
+    switch_fnames = Switch.all(:friendly_names)
+
+    switches = Enum.map(switch_fnames, fn(x) -> switch_details(x) end)
+
+    table = ~s(<table class="table device-table" id="switchesTable">
+      <bold>
+      <th>Alias</th>
+      <th>Device</th>
+      <th>Enabled</th>
+      <th>Description</th>
+      <th>Dev Latency</th>
+      <th>Last Cmd</th>
+      <th>Last Seen</th>
+      <th>State</th></bold>) <> Enum.join(switches, " ")
+
+    text conn, table
   end
 
   defp dev_alias_details(fname) do
     a = DevAlias.get_by_friendly_name(fname)
     tz = Timezone.local
-    last_seen_at = Timezone.convert(a.last_seen_at, tz)
+    last_seen_secs = humanize_secs(a.last_seen_at)
+    last_seen_at = Timezone.convert(a.last_seen_at, tz) |>
+                    Timex.format!("{UNIX}")
 
-    %{device: a.device, fname: a.friendly_name, desc: a.description,
-      last_seen_secs: humanize_secs(last_seen_at),
-      last_seen_at: Timex.format!(last_seen_at, "{UNIX}")}
+    ~s(<tr><td>#{a.friendly_name}</td>) <>
+    ~s(<td>#{a.device}</td>) <>
+    ~s(<td>#{a.description}</td>) <>
+    ~s(<td>#{last_seen_secs}</td>) <>
+    ~s(<td>#{last_seen_at}<td></tr>)
   end
 
   defp sensor_details(fname) do
     a = DevAlias.get_by_friendly_name(fname)
-
-    last_seen_secs = Timex.diff(Timex.now(), a.last_seen_at, :seconds)
-
     s = Sensor.get(:friendly_name, fname)
-    %{device: s.device, fname: fname, desc: a.description,
-      type: s.sensor_type,
-      reading_at: s.reading_at,
-      last_seen_at: s.last_seen_at,
-      last_seen_secs: humanize_secs(last_seen_secs)}
+
+    last_seen_secs = Timex.diff(Timex.now(), s.last_seen_at, :seconds)
+    tz = Timezone.local
+    reading_at = Timezone.convert(s.reading_at, tz) |>
+                    Timex.format!("{UNIX}")
+
+    ~s(<tr><td>#{a.friendly_name}</td>) <>
+    ~s(<td>#{s.device}</td>) <>
+    ~s(<td>#{s.sensor_type}</td>) <>
+    ~s(<td>#{a.description}</td>) <>
+    ~s(<td>#{humanize_secs(last_seen_secs)}</td>) <>
+    ~s(<td>#{reading_at}<td></tr>)
   end
 
   defp switch_details(fname) do
@@ -90,14 +131,16 @@ defmodule Web.McpController do
   end
 
   defp switch_map_details(%DevAlias{} = a, %Switch{} = s) do
-    %{device: a.device, fname: a.friendly_name, desc: a.description,
-      enabled: s.enabled,
-      dev_latency: humanize_microsecs(s.dev_latency),
-      discovered_at: Timex.format!(s.discovered_at, "{ISO:Extended:Z}"),
-      last_cmd_secs: humanize_secs(s.last_cmd_at),
-      last_seen_secs: humanize_secs(s.last_seen_at),
-      last_seen_at: Timex.format!(s.last_seen_at, "{ISO:Extended:Z}"),
-      state: Switch.get_state(a.friendly_name)}
+    state = Switch.get_state(a.friendly_name)
+
+    ~s(<tr><td>#{a.friendly_name}</td>) <>
+    ~s(<td>#{a.device}</td>) <>
+    ~s(<td>#{s.enabled}</td>) <>
+    ~s(<td>#{a.description}</td>) <>
+    ~s(<td>#{humanize_microsecs(s.dev_latency)}</td>) <>
+    ~s(<td>#{humanize_secs(s.last_cmd_at)}</td>) <>
+    ~s(<td>#{humanize_secs(a.last_seen_at)}</td>) <>
+    ~s(<td>#{state}</td></tr>)
   end
 
   defp switch_map_details(%DevAlias{} = a, _any) do

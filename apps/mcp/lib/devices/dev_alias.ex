@@ -168,14 +168,19 @@ def new_friendly_name do
 end
 
 def dump do
-  a = from(dev in DevAlias, order_by: :device) |>
+  a = from(dev in DevAlias, order_by: :friendly_name) |>
     all(timeout: 100)
 
  {:ok, pid} = File.open("/tmp/dev_alias.ex", [:write, :utf8])
 
  strings = Enum.map(a, &as_string/1)
 
- output = "  [\n" <> Enum.join(strings, ",\n") <> "\n  ]"
+ env = Application.fetch_env!(:mcp, :build_env)
+ output = "def dev_aliases(:#{env}) do\n" <>
+          "  [\n" <>
+          Enum.join(strings, ",\n") <>
+          "\n  ]\n" <>
+          "end\n\n"
 
  IO.write(pid, output)
 
