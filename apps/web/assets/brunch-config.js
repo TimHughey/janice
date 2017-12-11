@@ -21,6 +21,7 @@ exports.config = {
       // }
     },
     stylesheets: {
+      joinTo: {"css/app.css": /^node_modules/},
       joinTo: "css/app.css",
       order: {
         after: ["priv/static/css/app.scss"] // concat app.css last
@@ -57,8 +58,10 @@ exports.config = {
       onlyChanged: true
     },
     sass: {
+      modules: true,
       options: {
-        includePaths: ["node_modules/bootstrap/scss"], // tell sass-brunch where to look for files to @import
+        includePaths: ["node_modules/bootstrap/scss",
+                       "^node_modules"], // tell sass-brunch where to look for files to @import
         precision: 8 // minimum precision required by bootstrap
       }
     }
@@ -77,7 +80,6 @@ exports.config = {
       jQuery: 'jquery',
       Tether: 'tether',
       Popper: 'popper.js',
-      Lazy: 'jquery-lazy',
       bootstrap: 'bootstrap' // require Bootstrap JavaScript globally too
     }
   }

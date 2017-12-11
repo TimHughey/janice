@@ -11,10 +11,18 @@
 //
 // If you no longer want to use a dependency, remember
 // to also remove its path from "config.paths.watched".
-import "phoenix_html";
+// import "phoenix_html";
 // import "jquery";
 // import "jquery-lazy";
-import "bootstrap";
+//import "bootstrap";
+
+require( 'jquery' );
+require( 'datatables.net-bs4' )();
+require( 'datatables.net-buttons-bs4' )();
+// require( 'datatables.net-fixedheader-bs4' )();
+// require( 'datatables.net-scroller-bs4' )();
+
+require( 'phoenix_html' );
 
 // Import local files
 //

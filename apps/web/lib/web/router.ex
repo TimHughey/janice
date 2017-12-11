@@ -24,11 +24,13 @@ defmodule Web.Router do
 
     get "/", McpController, :index
     get "/detail/:type", McpController, :show
+    resources "/api/detail/:type", McpController
   end
 
   # Other scopes may use custom stacks.
   scope "/mercurial/api", Web do
     pipe_through :api
+    get "/mcp/detail/:type", McpController, :show
     resources "/switches/lastseen", SwitchesLastSeenController,
       only: [:index]
   end
