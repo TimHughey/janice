@@ -3,7 +3,7 @@ function pageReady( jQuery ) {
     var noDeviceTable = $('#noDeviceTable').DataTable( {
       dom: 'Bfrtip',
       ajax: "mcp/api/detail/alias-only",
-      scrollY: 200,
+      scrollY: '50vh',
       deferRender: true,
       scroller: true,
       columns: [
@@ -36,7 +36,7 @@ function pageReady( jQuery ) {
     var switchTable = $('#switchesTable').DataTable( {
       dom: 'Bfrtip',
       "ajax": "mcp/api/detail/switches",
-      "scrollY": 200,
+      "scrollY": '50vh',
       "deferRender": true,
       "scroller": true,
       "columns": [
@@ -71,7 +71,7 @@ function pageReady( jQuery ) {
     var sensorTable = $('#sensorsTable').DataTable( {
       dom: 'Bfrtip',
       "ajax": "mcp/api/detail/sensors",
-      "scrollY": 200,
+      "scrollY": '50vh',
       "deferRender": true,
       "scroller": true,
       "columns": [
