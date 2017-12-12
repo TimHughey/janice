@@ -7,6 +7,7 @@
   },
   "dependencies": {
     "bootstrap": "^4.0.0-beta",
+    "datatables.net-buttons-dt": "^1.5.0",
     "datatables.net-dt": "^1.10.16",
     "datatables.net-scroller-dt": "^1.4.3",
     "jquery": "^3.2.1",

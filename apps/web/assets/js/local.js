@@ -1,21 +1,40 @@
 function pageReady( jQuery ) {
     // Code to run when the document is ready.
     var noDeviceTable = $('#noDeviceTable').DataTable( {
-      "ajax": "mcp/api/detail/alias-only",
-      "scrollY": 200,
-      "deferRender": true,
-      "scroller": true,
-      "columns": [
-        {"data": "id"},
-        {"data": "friendly_name"},
-        {"data": "device"},
-        {"data": "description"},
-        {"data": "last_seen_secs"},
-        {"data": "last_seen_at"}
+      dom: 'Bfrtip',
+      ajax: "mcp/api/detail/alias-only",
+      scrollY: 200,
+      deferRender: true,
+      scroller: true,
+      columns: [
+        {data: "id"},
+        {data: "friendly_name"},
+        {data: "device"},
+        {data: "description"},
+        {data: "last_seen_secs"},
+        {data: "last_seen_at"}
+      ],
+      buttons: [
+        {
+            text: 'Refresh',
+            action: function ( e, dt, node, config ) {
+                dt.button(0).processing(true);
+                dt.ajax.reload();
+                dt.button(0).processing(false);
+                dt.button(0).text("Refreshed");
+                dt.button(0).disable();
+                setTimeout(
+                  function() { var dt = $('#noDeviceTable').DataTable();
+                               dt.button(0).text("Refresh");
+                               dt.button(0).enable(); },
+                  10000);
+            }
+        }
       ]
     });
 
     var switchTable = $('#switchesTable').DataTable( {
+      dom: 'Bfrtip',
       "ajax": "mcp/api/detail/switches",
       "scrollY": 200,
       "deferRender": true,
@@ -29,10 +48,28 @@ function pageReady( jQuery ) {
         {"data": "dev_latency"},
         {"data": "last_cmd_secs"},
         {"data": "last_seen_secs"}
+      ],
+      buttons: [
+        {
+            text: 'Refresh',
+            action: function ( e, dt, node, config ) {
+                dt.button(0).processing(true);
+                dt.ajax.reload();
+                dt.button(0).processing(false);
+                dt.button(0).text("Refreshed");
+                dt.button(0).disable();
+                setTimeout(
+                  function() { var dt = $('#switchesTable').DataTable();
+                               dt.button(0).text("Refresh");
+                               dt.button(0).enable(); },
+                  10000);
+            }
+        }
       ]
     });
 
     var sensorTable = $('#sensorsTable').DataTable( {
+      dom: 'Bfrtip',
       "ajax": "mcp/api/detail/sensors",
       "scrollY": 200,
       "deferRender": true,
@@ -45,6 +82,23 @@ function pageReady( jQuery ) {
         {"data": "last_seen_secs"},
         {"data": "reading_secs"},
         {"data": "celsius"}
+      ],
+      buttons: [
+        {
+            text: 'Refresh',
+            action: function ( e, dt, node, config ) {
+                dt.button(0).processing(true);
+                dt.ajax.reload();
+                dt.button(0).processing(false);
+                dt.button(0).text("Refreshed");
+                dt.button(0).disable();
+                setTimeout(
+                  function() { var dt = $('#sensorsTable').DataTable();
+                               dt.button(0).text("Refresh");
+                               dt.button(0).enable(); },
+                  10000);
+            }
+        }
       ]
     });
 }
