@@ -77,7 +77,8 @@ exports.config = {
       jQuery: 'jquery',
       Tether: 'tether',
       Popper: 'popper.js',
-      bootstrap: 'bootstrap' // require Bootstrap JavaScript globally too
+      bootstrap: 'bootstrap', // require Bootstrap JavaScript globally too
+      dt: 'datatables.net'
     }
   }
 };

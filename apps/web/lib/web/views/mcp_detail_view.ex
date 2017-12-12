@@ -3,6 +3,8 @@ defmodule Web.McpDetailView do
 
   use Timex
   alias Mcp.DevAlias
+  alias Mcp.Sensor
+  alias Mcp.Switch
 
   def render("index.json", %{mcp_details: mcp_details}) do
     %{data: render_many(mcp_details, Web.McpDetailView, "mcp_detail.json"),
@@ -17,11 +19,39 @@ defmodule Web.McpDetailView do
                     Timex.format!("{UNIX}")
 
     %{type: "dev_alias",
+      id: da.id,
       friendly_name: da.friendly_name,
       device: da.device,
       description: da.description,
       last_seen_secs: last_seen_secs,
       last_seen_at: last_seen_at}
+  end
+
+  def render("mcp_detail.json",
+             %{mcp_detail: %{a: %DevAlias{} = da, s: %Switch{} = s}}) do
+
+    %{type: "switch",
+      id: da.id,
+      friendly_name: da.friendly_name,
+      device: da.device,
+      enabled: s.enabled,
+      description: da.description,
+      dev_latency: humanize_microsecs(s.dev_latency),
+      last_cmd_secs: humanize_secs(s.last_cmd_at),
+      last_seen_secs: humanize_secs(s.last_seen_at)}
+  end
+
+  def render("mcp_detail.json",
+             %{mcp_detail: %{a: %DevAlias{} = da, s: %Sensor{} = s}}) do
+
+    %{type: "sensor",
+      id: da.id,
+      friendly_name: da.friendly_name,
+      device: da.device,
+      description: da.description,
+      last_seen_secs: humanize_secs(s.last_seen_at),
+      reading_secs: humanize_secs(s.reading_at),
+      celsius: s.temperature.tc}
   end
 
   defp humanize_microsecs(us)

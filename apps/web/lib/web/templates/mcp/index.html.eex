@@ -18,7 +18,17 @@
 
       <div id="collapseNoDevice" class="collapse" role="tabpanel" aria-labelledby="headingNoDevice" data-parent="#accordion">
         <div class="card-body" id="noDeviceCard">
-          <table class="table device-table" id="noDeviceTable">
+          <table class="table table-striped display" id="noDeviceTable">
+            <thead class="thead-inverse">
+              <tr>
+                <td>Id</td>
+                <td>Alias</td>
+                <td>Device</td>
+                <td>Description</td>
+                <td>Last Seen</td>
+                <td>Last Seen At</td>
+              </tr>
+            </thead>
           </table>
         </div>
       </div>
@@ -33,8 +43,20 @@
       </div>
       <div id="collapseSwitches" class="collapse" role="tabpanel" aria-labelledby="headingSwitches" data-parent="#accordion">
         <div class="card-body">
-            <table class="table device-table" id="switchesTable">
-            </table>
+            <table class="table table-striped display" id="switchesTable">
+              <thead class="thead-inverse">
+                <tr>
+                  <td>Id</td>
+                  <td>Alias</td>
+                  <td>Device</td>
+                  <td>Enabled</td>
+                  <td>Description</td>
+                  <td>Dev Latency</td>
+                  <td>Last Cmd</th>
+                  <td>Last Seen</td>
+                </tr>
+              </thead>
+          </table>
         </div>
       </div>
     </div>
@@ -48,7 +70,18 @@
       </div>
       <div id="collapseSensors" class="collapse" role="tabpanel" aria-labelledby="headingSensors" data-parent="#accordion">
         <div class="card-body">
-            <table class="table device-table" id="sensorsTable">
+            <table class="table table-striped display" id="sensorsTable">
+              <thead class="thead-inverse">
+                <tr>
+                  <td>Id</td>
+                  <td>Alias</td>
+                  <td>Device</td>
+                  <td>Description</td>
+                  <td>Last Seen</td>
+                  <td>Last Reading</td>
+                  <td>Temp C</td>
+                </tr>
+              </thead>
             </table>
         </div>
       </div>
