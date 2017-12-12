@@ -2,7 +2,9 @@ function pageReady( jQuery ) {
     // Code to run when the document is ready.
     var noDeviceTable = $('#noDeviceTable').DataTable( {
       "ajax": "mcp/api/detail/alias-only",
+      "scrollY": 200,
       "deferRender": true,
+      "scroller": true,
       "columns": [
         {"data": "id"},
         {"data": "friendly_name"},
@@ -15,7 +17,9 @@ function pageReady( jQuery ) {
 
     var switchTable = $('#switchesTable').DataTable( {
       "ajax": "mcp/api/detail/switches",
+      "scrollY": 200,
       "deferRender": true,
+      "scroller": true,
       "columns": [
         {"data": "id"},
         {"data": "friendly_name"},
@@ -30,7 +34,9 @@ function pageReady( jQuery ) {
 
     var switchTable = $('#sensorsTable').DataTable( {
       "ajax": "mcp/api/detail/sensors",
+      "scrollY": 200,
       "deferRender": true,
+      "scroller": true,
       "columns": [
         {"data": "id"},
         {"data": "friendly_name"},

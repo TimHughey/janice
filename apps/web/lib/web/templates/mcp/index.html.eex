@@ -17,9 +17,9 @@
       </div>
 
       <div id="collapseNoDevice" class="collapse" role="tabpanel" aria-labelledby="headingNoDevice" data-parent="#accordion">
-        <div class="card-body" id="noDeviceCard">
-          <table class="table table-striped display" id="noDeviceTable">
-            <thead class="thead-inverse">
+        <div class="container-fluid card-body" id="noDeviceCard">
+          <table class="table display" id="noDeviceTable">
+            <thead>
               <tr>
                 <td>Id</td>
                 <td>Alias</td>
@@ -42,9 +42,9 @@
         </span>
       </div>
       <div id="collapseSwitches" class="collapse" role="tabpanel" aria-labelledby="headingSwitches" data-parent="#accordion">
-        <div class="card-body">
-            <table class="table table-striped display" id="switchesTable">
-              <thead class="thead-inverse">
+        <div class="container-fluid card-body">
+            <table class="table display" id="switchesTable">
+              <thead>
                 <tr>
                   <td>Id</td>
                   <td>Alias</td>
@@ -70,8 +70,8 @@
       </div>
       <div id="collapseSensors" class="collapse" role="tabpanel" aria-labelledby="headingSensors" data-parent="#accordion">
         <div class="card-body">
-            <table class="table table-striped display" id="sensorsTable">
-              <thead class="thead-inverse">
+            <table class="container-fluid table display" id="sensorsTable">
+              <thead>
                 <tr>
                   <td>Id</td>
                   <td>Alias</td>

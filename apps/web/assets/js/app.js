@@ -16,7 +16,8 @@ import "jquery";
 // import "jquery-lazy";
 import "bootstrap";
 
-require('datatables.net-bs4')();
+require('datatables.net')();
+require('datatables.net-scroller')();
 
 // Import local files
 //

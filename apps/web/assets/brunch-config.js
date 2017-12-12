@@ -53,7 +53,7 @@ exports.config = {
       ignore: [/vendor/]
     },
     copycat: {
-      "images": ["static/images"],
+      "images": ["static/images", "node_modules/datatables.net-dt/images"],
       onlyChanged: true
     },
     sass: {
