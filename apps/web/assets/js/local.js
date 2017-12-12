@@ -32,7 +32,7 @@ function pageReady( jQuery ) {
       ]
     });
 
-    var switchTable = $('#sensorsTable').DataTable( {
+    var sensorTable = $('#sensorsTable').DataTable( {
       "ajax": "mcp/api/detail/sensors",
       "scrollY": 200,
       "deferRender": true,
@@ -72,17 +72,17 @@ $( window ).on( "load", pageFullyLoaded );
 //         }});
 //     });
 
-$( "#collapseNoDevice" ).on('show.bs.collapse', function(event) {
+$("#collapseNoDevice").on('show.bs.collapse', function(event) {
     $('#noDeviceTable').DataTable().ajax.reload();
       // setTimeout(function(){ $('#collapseNoDevice').collapse('hide'); }, 3000);
 });
 
-$( "#collapseSwitches" ).on('show.bs.collapse', function(event) {
+$("#collapseSwitches").on('show.bs.collapse', function(event) {
   $('#switchesTable').DataTable().ajax.reload();
 });
 
-$( "#collapseSensors" ).on('show.bs.collapse', function(event) {
-  $('#senorsTable').DataTable().ajax.reload();
+$("#collapseSensors").on('show.bs.collapse', function(event) {
+  $('#sensorsTable').DataTable().ajax.reload();
 });
 
 // DEPRECATED -- left as a future example
