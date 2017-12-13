@@ -32,8 +32,10 @@ defmodule Web.AuthController do
   end
 
   def callback(%{assigns: %{ueberauth_failure: _fails}} = conn, _params) do
+    Logger.warn fn -> inspect(conn) end
+
     conn
-      |> put_flash(:error, "Failed to authenticate.")
+      |> put_flash(:error, "Ueberauth failure")
       |> redirect(to: "/mercurial")
   end
 
@@ -46,7 +48,8 @@ defmodule Web.AuthController do
                            |> put_session(:current_user, user)
                            |> redirect(to: "/mercurial")
 
-      {:error, reason} -> conn
+      {:error, reason} -> Logger.warn fn -> inspect(conn) end
+                          conn
                            |> put_flash(:error, reason)
                            |> redirect(to: "/mercurial")
     end
