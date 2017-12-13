@@ -24,7 +24,8 @@ defmodule Web.McpController do
       sensor_fnames: sensor_fnames,
       sensor_fnames_count: Enum.count(sensor_fnames),
       unknown_fnames: unknown_fnames,
-      unknown_fnames_count: Enum.count(unknown_fnames)
+      unknown_fnames_count: Enum.count(unknown_fnames),
+      current_user: get_session(conn, :current_user)
   end
 
 end

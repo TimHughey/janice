@@ -21,7 +21,15 @@ config :web, Web.Endpoint,
   static_url: [path: "/mercurial"],
   server: true,
   # root: ".",
-  version: Application.spec(:myapp, :vsn)
+  version: Application.spec(:myapp, :vsn),
+  secret_key_base: System.get_env("MERC_SECRET_KEY_BASE")
+
+config :ueberauth, Ueberauth,
+  providers: [
+    github: {Ueberauth.Strategy.Github,
+        [default_scope: "user:email",
+         base_path: "/mercurial/auth",
+         send_redirect_uri: false]}]
 
 # ## SSL Support
 #

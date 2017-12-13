@@ -35,8 +35,9 @@ defmodule Web.Endpoint do
   # Set :encryption_salt if you would also like to encrypt it.
   plug Plug.Session,
     store: :cookie,
-    key: "_web_key",
-    signing_salt: "+n7cp8GX"
+    key: "_mercurial",
+    signing_salt: "+n7cp8GX",
+    max_age: 7*24*60*60
 
   plug Web.Router
 

@@ -44,6 +44,15 @@ defmodule Web do
       def render_shared(template, assigns \\ []) do
         render(Web.SharedView, template, assigns)
       end
+
+      def auth_provider(conn) do
+        {provider, _} =
+          Application.get_env(:ueberauth, Ueberauth) |>
+          Keyword.get(:providers) |>
+          hd
+
+        "#{provider}"
+      end
     end
   end
 

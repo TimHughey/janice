@@ -1,5 +1,10 @@
 defmodule Web.Router do
   use Web, :router
+  require Ueberauth
+
+  pipeline :auth do
+    plug Ueberauth
+  end
 
   pipeline :browser do
     plug :accepts, ["html"]
@@ -9,29 +14,44 @@ defmodule Web.Router do
     plug :put_secure_browser_headers
   end
 
+  pipeline :browser_session do
+    plug Web.VerifySessionPipeline
+  end
+
+  pipeline :browser_authenticated do
+    plug Web.AuthAccessPipeline
+  end
+
   pipeline :api do
     plug :accepts, ["json"]
   end
 
   scope "/mercurial", Web do
-    pipe_through :browser # Use the default browser stack
+    pipe_through [:browser, :browser_session]
 
     get "/", HomeController, :index
+    delete "/logout", AuthController, :delete
+
+  end
+
+  scope "/mercurial", Web do
+    pipe_through [:browser, :browser_session, :auth]
+
+    get "/auth/:provider", AuthController, :request
+    get "/auth/:provider/callback", AuthController, :callback
+    post "/auth/:provider/callback", AuthController, :callback
   end
 
   scope "/mercurial/mcp", Web do
-    pipe_through :browser # Use the default browser stack
+    pipe_through [:browser, :browser_authenticated]
 
     get "/", McpController, :index
     get "/detail/:type", McpController, :show
-    resources "/api/detail/:type", McpDetailController,
-      only: [:index, :show]
   end
 
-  # Other scopes may use custom stacks.
-  scope "/mercurial/api", Web do
+  scope "/mercurial/mcp/api", Web do
     pipe_through :api
-    resources "/switches/lastseen", SwitchesLastSeenController,
-      only: [:index]
+    resources "/detail/:type", McpDetailController,
+      only: [:index, :show]
   end
 end

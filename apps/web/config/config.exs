@@ -31,3 +31,28 @@ config :web, :generators,
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{Mix.env}.exs"
+
+config :ueberauth, Ueberauth.Strategy.Github.OAuth,
+  client_id: System.get_env("MERC_GITHUB_CLIENT_ID"),
+  client_secret: System.get_env("MERC_GITHUB_CLIENT_SECRET")
+
+config :web, Web.Guardian,
+  allowed_algos: ["ES512"],
+  issuer: "Mercurial",
+  ttl: {30, :days},
+  verify_issuer: true,
+  secret_key: %{
+    "crv" => "P-521",
+    "d" => "axDuTtGavPjnhlfnYAwkHa4qyfz2fdseppXEzmKpQyY0xd3bGpYLEF4ognDpRJm5IRaM31Id2NfEtDFw4iTbDSE",
+    "kty" => "EC",
+    "x" => "AL0H8OvP5NuboUoj8Pb3zpBcDyEJN907wMxrCy7H2062i3IRPF5NQ546jIJU3uQX5KN2QB_Cq6R_SUqyVZSNpIfC",
+    "y" => "ALdxLuo6oKLoQ-xLSkShv_TA0di97I9V92sg1MKFava5hKGST1EKiVQnZMrN3HO8LtLT78SNTgwJSQHAXIUaA-lV"
+  }
+
+config :web, Web.VerifySessionPipeline,
+  module: Web.Guardian,
+  error_handler: Web.AuthErrorHandler
+
+config :web, Web.AuthAccessPipeline,
+  module: Web.Guardian,
+  error_handler: Web.AuthErrorHandler

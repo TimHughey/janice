@@ -8,6 +8,7 @@ WEB=${BASE}/apps/web
 rm -f $BASE/erl_crash.dump
 
 mix clean --only=prod
+env MIX_ENV=prod mix deps.get
 env MIX_ENV=prod mix compile
 
 cd $WEB/assets

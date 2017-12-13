@@ -48,7 +48,8 @@ defmodule Web.Mixfile do
   def application do
     [
       mod: {Web.Application, []},
-      extra_applications: [:logger, :runtime_tools]
+      extra_applications: [:logger, :runtime_tools, :ueberauth_identity,
+                            :ueberauth_github]
     ]
   end
 
@@ -69,6 +70,10 @@ defmodule Web.Mixfile do
       {:gettext, "~> 0.11"},
       {:cowboy, "~> 1.0"},
       {:guardian, "~> 1.0"},
+      {:ueberauth, "~> 0.4"},
+      {:ueberauth_github, "~> 0.4"},
+      {:ueberauth_identity, "~> 0.2"},
+      {:poison, "~> 3.0", override: true},
       {:mcp, in_umbrella: true}
     ]
   end
