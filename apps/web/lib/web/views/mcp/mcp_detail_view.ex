@@ -38,7 +38,8 @@ defmodule Web.McpDetailView do
       description: da.description,
       dev_latency: s.dev_latency,
       last_cmd_secs: humanize_secs(s.last_cmd_at),
-      last_seen_secs: humanize_secs(s.last_seen_at)}
+      last_seen_secs: humanize_secs(s.last_seen_at),
+      state: Switch.get_state(da.friendly_name)}
   end
 
   def render("mcp_detail.json",

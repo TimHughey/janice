@@ -30,6 +30,11 @@ function humanize_ms(data, type, row) {
   return secs;
 }
 
+function humanize_state(data, type, row) {
+  if (data) { return "active"; }
+  else { return "off"; }
+}
+
 function humanize_us(data, type, row) {
   if (data == null) { return "-"; }
   else if (data < 1000) {return `${data} us`; }
@@ -81,11 +86,12 @@ function pageReady( jQuery ) {
         {"data": "id", class: "col-center"},
         {"data": "friendly_name"},
         {"data": "device"},
-        {"data": "enabled", class: "col-center"},
+        // {"data": "enabled", class: "col-center"},
         {"data": "description"},
         {"data": "dev_latency", class: "col-center", render: humanize_us},
         {"data": "last_cmd_secs", class: "col-center", render: humanize_ms},
-        {"data": "last_seen_secs", class: "col-center", render: humanize_ms}
+        {"data": "last_seen_secs", class: "col-center", render: humanize_ms},
+        {"data": "state", class: "col-state-off", render: humanize_state}
       ],
       buttons: [
         {

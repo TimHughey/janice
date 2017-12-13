@@ -72,7 +72,7 @@ def dutycycles(:prod) do
      run_ms: 20 * 60 * 1000, idle_ms: 2 * 60 * 1000},
    %Dutycycle{name: "basement circulation",
      description: "basement circulation fan",
-     enable: true, device_sw: "basement_fan",
+     enable: false, device_sw: "basement_fan",
      run_ms: 15 * 60 * 1000, idle_ms: 60 * 1000},
    %Dutycycle{name: "reefmix rodi slow",
      description: "periodic fill reefmix with rodi water",

@@ -49,11 +49,12 @@
                   <td>Id</td>
                   <td>Alias</td>
                   <td>Device</td>
-                  <td>Enabled</td>
+                  <!-- <td>Enabled</td> -->
                   <td>Description</td>
                   <td>Dev Latency</td>
                   <td>Last Cmd</th>
                   <td>Last Seen</td>
+                  <td>State</td>
                 </tr>
               </thead>
           </table>
