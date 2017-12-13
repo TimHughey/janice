@@ -12,18 +12,18 @@ function minutes_in_range(val, low, high) {
 }
 
 function humanize_ms(data, type, row) {
-  var secs = data / 1000;
+  var secs = data / 1000.0;
 
   if (secs < 0) { return `${Math.round(data, 1)} ms` }
-  else if (secs < 1) { return "now"; }
+  else if (data < 1000) { return "now"; }
   else if (secs < 60) { return `${data} secs`}
   else if (minutes_in_range(data, 1, 5)) { return ">1 min"; }
   else if (minutes_in_range(data, 5, 10)) { return ">5 min"; }
   else if (minutes_in_range(data, 10, 30)) { return ">10 min"; }
-  else if (minutes_in_range(data, 30, 60)) { return ">30 min"; }
+  else if (minutes_in_range(data, 30, 1440)) { return ">30 min"; }
   else if (minutes_in_range(data, 1440, 2880)) { return ">1 day"; }
-  else if (minutes_in_range(data, 2880, 20160)) { return ">1 week"; }
-  else if (minutes_in_range(data, 10080, 20160)) { return ">2 weeks"; }
+  else if (minutes_in_range(data, 2880, 5760)) { return ">1 week"; }
+  else if (minutes_in_range(data, 5760, 43200)) { return ">2 weeks"; }
   else if (minutes_in_range(data, 43200, 86400)) { return ">1 month"; }
   else { return ">2 months"; }
 
