@@ -32,11 +32,12 @@
         <%= if get_flash(@conn, "info") do %>
           <span class="alert alert-info" role="alert"><%= get_flash(@conn, "info") %></span>
         <% end %>
-
+      </span>
+      <span>
         <%= if @current_user do
               button("Logout", to: auth_path(@conn, :delete), method: :delete, class: "btn btn-danger")
             else
-              link("Sign In", class: "fa fa-user btn btn-primary btn-lg",
+              link("Sign In", class: "btn btn-primary", role: "button",
                               to: auth_path(@conn, :request, auth_provider(@conn)))
             end %>
       </span>

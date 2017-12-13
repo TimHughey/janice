@@ -35,6 +35,7 @@ defmodule Mcp.Dutycycle do
   import Ecto.Query, only: [from: 2]
   import Application, only: [get_env: 2]
   import Keyword, only: [get: 3]
+  import Process, only: [cancel_timer: 1, send_after: 3]
 
   @vsn 2
   defmodule State do
@@ -153,7 +154,7 @@ defmodule Mcp.Dutycycle do
 
     case Map.get(s, :autostart, false) do
       true  -> if autostart_ms > 0 do
-                 Process.send_after(self(), {:start}, autostart_ms)
+                 send_after(self(), {:start}, autostart_ms)
                end
       false -> nil
     end
@@ -161,6 +162,11 @@ defmodule Mcp.Dutycycle do
     Logger.info("init()")
 
     {:ok, state}
+  end
+
+  @manual_start_msg {:manual_start}
+  def manual_start do
+    GenServer.call(Mcp.Dutycycle, @manual_start_msg)
   end
 
   def stop do
@@ -228,7 +234,7 @@ defmodule Mcp.Dutycycle do
     cycle = state.cycles[name]
 
     case cycle.status do
-      :disabled -> Process.send_after(self(), {:run, name}, 20)
+      :disabled -> send_after(self(), {:run, name}, 20)
       _ignored -> :nil
     end
   end
@@ -239,10 +245,10 @@ defmodule Mcp.Dutycycle do
 
     if cycle.timer != :nil do
       Logger.info fn -> "dutycycle [#{name}] timer canceled" end
-      Process.cancel_timer(cycle.timer)
+      cancel_timer(cycle.timer)
     end
 
-    Process.send_after(self(), {:run, name}, 20)
+    send_after(self(), {:run, name}, 20)
   end
 
   defp run_cycle(:nil, %State{} = state), do: state
@@ -257,7 +263,7 @@ defmodule Mcp.Dutycycle do
       _rest         -> control_device(dc, :false)
     end
 
-    id = Process.send_after(self(), {:idle, dc.name}, dc.run_ms)
+    id = send_after(self(), {:idle, dc.name}, dc.run_ms)
 
     update_status(state, dc.name, :running, id)
   end
@@ -274,7 +280,7 @@ defmodule Mcp.Dutycycle do
       _rest         -> control_device(dc, :false)
     end
 
-    id = Process.send_after(self(), {:run, dc.name}, dc.idle_ms)
+    id = send_after(self(), {:run, dc.name}, dc.idle_ms)
 
     update_status(state, dc.name, :idling, id)
   end
@@ -292,9 +298,18 @@ defmodule Mcp.Dutycycle do
     {:reply, known, state}
   end
 
+  def handle_call(@manual_start_msg, _from, state) do
+    send_after(self(), {:start}, 0)
+
+    {:reply, [], state}
+  end
+
   def handle_info({:start}, %State{} = state) do
+    Logger.info fn -> "startup()" end
+
     for name <- State.known_dutycycles(state) do
-      _ref = Process.send_after(self(), {:run, name}, 3)
+      Logger.info fn -> "sending run msg for dutycycle #{name}" end
+      _ref = send_after(self(), {:run, name}, 3)
     end
 
     schedule_routine_check()
@@ -355,6 +370,6 @@ defmodule Mcp.Dutycycle do
     routine_check_ms =
       get_env(:mcp, Mcp.Dutycycle) |> get(:routine_check_ms, 1000)
 
-    Process.send_after(self(), {:routine_check}, routine_check_ms)
+    send_after(self(), {:routine_check}, routine_check_ms)
   end
 end

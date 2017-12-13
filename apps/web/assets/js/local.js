@@ -1,3 +1,41 @@
+function minutes_to_secs(minutes) {
+  return minutes * 60;
+}
+
+function minutes_in_range(val, low, high) {
+  if (val >= minutes_to_secs(low) && (val < minutes_to_secs(high))) {
+    return true;
+  }
+  else {
+    return false;
+  }
+}
+
+function humanize_ms(data, type, row) {
+  var secs = data / 1000;
+
+  if (secs < 0) { return `${Math.round(data, 1)} ms` }
+  else if (secs < 1) { return "now"; }
+  else if (secs < 60) { return `${data} secs`}
+  else if (minutes_in_range(data, 1, 5)) { return ">1 min"; }
+  else if (minutes_in_range(data, 5, 10)) { return ">5 min"; }
+  else if (minutes_in_range(data, 10, 30)) { return ">10 min"; }
+  else if (minutes_in_range(data, 30, 60)) { return ">30 min"; }
+  else if (minutes_in_range(data, 1440, 2880)) { return ">1 day"; }
+  else if (minutes_in_range(data, 2880, 20160)) { return ">1 week"; }
+  else if (minutes_in_range(data, 10080, 20160)) { return ">2 weeks"; }
+  else if (minutes_in_range(data, 43200, 86400)) { return ">1 month"; }
+  else { return ">2 months"; }
+
+  return secs;
+}
+
+function humanize_us(data, type, row) {
+  if (data == null) { return "-"; }
+  else if (data < 1000) {return `${data} us`; }
+  else { return `${Math.round((data / 1000), 2)} ms`; }
+}
+
 function pageReady( jQuery ) {
     // Code to run when the document is ready.
     var noDeviceTable = $('#noDeviceTable').DataTable( {
@@ -7,12 +45,12 @@ function pageReady( jQuery ) {
       deferRender: true,
       scroller: true,
       columns: [
-        {data: "id"},
+        {data: "id", class: "col-center"},
         {data: "friendly_name"},
         {data: "device"},
         {data: "description"},
-        {data: "last_seen_secs"},
-        {data: "last_seen_at"}
+        {data: "last_seen_secs", class: "col-center", render: humanize_ms},
+        {data: "last_seen_at", class: "col-center"}
       ],
       buttons: [
         {
@@ -40,14 +78,14 @@ function pageReady( jQuery ) {
       "deferRender": true,
       "scroller": true,
       "columns": [
-        {"data": "id"},
+        {"data": "id", class: "col-center"},
         {"data": "friendly_name"},
         {"data": "device"},
-        {"data": "enabled"},
+        {"data": "enabled", class: "col-center"},
         {"data": "description"},
-        {"data": "dev_latency"},
-        {"data": "last_cmd_secs"},
-        {"data": "last_seen_secs"}
+        {"data": "dev_latency", class: "col-center", render: humanize_us},
+        {"data": "last_cmd_secs", class: "col-center", render: humanize_ms},
+        {"data": "last_seen_secs", class: "col-center", render: humanize_ms}
       ],
       buttons: [
         {
@@ -75,13 +113,13 @@ function pageReady( jQuery ) {
       "deferRender": true,
       "scroller": true,
       "columns": [
-        {"data": "id"},
+        {"data": "id", class: "col-center"},
         {"data": "friendly_name"},
         {"data": "device"},
         {"data": "description"},
-        {"data": "last_seen_secs"},
-        {"data": "reading_secs"},
-        {"data": "celsius"}
+        {"data": "last_seen_secs", class: "col-center", render: humanize_ms},
+        {"data": "reading_secs", class: "col-center", render: humanize_ms},
+        {"data": "celsius", class: "col-center"}
       ],
       buttons: [
         {
