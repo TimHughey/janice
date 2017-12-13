@@ -28,9 +28,8 @@ config :logger, :console,
 config :web, :generators,
   context_app: false
 
-# Import environment specific config. This must remain at the bottom
-# of this file so it overrides the configuration defined above.
-import_config "#{Mix.env}.exs"
+config :ueberauth, Ueberauth,
+  base_path: "/mercurial/auth"
 
 config :ueberauth, Ueberauth.Strategy.Github.OAuth,
   client_id: System.get_env("MERC_GITHUB_CLIENT_ID"),
@@ -56,3 +55,7 @@ config :web, Web.VerifySessionPipeline,
 config :web, Web.AuthAccessPipeline,
   module: Web.Guardian,
   error_handler: Web.AuthErrorHandler
+
+# Import environment specific config. This must remain at the bottom
+# of this file so it overrides the configuration defined above.
+import_config "#{Mix.env}.exs"

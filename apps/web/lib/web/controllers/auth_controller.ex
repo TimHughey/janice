@@ -1,18 +1,19 @@
 defmodule Web.AuthController do
 
+  require Logger
   use Web, :controller
   plug Ueberauth
 
-  alias Ueberauth.Strategy.Helpers
+  # alias Ueberauth.Strategy.Helpers
   alias Web.UserFromAuth
-  alias Web.Guardian
   alias Web.Guardian.Plug
 
-  def callback_url(conn) do
-    Helpers.callback_url(conn)
-  end
+  # def callback_url(conn) do
+  #   Helpers.callback_url(conn)
+  # end
 
   def request(conn, _params) do
+    Logger.info fn -> inspect(conn) end
     render(conn, "request.html")
   end
 

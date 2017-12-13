@@ -34,12 +34,12 @@ defmodule Web.Router do
 
   end
 
-  scope "/mercurial", Web do
+  scope "/mercurial/auth", Web do
     pipe_through [:browser, :browser_session, :auth]
 
-    get "/auth/:provider", AuthController, :request
-    get "/auth/:provider/callback", AuthController, :callback
-    post "/auth/:provider/callback", AuthController, :callback
+    get "/:provider", AuthController, :request
+    get "/:provider/callback", AuthController, :callback
+    post "/:provider/callback", AuthController, :callback
   end
 
   scope "/mercurial/mcp", Web do
