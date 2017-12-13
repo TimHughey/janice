@@ -26,20 +26,13 @@ defmodule Web.Router do
     plug :accepts, ["json"]
   end
 
-  scope "/mercurial", Web do
-    pipe_through [:browser, :browser_session]
-
-    get "/", HomeController, :index
-    delete "/logout", AuthController, :delete
-
-  end
 
   scope "/mercurial/auth", Web do
-    pipe_through [:browser, :browser_session, :auth]
+    pipe_through [:browser]
 
     get "/:provider", AuthController, :request
-    get "/:provider/callback", AuthController, :callback
-    post "/:provider/callback", AuthController, :callback
+    get "/:provider/callback", AuthController, :callback  # used by GitHub
+    post "/:provider/callback", AuthController, :callback # used by Identity
   end
 
   scope "/mercurial/mcp", Web do
@@ -53,5 +46,13 @@ defmodule Web.Router do
     pipe_through :api
     resources "/detail/:type", McpDetailController,
       only: [:index, :show]
+  end
+
+  scope "/mercurial", Web do
+    pipe_through [:browser, :browser_session]
+
+    get "/", HomeController, :index
+    delete "/logout", AuthController, :delete
+
   end
 end

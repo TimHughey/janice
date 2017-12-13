@@ -14,7 +14,7 @@ config :web, Web.Endpoint,
 config :ueberauth, Ueberauth,
   providers: [
     github: {Ueberauth.Strategy.Github,
-        [default_scope: "user:email"]}]
+        [default_scope: "user,public_repo", send_redirect_uri: false]}]
 
 # Tell phoenix to actually serve endpoints when run as a release
 config :phoenix, :serve_endpoints, true

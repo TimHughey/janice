@@ -31,8 +31,8 @@ defmodule Web.AuthController do
     end
   end
 
-  def callback(%{assigns: %{ueberauth_failure: _fails}} = conn, _params) do
-    Logger.warn fn -> inspect(conn) end
+  def callback(%{assigns: %{ueberauth_failure: fails}} = conn, _params) do
+    Logger.warn fn -> inspect(fails) end
 
     conn
       |> put_flash(:error, "Ueberauth failure")
@@ -40,11 +40,13 @@ defmodule Web.AuthController do
   end
 
   def callback(%{assigns: %{ueberauth_auth: auth}} = conn, _params) do
+    Logger.warn fn -> inspect(auth) end
+
     case UserFromAuth.find_or_create(auth) do
       {:ok, user}      -> conn
                            |> Plug.sign_in(user)
                            |> clear_flash()
-                           |> put_flash(:info, "Welcome #{user.id}")
+                           |> put_flash(:info, "Welcome #{user.name}")
                            |> put_session(:current_user, user)
                            |> redirect(to: "/mercurial")
 

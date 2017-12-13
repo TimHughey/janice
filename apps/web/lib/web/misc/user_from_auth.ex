@@ -18,8 +18,25 @@ defmodule Web.UserFromAuth do
     end
   end
 
+  def find_or_create(%Auth{provider: :github, info: info} = auth) do
+
+    case authorized_user(info) do
+      :ok               -> {:ok, basic_info(auth)}
+      {:error, reason}  -> {:error, reason}
+    end
+  end
+
   def find_or_create(%Auth{} = auth) do
     {:ok, basic_info(auth)}
+  end
+
+  defp authorized_user(%Auth.Info{nickname: nickname})
+  when nickname in ["TimHughey"] do
+    :ok
+  end
+
+  defp authorized_user(%Auth.Info{nickname: nickname}) do
+    {:error, "#{nickname} not authorized"}
   end
 
   # github does it this way
@@ -36,7 +53,10 @@ defmodule Web.UserFromAuth do
   end
 
   defp basic_info(auth) do
-    %{id: auth.uid, name: name_from_auth(auth), avatar: avatar_from_auth(auth)}
+    %{id: auth.uid,
+      name: name_from_auth(auth),
+      nickname: auth.info.nickname,
+      avatar: avatar_from_auth(auth)}
   end
 
   defp name_from_auth(auth) do
