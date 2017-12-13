@@ -28,8 +28,7 @@ config :ueberauth, Ueberauth,
   providers: [
     github: {Ueberauth.Strategy.Github,
         [default_scope: "user:email",
-         base_path: "/mercurial/auth",
-         send_redirect_uri: false]}]
+         base_path: "/mercurial/auth"]}]
 
 # ## SSL Support
 #
