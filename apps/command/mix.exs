@@ -18,6 +18,7 @@ defmodule Command.Mixfile do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
+      applications: [:mqtt],
       extra_applications: [:logger],
       mod: {Command.Application, []}
     ]

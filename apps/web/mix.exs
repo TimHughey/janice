@@ -48,6 +48,7 @@ defmodule Web.Mixfile do
   def application do
     [
       mod: {Web.Application, []},
+      applications: [:mcp],
       extra_applications: [:logger, :runtime_tools, :ueberauth_identity,
                             :ueberauth_github]
     ]

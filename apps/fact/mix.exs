@@ -32,6 +32,7 @@ defmodule Fact.Mixfile do
     [{:instream, "~> 0.16"},
      {:hackney, "~> 1.1"},
      {:poison,  "~> 2.0 or ~> 3.0"},
-     {:poolboy, "~> 1.5"}]
+     {:poolboy, "~> 1.5"},
+     {:timex, "~> 3.0"}]
   end
 end

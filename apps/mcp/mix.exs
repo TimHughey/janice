@@ -48,22 +48,11 @@ defmodule Mcp.Mixfile do
 
   # Configuration for the OTP application
   def application do
-    applications_by_env(Mix.env)
-  end
-
-  defp applications_by_env(:dev) do
     [mod: {Mcp.Application, []},
       applications:
         [:runtime_tools, :httpoison, :hackney, :timex, :poison, :postgrex,
-          :ecto, :timex_ecto, :distillery]
-    ]
-  end
-
-  defp applications_by_env(_) do
-    [mod: {Mcp.Application, []},
-      applications:
-        [:runtime_tools, :httpoison, :hackney, :timex, :poison, :postgrex,
-          :ecto, :timex_ecto, :distillery]]
+          :ecto, :timex_ecto, :distillery, :fact, :command, :dispatcher,
+          :mqtt]]
   end
 
   defp deps do
@@ -79,8 +68,7 @@ defmodule Mcp.Mixfile do
      {:timex_ecto, "~> 3.1"},
      {:distillery, "~> 1.0"},
      {:uuid, "~> 1.1"},
-     {:credo, "> 0.0.0", only: [:dev, :test]},
-     {:dialyxir, "~> 0.5", only: [:dev], runtime: false}]
+     {:credo, "> 0.0.0", only: [:dev, :test]}]
 
   end
 

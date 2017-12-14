@@ -55,8 +55,7 @@ defmodule Mqtt.Mixfile do
      {:distillery, "~> 1.0"},
      {:hulaaki, "~> 0.1.0"},
      {:uuid, "~> 1.1"},
-     {:credo, "> 0.0.0", only: [:dev, :test]},
-     {:dialyxir, "~> 0.5", only: [:dev], runtime: false}]
+     {:credo, "> 0.0.0", only: [:dev, :test]}]
   end
 
   defp package do
