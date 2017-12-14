@@ -187,23 +187,9 @@ defmodule Mcp.Dutycycle do
     Repo.insert(dutycycle)
   end
 
-  # defp load(%Dutycycle{name: :nil}), do: :nil
-  # defp load(%Dutycycle{} = dutycycle) do
-  #   case Repo.get_by Dutycycle, name: dutycycle.name do
-  #     :nil   -> dutycycle
-  #     found  -> found
-  #   end
-  # end
-  #
-  # defp persist(%Dutycycle{name: :nil}), do: :nil
-  # defp persist(%Dutycycle{} = dutycycle) do
-  #   dutycycle |> Changeset.change(%{state_at: Timex.now()}) |>
-  #     Changeset.unique_constraint(:name) |> Repo.insert_or_update()
-  # end
-
   defp control_device(dutycycle, power)
   when is_boolean(power) do
-    Switch.set_state(dutycycle.device_sw, power)
+    Switch.set_state(dutycycle.device_sw, power, :lazy)
     update = %{state_at: Timex.now(), device_state: power}
     dutycycle |> Changeset.change(update) |> Repo.update()
   end

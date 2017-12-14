@@ -328,6 +328,10 @@ defmodule Mcp.Mixtank do
     GenServer.start_link(Mcp.Mixtank, args, name: Mcp.Mixtank)
   end
 
+  def terminate(reason, _state) do
+    Logger.info fn -> "terminating with reason #{inspect(reason)}" end
+  end
+
   @spec init(Map.t) :: {:ok, Map.t}
   def init(s) when is_map(s) do
     autostart_ms = config(:autostart_wait_ms)
@@ -348,6 +352,11 @@ defmodule Mcp.Mixtank do
   @manual_start_msg {:manual_start}
   def manual_start do
     GenServer.call(Mcp.Mixtank, @manual_start_msg)
+  end
+
+  @log_state_msg {:log_state}
+  def log_state do
+    GenServer.call(Mcp.Mixtank, @log_state_msg)
   end
 
   def shutdown do
@@ -419,9 +428,6 @@ defmodule Mcp.Mixtank do
     Switch.set_state(mixtank.heat_sw, next_position, :lazy)
     update = [state_at: Timex.now(), heat_state: next_position]
     mixtank |> change(update) |> Repo.update()
-
-    # TODO: transition to new Influx
-    #mixtank.heat_sw |> Position.new(next_position) |> Position.post()
 
     State.set_heat_status(state, name, next_position)
   end
@@ -549,6 +555,12 @@ defmodule Mcp.Mixtank do
     {:stop, :graceful, state}
   end
 
+  def handle_call(@log_state_msg, _from, %State{} = state) do
+    Logger.info fn -> "log state: #{inspect(state)}" end
+
+    {:reply, :ok, state}
+  end
+
   def handle_cast({@manual_control_msg, _code}, %State{} = state) do
 
     {:noreply, state}
@@ -561,6 +573,12 @@ defmodule Mcp.Mixtank do
     state = State.set_known_mixtanks(state, mixtanks)
 
     start_all(state)
+
+    trapping = Process.flag(:trap_exit, true)
+
+    state = Map.put_new(state, :trapping, trapping)
+
+    Logger.info fn -> "trapping = #{trapping}" end
 
     {:noreply, state}
   end

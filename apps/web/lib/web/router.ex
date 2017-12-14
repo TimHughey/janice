@@ -26,7 +26,6 @@ defmodule Web.Router do
     plug :accepts, ["json"]
   end
 
-
   scope "/mercurial/auth", Web do
     pipe_through [:browser]
 

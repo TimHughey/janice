@@ -1,5 +1,8 @@
 defmodule Web.Application do
+  @moduledoc """
+  """
   use Application
+  alias Web.Endpoint
 
   def start(_type, _args) do
     import Supervisor.Spec
@@ -8,8 +11,9 @@ defmodule Web.Application do
     children = [
       # Start the endpoint when the application starts
       supervisor(Web.Endpoint, []),
-      # Start your own worker by calling: Web.Worker.start_link(arg1, arg2, arg3)
-      # worker(Web.Worker, [arg1, arg2, arg3]),
+      # Start your own worker by calling:
+      #   Web.Worker.start_link(arg1, arg2, arg3)
+      #   worker(Web.Worker, [arg1, arg2, arg3]),
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
@@ -21,7 +25,7 @@ defmodule Web.Application do
   # Tell Phoenix to update the endpoint configuration
   # whenever the application is updated.
   def config_change(changed, _new, removed) do
-    Web.Endpoint.config_change(changed, removed)
+    Endpoint.config_change(changed, removed)
     :ok
   end
 end

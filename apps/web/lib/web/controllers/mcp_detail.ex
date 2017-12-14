@@ -38,7 +38,7 @@ defmodule Web.McpDetailController do
 
   def index(conn, %{"type" => "sensors"} = params) do
     Logger.info fn -> inspect(params) end
-    Logger.info fn -> inspect(conn) end
+    Logger.debug fn -> inspect(conn) end
 
     sensor_fnames = Sensor.all(:friendly_names)
     sensors = Enum.map(sensor_fnames, fn(x) -> sensor_details(x) end)
