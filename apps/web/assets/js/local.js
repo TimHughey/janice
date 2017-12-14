@@ -12,11 +12,8 @@ function minutes_in_range(val, low, high) {
 }
 
 function humanize_ms(data, type, row) {
-  var secs = data / 1000.0;
-
-  if (secs < 0) { return `${Math.round(data, 1)} ms` }
-  else if (data < 1000) { return "now"; }
-  else if (secs < 60) { return `${data} secs`}
+  if (data <= 2) { return "now"; }
+  else if (data < 60) { return `${data} secs`; }
   else if (minutes_in_range(data, 1, 5)) { return ">1 min"; }
   else if (minutes_in_range(data, 5, 10)) { return ">5 min"; }
   else if (minutes_in_range(data, 10, 30)) { return ">10 min"; }
@@ -27,7 +24,7 @@ function humanize_ms(data, type, row) {
   else if (minutes_in_range(data, 43200, 86400)) { return ">1 month"; }
   else { return ">2 months"; }
 
-  return secs;
+  return "error";
 }
 
 function humanize_state(data, type, row) {
