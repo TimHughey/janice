@@ -24,6 +24,10 @@ defmodule Web.Router do
 
   pipeline :api do
     plug :accepts, ["json"]
+    plug :fetch_session
+    plug :protect_from_forgery
+    plug :put_secure_browser_headers
+    plug Web.ApiAuthAccessPipeline
   end
 
   scope "/mercurial/auth", Web do
@@ -35,14 +39,14 @@ defmodule Web.Router do
   end
 
   scope "/mercurial/mcp", Web do
-    pipe_through [:browser, :browser_authenticated]
+    pipe_through [:browser, :browser_session, :browser_authenticated]
 
     get "/", McpController, :index
     get "/detail/:type", McpController, :show
   end
 
   scope "/mercurial/mcp/api", Web do
-    pipe_through :api
+    pipe_through [:api]
     resources "/detail/:type", McpDetailController,
       only: [:index, :show]
   end

@@ -33,7 +33,6 @@ config :logger,
 
 config :mcp, Dispatcher.InboundMessage,
   log_reading: false,
-  startup_delay_ms: 0,
   temperature_msgs: {Mcp.Sensor, :external_update},
   switch_msgs: {Mcp.Switch, :external_update}
 
@@ -64,6 +63,10 @@ config :mcp, Web.VerifySessionPipeline,
 config :mcp, Web.AuthAccessPipeline,
   module: Web.Guardian,
   error_handler: Web.AuthErrorHandler
+
+config :mcp, Web.ApiAuthAccessPipeline,
+  module: Web.Guardian,
+  error_handler: Web.ApiAuthErrorHandler
 
 
 import_config "#{Mix.env}.exs"

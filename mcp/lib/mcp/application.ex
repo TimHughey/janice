@@ -26,7 +26,7 @@ defmodule Mcp.Application do
       {Dispatcher.Supervisor, initial},
       {Command.Supervisor, initial},
       {Janitor, initial},
-      {Mcp.Mixtank, initial},
+      {Mixtank, initial},
       {Web.Supervisor, initial}
 
       # {Mcp.SoakTest, initial},

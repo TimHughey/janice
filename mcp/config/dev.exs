@@ -2,6 +2,10 @@
 # and its dependencies with the aid of the Mix.Config module.
 use Mix.Config
 
+config :logger,
+  # level: debug,
+  level: :info
+
 config :mcp, Command.Control,
   timesync_opts: [feed: "mcr/f/command",
                   frequency: (5*60*1000),
@@ -26,7 +30,6 @@ config :mcp, Fact.Influx,
   port:      8086,
   scheme:    "http",
   writer:    Instream.Writer.Line,
-  startup_delay_ms: 0,
   periodic_log_first_ms: (1 * 60 * 1000),
   periodic_log_ms: (15 * 60 * 1000)
 
@@ -48,20 +51,18 @@ config :mcp, Mcp.Switch,
   logCmdAck: false
 
 config :mcp, Janitor,
-  purge_switch_cmds: [interval_mins: 2, older_than_hrs: 2, log: true]
+  purge_switch_cmds: [interval_mins: 2, older_than_hrs: 2, log: false]
 
 config :mcp, Mcp.Chamber,
   autostart_wait_ms: 0,
   routine_check_ms: 1000
 
-config :mcp, Mcp.Mixtank,
-  autostart_wait_ms: 1,
+config :mcp, Mixtank,
   control_temp_ms: 1000,
   activate_ms: 1000,
   manage_ms: 1000
 
-config :mcp, Mcp.Dutycycle,
-  autostart_wait_ms: 0,
+config :mcp, Dutycycle,
   routine_check_ms: 1000
 
 config :mcp, Mqtt.Client,
@@ -80,10 +81,7 @@ config :mcp, Web.Endpoint,
   code_reloader: true,
   check_origin: false,
   watchers: [node: ["node_modules/brunch/bin/brunch", "watch", "--stdin",
-                    cd: Path.expand("../assets", __DIR__)]]
-
-# Watch static and templates for browser reloading.
-config :mcp, Web.Endpoint,
+                    cd: Path.expand("../assets", __DIR__)]],
   live_reload: [
     patterns: [
       ~r{priv/static/.*(js|css|png|jpeg|jpg|gif|svg)$},

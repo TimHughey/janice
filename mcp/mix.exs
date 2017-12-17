@@ -88,7 +88,7 @@ defmodule Mcp.Mixfile do
 
   defp aliases do
     ["ecto.seed": ["seed"],
-     "ecto.setup": ["ecto.create", "ecto.migrate"],
+     "ecto.setup": ["ecto.create", "ecto.migrate --log-sql", "ecto.seed"],
      "ecto.reset": ["ecto.drop", "ecto.setup"],
      "test": ["ecto.create --quiet", "ecto.migrate", "test"]]
   end

@@ -77,8 +77,6 @@ defp check_purge_acked_cmds({:error, e}) do
   0
 end
 
-defp check_purge_acked_cmds({:ok, %{command: :delete, num_rows: nr}}) do
-  String.to_integer(nr)
-end
+defp check_purge_acked_cmds({:ok, %{command: :delete, num_rows: nr}}), do: nr
 
 end

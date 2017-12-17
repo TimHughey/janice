@@ -1,4 +1,4 @@
-defmodule Mcp.Mixtank do
+defmodule Mixtank do
 
 #    Master Control Program for Wiss Landing
 #    Copyright (C) 2016  Tim Hughey (thughey)
@@ -32,7 +32,6 @@ defmodule Mcp.Mixtank do
   use Ecto.Schema
   use Timex
 
-  alias Mcp.Mixtank
   alias Mcp.Repo
   alias Mcp.Sensor
   alias Mcp.Switch
@@ -285,7 +284,7 @@ defmodule Mcp.Mixtank do
   end
 
   # m =
-  #   %Mcp.Mixtank{name: "reefwater mix",
+  #   %Mixtank{name: "reefwater mix",
   #        description: "reefwater mix (pump and air)",
   #        enable: false, sensor: "mixtank", ref_sensor: "display_tank",
   #        heat_sw: "mixtank_heater",
@@ -324,24 +323,21 @@ defmodule Mcp.Mixtank do
     [add(m)] ++ add(rest)
   end
 
-  def add(%Mixtank{} = m) do
-    to_add =
-      case Repo.get_by(Mixtank, name: m.name) do
-        nil -> m
-        name -> name
-      end
+  def add(%Mixtank{name: name} = m) do
+    q = from(m in Mixtank, where: m.name == ^name, select: {m})
 
-    opts = [state_at: Timex.now()]
-
-    {:ok, added} = to_add |> change(opts) |> Repo.insert_or_update
-    added
+    case Repo.one(q) do
+      nil   -> change(m, []) |> Repo.insert_or_update!()
+      found -> Logger.warn ~s/add() [#{m.name}] already exists/
+               found
+    end
   end
 
   @doc """
   Traditional implemenation of start_link
   """
   def start_link(args) do
-    GenServer.start_link(Mcp.Mixtank, args, name: Mcp.Mixtank)
+    GenServer.start_link(Mixtank, args, name: Mixtank)
   end
 
   def terminate(reason, _state) do
@@ -350,14 +346,8 @@ defmodule Mcp.Mixtank do
 
   @spec init(Map.t) :: {:ok, Map.t}
   def init(s) when is_map(s) do
-    autostart_ms = config(:autostart_wait_ms)
 
-    case Map.get(s, :autostart, false) do
-      true  -> if autostart_ms > 0 do
-                 send_after(self(), @init_msg, autostart_ms)
-               end
-      false -> nil
-    end
+    if s.autostart, do: send_after(self(), @init_msg, 0)
 
     state = Kernel.struct(%State{}, s)
     Logger.info("init()")
@@ -367,20 +357,20 @@ defmodule Mcp.Mixtank do
 
   @manual_start_msg {:manual_start}
   def manual_start do
-    GenServer.call(Mcp.Mixtank, @manual_start_msg)
+    GenServer.call(Mixtank, @manual_start_msg)
   end
 
   @log_state_msg {:log_state}
   def log_state do
-    GenServer.call(Mcp.Mixtank, @log_state_msg)
+    GenServer.call(Mixtank, @log_state_msg)
   end
 
   def shutdown do
-    GenServer.call(Mcp.Mixtank, @shutdown_msg)
+    GenServer.call(Mixtank, @shutdown_msg)
   end
 
   def stop do
-    GenServer.stop(Mcp.Mixtank)
+    GenServer.stop(Mixtank)
   end
 
   defp load(%Mixtank{name: :nil}), do: :nil
@@ -539,13 +529,13 @@ defmodule Mcp.Mixtank do
   defp start_components(_anything, %State{} = state), do: state
 
   def manual_control(code) when is_integer(code) do
-    GenServer.cast(Mcp.Mixtank, {@manual_control_msg, code})
+    GenServer.cast(Mixtank, {@manual_control_msg, code})
   end
 
   @known_tanks_msg :known_mixtanks
 
   def known_tanks do
-    GenServer.call(Mcp.Mixtank, @known_tanks_msg)
+    GenServer.call(Mixtank, @known_tanks_msg)
   end
 
   def handle_call(@manual_start_msg, _from, %State{} = s) do
@@ -602,7 +592,7 @@ defmodule Mcp.Mixtank do
   def handle_info({@control_temp_msg, name}, %State{} = state)
   when is_binary(name) do
 
-    mixtank = Repo.get_by(Mcp.Mixtank, [name: name])
+    mixtank = Repo.get_by(Mixtank, [name: name])
 
     # note:  :timer.tc takes a list for the args to pass to the function
     args = [state, mixtank]
@@ -623,7 +613,7 @@ defmodule Mcp.Mixtank do
 
   def handle_info({@pump_on_msg, name}, %State{} =  state)
   when is_binary(name) do
-    mixtank = Repo.get_by(Mcp.Mixtank, [name: name])
+    mixtank = Repo.get_by(Mixtank, [name: name])
 
     state =
       if mixtank != :nil do
@@ -643,7 +633,7 @@ defmodule Mcp.Mixtank do
 
   def handle_info({@pump_off_msg, name}, %State{} = state)
   when is_binary(name) do
-    mixtank = Repo.get_by(Mcp.Mixtank, [name: name])
+    mixtank = Repo.get_by(Mixtank, [name: name])
 
     state =
       if mixtank != :nil do
@@ -663,7 +653,7 @@ defmodule Mcp.Mixtank do
 
   def handle_info({@air_on_msg, name}, %State{} = state)
   when is_binary(name) do
-    mixtank = Repo.get_by(Mcp.Mixtank, [name: name])
+    mixtank = Repo.get_by(Mixtank, [name: name])
 
     state =
       if mixtank != :nil do
@@ -683,7 +673,7 @@ defmodule Mcp.Mixtank do
 
   def handle_info({@air_off_msg, name}, %State{} = state)
   when is_binary(name) do
-    mixtank = Repo.get_by(Mcp.Mixtank, [name: name])
+    mixtank = Repo.get_by(Mixtank, [name: name])
 
     state =
       if mixtank != :nil do
@@ -747,11 +737,6 @@ defmodule Mcp.Mixtank do
     {:ok, state}
   end
 
-  defp config(key)
-  when is_atom(key) do
-    get_env(:mcp, Mcp.Mixtank) |> Keyword.get(key)
-  end
-
   defp get_all_mixtanks do
     Repo.all(Mixtank)
   end
@@ -770,7 +755,7 @@ defmodule Mcp.Mixtank do
   @activate_ms :activate_ms
   @manage_ms :manage_ms
 
-  defp control_temp_ms, do: get_env(:mcp, Mcp.Mixtank) |> get(@control_temp_ms)
-  defp activate_ms, do: get_env(:mcp, Mcp.Mixtank) |> get(@activate_ms)
-  defp manage_ms, do: get_env(:mcp, Mcp.Mixtank) |> get(@manage_ms)
+  defp control_temp_ms, do: get_env(:mcp, Mixtank) |> get(@control_temp_ms)
+  defp activate_ms, do: get_env(:mcp, Mixtank) |> get(@activate_ms)
+  defp manage_ms, do: get_env(:mcp, Mixtank) |> get(@manage_ms)
 end

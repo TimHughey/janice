@@ -2,23 +2,26 @@
 # and its dependencies with the aid of the Mix.Config module.
 use Mix.Config
 
-config :command, Command.Control,
-  startup_delay_ms: 200,
-  periodic_timesync_ms: (5 * 60 * 1000),
+config :logger,
+  # level: debug,
+  level: :info
+
+config :mcp, Command.Control,
+  timesync_opts: [feed: "mcr/f/command",
+                  frequency: (5*60*1000),
+                  # loops: 3,
+                  forever: true,
+                  log: false],
   rpt_feed: "prod/mcr/f/report",
   cmd_feed: "prod/mcr/f/command"
 
-config :dispatcher, Dispatcher.InboundMessage,
-  log_reading: false,
-  startup_delay_ms: 5000,
+config :mcp, Dispatcher.InboundMessage,
   periodic_log_first_ms: (60 * 60 * 1000),
   periodic_log_ms: (120 * 60 * 1000),
   rpt_feed: "prod/mcr/f/report",
-  cmd_feed: "prod/mcr/f/command",
-  temperature_msgs: {Mcp.Sensor, :external_update},
-  switch_msgs: {Mcp.Switch, :external_update}
+  cmd_feed: "prod/mcr/f/command"
 
-config :fact, Fact.Influx,
+config :mcp, Fact.Influx,
   database:  "mcp_repo",
   host:      "jophiel.wisslanding.com",
   auth:      [method: :basic, username: "updater", password: "mcp"],
@@ -27,7 +30,6 @@ config :fact, Fact.Influx,
   port:      8086,
   scheme:    "http",
   writer:    Instream.Writer.Line,
-  startup_delay_ms: 1000,
   periodic_log_first_ms: (1 * 60 * 1000),
   periodic_log_ms: (15 * 60 * 1000)
 
@@ -48,23 +50,19 @@ config :mcp, Mcp.Repo,
 config :mcp, Mcp.Switch,
   logCmdAck: false
 
-config :mcp, Mcp.Janitor,
-  startup_delay_ms: 12_000,
-  purge_switch_cmds_interval_minutes: 2,
-  purge_switch_cmds_older_than_hours: 3
+config :mcp, Janitor,
+  purge_switch_cmds: [interval_mins: 2, older_than_hrs: 2, log: false]
 
 config :mcp, Mcp.Chamber,
   autostart_wait_ms: 0,
   routine_check_ms: 1000
 
-config :mcp, Mcp.Mixtank,
-  autostart_wait_ms: 10_000,
+config :mcp, Mixtank,
   control_temp_ms: 1000,
   activate_ms: 1000,
   manage_ms: 1000
 
-config :mcp, Mcp.Dutycycle,
-  autostart_wait_ms: 0,
+config :mcp, Dutycycle,
   routine_check_ms: 1000
 
 config :mcp, Mqtt.Client,

@@ -1,61 +1,15 @@
 
-defmodule Mix.Tasks.Seed do
+defmodule Seeds do
 @moduledoc """
   Seeds the Mercurial database
 """
 require Logger
-use Mix.Task
-import Mix.Ecto
+# import Mix.Ecto
 
 alias Mcp.Chamber
 alias Mcp.DevAlias
-alias Mcp.Dutycycle
-alias Mcp.Mixtank
 alias Mcp.Repo
 #alias Mcp.Sensor
-
-def run(args) do
-
-  repos = parse_repo(args)
-
-  {opts, _, _} = OptionParser.parse args,
-    switches: [quiet: :boolean, pool_size: :integer]
-
-  # interesting way to check that a list has a single element, smile
-  if tl(repos) != [] do
-    Logger.warn fn -> "more than one repo is not supported" end
-    Logger.warn fn -> "will use first in the list" end
-  end
-
-  repo = hd(repos)
-
-  # special thanks to the Ecto code base for this example of how to start
-  # just the Repos
-  opts =
-    if opts[:quiet],
-      do: Keyword.put(opts, :log, false),
-      else: opts
-
-  ensure_repo(repo, args)
-  {:ok, pid, db} = ensure_started(repo, opts)
-
-  Logger.info fn -> "#{inspect(repo)} started #{inspect(db)}" end
-
-  {:ok, _started} = Application.ensure_all_started(:timex)
-
-  Logger.info fn -> ":timex started" end
-
-  # Mix.Task.run "app.start", [db_seed: true]
-
-  dev_aliases(Mix.env) |> seed_dev_alias()
-  mixtanks(Mix.env) |> seed_mixtank()
-  chambers(Mix.env) |> seed()
-  dutycycles(Mix.env) |> seed()
-
-  pid && repo.stop(pid)
-
-  Logger.info fn -> "#{inspect(repo)} stopped" end
-end
 
 def chambers(env)
 when env == :dev or env == :test do
@@ -95,29 +49,51 @@ end
 
 def dutycycles(env)
 when env == :dev or env == :test do
-  [%Dutycycle{name: "buzzer",
-     description: "dutycycle test case",
-     enable: false, device_sw: "buzzer",
-     run_ms: 1000, idle_ms: 60 * 1000}]
+  [%Dutycycle{name: "duty 1",
+    description: "duty 1 non-prod",
+    device: "duty_1",
+    modes: [%Dutycycle.Mode{name: "fast",
+            active: true,
+            run_ms: 1000, idle_ms: 1000},
+           %Dutycycle.Mode{name: "slow",
+            run_ms: 10_000, idle_ms: 10_000}],
+    state: %Dutycycle.State{}},
+   %Dutycycle{name: "duty 2",
+     description: "duty 2 non-prod",
+     device: "duty_2",
+     modes: [%Dutycycle.Mode{name: "fast",
+             run_ms: 2000, idle_ms: 2000},
+            %Dutycycle.Mode{name: "slow",
+             run_ms: 20_000, idle_ms: 20_000}],
+     state: %Dutycycle.State{}},
+   %Dutycycle{name: "duty 2",
+     description: "duty 2 non-prod",
+     device: "duty_2",
+     modes: [%Dutycycle.Mode{name: "fast",
+             run_ms: 2000, idle_ms: 2000},
+            %Dutycycle.Mode{name: "slow",
+             run_ms: 20_000, idle_ms: 20_000}],
+     state: %Dutycycle.State{}}]
 end
 
 def dutycycles(:prod) do
-  [%Dutycycle{name: "sump vent",
-     description: "sump vent",
-     enable: false, device_sw: "sump_vent",
-     run_ms: 20 * 60 * 1000, idle_ms: 2 * 60 * 1000},
-   %Dutycycle{name: "basement circulation",
-     description: "basement circulation fan",
-     enable: false, device_sw: "basement_fan",
-     run_ms: 15 * 60 * 1000, idle_ms: 60 * 1000},
-   %Dutycycle{name: "reefmix rodi slow",
-     description: "periodic fill reefmix with rodi water",
-     enable: true, device_sw: "reefmix_rodi_valve",
-     run_ms: 900_000, idle_ms: 300_000},
-   %Dutycycle{name: "reefmix rodi fast",
-     description: "fill mixtank quickly",
-     enable: false, device_sw: "reefmix_rodi_valve",
-     run_ms: 3_600_000, idle_ms: 120_000}]
+  []
+  # [%Dutycycle{name: "sump vent",
+  #    description: "sump vent",
+  #    enable: false, device_sw: "sump_vent",
+  #    run_ms: 20 * 60 * 1000, idle_ms: 2 * 60 * 1000},
+  #  %Dutycycle{name: "basement circulation",
+  #    description: "basement circulation fan",
+  #    enable: false, device_sw: "basement_fan",
+  #    run_ms: 15 * 60 * 1000, idle_ms: 60 * 1000},
+  #  %Dutycycle{name: "reefmix rodi slow",
+  #    description: "periodic fill reefmix with rodi water",
+  #    enable: true, device_sw: "reefmix_rodi_valve",
+  #    run_ms: 900_000, idle_ms: 300_000},
+  #  %Dutycycle{name: "reefmix rodi fast",
+  #    description: "fill mixtank quickly",
+  #    enable: false, device_sw: "reefmix_rodi_valve",
+  #    run_ms: 3_600_000, idle_ms: 120_000}]
 end
 
 def dev_aliases(env)
@@ -126,6 +102,12 @@ when env == :dev or env == :test do
    %DevAlias{friendly_name: "buzzer",
      device: "ds/12128521000000:0",
      description: "dev buzzer"},
+   %DevAlias{friendly_name: "duty_1",
+     device: "ds/12128521000000:1",
+     description: "duty 1 switch"},
+   %DevAlias{friendly_name: "duty_2",
+     device: "ds/291d1823000000:1",
+     description: "duty 2 switch"},
    %DevAlias{friendly_name: "temp_probe1_dev",
      device: "ds/28ff5733711604",
      description: "dev temp probe1"},
@@ -155,12 +137,15 @@ end
   # original MCR: mcr.f8f005f7401d
   # basement MCR
 def dev_aliases(:prod) do
-  [%DevAlias{device: "ds/12128521000000:0", friendly_name: "buzzer", description: "dev buzzer"},
+  [
+   %DevAlias{device: "ds/12197521000000:0", friendly_name: "unused_1", description: "unused pio (sys_buzzer)"},
    %DevAlias{device: "ds/12197521000000:1", friendly_name: "mixtank_pump", description: "reef mixtank circ pump (sys_buzzer)"},
    %DevAlias{device: "ds/12328621000000:0", friendly_name: "loop_indicator", description: "visual indicator (sys_p3)"},
    %DevAlias{device: "ds/12328621000000:1", friendly_name: "mixtank_heater", description: "reef mixtank heater (sys_p3)"},
+   %DevAlias{device: "ds/12376621000000:0", friendly_name: "unused_2", description: "unused pio (sys_p2)"},
    %DevAlias{device: "ds/12376621000000:1", friendly_name: "shroom1_heat", description: "chamber1 heater (sys_p2)"},
-   %DevAlias{device: "ds/12606e21000000:1", friendly_name: "shroom2_heat", description: "chamber2 heater (sys_p1)"},
+   %DevAlias{device: "ds/12606e21000000:0", friendly_name: "shroom2_heat", description: "chamber2 heater (sys_p1)"},
+   %DevAlias{device: "ds/12606e21000000:1", friendly_name: "unused_3", description: "unused pio (sys_p1)"},
    %DevAlias{device: "ds/28916149060000", friendly_name: "attic", description: "attic ambient"},
    %DevAlias{device: "ds/28ee5815221500", friendly_name: "hvac2_supply", description: "hvac2 supply"},
    %DevAlias{device: "ds/28ee6f0c231500", friendly_name: "hvac2_high_side", description: "hvac2 compressor high side"},
@@ -188,9 +173,9 @@ def dev_aliases(:prod) do
    %DevAlias{device: "ds/28fff72b711603", friendly_name: "laundry_room", description: "laundry room ambient"},
    %DevAlias{device: "ds/28fff86d521604", friendly_name: "hvac1_supply", description: "hvac1 supply"},
    %DevAlias{device: "ds/28fffd77711604", friendly_name: "basement", description: "basement ambient"},
-   %DevAlias{device: "ds/291d1823000000:0", friendly_name: "led1", description: "dev led"},
    %DevAlias{device: "ds/29463408000000:0", friendly_name: "shroom1_mist", description: "chamber1 mist (io1)"},
-   %DevAlias{device: "ds/29463408000000:1", friendly_name: "mixtank_air", description: "mixtank air pump (io1)"},
+   %DevAlias{device: "ds/29463408000000:1", friendly_name: "mixtank_air", description: "reef mixtank air pump (io1)"},
+   %DevAlias{device: "ds/29463408000000:2", friendly_name: "unused_4", description: "unused pio (io1)"},
    %DevAlias{device: "ds/29463408000000:3", friendly_name: "reefmix_rodi_valve", description: "reef mixtank rodi (io1)"},
    %DevAlias{device: "ds/29463408000000:4", friendly_name: "shroom1_fresh_air", description: "chamber1 fresh air (io1)"},
    %DevAlias{device: "ds/29463408000000:5", friendly_name: "shroom2_stir", description: "chamber2 circulation (io1)"},
@@ -292,23 +277,28 @@ end
 def seed([]), do: []
 def seed(%{__struct__: type, name: name} = thing) do
   Logger.info "seeding #{type} #{name}"
-  Repo.insert(thing)
+
+  case Repo.insert(thing) do
+    {:ok, item}   -> item
+    {:error, err} -> Logger.warn fn -> "seed failed #{inspect(type)} " <>
+                                      "#{thing.name} #{inspect(err)}" end
+                     %{}
+    unknown       -> Logger.warn fn -> "unknown failure #{inspect(unknown)}" end
+                     %{}
+  end
 end
 
-def seed([thing | list]) do
+def seed([thing | list]), do: [seed(thing)] ++ seed(list)
 
-  [seed(thing)] ++ seed(list)
-end
+# def seed_mixtank([]), do: []
+# def seed_mixtank(%Mixtank{} = m) do
+#   Logger.info fn -> "seeding mixtank #{m.name}" end
+#   Mixtank.add(m)
+# end
 
-def seed_mixtank([]), do: []
-def seed_mixtank(%Mixtank{} = m) do
-  Logger.info fn -> "seeding mixtank #{m.name}" end
-  Mixtank.add(m)
-end
-
-def seed_mixtank([m | rest]) do
-  [seed_mixtank(m)] ++ seed_mixtank(rest)
-end
+# def seed_mixtank([m | rest]) do
+#   [seed_mixtank(m)] ++ seed_mixtank(rest)
+# end
 
 def seed_dev_alias([]), do: []
 def seed_dev_alias(%DevAlias{} = da) do
