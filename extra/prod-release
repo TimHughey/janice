@@ -1,21 +1,50 @@
 #!/bin/zsh
 
+SAVE=`pwd`
+
+function run_cmd {
+    "$@"
+    local rc=$?
+    if [ $rc -ne 0 ]; then
+        echo "error with $1" >&2
+				cd $SAVE
+				exit 1
+    fi
+    return $rc
+}
+
 BASE=${HOME}/devel/mercurial
-WEB=${BASE}/apps/web
+MCP=${BASE}/mcp
 
 [[ ! -x $BASE ]] && exit 1
 
 rm -f $BASE/erl_crash.dump
 
-mix clean --only=prod
-env MIX_ENV=prod mix deps.get
-env MIX_ENV=prod mix compile
+cd $MCP
+[[ ! -f $MCP/mix.exs ]] && exit 1
+run_cmd mix clean --only=prod
+run_cmd env MIX_ENV=prod mix deps.get
+run_cmd env MIX_ENV=prod mix compile
 
-cd $WEB/assets
-brunch build --production
+cd $MCP/assets
+run_cmd brunch build --production
 
-cd $WEB
-env MIX_ENV=prod mix phx.digest
+cd $MCP
+run_cmd env MIX_ENV=prod mix phx.digest
 
-cd $BASE
-env MIX_ENV=prod mix release --env=prod
+cd $MCP
+run_cmd env MIX_ENV=prod mix release --env=prod
+
+release=($HOME/devel/mercurial/mcp/_build/prod/rel/mcp/releases/0.*(om[1]))
+
+PKG="mcp.tar.gz"
+STAGE=/run/merc
+if [[ -e $release && -d $STAGE ]]; then
+	cp $release/$PKG $STAGE
+
+	if [[ -f $STAGE/$PKG ]]; then
+		echo "build complete, release staged in $STAGE"
+	fi
+fi
+
+cd $SAVE

@@ -1,8 +1,0 @@
-#!/bin/zsh
-
-release=($HOME/devel/mercurial/_build/prod/rel/mercurial/releases/0.*(om[1]))
-
-if [[ -e $release ]]; then
-	print "cp $release /run/merc"
-	cp $release/mercurial.tar.gz /run/merc
-fi

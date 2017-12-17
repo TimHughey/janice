@@ -7,6 +7,8 @@
   },
   "dependencies": {
     "bootstrap": "^4.0.0-beta",
+    "clean-css-brunch": "^2.10.0",
+    "copycat-brunch": "^1.1.0",
     "datatables.net-buttons-dt": "^1.5.0",
     "datatables.net-dt": "^1.10.16",
     "datatables.net-scroller-dt": "^1.4.3",
@@ -15,14 +17,12 @@
     "phoenix_html": "file:../deps/phoenix_html",
     "popper.js": "^1.12.9",
     "tether": "^1.4.3",
-    "tooltip.js": "^1.1.7"
+    "tooltip.js": "^1.1.7",
+    "uglify-js-brunch": "^2.10.0"
   },
   "devDependencies": {
-    "babel-brunch": "6.1.1",
-    "brunch": "2.10.9",
-    "clean-css-brunch": "2.10.0",
-    "copycat-brunch": "^1.1.0",
-    "sass-brunch": "^2.10.4",
-    "uglify-js-brunch": "2.10.0"
+    "babel-brunch": "^6.1.1",
+    "brunch": "^2.10.9",
+    "sass-brunch": "^2.10.4"
   }
 }

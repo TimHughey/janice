@@ -94,4 +94,4 @@ config :phoenix, :serve_endpoints, true
 
 config :logger, backends: [:console], level: :warn
 
-import_config "prod.secret.exs"
+# import_config "prod.secret.exs"
