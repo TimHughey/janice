@@ -92,6 +92,4 @@ config :ueberauth, Ueberauth,
 # Tell phoenix to actually serve endpoints when run as a release
 config :phoenix, :serve_endpoints, true
 
-config :logger, backends: [:console], level: :warn
-
 # import_config "prod.secret.exs"

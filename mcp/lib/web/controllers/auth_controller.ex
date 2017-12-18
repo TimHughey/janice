@@ -13,7 +13,6 @@ defmodule Web.AuthController do
   # end
 
   def request(conn, _params) do
-    Logger.info fn -> inspect(conn) end
     render(conn, "request.html")
   end
 
@@ -32,15 +31,19 @@ defmodule Web.AuthController do
   end
 
   def callback(%{assigns: %{ueberauth_failure: fails}} = conn, _params) do
-    Logger.warn fn -> inspect(fails) end
+    Logger.warn fn -> "Auth Failure Map: " <>
+                      Poison.encode_to_iodata!(fails, pretty: true) end
 
     conn
       |> put_flash(:error, "Ueberauth failure")
       |> redirect(to: "/mercurial")
   end
 
-  def callback(%{assigns: %{ueberauth_auth: auth}} = conn, _params) do
-    Logger.warn fn -> inspect(auth) end
+  def callback(%{assigns: %{ueberauth_auth: auth}} = conn, _params)  do
+
+    Logger.info fn -> "Auth Map:" end
+    Logger.info fn -> Poison.encode_to_iodata!(auth, pretty: true) end
+    Logger.info fn -> "#{auth.provider} success for #{auth.uid}" end
 
     case UserFromAuth.find_or_create(auth) do
       {:ok, user}      -> conn
@@ -50,8 +53,7 @@ defmodule Web.AuthController do
                            |> put_session(:current_user, user)
                            |> redirect(to: "/mercurial")
 
-      {:error, reason} -> Logger.warn fn -> inspect(conn) end
-                          conn
+      {:error, reason} -> conn
                            |> put_flash(:error, reason)
                            |> redirect(to: "/mercurial")
     end

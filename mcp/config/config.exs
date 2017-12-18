@@ -68,5 +68,4 @@ config :mcp, Web.ApiAuthAccessPipeline,
   module: Web.Guardian,
   error_handler: Web.ApiAuthErrorHandler
 
-
 import_config "#{Mix.env}.exs"

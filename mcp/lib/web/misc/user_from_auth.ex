@@ -8,10 +8,9 @@ defmodule Web.UserFromAuth do
   alias Ueberauth.Auth
 
   def find_or_create(%Auth{provider: :identity} = auth) do
+    Logger.info fn -> "identity provided validates password" end
 
-    # Logger.info fn -> inspect(auth) end
-
-    case validate_pass(auth.credentials) do
+    case validate_pass(auth) do
       :ok ->
         {:ok, basic_info(auth)}
       {:error, reason} -> {:error, reason}
@@ -73,14 +72,17 @@ defmodule Web.UserFromAuth do
     end
   end
 
-  defp validate_pass(%{other: %{password: ""}}) do
-    {:error, "Password required"}
-  end
-  defp validate_pass(%{other: %{password: "foo"}}) do
+  defp validate_pass(%{credentials: %{other: %{password: pass}},
+                       info: %{nickname: nickname}})
+  when is_nil(pass) or pass == "foo" do
+    Logger.info fn -> "#{nickname} password validated" end
     :ok
   end
-  defp validate_pass(%{other: %{password: _}}) do
+
+  defp validate_pass(%{credentials: %{other: %{password: _pass}},
+                       info: %{nickname: nickname}}) do
+    Logger.info fn -> "#{nickname} password incorrect" end
     {:error, "Invalid password"}
   end
-  defp validate_pass(_), do: {:error, "Password Required"}
+  defp validate_pass(_), do: {:error, "Default catch for pw check!"}
 end
