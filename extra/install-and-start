@@ -32,7 +32,7 @@
 
 					env PORT=4009 mcp start
 					sleep 2
-					exec tail -f $merc_base/var/log/erlang.*(om[1])
+					exec tail --lines=100 -f $merc_base/var/log/erlang.*(om[1])
 				fi	
 		fi
 	else
