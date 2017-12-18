@@ -573,6 +573,12 @@ defmodule Mixtank do
   end
 
   def handle_info(@init_msg, %State{} = state) do
+
+    Logger.info fn -> "setting mixtank switches off at startup" end
+    switches = get_all_switches()
+    Enum.each(switches, fn(n) -> Logger.info " #{n} off"
+                                 Switch.set_state(n, false) end)
+
     state = State.kickstarted(state)
 
     mixtanks = get_all_mixtank_names()
@@ -580,11 +586,10 @@ defmodule Mixtank do
 
     start_all(state)
 
-    trapping = Process.flag(:trap_exit, true)
+    Process.flag(:trap_exit, true)
+    state = Map.put_new(state, :trapping, true)
 
-    state = Map.put_new(state, :trapping, trapping)
-
-    Logger.info fn -> "trapping = #{trapping}" end
+    Logger.info fn -> "Process.flag(:trap_exit, #{state.trapping})" end
 
     {:noreply, state}
   end
