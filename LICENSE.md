@@ -1,3 +1,5 @@
+Copyright (c) 2016-2017 Tim Hughey
+
 GNU GENERAL PUBLIC LICENSE
    Version 3, 29 June 2007
 
