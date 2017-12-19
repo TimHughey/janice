@@ -7,19 +7,14 @@ config :logger,
   level: :info
 
 config :mcp, Command.Control,
-  timesync_opts: [feed: "mcr/f/command",
-                  frequency: (5*60*1000),
+  timesync_opts: [frequency: (60*1000), # millisecs
                   # loops: 3,
                   forever: true,
-                  log: false],
-  rpt_feed: "mcr/f/report",
-  cmd_feed: "mcr/f/command"
+                  log: false]
 
 config :mcp, Dispatcher.InboundMessage,
   periodic_log_first_ms: (60 * 60 * 1000),
-  periodic_log_ms: (120 * 60 * 1000),
-  rpt_feed: "mcr/f/report",
-  cmd_feed: "mcr/f/command"
+  periodic_log_ms: (120 * 60 * 1000)
 
 config :mcp, Fact.Influx,
   database:  "mcp_repo",
@@ -34,7 +29,7 @@ config :mcp, Fact.Influx,
   periodic_log_ms: (15 * 60 * 1000)
 
 config :mcp, Mcp.SoakTest,
-  startup_delay_ms: 0,
+  startup_delay_ms: 0,  # don't start
   periodic_log_first_ms: (30 * 60 * 1000),
   periodic_log_ms: (60 * 60 * 1000),
   flash_led_ms: (3 * 1000)
@@ -44,7 +39,8 @@ config :mcp, Mcp.Repo,
   database: "merc_dev",
   username: "merc_dev",
   password: "merc_dev",
-  hostname: "jophiel.wisslanding.com",
+  hostname: "127.0.0.1",
+  # hostname: "jophiel.wisslanding.com",
   pool_size: 10
 
 config :mcp, Mcp.Switch,
@@ -66,12 +62,13 @@ config :mcp, Dutycycle,
   routine_check_ms: 1000
 
 config :mcp, Mqtt.Client,
-  broker: [client_id: "mercurial-dev", clean_session: 1,
-           username: "mqtt", password: "mqtt",
-           host: "jophiel.wisslanding.com", port: 1883, ssl: false],
-  feeds: [topics: ["mcr/f/report"], qoses: [0]],
-  rpt_feed: "dev/mcr/f/report",
-  cmd_feed: "dev/mcr/f/command"
+  broker: [client_id: "mercurial-dev",
+            clean_session: 1,
+           username: "mqtt",
+           password: "mqtt",
+           host: "jophiel.wisslanding.com",
+           port: 1883, ssl: false],
+           feeds: [topics: ["mcr/f/report"], qoses: [0]]  # subscribe
 
 config :mcp, Web.Endpoint,
   http: [port: 4000],

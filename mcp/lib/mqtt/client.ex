@@ -7,7 +7,7 @@ use GenServer
 alias Hulaaki.Connection
 alias Hulaaki.Message
 
-import Application, only: [get_env: 2]
+import Application, only: [get_env: 2, get_env: 3]
 import Process, only: [send_after: 3]
 
 #  def child_spec(opts) do
@@ -33,7 +33,8 @@ def init(s) when is_map(s) do
     Map.put(:keep_alive_interval, nil) |>
     Map.put(:keep_alive_timer_ref, nil) |>
     Map.put(:ping_response_timeout_interval, nil) |>
-    Map.put(:ping_response_timer_ref, nil)
+    Map.put(:ping_response_timer_ref, nil) |>
+    Map.put(:connected, false)
 
     case Map.get(s, :autostart, false) do
       true  -> send_after(self(), {:startup}, 1)
@@ -67,9 +68,14 @@ def publish(opts) do
 end
 
 def publish_switch_cmd(message) do
-  cmd_feed = config(:cmd_feed)
-  opts = [topic: cmd_feed, message: message, dup: 0, qos: 0, retain: 0]
-  publish(opts)
+  feed = get_env(:mcp, :feeds, []) |> Keyword.get(:cmd, nil)
+
+  if feed do
+    opts = [topic: feed, message: message, dup: 0, qos: 0, retain: 0]
+    publish(opts)
+  else
+    :cmd_feed_config_missing
+  end
 end
 
 def handle_call(:state, _from, state) do
@@ -85,6 +91,17 @@ end
 
 def handle_call({:subscribe, opts}, _from, s) do
   do_subscribe(s, opts)
+end
+
+# catch the case when there isn't an active connection
+def handle_call({:publish, opts}, _from,
+                  %{connected: false} = s) do
+
+  msg = opts |> Keyword.fetch!(:message)
+
+  Logger.warn fn -> ~s/not connected, dropping msg #{msg}/ end
+
+  {:reply, :ok, s}
 end
 
 def handle_call({:publish, opts}, _from, %{connection: _} = s) do
@@ -107,12 +124,6 @@ def handle_call({:publish, opts}, _from, %{connection: _} = s) do
     end
 
   :ok = s.connection |> Connection.publish(message)
-  {:reply, :ok, s}
-end
-
-def handle_call({:publish, _opts}, _from, s) do
-  Logger.warn fn ->
-    ~s/not connected, publish quietly ignored/ end
   {:reply, :ok, s}
 end
 
@@ -325,9 +336,16 @@ defp do_connect(s) when is_map(s) do
             ping_response_timeout_interval: ping_response_timeout * 1000}
 
   #conn_result = s.connection |> Connection.connect(message, connect_opts)
-  :ok = s.connection |> Connection.connect(message, connect_opts)
+  result = s.connection |> Connection.connect(message, connect_opts)
 
-  {s, :ok}
+  case result do
+    :ok               -> s = Map.put(s, :connected, true)
+                         {s, :ok}
+    {:error, reason}  -> Logger.warn fn -> "client connect " <>
+                                           "failed #{reason}" end
+                         s = Map.put(s, :connected, false)
+                         {s, {:error, reason}}
+  end
 end
 
 defp do_subscribe(s, opts) when is_map(s) do

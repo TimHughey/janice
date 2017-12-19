@@ -4,7 +4,7 @@ defmodule Command.Control do
 require Logger
 use GenServer
 
-import Application, only: [get_env: 2]
+import Application, only: [get_env: 2, get_env: 3]
 import Process, only: [send_after: 3]
 import Mqtt.Client, only: [publish: 1]
 
@@ -35,7 +35,7 @@ end
 # External Functions
 #
 def send_timesync do
-  feed = config(:timesync_opts) |> Keyword.get(:feed, false)
+  feed = get_env(:mcp, :feeds, []) |> Keyword.get(:cmd, nil)
 
   if feed do
     msg = Timesync.new_cmd() |> Timesync.json()
@@ -43,7 +43,7 @@ def send_timesync do
 
     publish(cmd)
   else
-    :timesync_missing_config
+    :cmd_feed_config_missing
   end
 end
 
@@ -61,7 +61,7 @@ end
 def handle_info({ref, result},
                   %{timesync: %{task: %{ref: timesync_ref}}} = s)
 when is_reference(ref) and ref == timesync_ref do
-  if result == :timesync_missing_config do
+  if result == :cmd_feed_config_missing do
     Logger.warn fn -> "timesync missing feed configuration" end
   end
 

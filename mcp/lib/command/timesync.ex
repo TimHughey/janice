@@ -9,7 +9,7 @@ use Timex
 use Task
 
 import Mqtt.Client, only: [publish: 1]
-import Application, only: [get_env: 2]
+import Application, only: [get_env: 2, get_env: 3]
 
 @undef "undef"
 @timesync "time.sync"
@@ -23,7 +23,7 @@ def run(opts) do
   frequency = Keyword.get(opts, :frequency, 1000)
   loops = Keyword.get(opts, :loops, 1)
   forever = Keyword.get(opts, :forever, false)
-  feed = Keyword.get(opts, :feed, false)
+  feed = get_env(:mcp, :feeds, []) |> Keyword.get(:cmd, nil)
   log = Keyword.get(opts, :log, false)
   single = Keyword.get(opts, :single, false)
 
@@ -46,7 +46,7 @@ def run(opts) do
 
     end
   else
-    :timesync_missing_config
+    :cmd_feed_config_missing
   end
 end
 

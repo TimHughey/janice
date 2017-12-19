@@ -6,25 +6,25 @@ config :logger,
   # level: debug,
   level: :info
 
+config :mcp,
+  feeds: [cmd: "prod/mcr/f/command", rpt: "prod/mcr/f/report"]
+
 config :mcp, Command.Control,
-  timesync_opts: [feed: "mcr/f/command",
-                  frequency: (5*60*1000),
+  timesync_opts: [frequency: (60*1000), # millisecs
                   # loops: 3,
                   forever: true,
-                  log: false],
-  rpt_feed: "prod/mcr/f/report",
-  cmd_feed: "prod/mcr/f/command"
+                  log: false]
 
 config :mcp, Dispatcher.InboundMessage,
   periodic_log_first_ms: (60 * 60 * 1000),
-  periodic_log_ms: (120 * 60 * 1000),
-  rpt_feed: "prod/mcr/f/report",
-  cmd_feed: "prod/mcr/f/command"
+  periodic_log_ms: (120 * 60 * 1000)
 
 config :mcp, Fact.Influx,
   database:  "mcp_repo",
-  host:      "jophiel.wisslanding.com",
-  auth:      [method: :basic, username: "updater", password: "mcp"],
+  host:      "** set in prod.secret.exs",
+  auth:      [method: :basic,
+              username: "** set in prod.secret.exs",
+              password: "** set in prod.secret.exs"],
   http_opts: [insecure: true],
   pool:      [max_overflow: 10, size: 5, timeout: 150_000, max_connections: 10],
   port:      8086,
@@ -41,10 +41,10 @@ config :mcp, Mcp.SoakTest,
 
 config :mcp, Mcp.Repo,
   adapter: Ecto.Adapters.Postgres,
-  database: System.get_env("MERC_DB_NAME"),
-  username: System.get_env("MERC_DB_USER"),
-  password: System.get_env("MERC_DB_PASSWD"),
-  hostname: "jophiel.wisslanding.com",
+  database: "merc_prod",
+  username: "merc_prod",
+  password: "** set in prod.secret.exs",
+  hostname: "** set in prod.secret.exs",
   pool_size: 10
 
 config :mcp, Mcp.Switch,
@@ -66,15 +66,17 @@ config :mcp, Dutycycle,
   routine_check_ms: 1000
 
 config :mcp, Mqtt.Client,
-  broker: [client_id: "mercurial-prod", clean_session: 1,
-           username: "mqtt", password: "mqtt",
-           host: "jophiel.wisslanding.com", port: 1883, ssl: false],
-  feeds: [topics: ["prod/mcr/f/report"], qoses: [0]],
-  rpt_feed: "prod/mcr/f/report",
-  cmd_feed: "prod/mcr/f/command"
+  broker: [client_id: "mercurial-prod",
+            clean_session: 1,
+            username: "** set in prod.secret.exs",
+            password: "** set in prod.secret.exs",
+            host: "** set in prod.secret.exs",
+            port: 1883, ssl: false],
+            feeds: [topics: ["prod/mcr/f/report"], qoses: [0]] # subscribe
 
 config :mcp, Web.Endpoint,
-  http: [port: {:system, "PORT"}],
+  # http: [port: {:system, "PORT"}],
+  http: [port: 4009],
   load_from_system_env: true,
   url: [scheme: "https:", host: "www.wisslanding.com", port: 443],
   cache_static_manifest: "priv/static/cache_manifest.json",
@@ -82,14 +84,17 @@ config :mcp, Web.Endpoint,
   server: true,
   # root: ".",
   version: Application.spec(:mcp, :vsn),
-  secret_key_base: System.get_env("MERC_SECRET_KEY_BASE")
+  # secret_key_base: set in prod.secret.exs
 
 config :ueberauth, Ueberauth,
   providers: [
     github: {Ueberauth.Strategy.Github,
-        [default_scope: "user,public_repo", send_redirect_uri: false]}]
+              [default_scope: "user,public_repo",
+               # set URI redirect mismatch errors since we are
+               # proxied behind nginx
+               send_redirect_uri: false] }]
 
 # Tell phoenix to actually serve endpoints when run as a release
 config :phoenix, :serve_endpoints, true
 
-# import_config "prod.secret.exs"
+import_config "prod.secret.exs"

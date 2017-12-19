@@ -5,6 +5,11 @@ defmodule Mcp do
 
   def license do
   """
+  Master Control Program (mcp)  Copyright (C) 2017  Tim Hughey
+    This program comes with ABSOLUTELY NO WARRANTY.
+    This is free software, and you are welcome to redistribute it
+    under certain conditions.
+
                     GNU GENERAL PUBLIC LICENSE
                        Version 3, 29 June 2007
 

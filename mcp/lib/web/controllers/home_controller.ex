@@ -6,10 +6,13 @@ defmodule Web.HomeController do
 
   def index(conn, _params) do
     # Logger.info fn -> inspect(conn) end
-    Logger.info fn ->
-      resource = Plug.current_resource(conn) |> inspect
-      "resource: #{resource}"
-    end
+    resource = Plug.current_resource(conn)
+
+    resource && Logger.info fn ->
+                    r = Plug.current_resource(conn)
+                    c = Plug.current_claims(conn)
+                    "resource: #{inspect(r)} claims: #{inspect(c)}"
+                end
 
     render conn, "index.html",
       current_user: get_session(conn, :current_user)
