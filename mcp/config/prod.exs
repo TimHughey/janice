@@ -7,11 +7,11 @@ config :logger,
   level: :info
 
 config :mcp, Command.Control,
-  timesync_opts: [feed: "mcr/f/command",
+  timesync_opts: [feed: "prod/mcr/f/command",
                   frequency: (5*60*1000),
                   # loops: 3,
                   forever: true,
-                  log: false],
+                  log: true],
   rpt_feed: "prod/mcr/f/report",
   cmd_feed: "prod/mcr/f/command"
 

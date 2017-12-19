@@ -268,7 +268,7 @@ end
 def on_subscribed_publish([message: %Message.Publish{} = data, state: _s]) do
   msg = data.message
 
-  # Logger.info("json=#{msg}")
+  # Logger.info fn -> "#{msg}" end
 
   GenServer.cast(Dispatcher.InboundMessage, {:incoming_message, msg})
   true
