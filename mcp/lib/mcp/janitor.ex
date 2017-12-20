@@ -6,14 +6,17 @@ use GenServer
 import Application, only: [get_env: 3]
 import Process, only: [send_after: 3]
 
-import Mcp.SwitchCmd, only: [purge_acked_cmds: 1]
+alias Mcp.SwitchCmd
 alias Fact.RunMetric
+
+@purge_timer :purge_timer
 
 def start_link(s) do
   defs = [purge_switch_cmds: [interval_mins: 2, older_than_hrs: 2, log: false]]
   opts = get_env(:mcp, Janitor, defs)
 
   s = Map.put(s, :purge_switch_cmds, Keyword.get(opts, :purge_switch_cmds))
+  s = Map.put(s, @purge_timer, nil)
 
   GenServer.start_link(Janitor, s, name: Janitor)
 end
@@ -63,6 +66,9 @@ when is_list(new_opts) do
   s = Map.put(s, :purge_switch_cmds,
                 Keyword.merge(s.purge_switch_cmds, new_opts))
 
+  # reschedule purge won't do anything if the interval is the same
+  s = reschedule_purge(s, new_opts)
+
   {:reply, s.purge_switch_cmds, s}
 end
 
@@ -83,9 +89,9 @@ end
 
 def handle_info({:startup}, s)
 when is_map(s) do
-  send_after(self(), {:purge_switch_cmds}, 0)
-
   Logger.info("startup()")
+
+  s = schedule_purge(s, 0)
 
   {:noreply, s}
 end
@@ -94,7 +100,7 @@ def handle_info({:purge_switch_cmds}, s)
 when is_map(s) do
   purge_sw_cmds(s)
 
-  send_after(self(), {:purge_switch_cmds}, purge_sw_cmds_interval(s))
+  s = schedule_purge(s)
 
   {:noreply, s}
 end
@@ -103,11 +109,13 @@ end
 ## Private functions
 #
 
+defp log_purge(s) do
+  Keyword.get(s.purge_switch_cmds, :log)
+end
+
 defp purge_sw_cmds(s)
 when is_map(s) do
-  hrs = purge_sw_cmds_older_than(s)
-
-  purged = purge_acked_cmds(hours: hrs)
+  purged = SwitchCmd.purge_acked_cmds(s.purge_switch_cmds)
 
   RunMetric.record(module: "#{__MODULE__}",
     metric: "purged_sw_cmd_ack", val: purged)
@@ -120,20 +128,38 @@ when is_map(s) do
   purged
 end
 
-defp purge_sw_cmds_interval(s)
+# handle the situation where the interval has been changed
+defp reschedule_purge(s, new_opts)
+when is_map(s) and is_list(new_opts) do
+  asis = Keyword.get(s.purge_switch_cmds, :interval_mins)
+  tobe = Keyword.get(new_opts, :interval_mins)
+
+  if asis != tobe do
+    Logger.info fn -> "rescheduling purge for interval #{tobe}" end
+    reschedule_purge(s)
+  else
+    s
+  end
+end
+
+defp reschedule_purge(s) do
+  timer = Map.get(s, @purge_timer)
+  unless(timer) do Process.cancel_timer(timer) end
+
+  schedule_purge(s)
+end
+
+defp schedule_purge(s)
 when is_map(s) do
   mins = s.purge_switch_cmds |> Keyword.get(:interval_mins, 2)
-  mins * 60 * 1000
+  after_millis = mins * 60 * 1000
+  schedule_purge(s, after_millis)
 end
 
-defp purge_sw_cmds_older_than(s)
+defp schedule_purge(s, after_millis)
 when is_map(s) do
-  hrs = s.purge_switch_cmds |> Keyword.get(:older_than_hrs, 2)
-  hrs * -1
-end
-
-defp log_purge(s) do
-  Keyword.get(s.purge_switch_cmds, :log)
+  t = send_after(self(), {:purge_switch_cmds}, after_millis)
+  Map.put(s, @purge_timer, t)
 end
 
 end

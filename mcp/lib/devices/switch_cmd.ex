@@ -12,12 +12,14 @@ use Ecto.Schema
 # import Application, only: [get_env: 2]
 import UUID, only: [uuid1: 0]
 import Ecto.Changeset, only: [change: 2]
-import Mcp.Repo, only: [query: 1, preload: 2, insert!: 1, update!: 1]
+import Ecto.Query, only: [from: 2]
+import Mcp.Repo, only: [one: 1, query: 1, preload: 2, insert!: 1, update!: 1]
 
 import Mqtt.Client, only: [publish_switch_cmd: 1]
 
 alias Command.SetSwitch
 alias Mcp.SwitchState
+alias Mcp.SwitchCmd
 
 schema "switch_cmd" do
   field :refid, :string
@@ -31,13 +33,22 @@ schema "switch_cmd" do
   timestamps usec: true
 end
 
-def purge_acked_cmds do
-  hrs_ago = -3
-  purge_acked_cmds([hours: hrs_ago])
+def unacked_count, do: unacked_count([])
+def unacked_count(opts)
+when is_list(opts) do
+  earlier = Timex.to_datetime(Timex.now(), "UTC") |>
+              Timex.shift(minutes: -1)
+
+  from(c in SwitchCmd,
+    where: c.acked == false,
+    where: c.sent_at < ^earlier,
+    select: count(c.id)) |> one()
 end
 
-def purge_acked_cmds([hours: hrs_ago])
-when hrs_ago < 0 do
+def purge_acked_cmds(opts)
+when is_list(opts) do
+
+  hrs_ago = Keyword.get(opts, :older_than_hrs, 12) * -1
 
   sql = ~s/delete from switch_cmd
               where ack_at <
