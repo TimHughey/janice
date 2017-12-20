@@ -38,7 +38,7 @@ config :mcp, Web.Endpoint,
            adapter: Phoenix.PubSub.PG2]
 
 config :mcp, Dispatcher.InboundMessage,
-  log_reading: true,
+  log_reading: false,
   temperature_msgs: {Mcp.Sensor, :external_update},
   switch_msgs: {Mcp.Switch, :external_update}
 

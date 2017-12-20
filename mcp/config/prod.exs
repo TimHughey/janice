@@ -83,7 +83,7 @@ config :mcp, Web.Endpoint,
   static_url: [path: "/mercurial"],
   server: true,
   # root: ".",
-  version: Application.spec(:mcp, :vsn),
+  version: Application.spec(:mcp, :vsn)
   # secret_key_base: set in prod.secret.exs
 
 config :ueberauth, Ueberauth,
