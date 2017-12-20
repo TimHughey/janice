@@ -48,7 +48,7 @@ end
 def purge_acked_cmds(opts)
 when is_list(opts) do
 
-  hrs_ago = Keyword.get(opts, :older_than_hrs, 12) * -1
+  hrs_ago = Keyword.get(opts, :older_than_hrs, 12)
 
   sql = ~s/delete from switch_cmd
               where ack_at <
