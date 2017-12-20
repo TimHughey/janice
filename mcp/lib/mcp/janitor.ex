@@ -12,7 +12,7 @@ alias Fact.RunMetric
 @purge_timer :purge_timer
 
 def start_link(s) do
-  defs = [purge_switch_cmds: [interval_mins: 2, older_than_hrs: 2, log: false]]
+  defs = [purge_switch_cmds: [interval_mins: 1, older_than_hrs: 12, log: false]]
   opts = get_env(:mcp, Janitor, defs)
 
   s = Map.put(s, :purge_switch_cmds, Keyword.get(opts, :purge_switch_cmds))
