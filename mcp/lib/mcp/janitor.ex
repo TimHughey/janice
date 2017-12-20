@@ -94,7 +94,7 @@ def handle_info({:purge_switch_cmds}, s)
 when is_map(s) do
   purge_sw_cmds(s)
 
-  send_after(self(), {:purge_switch_cmds}, purge_sw_cmds_interval())
+  send_after(self(), {:purge_switch_cmds}, purge_sw_cmds_interval(s))
 
   {:noreply, s}
 end
@@ -105,7 +105,7 @@ end
 
 defp purge_sw_cmds(s)
 when is_map(s) do
-  hrs = purge_sw_cmds_older_than()
+  hrs = purge_sw_cmds_older_than(s)
 
   purged = purge_acked_cmds(hours: hrs)
 
@@ -118,16 +118,16 @@ when is_map(s) do
   end
 end
 
-defp purge_sw_cmds_interval do
-  (get_env(:mcp, Janitor, []) |>
-    Keyword.get(:purge_switch_cmds, []) |>
-    Keyword.get(:interval_mins, 2)) * 60 * 1000
+defp purge_sw_cmds_interval(s)
+when is_map(s) do
+  mins = s.purge_switch_cmds |> Keyword.get(:interval_mins, 2)
+  mins * 60 * 1000
 end
 
-defp purge_sw_cmds_older_than do
-  (get_env(:mcp, Janitor, []) |>
-    Keyword.get(:purge_switch_cmds, []) |>
-    Keyword.get(:older_than_hrs, 2)) * -1
+defp purge_sw_cmds_older_than(s)
+when is_map(s) do
+  hrs = s.purge_switch_cmds |> Keyword.get(:older_than_hrs, 2)
+  hrs * -1
 end
 
 defp log_purge(s) do
