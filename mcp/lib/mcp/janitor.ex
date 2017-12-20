@@ -116,6 +116,8 @@ when is_map(s) do
     (purged > 0) && Logger.info fn ->
       ~s/purged #{purged} acked switch commands/ end
   end
+
+  purged
 end
 
 defp purge_sw_cmds_interval(s)
