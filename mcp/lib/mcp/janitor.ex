@@ -38,15 +38,47 @@ when is_boolean(val) do
   GenServer.call(Janitor, {@log_purge_cmds_msg, val})
 end
 
+@manual_purge_msg :purge_switch_cmds
+def manual_purge do
+  GenServer.call(Janitor, {@manual_purge_msg})
+end
+
+@opts_msg :opts
+def opts(new_opts \\ []) do
+  GenServer.call(Janitor, {@opts_msg, new_opts})
+end
+
 #
 ## GenServer callbacks
 #
+
+# if an empty list this is a request for the current configred opts
+def handle_call({@opts_msg, []}, _from, s) do
+  {:reply, s.purge_switch_cmds, s}
+end
+
+# if there is a non-empty list then set the opts to the list
+def handle_call({@opts_msg, new_opts}, _from, s)
+when is_list(new_opts) do
+  s = Map.put(s, :purge_switch_cmds,
+                Keyword.merge(s.purge_switch_cmds, new_opts))
+
+  {:reply, s.purge_switch_cmds, s}
+end
 
 def handle_call({@log_purge_cmds_msg, val}, _from, s) do
   s = Map.put(s, :purge_switch_cmds,
                 Keyword.put(s.purge_switch_cmds, :log, val))
 
   {:reply, :ok, s}
+end
+
+def handle_call({@manual_purge_msg}, _from, s) do
+  Logger.info fn -> "manual purge requested" end
+  result = purge_sw_cmds(s)
+  Logger.info fn -> "manually purged #{result} switch cmds" end
+
+  {:reply, result, s}
 end
 
 def handle_info({:startup}, s)
@@ -60,15 +92,7 @@ end
 
 def handle_info({:purge_switch_cmds}, s)
 when is_map(s) do
-  hrs = purge_sw_cmds_older_than()
-
-  purged = purge_acked_cmds(hours: hrs)
-
-  RunMetric.record(module: "#{__MODULE__}",
-    metric: "purged_sw_cmd_ack", val: purged)
-
-  log_purge(s) && Logger.info fn ->
-    ~s/purged #{purged} acked switch commands/ end
+  purge_sw_cmds(s)
 
   send_after(self(), {:purge_switch_cmds}, purge_sw_cmds_interval())
 
@@ -78,6 +102,21 @@ end
 #
 ## Private functions
 #
+
+defp purge_sw_cmds(s)
+when is_map(s) do
+  hrs = purge_sw_cmds_older_than()
+
+  purged = purge_acked_cmds(hours: hrs)
+
+  RunMetric.record(module: "#{__MODULE__}",
+    metric: "purged_sw_cmd_ack", val: purged)
+
+  if log_purge(s) do
+    purged && Logger.info fn ->
+      ~s/purged #{purged} acked switch commands/ end
+  end
+end
 
 defp purge_sw_cmds_interval do
   (get_env(:mcp, Janitor, []) |>

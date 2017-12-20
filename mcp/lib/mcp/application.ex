@@ -30,9 +30,7 @@ defmodule Mcp.Application do
       {Web.Supervisor, initial}
 
       # {Mcp.SoakTest, initial},
-      # {Mcp.Janitor, initial},
       # {Mcp.Dutycycle, initial},
-      # {Mcp.Mixtank, initial},
       # {Mcp.Chamber, initial}
     ]
 
