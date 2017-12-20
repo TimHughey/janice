@@ -113,7 +113,7 @@ when is_map(s) do
     metric: "purged_sw_cmd_ack", val: purged)
 
   if log_purge(s) do
-    purged && Logger.info fn ->
+    (purged > 0) && Logger.info fn ->
       ~s/purged #{purged} acked switch commands/ end
   end
 end
