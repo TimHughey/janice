@@ -46,6 +46,7 @@ function pageReady( jQuery ) {
       scrollY: '50vh',
       deferRender: true,
       scroller: true,
+      select: true,
       columns: [
         {data: "id", class: "col-center"},
         {data: "friendly_name"},
@@ -75,20 +76,21 @@ function pageReady( jQuery ) {
 
     var switchTable = $('#switchesTable').DataTable( {
       dom: 'Bfrtip',
-      "ajax": "mcp/api/detail/switches",
-      "scrollY": '50vh',
-      "deferRender": true,
-      "scroller": true,
-      "columns": [
-        {"data": "id", class: "col-center"},
-        {"data": "friendly_name"},
-        {"data": "device"},
-        // {"data": "enabled", class: "col-center"},
-        {"data": "description"},
-        {"data": "dev_latency", class: "col-center", render: humanize_us},
-        {"data": "last_cmd_secs", class: "col-center", render: humanize_ms},
-        {"data": "last_seen_secs", class: "col-center", render: humanize_ms},
-        {"data": "state", class: "col-state-off", render: humanize_state}
+      ajax: "mcp/api/detail/switches",
+      scrollY: '50vh',
+      deferRender: true,
+      scroller: true,
+      select: true,
+      columns: [
+        {data: "id", class: "col-center"},
+        {data: "friendly_name"},
+        {data: "device"},
+        // {data: "enabled", class: "col-center"},
+        {data: "description"},
+        {data: "dev_latency", class: "col-center", render: humanize_us},
+        {data: "last_cmd_secs", class: "col-center", render: humanize_ms},
+        {data: "last_seen_secs", class: "col-center", render: humanize_ms},
+        {data: "state", class: "col-state-off", render: humanize_state}
       ],
       buttons: [
         {
@@ -111,18 +113,19 @@ function pageReady( jQuery ) {
 
     var sensorTable = $('#sensorsTable').DataTable( {
       dom: 'Bfrtip',
-      "ajax": "mcp/api/detail/sensors",
-      "scrollY": '50vh',
-      "deferRender": true,
-      "scroller": true,
+      ajax: "mcp/api/detail/sensors",
+      scrollY: '50vh',
+      deferRender: true,
+      scroller: true,
+      select: true,
       "columns": [
-        {"data": "id", class: "col-center"},
-        {"data": "friendly_name"},
-        {"data": "device"},
-        {"data": "description"},
-        {"data": "last_seen_secs", class: "col-center", render: humanize_ms},
-        {"data": "reading_secs", class: "col-center", render: humanize_ms},
-        {"data": "celsius", class: "col-center"}
+        {data: "id", class: "col-center"},
+        {data: "friendly_name"},
+        {data: "device"},
+        {data: "description"},
+        {data: "last_seen_secs", class: "col-center", render: humanize_ms},
+        {data: "reading_secs", class: "col-center", render: humanize_ms},
+        {data: "celsius", class: "col-center"}
       ],
       buttons: [
         {

@@ -19,6 +19,7 @@ import "bootstrap";
 require('datatables.net')();
 require('datatables.net-scroller')();
 require('datatables.net-buttons')();
+require('datatables.net-select')();
 
 // Import local files
 //
