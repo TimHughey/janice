@@ -27,6 +27,7 @@ erl_crash.dump
 .piolibdeps
 .clang_complete
 .gcc-flags.json
+.sconsign.dblite
 
 # Generated on crash by NPM
 npm-debug.log
