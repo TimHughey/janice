@@ -40,40 +40,6 @@ function humanize_us(data, type, row) {
 
 function pageReady( jQuery ) {
     // Code to run when the document is ready.
-    var noDeviceTable = $('#noDeviceTable').DataTable( {
-      dom: 'Bfrtip',
-      ajax: "mcp/api/detail/alias-only",
-      scrollY: '50vh',
-      deferRender: true,
-      scroller: true,
-      select: true,
-      columns: [
-        {data: "id", class: "col-center"},
-        {data: "friendly_name"},
-        {data: "device"},
-        {data: "description"},
-        {data: "last_seen_secs", class: "col-center", render: humanize_ms},
-        {data: "last_seen_at", class: "col-center"}
-      ],
-      buttons: [
-        {
-            text: 'Refresh',
-            action: function ( e, dt, node, config ) {
-                dt.button(0).processing(true);
-                dt.ajax.reload();
-                dt.button(0).processing(false);
-                dt.button(0).text("Refreshed");
-                dt.button(0).disable();
-                setTimeout(
-                  function() { var dt = $('#noDeviceTable').DataTable();
-                               dt.button(0).text("Refresh");
-                               dt.button(0).enable(); },
-                  10000);
-            }
-        }
-      ]
-    });
-
     var switchTable = $('#switchesTable').DataTable( {
       dom: 'Bfrtip',
       ajax: "mcp/api/detail/switches",
@@ -123,6 +89,7 @@ function pageReady( jQuery ) {
         {data: "friendly_name"},
         {data: "device"},
         {data: "description"},
+        {data: "dev_latency", class: "col-center", render: humanize_us},
         {data: "last_seen_secs", class: "col-center", render: humanize_ms},
         {data: "reading_secs", class: "col-center", render: humanize_ms},
         {data: "celsius", class: "col-center"}

@@ -5,13 +5,12 @@ defmodule Web.McpController do
   use Web, :controller
 
   alias Mcp.DevAlias
-  alias Mcp.Sensor
   alias Mcp.Switch
 
   def index(conn, _params) do
     all_fnames = DevAlias.all(:friendly_names) |> MapSet.new()
     switch_fnames = Switch.all(:friendly_names)
-    sensor_fnames = Sensor.all(:friendly_names)
+    sensor_fnames = Sensor.all(:names)
 
     known_fnames = (switch_fnames ++ sensor_fnames) |> MapSet.new()
     unknown_fnames =

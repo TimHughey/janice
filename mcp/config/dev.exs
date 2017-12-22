@@ -39,8 +39,8 @@ config :mcp, Mcp.Repo,
   database: "merc_dev",
   username: "merc_dev",
   password: "merc_dev",
-  hostname: "127.0.0.1",
-  # hostname: "jophiel.wisslanding.com",
+  #hostname: "127.0.0.1",
+  hostname: "jophiel.wisslanding.com",
   pool_size: 10
 
 config :mcp, Mcp.Switch,

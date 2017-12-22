@@ -3,7 +3,6 @@ defmodule Web.McpDetailView do
 
   use Timex
   alias Mcp.DevAlias
-  alias Mcp.Sensor
   alias Mcp.Switch
 
   def render("index.json", %{mcp_details: mcp_details}) do
@@ -43,13 +42,14 @@ defmodule Web.McpDetailView do
   end
 
   def render("mcp_detail.json",
-             %{mcp_detail: %{a: %DevAlias{} = da, s: %Sensor{} = s}}) do
+             %{mcp_detail: %Sensor{} = s}) do
 
     %{type: "sensor",
-      id: da.id,
-      friendly_name: da.friendly_name,
-      device: da.device,
-      description: da.description,
+      id: s.id,
+      friendly_name: s.name,
+      device: s.device,
+      description: s.description,
+      dev_latency: s.dev_latency,
       last_seen_secs: humanize_secs(s.last_seen_at),
       reading_secs: humanize_secs(s.reading_at),
       celsius: s.temperature.tc}

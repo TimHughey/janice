@@ -7,7 +7,6 @@ defmodule Web.McpDetailController do
   use Web, :controller
 
   alias Mcp.DevAlias
-  alias Mcp.Sensor
   alias Mcp.Switch
 
   def index(conn, %{"type" => "alias-only"} = params) do
@@ -15,7 +14,7 @@ defmodule Web.McpDetailController do
 
     all_fnames = DevAlias.all(:friendly_names) |> MapSet.new()
     switch_fnames = Switch.all(:friendly_names)
-    sensor_fnames = Sensor.all(:friendly_names)
+    sensor_fnames = Sensor.all(:names)
 
     known_fnames = (switch_fnames ++ sensor_fnames) |> MapSet.new()
     unknown_fnames =
@@ -40,8 +39,7 @@ defmodule Web.McpDetailController do
     Logger.info fn -> inspect(params) end
     Logger.debug fn -> inspect(conn) end
 
-    sensor_fnames = Sensor.all(:friendly_names)
-    sensors = Enum.map(sensor_fnames, fn(x) -> sensor_details(x) end)
+    sensors = Sensor.all(:everything)
 
     render conn, "index.json", mcp_details: sensors
   end
@@ -57,11 +55,11 @@ defmodule Web.McpDetailController do
     %{a: dev_alias, s: switch}
   end
 
-  defp sensor_details(fname) do
-    dev_alias = DevAlias.get_by_friendly_name(fname)
-    sensor = Sensor.get(:friendly_name, fname)
-
-    %{a: dev_alias, s: sensor}
-  end
+  # defp sensor_details(fname) do
+  #   dev_alias = DevAlias.get_by_friendly_name(fname)
+  #   sensor = Sensor.get(:friendly_name, fname)
+  #
+  #   %{a: dev_alias, s: sensor}
+  # end
 
 end

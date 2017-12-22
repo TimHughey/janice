@@ -39,7 +39,7 @@ config :mcp, Web.Endpoint,
 
 config :mcp, Dispatcher.InboundMessage,
   log_reading: false,
-  temperature_msgs: {Mcp.Sensor, :external_update},
+  temperature_msgs: {Sensor, :external_update},
   switch_msgs: {Mcp.Switch, :external_update}
 
 config :ueberauth, Ueberauth,

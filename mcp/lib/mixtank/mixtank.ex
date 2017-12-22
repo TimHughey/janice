@@ -33,7 +33,6 @@ defmodule Mixtank do
   use Timex
 
   alias Mcp.Repo
-  alias Mcp.Sensor
   alias Mcp.Switch
   import Ecto.Changeset, only: [change: 2]
   import Ecto.Query, only: [from: 2]

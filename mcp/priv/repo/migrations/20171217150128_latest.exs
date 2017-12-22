@@ -86,20 +86,24 @@ defmodule Mcp.Repo.Migrations.Latest do
     drop_if_exists index(:sensor_relhum, [:sensor_id])
 
     drop_if_exists table(:sensor)
+    drop_if_exists index(:sensor, [:name], unique: true)
     drop_if_exists index(:sensor, [:device], unique: true)
     drop_if_exists index(:sensor, [:reading_at])
     drop_if_exists index(:sensor, [:last_seen_at])
 
     create_if_not_exists table(:sensor) do
+      add :name, :string, size: 40, null: false
+      add :description, :text, default: "new sensor"
       add :device, :string, size: 40, null: false
-      add :sensor_type, :string, size: 10, null: false, default: "undef"
-      add :dev_latency, :float, null: true, default: nil
+      add :type, :string, size: 10, null: false, default: "undef"
+      add :dev_latency, :integer, null: true, default: nil
       add :reading_at, :utc_datetime, default: before_now
       add :last_seen_at, :utc_datetime, default: current_time
 
       timestamps()
     end
 
+    create_if_not_exists index(:sensor, [:name], unique: true)
     create_if_not_exists index(:sensor, [:device], unique: true)
     create_if_not_exists index(:sensor, [:reading_at])
     create_if_not_exists index(:sensor, [:last_seen_at])
@@ -109,7 +113,7 @@ defmodule Mcp.Repo.Migrations.Latest do
         references(:sensor, on_delete: :delete_all, on_update: :update_all)
       add :tc, :float, null: true, default: nil
       add :tf, :float, null: true, default: nil
-      add :ttl_ms, :integer, null: false, default: 1000
+      add :ttl_ms, :integer, null: false, default: 10000
 
       timestamps()
     end
@@ -120,7 +124,7 @@ defmodule Mcp.Repo.Migrations.Latest do
       add :sensor_id,
         references(:sensor, on_delete: :delete_all, on_update: :update_all)
       add :rh, :float, null: true, default: nil
-      add :ttl_ms, :integer, null: false, default: 1000
+      add :ttl_ms, :integer, null: false, default: 10000
 
       timestamps()
     end

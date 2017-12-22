@@ -33,7 +33,7 @@ defmodule Mcp.Chamber do
   alias Ecto.Changeset
 
   alias Mcp.Chamber
-  alias Mcp.{Repo, Sensor}
+  alias Mcp.Repo
   alias Mcp.Chamber.{ServerState, RunState, Device}
 
   @vsn 1

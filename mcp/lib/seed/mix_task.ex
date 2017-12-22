@@ -6,6 +6,7 @@ require Logger
 use Mix.Task
 import Mix.Ecto
 import Seeds
+import Seed.Sensors
 
 # alias Mcp.Chamber
 alias Mcp.DevAlias
@@ -42,6 +43,10 @@ def run(args) do
   {:ok, _started} = Application.ensure_all_started(:timex)
 
   Logger.info fn -> ":timex started" end
+
+  sensors(Mix.env) |>
+    Enum.each(fn(x) -> Logger.info("seeding sensor [#{x.name}]")
+                       Sensor.add(x) end)
 
   dev_aliases(Mix.env) |>
     Enum.each( fn (x) -> Logger.info("seeding devalias [#{x.friendly_name}]")
