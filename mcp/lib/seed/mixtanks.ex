@@ -68,7 +68,7 @@ def mixtanks(:prod) do
     state_at: Timex.now()},
   %Mixtank{name: "reefmix minimal",
     description: "reefwater minimal mode (pump minimal, air minimal)",
-    enable: :false,
+    enable: true,
     sensor: "mixtank", ref_sensor: "display_tank",
     heat_sw: "mixtank_heater",
     air_sw: "mixtank_air",

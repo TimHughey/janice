@@ -400,9 +400,9 @@ defmodule Mixtank do
     if not State.tank_disabled?(state, name) do
       Logger.info("[#{name}] disabled, stopping it.")
 
-      SwitchState.state(mixtank.heat_sw, :false)
-      SwitchState.state(mixtank.air_sw, :false)
-      SwitchState.state(mixtank.pump_sw, :false)
+      SwitchState.state(mixtank.heat_sw, false)
+      SwitchState.state(mixtank.air_sw, false)
+      SwitchState.state(mixtank.pump_sw, false)
 
       state = State.set_heat_disabled(state, name)
       state = State.set_air_disabled(state, name)
@@ -565,6 +565,13 @@ defmodule Mixtank do
   end
 
   def handle_cast({@manual_control_msg, _code}, %State{} = state) do
+
+    {:noreply, state}
+  end
+
+  def handle_info({:EXIT, pid, reason}, state) do
+    Logger.debug fn -> ":EXIT message " <>
+                       "pid: #{inspect(pid)} reason: #{inspect(reason)}" end
 
     {:noreply, state}
   end

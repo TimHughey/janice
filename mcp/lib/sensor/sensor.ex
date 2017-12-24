@@ -190,10 +190,9 @@ when is_map(r) do
 
   measured_dt = Timex.from_unix(r.mtime)
   reading_dt = Timex.now
-  latency = Timex.diff(reading_dt, measured_dt)
   map = %{last_seen_at: measured_dt,
           reading_at: reading_dt,
-          dev_latency: latency,
+          dev_latency: r.latency,
           temperature: tcs}
 
   change(s, map) |> update!()
