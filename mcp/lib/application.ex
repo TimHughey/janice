@@ -20,7 +20,7 @@ defmodule Mcp.Application do
 
     # List all child processes to be supervised
     children = [
-      {Mcp.Repo, []},
+      {Repo, []},
       {Fact.Supervisor, initial},
       {Mqtt.Supervisor, initial},
       {Dispatcher.Supervisor, initial},
@@ -39,7 +39,7 @@ defmodule Mcp.Application do
     opts = [strategy: :one_for_one, name: Mcp.Supervisor]
 
     # only start the Supervisor if the database password is set
-    if get_env(:mcp, Mcp.Repo, []) |> has_key?(:password) do
+    if get_env(:mcp, Repo, []) |> has_key?(:password) do
       Supervisor.start_link(children, opts)
     else
       {:error, :no_db_password}

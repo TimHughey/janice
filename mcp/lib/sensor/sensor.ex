@@ -11,10 +11,7 @@ use Ecto.Schema
 #import Application, only: [get_env: 2]
 import Ecto.Changeset, only: [change: 2]
 import Ecto.Query, only: [from: 2]
-import Mcp.Repo, only: [all: 2, insert!: 1, update!: 1, one: 1]
-
-alias Mcp.SensorTemperature
-alias Mcp.SensorRelHum
+import Repo, only: [all: 2, insert!: 1, update!: 1, one: 1]
 
 alias Fact.Fahrenheit
 alias Fact.Celsius
@@ -28,8 +25,8 @@ schema "sensor" do
   field :dev_latency, :integer
   field :reading_at, Timex.Ecto.DateTime
   field :last_seen_at, Timex.Ecto.DateTime
-  has_one :temperature, Mcp.SensorTemperature
-  has_one :relhum, Mcp.SensorRelHum
+  has_one :temperature, SensorTemperature
+  has_one :relhum, SensorRelHum
 
   timestamps usec: true
 end
@@ -40,7 +37,9 @@ def add([%Sensor{} = s | rest]) do
 end
 
 def add(%Sensor{name: name} = s) do
-  q = from(s in Sensor, where: s.name == ^name)
+  q = from(s in Sensor,
+        where: s.name == ^name,
+        preload: [:temperature, :relhum])
 
   case one(q) do
     nil   -> ensure_temperature(s) |> ensure_relhum() |> insert!()

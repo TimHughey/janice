@@ -1,4 +1,4 @@
-defmodule Mcp.SensorRelHum do
+defmodule SensorRelHum do
 @moduledoc """
   The SensorTemperature module provides individual temperature readings for
   a Sensor

@@ -28,8 +28,7 @@ defmodule Dutycycle.Server do
   # use Ecto.Schema
   # use Timex
   #
-  # alias Mcp.Repo
-  # alias Mcp.Switch
+  # alias Switch
   # alias Ecto.Changeset
   # import Ecto.Query, only: [from: 2]
   # import Application, only: [get_env: 2]

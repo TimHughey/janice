@@ -14,7 +14,7 @@ config :logger,
 
 # General application configuration
 config :mcp,
-  ecto_repos: [Mcp.Repo],
+  ecto_repos: [Repo],
   build_env: "#{Mix.env}",
   namespace: Web,
   generators: [context_app: false],
@@ -40,7 +40,7 @@ config :mcp, Web.Endpoint,
 config :mcp, Dispatcher.InboundMessage,
   log_reading: false,
   temperature_msgs: {Sensor, :external_update},
-  switch_msgs: {Mcp.Switch, :external_update}
+  switch_msgs: {Switch, :external_update}
 
 config :ueberauth, Ueberauth,
   base_path: "/mercurial/auth"

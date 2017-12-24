@@ -6,7 +6,6 @@ use GenServer
 import Application, only: [get_env: 2]
 import Process, only: [send_after: 3]
 
-alias Mcp.Switch
 alias Fact.LedFlashes
 
 def start_link(s) do
@@ -83,8 +82,8 @@ def handle_info({:flash_led}, s) do
   dev = "led1"
   led_flashes = s.led_flashes + 1
 
-  Switch.set_state(dev, true)
-  Switch.set_state(dev, false)
+  SwitchState.state(dev, true)
+  SwitchState.state(dev, false)
 
   LedFlashes.record(application: "mcp_soaktest",
     friendly_name: dev, val: led_flashes)

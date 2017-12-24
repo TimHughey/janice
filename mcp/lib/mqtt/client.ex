@@ -99,7 +99,8 @@ def handle_call({:publish, opts}, _from,
 
   msg = opts |> Keyword.fetch!(:message)
 
-  Logger.warn fn -> ~s/not connected, dropping msg #{msg}/ end
+  config(:log_dropped_msgs) && Logger.warn fn ->
+                                ~s/not connected, dropping msg #{msg}/ end
 
   {:reply, :ok, s}
 end

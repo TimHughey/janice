@@ -6,7 +6,6 @@ use GenServer
 import Application, only: [get_env: 3]
 import Process, only: [send_after: 3]
 
-alias Mcp.SwitchCmd
 alias Fact.RunMetric
 
 @purge_timer :purge_timer

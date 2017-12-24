@@ -39,6 +39,8 @@ function humanize_us(data, type, row) {
 }
 
 function pageReady( jQuery ) {
+    $.fn.dataTable.ext.errMode = 'throw';
+
     // Code to run when the document is ready.
     var switchTable = $('#switchesTable').DataTable( {
       dom: 'Bfrtip',
@@ -128,19 +130,6 @@ function pageFullyLoaded() {
 $(document).ready( pageReady );
 
 $( window ).on( "load", pageFullyLoaded );
-
-// $(function() {
-//     $('.lazy').Lazy({
-//       noDeviceTabLoad: function(element) {
-//           var data = $.get("mcp/detail/nodevice");
-//           element.html(data);
-//         }});
-//     });
-
-$("#collapseNoDevice").on('show.bs.collapse', function(event) {
-    $('#noDeviceTable').DataTable().ajax.reload();
-      // setTimeout(function(){ $('#collapseNoDevice').collapse('hide'); }, 3000);
-});
 
 $("#collapseSwitches").on('show.bs.collapse', function(event) {
   $('#switchesTable').DataTable().ajax.reload();

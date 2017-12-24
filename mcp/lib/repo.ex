@@ -1,4 +1,4 @@
-defmodule Mcp.Repo do
+defmodule Repo do
 
 #    Master Control Program for Wiss Landing
 #    Copyright (C) 2016  Tim Hughey (thughey)

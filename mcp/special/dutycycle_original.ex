@@ -28,8 +28,6 @@ defmodule Dutycycle do
   use Ecto.Schema
   use Timex
 
-  alias Mcp.Repo
-  alias Mcp.Switch
   alias Ecto.Changeset
   import Ecto.Query, only: [from: 2]
   import Application, only: [get_env: 2]
@@ -103,7 +101,7 @@ defmodule Dutycycle do
 
   defp control_device(dutycycle, power)
   when is_boolean(power) do
-    Switch.set_state(dutycycle.device_sw, power, :lazy)
+    SwitchState.state(dutycycle.device_sw, power, :lazy)
     update = %{state_at: Timex.now(), device_state: power}
     dutycycle |> Changeset.change(update) |> Repo.update()
   end

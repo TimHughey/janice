@@ -32,8 +32,6 @@ defmodule Mixtank do
   use Ecto.Schema
   use Timex
 
-  alias Mcp.Repo
-  alias Mcp.Switch
   import Ecto.Changeset, only: [change: 2]
   import Ecto.Query, only: [from: 2]
   import Application, only: [get_env: 2]
@@ -402,9 +400,9 @@ defmodule Mixtank do
     if not State.tank_disabled?(state, name) do
       Logger.info("mixtank [#{name}] disabled, stopping it.")
 
-      Switch.set_state(mixtank.heat_sw, :false)
-      Switch.set_state(mixtank.air_sw, :false)
-      Switch.set_state(mixtank.pump_sw, :false)
+      SwitchState.state(mixtank.heat_sw, :false)
+      SwitchState.state(mixtank.air_sw, :false)
+      SwitchState.state(mixtank.pump_sw, :false)
 
       state = State.set_heat_disabled(state, name)
       state = State.set_air_disabled(state, name)
@@ -430,7 +428,7 @@ defmodule Mixtank do
 
     next_position = calc_next_sw_state(val, ref_val)
 
-    Switch.set_state(mixtank.heat_sw, next_position, :lazy)
+    SwitchState.state(mixtank.heat_sw, next_position, :lazy)
     update = [state_at: Timex.now(), heat_state: next_position]
     mixtank |> change(update) |> Repo.update()
 
@@ -458,7 +456,7 @@ defmodule Mixtank do
   defp update_pump(%Mixtank{} = mixtank, power)
   when is_boolean(power) do
 
-    Switch.set_state(mixtank.pump_sw, power, :lazy)
+    SwitchState.state(mixtank.pump_sw, power, :lazy)
     update = [state_at: Timex.now(), pump_state: power]
     mixtank |> change(update) |> Repo.update()
   end
@@ -466,7 +464,7 @@ defmodule Mixtank do
   defp update_air(mixtank, power)
   when is_boolean(power) do
 
-    Switch.set_state(mixtank.air_sw, power, :lazy)
+    SwitchState.state(mixtank.air_sw, power, :lazy)
     update = [state_at: Timex.now(), air_state: power]
     mixtank |> change(update) |> Repo.update()
   end
@@ -576,7 +574,7 @@ defmodule Mixtank do
     Logger.info fn -> "setting mixtank switches off at startup" end
     switches = get_all_switches()
     Enum.each(switches, fn(n) -> Logger.info " #{n} off"
-                                 Switch.set_state(n, false) end)
+                                 SwitchState.state(n, false) end)
 
     state = State.kickstarted(state)
 
