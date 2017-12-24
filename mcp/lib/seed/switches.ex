@@ -10,7 +10,10 @@ defmodule Seed.Switches do
                        %SwitchState{name: "sw2", pio: 1}]},
      %Switch{device: "ds/2pos2",
               states: [%SwitchState{name: "sw3", pio: 0},
-                       %SwitchState{name: "sw4", pio: 1}]}] end
+                       %SwitchState{name: "sw4", pio: 1}]},
+     %Switch{device: "ds/2pos3",
+              states: [%SwitchState{name: "sw5", pio: 0},
+                       %SwitchState{name: "sw6", pio: 1}]}] end
 
   def switches(:prod) do
     [%Switch{device: "ds/12197521000000",

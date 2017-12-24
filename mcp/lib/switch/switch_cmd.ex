@@ -74,8 +74,10 @@ end
 def unacked_count, do: unacked_count([])
 def unacked_count(opts)
 when is_list(opts) do
+  minutes_ago = Keyword.get(opts, :minutes_ago, 0)
+
   earlier = Timex.to_datetime(Timex.now(), "UTC") |>
-              Timex.shift(minutes: -1)
+              Timex.shift(minutes: (minutes_ago * -1))
 
   from(c in SwitchCmd,
     where: c.acked == false,

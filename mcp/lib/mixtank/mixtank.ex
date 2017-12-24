@@ -398,7 +398,7 @@ defmodule Mixtank do
     name = mixtank.name
 
     if not State.tank_disabled?(state, name) do
-      Logger.info("mixtank [#{name}] disabled, stopping it.")
+      Logger.info("[#{name}] disabled, stopping it.")
 
       SwitchState.state(mixtank.heat_sw, :false)
       SwitchState.state(mixtank.air_sw, :false)
@@ -502,7 +502,7 @@ defmodule Mixtank do
 
   defp start_components(%Mixtank{enable: :true} = mixtank, %State{} = state) do
     name = mixtank.name
-    Logger.info("mixtank [#{name}] enabled, starting up.")
+    Logger.info("[#{name}] enabled, starting up.")
 
     timer = send_after({@control_temp_msg, name}, 2)
     state = State.set_control_temp_timer(state, name, timer)
@@ -515,7 +515,7 @@ defmodule Mixtank do
   end
   defp start_components(%Mixtank{enable: :false} = mixtank, %State{} = state) do
     name = mixtank.name
-    Logger.info("mixtank [#{name}] disabled, will not start.")
+    Logger.info("[#{name}] disabled, will not start.")
 
     state = State.set_heat_disabled(state, name)
     state = State.set_air_disabled(state, name)
@@ -571,10 +571,10 @@ defmodule Mixtank do
 
   def handle_info(@init_msg, %State{} = state) do
 
-    Logger.info fn -> "setting mixtank switches off at startup" end
+    Logger.info fn -> "setting all switches off at startup" end
     switches = get_all_switches()
-    Enum.each(switches, fn(n) -> Logger.info " #{n} off"
-                                 SwitchState.state(n, false) end)
+    Enum.each(switches, fn(n) -> SwitchState.state(n, false) end)
+    Logger.info fn -> "switches off: #{inspect(switches)}" end
 
     state = State.kickstarted(state)
 

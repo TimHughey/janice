@@ -1,5 +1,6 @@
 defmodule Mcp.IExHelpers do
 
+require Logger
 use Timex
 alias Mqtt.Client
 @moduledoc """
@@ -7,27 +8,6 @@ alias Mqtt.Client
 # def main_grow do
 #   Mcp.Chamber.status("main grow", :print)
 # end
-
-def led1_state(state) do
-  SwitchState.state("led1", state)
-  :ok
-end
-
-def led1_on do
-  led1_state(true)
-  :ok
-end
-
-def led1_off do
-  led1_state(false)
-  :ok
-end
-
-def led1_flash do
-  led1_state(false)
-  led1_state(true)
-  led1_state(false)
-end
 
 def mqtt_start do
   Client.connect()
@@ -107,8 +87,17 @@ def switch_test(device) do
     Dispatcher.InboundMessage.process()
 end
 
-def ack_a_cmd do
-  cmd = SwitchCmd.unacked() |> hd
+def ack_all_cmds do
+  SwitchCmd.unacked() |> ack_a_cmd()
+end
+
+def ack_a_cmd, do: SwitchCmd.unacked() |> hd()
+def ack_a_cmd([]), do: :ok
+def ack_a_cmd(cmds) when is_list(cmds) do
+  ack_a_cmd(hd(cmds))
+  ack_a_cmd(tl(cmds))
+end
+def ack_a_cmd(%SwitchCmd{} = cmd) do
   states =
     Enum.map(cmd.switch.states, fn(x) -> %{pio: x.pio, state: x.state} end)
   pio_count = Enum.count(states)
@@ -124,14 +113,24 @@ def ack_a_cmd do
     cmdack: true} |> Poison.encode!() |> Dispatcher.InboundMessage.process()
 end
 
-def switch_state_test(name, count, states \\ [true, false]) do
-  for _i <- 0..count, j <- states do
-    SwitchState.state(name, j)
-    ack_a_cmd()
+def switch_state_test, do: switch_state_test(["sw1"], 10, [true, false])
+def switch_state_test(name)
+  when is_binary(name), do: switch_state_test([name], 10, [true, false])
+def switch_state_test(name, count, states)
+when is_binary(name), do: switch_state_test([name], count, states)
+
+def switch_state_test(names, count, states) when is_list(states) do
+  {elapsed, result} =
+    :timer.tc fn ->
+      for name <- names, _i <- 0..count, j <- states do
+        SwitchState.state(name, j)
+        ack_a_cmd()
+      end
   end
 
-  ack_a_cmd()
-
+  Logger.info fn -> "switch_state_test() count: #{Enum.count(result)} " <>
+                    "switches: #{inspect(names)} " <>
+                    "elapsed microsecs: #{elapsed}" end
   :ok
 end
 

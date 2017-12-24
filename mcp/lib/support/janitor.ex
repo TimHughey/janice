@@ -20,6 +20,10 @@ def start_link(s) do
   GenServer.start_link(Janitor, s, name: Janitor)
 end
 
+def terminate(reason, _state) do
+  Logger.info fn -> "terminating with reason #{inspect(reason)}" end
+end
+
 ## Callbacks
 
 def init(s)
@@ -89,6 +93,7 @@ end
 def handle_info({:startup}, s)
 when is_map(s) do
   Logger.info("startup()")
+  Process.flag(:trap_exit, true)
 
   s = schedule_purge(s, 0)
 
