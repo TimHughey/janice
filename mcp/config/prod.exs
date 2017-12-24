@@ -8,6 +8,10 @@ config :logger,
 
 config :mcp,
   feeds: [cmd: "prod/mcr/f/command", rpt: "prod/mcr/f/report"]
+  
+config :mcp, MessageSave,
+  save: true,
+  delete_older_than_hrs: 12
 
 config :mcp, Command.Control,
   timesync_opts: [frequency: (60*1000), # millisecs

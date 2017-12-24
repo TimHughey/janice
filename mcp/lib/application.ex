@@ -21,6 +21,7 @@ defmodule Mcp.Application do
     # List all child processes to be supervised
     children = [
       {Repo, []},
+      {MessageSave, initial},
       {Fact.Supervisor, initial},
       {Mqtt.Supervisor, initial},
       {Dispatcher.Supervisor, initial},

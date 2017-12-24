@@ -44,7 +44,7 @@ def tsensor_test(device) do
 
   make_mtime_current(json) |>
     change_device(device) |>
-    Dispatcher.InboundMessage.process()
+    Dispatcher.InboundMessage.process(:save)
 end
 
 def rsensor_test do
@@ -63,7 +63,7 @@ def rsensor_test(device) do
 
   make_mtime_current(json) |>
     change_device(device) |>
-    Dispatcher.InboundMessage.process()
+    Dispatcher.InboundMessage.process(:save)
 end
 
 def switch_json do
@@ -84,7 +84,7 @@ def switch_test(device) do
   switch_json() |>
     make_mtime_current() |>
     change_device(device) |>
-    Dispatcher.InboundMessage.process()
+    Dispatcher.InboundMessage.process(:save)
 end
 
 def ack_all_cmds do
@@ -110,9 +110,12 @@ def ack_a_cmd(%SwitchCmd{} = cmd) do
     pio_count: pio_count,
     states: states,
     refid: cmd.refid,
-    cmdack: true} |> Poison.encode!() |> Dispatcher.InboundMessage.process()
+    cmdack: true} |> Poison.encode!() |> Dispatcher.InboundMessage.process(:save)
 end
 
+def big_switch_state_test do
+  switch_state_test(["sw1", "sw2", "sw3"], 10, [true, true, true, false, false])
+end
 def switch_state_test, do: switch_state_test(["sw1"], 10, [true, false])
 def switch_state_test(name)
   when is_binary(name), do: switch_state_test([name], 10, [true, false])
