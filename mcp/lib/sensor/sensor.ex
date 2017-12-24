@@ -217,7 +217,7 @@ when is_map(r) do
 end
 
 
-defp update_relhum(%Ecto.Changeset{data: %Sensor{relhum: relhum}}, r)
+defp update_relhum(%Sensor{relhum: relhum}, r)
 when is_map(r) do
   rh = Float.round(r.rh * 1.0, 2)
   change(relhum, %{rh: rh})
