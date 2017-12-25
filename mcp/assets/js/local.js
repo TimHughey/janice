@@ -16,7 +16,7 @@ function humanizeState(data, type, row) {
 
 function prettyUs(data, type, row) {
   if (data > 0) {
-    return prettyMs(data, {compact: true})
+    return prettyMs((data / 1000), {compact: true})
   }
 
   return "-";
