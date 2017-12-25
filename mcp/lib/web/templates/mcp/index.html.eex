@@ -16,18 +16,18 @@
       </div>
       <div id="collapseSwitches" class="collapse" role="tabpanel" aria-labelledby="headingSwitches" data-parent="#accordion">
         <div class="card-body">
-            <table class="table display" id="switchesTable">
+            <table class="table display" cellspacing="0" width="100%" id="switchesTable">
               <thead>
                 <tr>
-                  <td>Id</td>
-                  <td>Alias</td>
-                  <td>Device</td>
-                  <!-- <td>Enabled</td> -->
-                  <td>Description</td>
-                  <td>Dev Latency</td>
-                  <td>Last Cmd</th>
-                  <td>Last Seen</td>
-                  <td>State</td>
+                  <th>Id</th>
+                  <th>Alias</th>
+                  <th>Device</th>
+                  <!-- <th>Enabled</th> -->
+                  <th>Description</th>
+                  <th>Dev Latency</th>
+                  <th>Last Cmd</th>
+                  <th>Last Seen</th>
+                  <th>State</th>
                 </tr>
               </thead>
           </table>

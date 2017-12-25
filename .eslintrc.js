@@ -5,10 +5,9 @@ module.exports = {
         "browser": true,
         "es6": true
     },
+    "globals": {"prettyMs": true},
     "extends": "eslint:recommended",
-    "parserOptions": {
-        "sourceType": "module"
-    },
+    "parserOptions": {"sourceType": "module"},
     "rules": {
         "accessor-pairs": "error",
         "array-bracket-newline": "off",
@@ -35,9 +34,7 @@ module.exports = {
         "brace-style": [
             "error",
             "1tbs",
-            {
-                "allowSingleLine": true
-            }
+            {"allowSingleLine": true}
         ],
         "callback-return": "error",
         "camelcase": "off",
@@ -207,7 +204,7 @@ module.exports = {
         "no-underscore-dangle": "error",
         "no-unmodified-loop-condition": "error",
         "no-unneeded-ternary": "error",
-        "no-unused-vars": ["error", { "args": "none" }],
+        "no-unused-vars": [ "error", {"args": "none"} ],
         "no-unused-expressions": "error",
         "no-use-before-define": "error",
         "no-useless-call": "error",
@@ -229,9 +226,7 @@ module.exports = {
         ],
         "object-property-newline": [
             "error",
-            {
-                "allowMultiplePropertiesPerLine": true
-            }
+            {"allowMultiplePropertiesPerLine": true}
         ],
         "object-shorthand": "off",
         "one-var": "off",

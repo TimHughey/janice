@@ -22,13 +22,10 @@ exports.config = {
     },
     stylesheets: {
       joinTo: "css/app.css",
-      order: {
-        after: ["priv/static/css/app.scss"] // concat app.css last
+      order: {after: [ "priv/static/css/app.scss" ] // concat app.css last
       }
     },
-    templates: {
-      joinTo: "js/app.js"
-    }
+    templates: {joinTo: "js/app.js"}
   },
 
   conventions: {
@@ -41,7 +38,7 @@ exports.config = {
   // Phoenix paths configuration
   paths: {
     // Dependencies and current project directories to watch
-    watched: ["static", "css", "js", "vendor"],
+    watched: [ "static", "css", "js", "vendor" ],
     // Where to compile files to
     public: "../priv/static"
   },
@@ -50,25 +47,21 @@ exports.config = {
   plugins: {
     babel: {
       // Do not use ES6 compiler in vendor code
-      ignore: [/vendor/]
+      ignore: [ /vendor/ ]
     },
     copycat: {
-      "images": ["static/images", "node_modules/datatables.net-dt/images"],
+      "images": [ "static/images", "node_modules/datatables.net-dt/images" ],
       onlyChanged: true
     },
     sass: {
       options: {
-        includePaths: ["node_modules/bootstrap/scss"], // tell sass-brunch where to look for files to @import
+        includePaths: [ "node_modules/bootstrap/scss" ], // tell sass-brunch where to look for files to @import
         precision: 8 // minimum precision required by bootstrap
       }
     }
   },
 
-  modules: {
-    autoRequire: {
-      "js/app.js": ["js/app"]
-    }
-  },
+  modules: {autoRequire: {"js/app.js": [ "js/app" ]}},
 
   npm: {
     enabled: true,
@@ -78,7 +71,8 @@ exports.config = {
       Tether: 'tether',
       Popper: 'popper.js',
       bootstrap: 'bootstrap', // require Bootstrap JavaScript globally too
-      dt: 'datatables.net'
+      dt: 'datatables.net',
+      prettyMs: 'pretty-ms'
     }
   }
 };
