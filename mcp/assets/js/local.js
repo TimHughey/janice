@@ -49,11 +49,11 @@ function pageReady( jQuery ) {
       deferRender: true,
       scroller: true,
       select: true,
+			order: [[ 1, "asc" ]],
       columns: [
         {data: "id", class: "col-center"},
         {data: "friendly_name"},
         {data: "device"},
-        // {data: "enabled", class: "col-center"},
         {data: "description"},
         {data: "dev_latency", class: "col-center", render: humanize_us},
         {data: "last_cmd_secs", class: "col-center", render: humanize_ms},
@@ -86,7 +86,8 @@ function pageReady( jQuery ) {
       deferRender: true,
       scroller: true,
       select: true,
-      "columns": [
+			order: [[ 1, "asc" ]],
+      columns: [
         {data: "id", class: "col-center"},
         {data: "friendly_name"},
         {data: "device"},

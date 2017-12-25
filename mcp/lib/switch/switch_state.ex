@@ -30,8 +30,8 @@ end
 def all(:everything) do
   from(ss in SwitchState,
         join: sw in assoc(ss, :switch),
-        order_by: [asc: :name],
-        preload: [:switch]) |> all(timeout: 100)
+        order_by: [ss.name],
+        preload: [switch: sw]) |> all(timeout: 100)
 end
 
 def as_list_of_maps(list) when is_list(list) do

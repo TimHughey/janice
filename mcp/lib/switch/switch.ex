@@ -90,7 +90,7 @@ def all(:devices) do
 end
 
 def all(:names) do
-  from(ss in SwitchState, select: ss.name, order_by: [asc: :name]) |>
+  from(ss in SwitchState, order_by: [asc: ss.name], select: ss.name) |>
     all(timeout: 100)
 end
 
@@ -195,8 +195,9 @@ defp update_from_reading(%{r: r, sw: sw}) do
 
     opts =
       %{states: states,
-        dev_latency: r.latency,
         last_seen_at: Timex.from_unix(r.mtime)}
+
+    opts = if r.latency > 0, do: Map.put(opts, :dev_latency, r.latency), else: opts
 
     change(sw, opts) |> update()
   else

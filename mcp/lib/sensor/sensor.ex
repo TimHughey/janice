@@ -50,15 +50,18 @@ def add(%Sensor{name: name} = s) do
 end
 
 def all(:devices) do
-  from(s in Sensor, select: s.device) |> all(timeout: 100)
+  from(s in Sensor, order_by: [asc: s.device], select: s.device) |>
+    all(timeout: 100)
 end
 
 def all(:names) do
-  from(s in Sensor, select: s.name) |> all(timeout: 100)
+  from(s in Sensor, order_by: [asc: s.name], select: s.name) |>
+    all(timeout: 100)
 end
 
 def all(:everything) do
-  from(s in Sensor, preload: [:temperature, :relhum]) |> all(timeout: 100)
+  from(s in Sensor, order_by: [asc: s.name],
+    preload: [:temperature, :relhum]) |> all(timeout: 100)
 end
 
 @doc ~S"""
@@ -189,10 +192,11 @@ when is_map(r) do
   tcs = update_temperature(s, r)
 
   measured_dt = Timex.from_unix(r.mtime)
+  latency = Timex.diff(r.msg_recv_dt, measured_dt)
   reading_dt = Timex.now
   map = %{last_seen_at: measured_dt,
           reading_at: reading_dt,
-          dev_latency: r.latency,
+          dev_latency: latency,
           temperature: tcs}
 
   change(s, map) |> update!()
@@ -204,8 +208,8 @@ when is_map(r) do
   rcs = update_relhum(s, r)
 
   measured_dt = Timex.from_unix(r.mtime)
+  latency = Timex.diff(r.msg_recv_dt, measured_dt)
   reading_dt = Timex.now
-  latency = Timex.diff(reading_dt, measured_dt)
   map = %{last_seen_at: measured_dt,
           reading_at: reading_dt,
           dev_latency: latency,
