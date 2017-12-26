@@ -1,78 +1,91 @@
-exports.config = {
-  // See http://brunch.io/#documentation for docs.
-  files: {
-    javascripts: {
-      joinTo: "js/app.js"
+// exports.config = {    See http://brunch.io/#documentation for docs.
 
-      // To use a separate vendor.js bundle, specify two files path
-      // https://github.com/brunch/brunch/blob/master/docs/config.md#files
-      // joinTo: {
-      //  "js/app.js": /^(js)/,
-      //  "js/vendor.js": /^(vendor)|(deps)/
-      // }
-      //
-      // To change the order of concatenation of files, explicitly mention here
-      // https://github.com/brunch/brunch/tree/master/docs#concatenation
-      // order: {
-      //   before: [
-      //     "vendor/js/jquery-2.1.1.js",
-      //     "vendor/js/bootstrap.min.js"
-      //   ]
-      // }
-    },
-    stylesheets: {
-      joinTo: "css/app.css",
-      order: {after: [ "priv/static/css/app.scss" ] // concat app.css last
-      }
-    },
-    templates: {joinTo: "js/app.js"}
+exports.files = {
+  javascripts: {
+    joinTo: 'js/app.js'
+    // {}
+    // "js/app.js": /^(js)/,
+    // "js/vendor.js": /^(vendor|deps|node_modules).*/
+    // }
+
+    // To use a separate vendor.js bundle, specify two files path
+    // https://github.com/brunch/brunch/blob/master/docs/config.md#files
+    // joinTo: {  "js/app.js": /^(js)/,  "js/vendor.js": /^(vendor)|(deps)/ }
+    //
+    // To change the order of concatenation of files, explicitly mention here
+    // https://github.com/brunch/brunch/tree/master/docs#concatenation order: {
+    // before: [     "vendor/js/jquery-2.1.1.js", "vendor/js/bootstrap.min.js"
+    // ] }
   },
+  stylesheets: {
+    joinTo: "css/app.css",
+    // concat app.css last
+    order: {after: [ "priv/static/css/app.scss" ]}
+  }
+  // templates: {joinTo: "js/app.js"}
+};
 
-  conventions: {
-    // This option sets where we should place non-css and non-js assets in.
-    // By default, we set this to "/assets/static". Files in this directory
-    // will be copied to `paths.public`, which is "priv/static" by default.
-    assets: /^(static)/
+exports.conventions = {
+  // This option sets where we should place non-css and non-js assets in. By
+  // default, we set this to "/assets/static". Files in this directory will
+  // be copied to `paths.public`, which is "priv/static" by default.
+  assets: /^(static)/
+};
+
+// Phoenix paths configuration
+exports.paths = {
+  // Dependencies and current project directories to watch
+  watched: [
+    "static", "css", "js", "vendor"
+  ],
+  // Where to compile files to
+  public: "../priv/static"
+};
+
+// Configure your plugins
+exports.plugins = {
+  babel: {
+    presets: [ "latest", "stage-0" ]
+    // Do not use ES6 compiler in vendor code ignore: [ /vendor/ ]
   },
-
-  // Phoenix paths configuration
-  paths: {
-    // Dependencies and current project directories to watch
-    watched: [ "static", "css", "js", "vendor" ],
-    // Where to compile files to
-    public: "../priv/static"
+  pleeease: {
+    sass: true,
+    autoprefixer: {browsers: [ '> 1%' ]}
   },
-
-  // Configure your plugins
-  plugins: {
-    babel: {
-      // Do not use ES6 compiler in vendor code
-      ignore: [ /vendor/ ]
-    },
-    copycat: {
-      "images": [ "static/images", "node_modules/datatables.net-dt/images" ],
-      onlyChanged: true
-    },
-    sass: {
-      options: {
-        includePaths: [ "node_modules/bootstrap/scss" ], // tell sass-brunch where to look for files to @import
-        precision: 8 // minimum precision required by bootstrap
-      }
+  copycat: {
+    "images": [
+      "static/images", "node_modules/datatables.net-dt/images"
+    ],
+    onlyChanged: true
+  },
+  sass: {
+    options: {
+      // tell sass-brunch where to look for files to @import
+      includePaths: [ "node_modules/bootstrap/scss",
+        'node_modules/datatables.net-dt/css',
+        'node_modules/datatables.net-buttons-dt/css',
+        'node_modules/datatables.net-scroller-dt/css',
+        'node_modules/datatables.net-select-dt/css'
+      ],
+      // minimum precision required by bootstrap
+      precision: 8
     }
-  },
+  }
+};
 
-  modules: {autoRequire: {"js/app.js": [ "js/app" ]}},
+exports.modules = {autoRequire: {"js/app.js": [ "js/app" ]}};
 
-  npm: {
-    enabled: true,
-    globals: { // Bootstrap JavaScript requires both '$', 'jQuery', and Tether in global scope
-      $: 'jquery',
-      jQuery: 'jquery',
-      Tether: 'tether',
-      Popper: 'popper.js',
-      bootstrap: 'bootstrap', // require Bootstrap JavaScript globally too
-      dt: 'datatables.net',
-      prettyMs: 'pretty-ms'
-    }
+exports.npm = {
+  enabled: true,
+  // Bootstrap JavaScript requires both '$', 'jQuery', and Tether in global
+  // scope
+  globals: {
+    $: 'jquery',
+    jQuery: 'jquery',
+    Tether: 'tether',
+    Popper: 'popper.js',
+    bootstrap: 'bootstrap',
+    dt: 'datatables.net',
+    prettyMs: 'pretty-ms'
   }
 };
