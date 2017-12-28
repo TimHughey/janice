@@ -190,7 +190,15 @@ defp update_from_reading(%{r: r, sw: sw}) do
       for new <- r.states do
         # since PIO numbers always start at zero they can be easily used
         # as list index ids
-        Enum.at(sw.states, new.pio) |> change(%{state: new.state})
+        ss = Enum.at(sw.states, new.pio)
+
+        unless r.cmdack and ss.state == new.state do
+          Logger.warn fn -> "state [#{ss.name}] -> " <>
+            "inbound state [#{inspect(new.state)} != " <>
+            "stored state [#{inspect(ss.state)}]" end
+        end
+
+        change(ss, %{state: new.state})
     end
 
     opts =
