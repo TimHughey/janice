@@ -192,10 +192,12 @@ defp update_from_reading(%{r: r, sw: sw}) do
         # as list index ids
         ss = Enum.at(sw.states, new.pio)
 
-        unless r.cmdack and ss.state == new.state do
-          Logger.warn fn -> "state [#{ss.name}] -> " <>
-            "inbound state [#{inspect(new.state)} != " <>
-            "stored state [#{inspect(ss.state)}]" end
+        unless r.cmdack do
+          if ss.state != new.state do
+            Logger.warn fn -> "state [#{ss.name}] -> " <>
+              "inbound state [#{inspect(new.state)}] != " <>
+              "stored state [#{inspect(ss.state)}]" end
+          end
         end
 
         change(ss, %{state: new.state})
