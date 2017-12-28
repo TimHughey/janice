@@ -14,7 +14,7 @@ import UUID, only: [uuid1: 0]
 import Ecto.Changeset, only: [change: 2]
 import Ecto.Query, only: [from: 2]
 import Repo, only: [all: 2, one: 1, query: 1, preload: 2,
-                    insert!: 1, update: 1]
+                    insert!: 1, update: 1, update_all: 2]
 
 import Mqtt.Client, only: [publish_switch_cmd: 1]
 
@@ -25,6 +25,7 @@ schema "switch_cmd" do
   field :refid, :string
   field :name, :string
   field :acked, :boolean
+  field :orphan, :boolean
   field :rt_latency, :integer
   field :sent_at, Timex.Ecto.DateTime
   field :ack_at, Timex.Ecto.DateTime
@@ -50,7 +51,7 @@ def ack_if_needed(%{cmdack: true,
             {:not_found, refid}
     cmd  -> rt_latency = Timex.diff(recv_dt, cmd.sent_at)
 
-            Logger.info fn -> 
+            Logger.info fn ->
               "state name [#{cmd.name}] acking refid [#{refid}]" end
 
             opts = %{acked: true,
@@ -64,6 +65,21 @@ def ack_if_needed(%{cmdack: true,
 
             change(cmd, opts) |> update
   end
+end
+
+def ack_orphans(opts) do
+  minutes_ago = opts.older_than_mins
+
+  before = Timex.to_datetime(Timex.now(), "UTC") |>
+              Timex.shift(minutes: (minutes_ago * -1))
+  ack_at = Timex.now()
+
+  from(sc in SwitchCmd,
+        update: [set: [acked: true,
+                       ack_at: ^ack_at,
+                       orphan: true]],
+        where: sc.acked == false,
+        where: sc.sent_at < ^before) |> update_all([])
 end
 
 def unacked do
@@ -89,9 +105,9 @@ when is_list(opts) do
 end
 
 def purge_acked_cmds(opts)
-when is_list(opts) do
+when is_map(opts) do
 
-  hrs_ago = Keyword.get(opts, :older_than_hrs, 12)
+  hrs_ago = opts.older_than_hrs
 
   sql = ~s/delete from switch_cmd
               where acked = true and ack_at <

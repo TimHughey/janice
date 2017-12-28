@@ -207,7 +207,8 @@ defp update_from_reading(%{r: r, sw: sw}) do
       %{states: states,
         last_seen_at: Timex.from_unix(r.mtime)}
 
-    opts = if r.latency > 0, do: Map.put(opts, :dev_latency, r.latency), else: opts
+    opts =
+      if r.latency > 0, do: Map.put(opts, :dev_latency, r.latency), else: opts
 
     change(sw, opts) |> update()
   else

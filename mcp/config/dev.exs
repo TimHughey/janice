@@ -51,7 +51,9 @@ config :mcp, Switch,
   logCmdAck: false
 
 config :mcp, Janitor,
-  purge_switch_cmds: [interval_mins: 2, older_than_hrs: 2, log: true]
+  switch_cmds: [purge: true, interval_mins: 2,
+                older_than_hrs: (24*7), log: true],
+  orphan_acks: [interval_mins: 1, older_than_mins: 1, log: true]
 
 config :mcp, Mcp.Chamber,
   autostart_wait_ms: 0,
