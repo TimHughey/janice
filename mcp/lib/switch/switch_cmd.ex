@@ -51,7 +51,7 @@ def ack_if_needed(%{cmdack: true,
             {:not_found, refid}
     cmd  -> rt_latency = Timex.diff(recv_dt, cmd.sent_at)
 
-            Logger.info fn ->
+            Logger.debug fn ->
               "state name [#{cmd.name}] acking refid [#{refid}]" end
 
             opts = %{acked: true,

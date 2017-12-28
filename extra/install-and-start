@@ -37,7 +37,7 @@
 	fi
 
 	cd $mcp_base
-	run_cmd env MIX_ENV=prod mix migrate
+	run_cmd env MIX_ENV=prod mix ecto.migrate
 	cd $save_cwd
 
 	if [[ $clean -eq 1 ]]; then
