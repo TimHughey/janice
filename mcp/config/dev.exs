@@ -6,6 +6,10 @@ config :logger,
   # level: debug,
   level: :info
 
+config :mcp, MessageSave,
+  save: true,
+  delete_older_than_hrs: 12
+
 config :mcp, Command.Control,
   timesync_opts: [frequency: (60*1000), # millisecs
                   # loops: 3,
@@ -34,16 +38,16 @@ config :mcp, Mcp.SoakTest,
   periodic_log_ms: (60 * 60 * 1000),
   flash_led_ms: (3 * 1000)
 
-config :mcp, Mcp.Repo,
+config :mcp, Repo,
   adapter: Ecto.Adapters.Postgres,
   database: "merc_dev",
   username: "merc_dev",
   password: "merc_dev",
   hostname: "127.0.0.1",
-  # hostname: "jophiel.wisslanding.com",
+  #hostname: "jophiel.wisslanding.com",
   pool_size: 10
 
-config :mcp, Mcp.Switch,
+config :mcp, Switch,
   logCmdAck: false
 
 config :mcp, Janitor,
@@ -63,12 +67,13 @@ config :mcp, Dutycycle,
 
 config :mcp, Mqtt.Client,
   broker: [client_id: "mercurial-dev",
-            clean_session: 1,
+           clean_session: 1,
            username: "mqtt",
            password: "mqtt",
            host: "jophiel.wisslanding.com",
            port: 1883, ssl: false],
-           feeds: [topics: ["mcr/f/report"], qoses: [0]]  # subscribe
+           feeds: [topics: ["mcr/f/report"], qoses: [0]],  # subscribe
+  log_dropped_msgs: false
 
 config :mcp, Web.Endpoint,
   http: [port: 4000],

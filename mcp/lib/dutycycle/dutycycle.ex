@@ -28,7 +28,7 @@ defmodule Dutycycle do
   use Ecto.Schema
   use Timex
 
-  import Mcp.Repo, only: [all: 1, one: 1, insert_or_update!: 1]
+  import Repo, only: [all: 1, one: 1, insert_or_update!: 1]
   import Ecto.Changeset, only: [change: 2]
   import Ecto.Query, only: [from: 2]
 

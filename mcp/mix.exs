@@ -23,8 +23,11 @@ defmodule Mcp.Mixfile do
   use Mix.Project
 
   def project do
-    {result, _exit_code} = System.cmd("git", ["rev-parse", "--short", "HEAD"])
+    {result, _rc} = System.cmd("git", ["rev-parse", "--short", "HEAD"])
     git_sha = String.trim(result)
+
+    {result, _rc} = System.cmd("git", ["rev-parse", "--short", "mcr-stable"])
+    mcr_sha = String.trim(result)
 
     [app: :mcp,
       version: "0.1.1-#{git_sha}",
@@ -39,13 +42,16 @@ defmodule Mcp.Mixfile do
       package: package(),
       description: description(),
       escript: escript_config(),
-      git_sha: "#{git_sha}"]
+      git_sha: "#{git_sha}",
+      mcr_sha: "#{mcr_sha}"]
   end
 
   # Run "mix help compile.app" to learn about applications.
   def application do
     args =
-      [git_sha: project() |> Keyword.get(:git_sha), build_env: "#{Mix.env}"]
+      [build_env: "#{Mix.env}",
+       git_sha: project() |> Keyword.get(:git_sha),
+       mcr_sha: project() |> Keyword.get(:mcr_sha)]
 
     [
       extra_applications:

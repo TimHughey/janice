@@ -1,93 +1,77 @@
 <%= render_shared "top_nav.html", assigns %>
 
 <div class="container">
+  <!-- <div class="col text-center">
+    <span class="alias-text">Subsystems</span>
+  </div> -->
+
+  <!-- <nav class="nav flex-column nav-pills" id="mcpSubsystems" role="tablist">
+    <a class="nav-item nav-link active" id="nav-switches-tab" data-toggle="tab"
+        href="#switchesTab" role="tab" aria-controls="mcp-switches" aria-selected="true">Switches</a>
+    <a class="nav-item nav-link" id="nav-sensors-tab" data-toggle="tab"
+        href="#sensorsTab" role="tab" aria-controls="mcp-sensors" aria-selected="false">Sensors</a>
+  </nav> -->
+
+<div class="row" id="mcpSubsystemsRow">
   <div class="col text-center">
-    <span class="alias-text">Device Aliases </span>
-    <span class="badge badge-dark"><%= @all_fnames_count %></span>
+    <span class="alias-text">Subsystems</span>
   </div>
+</div>
+<div class="row" id="mcpSubsystemsRow">
+  <div class="col-2">
+  <div class="nav flex-column nav-pills" id="mcpSubsystems" role="tablist" aria-orientation="vertical">
+    <a class="nav-link active" id="nav-switches-tab" data-toggle="pill" href="#switchesTab" role="tab" aria-controls="v-pills-home" aria-selected="true">Switches</a>
+    <a class="nav-link" id="nav-sensors-tab" data-toggle="pill" href="#sensorsTab" role="tab" aria-controls="v-pills-profile" aria-selected="false">Sensors</a>
+  </div>
+</div>
 
-  <div id="accordion" role="tablist">
-    <div class="card">
-      <div class="card-header" role="tab" id="headingNoDevice">
-        <span class="mb-0">
-          Only Alias
-          <a class="collapsed badge badge-primary" data-toggle="collapse" href="#collapseNoDevice" aria-expanded="false" aria-controls="collapseNoDevice">
-            <%= @unknown_fnames_count %></a>
-        </span>
-      </div>
+<div class="col-10">
+  <div class="tab-content" id="nav-mcpDetailTabContent">
+    <div class="tab-pane fade show active" role="tabpanel" id="switchesTab">
+      <table class="table display device-table" cellspacing="0" width="100%" id="switchesTable">
+        <thead>
+          <tr>
+            <th>Id</th>
+            <th>Name</th>
+            <th>Device</th>
+            <th>Description</th>
+            <th>Latency</th>
+            <th>Cmd</th>
+            <th>Seen</th>
+            <th>State</th>
+          </tr>
+        </thead>
+      </table>
+    </div>
 
-      <div id="collapseNoDevice" class="collapse" role="tabpanel" aria-labelledby="headingNoDevice" data-parent="#accordion">
-        <div class="card-body" id="noDeviceCard">
-          <table class="table display" id="noDeviceTable">
-            <thead>
-              <tr>
-                <td>Id</td>
-                <td>Alias</td>
-                <td>Device</td>
-                <td>Description</td>
-                <td>Last Seen</td>
-                <td>Last Seen At</td>
-              </tr>
-            </thead>
-          </table>
-        </div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-header" role="tab" id="headingSwitches">
-        <span class="mb-0">
-          Switches
-          <a class="collapsed badge badge-primary" data-toggle="collapse" href="#collapseSwitches" aria-expanded="false" aria-controls="collapseSwitches">
-             <%= @switch_fnames_count %></a>
-        </span>
-      </div>
-      <div id="collapseSwitches" class="collapse" role="tabpanel" aria-labelledby="headingSwitches" data-parent="#accordion">
-        <div class="card-body">
-            <table class="table display" id="switchesTable">
-              <thead>
-                <tr>
-                  <td>Id</td>
-                  <td>Alias</td>
-                  <td>Device</td>
-                  <!-- <td>Enabled</td> -->
-                  <td>Description</td>
-                  <td>Dev Latency</td>
-                  <td>Last Cmd</th>
-                  <td>Last Seen</td>
-                  <td>State</td>
-                </tr>
-              </thead>
-          </table>
-        </div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-header" role="tab" id="headingSensors">
-        <span class="mb-0">
-          Sensors
-          <a class="collapsed badge badge-primary" data-toggle="collapse" href="#collapseSensors" aria-expanded="false" aria-controls="collapseSensors">
-            <%= @sensor_fnames_count %></a>
-        </span>
-      </div>
-      <div id="collapseSensors" class="collapse" role="tabpanel" aria-labelledby="headingSensors" data-parent="#accordion">
-        <div class="card-body">
-            <table class="table display" id="sensorsTable">
-              <thead>
-                <tr>
-                  <td>Id</td>
-                  <td>Alias</td>
-                  <td>Device</td>
-                  <td>Description</td>
-                  <td>Last Seen</td>
-                  <td>Last Reading</td>
-                  <td>Temp C</td>
-                </tr>
-              </thead>
-            </table>
-        </div>
-      </div>
+    <div class="tab-pane fade" role="tabpanel" id="sensorsTab">
+      <table class="table display device-table" cellspacing="0" width="100%" id="sensorsTable">
+        <thead>
+          <tr>
+            <th>Id</th>
+            <th>Name</th>
+            <th>Device</th>
+            <th>Description</th>
+            <th>Latency</th>
+            <!-- <th rowspan="2">Id</th>
+            <th rowspan="2">Name</th>
+            <th rowspan="2">Device</th>
+            <th rowspan="2">Description</th>
+            <th rowspan="2">Dev Latency</th>
+            <th colspan="2" class="col-center">Last</th>
+            <th rowspan="2">Temp C</th> -->
+          <!-- </tr>
+          <tr> -->
+            <th>Seen</th>
+            <th>Reading</th>
+            <th>Celsius</th>
+          </tr>
+        </thead>
+      </table>
     </div>
   </div>
+</div>
+</div>
 </div>
 
 <%= render_shared "footer.html", assigns %>

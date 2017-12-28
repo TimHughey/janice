@@ -11,21 +11,23 @@
 //
 // If you no longer want to use a dependency, remember
 // to also remove its path from "config.paths.watched".
+import "phoenix";
 import "phoenix_html";
 import "jquery";
 // import "jquery-lazy";
 import "bootstrap";
 
 require('datatables.net')();
+require('datatables.net-select')();
 require('datatables.net-scroller')();
 require('datatables.net-buttons')();
-require('datatables.net-select')();
 
 // Import local files
 //
 // Local files can be imported directly using relative
 // paths "./socket" or full ones "web/static/js/socket".
 
-import socket from "./socket";
+// import socket from "./socket";
 
+import "./socket.js"
 import "./local.js";

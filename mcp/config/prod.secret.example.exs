@@ -4,7 +4,7 @@ use Mix.Config
 #
 #
 
-config :mcp, Mcp.Repo,
+config :mcp, Repo,
   hostname: "obviously the hostname of the rdbms",
   password: "and the password for the account"
 

@@ -41,8 +41,14 @@ def log_json(args) do
 end
 
 # internal work functions
+def process(msg, :save) do
+  MessageSave.save(:in, msg)
+  process(msg)
+end
+
 def process(msg)
 when is_binary(msg) do
+
   GenServer.cast(Dispatcher.InboundMessage, {:incoming_message, msg})
 end
 

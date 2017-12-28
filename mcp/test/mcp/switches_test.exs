@@ -1,8 +1,6 @@
-defmodule Mcp.SwitchTest do
+defmodule SwitchTest do
   @moduledoc false
   use ExUnit.Case, async: false
-  alias Mcp.Switch
-  alias Mcp.SwitchCmd
 
   setup_all do
     :ok
@@ -21,7 +19,7 @@ defmodule Mcp.SwitchTest do
   end
 
   test "process an internal switch update (state change)" do
-    sw = Switch.set_state("led1", false)
+    sw = SwitchState.state("led1", false)
 
     assert %Switch{} = sw
   end
@@ -33,7 +31,7 @@ defmodule Mcp.SwitchTest do
   end
 
   test "get switch state by friendly name" do
-    Switch.set_state("led1", false)
+    SwitchState.state("led1", false)
     state = Switch.get_state("led1")
 
     assert state == false
@@ -75,6 +73,6 @@ defmodule Mcp.SwitchTest do
     assert Enum.count(cmds) < Enum.count(initial_cmds)
   end
 
-  doctest Mcp.Switch
+  doctest Switch
 
 end

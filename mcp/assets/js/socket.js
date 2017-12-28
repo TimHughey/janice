@@ -5,7 +5,8 @@
 // and connect at the socket path in "lib/web/endpoint.ex":
 import {Socket} from "phoenix"
 
-let socket = new Socket("/mercurial/socket", {params: {token: window.userToken}})
+let socket =
+  new Socket("/mercurial/socket", {params: {token: window.userToken}})
 
 // When you connect, you'll often need to authenticate the client.
 // For example, imagine you have an authentication plug, `MyAuth`,
@@ -40,7 +41,8 @@ let socket = new Socket("/mercurial/socket", {params: {token: window.userToken}}
 //
 //     def connect(%{"token" => token}, socket) do
 //       # max_age: 1209600 is equivalent to two weeks in seconds
-//       case Phoenix.Token.verify(socket, "user socket", token, max_age: 1209600) do
+//       case Phoenix.Token.verify(socket, "user socket", token, max_age:
+//       1209600) do
 //         {:ok, user_id} ->
 //           {:ok, assign(socket, :user, user_id)}
 //         {:error, reason} ->
