@@ -400,9 +400,9 @@ defmodule Mixtank do
     if not State.tank_disabled?(state, name) do
       Logger.info("[#{name}] disabled, stopping it.")
 
-      SwitchState.state(mixtank.heat_sw, false)
-      SwitchState.state(mixtank.air_sw, false)
-      SwitchState.state(mixtank.pump_sw, false)
+      SwitchState.state(mixtank.heat_sw, false, :lazy)
+      SwitchState.state(mixtank.air_sw, false, :lazy)
+      SwitchState.state(mixtank.pump_sw, false, :lazy)
 
       state = State.set_heat_disabled(state, name)
       state = State.set_air_disabled(state, name)
