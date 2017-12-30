@@ -36,11 +36,11 @@ defmodule Dutycycle do
 
   schema "dutycycle" do
     field :name
-    field :description
+    field :comment
     field :enable, :boolean
     field :device
     has_one :state, Dutycycle.State
-    has_many :modes, Dutycycle.Mode
+    has_many :profiles, Dutycycle.Profile
 
     timestamps usec: true
   end
@@ -62,22 +62,28 @@ defmodule Dutycycle do
 
   def all do
     from(d in Dutycycle,
-      join: m in assoc(d, :modes),
+      join: p in assoc(d, :profiles), where: p.active == true,
       join: s in assoc(d, :state),
-      preload: [modes: m, state: s],
-      select: {d}) |> all()
+      preload: [profiles: p, state: s],
+      select: d) |> all()
   end
 
   def active_mode(name) do
     from(d in Dutycycle,
-      join: m in assoc(d, :modes),
+      join: m in assoc(d, :profiles),
       join: s in assoc(d, :state),
       where: m.active == true,
       where: d.name == ^name,
-      select: {d},
-      preload: [state: s, modes: m]) |> one()
+      select: d,
+      preload: [state: s, profiles: m]) |> one()
 
   end
 
+  def available_profiles(name) when is_binary(name) do
+    from(d in Dutycycle,
+          join: p in assoc(d, :profiles),
+          where: d.name == ^name,
+          select: p.name) |> all()
+  end
 
 end

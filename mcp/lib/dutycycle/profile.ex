@@ -1,4 +1,4 @@
-defmodule Dutycycle.Mode do
+defmodule Dutycycle.Profile do
   @moduledoc """
   """
 
@@ -7,7 +7,7 @@ defmodule Dutycycle.Mode do
   use Timex.Ecto.Timestamps
   use Ecto.Schema
 
-  schema "dutycycle_mode" do
+  schema "dutycycle_profile" do
     field :name
     field :active, :boolean, default: false
     field :run_ms, :integer

@@ -27,6 +27,7 @@ defmodule Mcp.Application do
       {Dispatcher.Supervisor, initial},
       {Command.Supervisor, initial},
       {Janitor, initial},
+      {Dutycycle.Control, initial},
       {Mixtank, initial},
       {Web.Supervisor, initial}
 

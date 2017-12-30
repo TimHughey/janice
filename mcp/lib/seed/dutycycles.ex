@@ -3,34 +3,45 @@ defmodule Seed.Dutycycles do
   """
 def dutycycles(env) when env in [:dev, :test] do
   [%Dutycycle{name: "duty 1",
-    description: "duty 1 non-prod",
-    device: "duty_1",
-    modes: [%Dutycycle.Mode{name: "fast",
+    enable: true,
+    comment: "duty 1 non-prod",
+    device: "sw5",
+    profiles: [%Dutycycle.Profile{name: "fast",
             active: true,
-            run_ms: 1000, idle_ms: 1000},
-           %Dutycycle.Mode{name: "slow",
-            run_ms: 10_000, idle_ms: 10_000}],
+            run_ms: 2000, idle_ms: 20_000},
+           %Dutycycle.Profile{name: "slow",
+            run_ms: 5000, idle_ms: 5000}],
     state: %Dutycycle.State{}},
    %Dutycycle{name: "duty 2",
-     description: "duty 2 non-prod",
-     device: "duty_2",
-     modes: [%Dutycycle.Mode{name: "fast",
+     comment: "duty 2 non-prod",
+     device: "sw6",
+     profiles: [%Dutycycle.Profile{name: "fast",
              run_ms: 2000, idle_ms: 2000},
-            %Dutycycle.Mode{name: "slow",
+            %Dutycycle.Profile{name: "slow",
              run_ms: 20_000, idle_ms: 20_000}],
      state: %Dutycycle.State{}},
    %Dutycycle{name: "duty 2",
-     description: "duty 2 non-prod",
-     device: "duty_2",
-     modes: [%Dutycycle.Mode{name: "fast",
+     comment: "duty 2 non-prod",
+     device: "duty_sw3",
+     profiles: [%Dutycycle.Profile{name: "fast",
              run_ms: 2000, idle_ms: 2000},
-            %Dutycycle.Mode{name: "slow",
+            %Dutycycle.Profile{name: "slow",
              run_ms: 20_000, idle_ms: 20_000}],
      state: %Dutycycle.State{}}]
 end
 
 def dutycycles(:prod) do
-  []
+  [%Dutycycle{name: "reefwater fill",
+    enable: true,
+    comment: "fill the reefwater mix barrel",
+    device: "reefmix_rodi_valve",
+    profiles: [%Dutycycle.Profile{name: "slow",
+            active: true,
+            run_ms: (15*60*1000), idle_ms: (5*60*1000)},
+           %Dutycycle.Profile{name: "fast",
+            run_ms: (10*60*1000), idle_ms: (60*1000)}],
+    state: %Dutycycle.State{}}]
+
   # [%Dutycycle{name: "sump vent",
   #    description: "sump vent",
   #    enable: false, device_sw: "sump_vent",
@@ -39,14 +50,6 @@ def dutycycles(:prod) do
   #    description: "basement circulation fan",
   #    enable: false, device_sw: "basement_fan",
   #    run_ms: 15 * 60 * 1000, idle_ms: 60 * 1000},
-  #  %Dutycycle{name: "reefmix rodi slow",
-  #    description: "periodic fill reefmix with rodi water",
-  #    enable: true, device_sw: "reefmix_rodi_valve",
-  #    run_ms: 900_000, idle_ms: 300_000},
-  #  %Dutycycle{name: "reefmix rodi fast",
-  #    description: "fill mixtank quickly",
-  #    enable: false, device_sw: "reefmix_rodi_valve",
-  #    run_ms: 3_600_000, idle_ms: 120_000}]
 end
 
 
