@@ -184,9 +184,10 @@ defp update_from_reading(%{r: r, sw: sw}) do
   #  by PIO number!  PIO numbers always start at zero.
   ###
 
-  Logger.info fn -> "updating from reading:\n " <>
-                    "  r : #{inspect(r)}\n" <>
-                    "  sw: #{inspect(sw)}" end
+  r.cmdack && Logger.info fn -> "updating from reading:\n " <>
+                                "  r : #{inspect(r)}\n\n" <>
+                                "  sw: #{inspect(sw)}\n" end
+
 
   SwitchCmd.ack_if_needed(r)
 
@@ -206,7 +207,7 @@ defp update_from_reading(%{r: r, sw: sw}) do
         end
 
         new_ss = change(ss, %{state: new.state}) |> update!()
-        Logger.info fn -> " updated ss: #{inspect(new_ss)}" end
+        r.cmdack && Logger.info fn -> " updated ss: #{inspect(new_ss)}" end
       end
 
     opts = %{last_seen_at: Timex.from_unix(r.mtime)}
