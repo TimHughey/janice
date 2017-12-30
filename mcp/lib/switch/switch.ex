@@ -28,7 +28,8 @@ use Ecto.Schema
 import UUID, only: [uuid1: 0]
 import Ecto.Changeset, only: [change: 2]
 import Ecto.Query, only: [from: 2]
-import Repo, only: [all: 2, update: 1, one: 1, insert: 2, insert!: 1]
+import Repo, only: [all: 2, insert: 2, insert!: 1, one: 1,
+                    update: 1, update!: 1]
 
 alias Fact.RunMetric
 
@@ -163,7 +164,7 @@ defp ensure_states(%Switch{states: states} = sw) do
   end
 end
 
-def get_by_device(device) do
+defp get_by_device(device) do
   # last_cmd =
   #   from(sc in SwitchCmd,
   #     group_by: sc.switch_id,
@@ -183,6 +184,10 @@ defp update_from_reading(%{r: r, sw: sw}) do
   #  by PIO number!  PIO numbers always start at zero.
   ###
 
+  Logger.info fn -> "updating from reading:\n " <>
+                    "  r : #{inspect(r)}\n" <>
+                    "  sw: #{inspect(sw)}" end
+
   SwitchCmd.ack_if_needed(r)
 
   if Enum.count(r.states) == Enum.count(sw.states) do
@@ -200,12 +205,11 @@ defp update_from_reading(%{r: r, sw: sw}) do
           end
         end
 
-        change(ss, %{state: new.state})
-    end
+        new_ss = change(ss, %{state: new.state}) |> update!()
+        Logger.info fn -> " updated ss: #{inspect(new_ss)}" end
+      end
 
-    opts =
-      %{states: states,
-        last_seen_at: Timex.from_unix(r.mtime)}
+    opts = %{last_seen_at: Timex.from_unix(r.mtime)}
 
     opts =
       if r.latency > 0, do: Map.put(opts, :dev_latency, r.latency), else: opts

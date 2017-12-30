@@ -114,7 +114,7 @@ def ack_a_cmd(%SwitchCmd{} = cmd) do
 end
 
 def big_switch_state_test do
-  switch_state_test(["sw1", "sw2", "sw3"], 10, [true, true, true, false, false])
+  switch_state_test(["sw1", "sw2", "sw3"], 10, [true, true, true, false, true])
 end
 def switch_state_test, do: switch_state_test(["sw1"], 10, [true, false])
 def switch_state_test(name)

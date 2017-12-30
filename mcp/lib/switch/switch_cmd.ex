@@ -121,7 +121,7 @@ def record_cmd(name, %SwitchState{} = ss), do: record_cmd(name, [ss])
 def record_cmd(name, [%SwitchState{} = ss_ref | _tail] = list) do
   ss_ref = preload(ss_ref, :switch)  # ensure the associated switch is loaded
   sw_ref = ss_ref.switch
-  sw_ref_id = ss_ref.switch.id
+  sw_ref_id = sw_ref.id
   device = sw_ref.device
 
   # create and presist a new switch comamnd
