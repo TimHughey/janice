@@ -28,7 +28,7 @@ defmodule Dutycycle do
   use Ecto.Schema
   use Timex
 
-  import Repo, only: [all: 1, one: 1, insert_or_update!: 1]
+  import Repo, only: [all: 1, one: 1, insert_or_update!: 1, update_all: 2]
   import Ecto.Changeset, only: [change: 2]
   import Ecto.Query, only: [from: 2]
 
@@ -97,7 +97,6 @@ defmodule Dutycycle do
       where: d.name == ^name,
       select: d,
       preload: [state: s, profiles: m]) |> one()
-
   end
 
   def available_profiles(name) when is_binary(name) do
@@ -105,6 +104,27 @@ defmodule Dutycycle do
           join: p in assoc(d, :profiles),
           where: d.name == ^name,
           select: p.name) |> all()
+  end
+
+  def disable(name) when is_binary(name) do
+    from(d in Dutycycle,
+          where: d.name == ^name,
+          update: [set: [enable: false]]) |> update_all([])
+  end
+
+  def enable(name) when is_binary(name) do
+    from(d in Dutycycle,
+          where: d.name == ^name,
+          update: [set: [enable: true]]) |> update_all([])
+  end
+
+  def get(name) do
+    from(d in Dutycycle,
+      join: p in assoc(d, :profiles),
+      join: s in assoc(d, :state),
+      where: d.name == ^name,
+      select: d,
+      preload: [state: s, profiles: p]) |> one()
   end
 
 end

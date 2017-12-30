@@ -68,7 +68,7 @@ defmodule Dutycycle.State do
   end
 
   def set_stopped(name) when is_binary(name) do
-    Dutycycle.active_profile(name) |> set_stopped()
+    Dutycycle.get(name) |> set_stopped()
   end
 
   def set_stopped(nil), do: {:not_found}

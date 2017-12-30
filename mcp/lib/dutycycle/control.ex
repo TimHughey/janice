@@ -72,13 +72,28 @@ defmodule Dutycycle.Control do
     {:ok, s}
   end
 
-  def terminate(reason, _state) do
+  def terminate(reason, s) do
+    all_dcs = Dutycycle.all()
+    stop_all(s, all_dcs)
+
     Logger.info fn -> "terminating with reason #{inspect(reason)}" end
   end
+
+  ####################
+  # Public Functions #
+  ####################
 
   def activate_profile(name, profile_name)
   when is_binary(name) and is_binary(profile_name) do
     GenServer.call(Control, {:activate_profile_msg, name, profile_name})
+  end
+
+  def disable_cycle(name) when is_binary(name) do
+    GenServer.call(Control, {:disable_cycle_msg, name})
+  end
+
+  def enable_cycle(name) when is_binary(name) do
+    GenServer.call(Control, {:enable_cycle_msg, name})
   end
 
   def start_cycle(name) when is_binary(name) do
@@ -88,6 +103,10 @@ defmodule Dutycycle.Control do
   def stop_cycle(name) when is_binary(name) do
     GenServer.call(Control, {:stop_cycle_msg, name})
   end
+
+  #######################
+  # GenServer callbacks #
+  #######################
 
   def handle_call({:activate_profile_msg, name, profile_name}, _from,
       %{tasks: tasks} = s) do
@@ -100,6 +119,28 @@ defmodule Dutycycle.Control do
     s = Map.put(s, :tasks, tasks)
 
     {:reply, {:ok}, s}
+  end
+
+  def handle_call({:disable_cycle_msg, name}, _from, %{tasks: tasks} = s) do
+    results = Dutycycle.disable(name)
+    tasks = stop_single(name, tasks)
+
+    s = Map.put(s, :tasks, tasks)
+
+    Logger.info fn -> "cycle [#{name}] disabled" end
+
+    {:reply, {:ok, results}, s}
+  end
+
+  def handle_call({:enable_cycle_msg, name}, _from, %{tasks: tasks} = s) do
+    results = Dutycycle.enable(name)
+    tasks = start_single(name, tasks)
+
+    s = Map.put(s, :tasks, tasks)
+
+    Logger.info fn -> "cycle [#{name}] enabled" end
+
+    {:reply, {:ok, results}, s}
   end
 
   def handle_call({:start_cycle_msg, name}, _from, %{tasks: tasks} = s) do
@@ -140,6 +181,7 @@ defmodule Dutycycle.Control do
 
     {:noreply, s}
   end
+
 
   def handle_info({ref, result}, %{tasks: tasks} = s)
   when is_reference(ref) do
@@ -185,7 +227,7 @@ defmodule Dutycycle.Control do
     tasks =
       for %Dutycycle{enable: true} = dc <- list do
         start_single(dc, tasks)
-      end |> Enum.reduce(fn(x, acc) -> Map.merge(acc, x) end)
+      end |> Enum.reduce(tasks, fn(x, acc) -> Map.merge(acc, x) end)
 
     Logger.info fn ->
       names = Map.keys(tasks) |>
@@ -236,6 +278,8 @@ defmodule Dutycycle.Control do
   defp stop_single(nil, %{} = t), do: t
   defp stop_single(%Dutycycle{name: name}, %{} = t), do: stop_single(name, t)
   defp stop_single(name, %{} = tasks) when is_binary(name) do
+    Logger.info fn -> "stopping cycle [#{name}]" end
+
     State.set_stopped(name)
     task = Map.get(tasks, name, %{task: nil})
     Map.merge(tasks, %{name => stop_task(task)})
