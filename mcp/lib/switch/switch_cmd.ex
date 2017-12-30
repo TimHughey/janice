@@ -120,18 +120,23 @@ def record_cmd(name, %SwitchState{} = ss), do: record_cmd(name, [ss])
 
 def record_cmd(name, [%SwitchState{} = ss_ref | _tail] = list) do
   ss_ref = preload(ss_ref, :switch)  # ensure the associated switch is loaded
-  sw = ss_ref.switch
-  device = sw.device
+  sw_ref = ss_ref.switch
+  sw_ref_id = ss_ref.switch.id
+  device = sw_ref.device
 
   # create and presist a new switch comamnd
   scmd =
-    Ecto.build_assoc(sw, :cmds,
+    Ecto.build_assoc(sw_ref, :cmds,
                       refid: uuid1(),
                       name: name,
                       sent_at: Timex.now()) |> insert!()
 
-  # update the last command datetime on the associated switch
-  change(sw, dt_last_cmd: Timex.now()) |> update()
+  now = Timex.now()
+
+  # update the switch device last cmd timestamp
+  from(sw in Switch,
+        update: [set: [last_cmd_at: ^now]],
+        where: sw.id == ^sw_ref_id) |> update_all([])
 
   # create and publish the actual command to the remote device
   new_state = SwitchState.as_list_of_maps(list)

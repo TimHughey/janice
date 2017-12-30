@@ -28,8 +28,7 @@ use Ecto.Schema
 import UUID, only: [uuid1: 0]
 import Ecto.Changeset, only: [change: 2]
 import Ecto.Query, only: [from: 2]
-import Repo, only: [all: 2, update: 1, one: 1, insert: 2, insert!: 1,
-                        preload: 2, get: 2, update_all: 2]
+import Repo, only: [all: 2, update: 1, one: 1, insert: 2, insert!: 1]
 
 alias Fact.RunMetric
 
@@ -121,11 +120,14 @@ def external_update(%{device: device} = r) do
   end
 end
 
-def states_updated(name, id) when is_integer(id) do
-  from(sw in Switch,
-        update: [set: [last_cmd_at: Timex.now()]],
-        where: sw.id == ^id) |> update_all([])
-end
+# FLAGGED FOR REMOVAL
+# def states_updated(name, id) when is_integer(id) do
+  # now = Timex.now()
+  #
+  # from(sw in Switch,
+  #       update: [set: [last_cmd_at: ^now]],
+  #       where: sw.id == ^id) |> update_all([])
+# end
 
 ##
 ## Internal / private functions

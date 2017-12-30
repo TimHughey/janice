@@ -44,19 +44,18 @@ def run(args) do
 
   Logger.info fn -> ":timex started" end
 
-#  sensors(Mix.env) |>
-#    Enum.each(fn(x) -> Logger.info("seeding sensor [#{x.name}]")
-#                       Sensor.add(x) end)
+  sensors(Mix.env) |>
+    Enum.each(fn(x) -> Logger.info("seeding sensor [#{x.name}]")
+                        Sensor.add(x) end)
 
-#  switches(Mix.env) |>
-#    Enum.each(fn(x) -> Logger.info("seeding switch [#{x.device}]")
-#                       Switch.add(x) end)
+  switches(Mix.env) |>
+    Enum.each(fn(x) -> Logger.info("seeding switch [#{x.device}]")
+                       Switch.add(x) end)
 
-#  mixtanks(Mix.env) |>
-#    Enum.each( fn (x) -> Logger.info("seeding mixtank [#{x.name}]")
-#                         Mixtank.add(x) end)
-
-#  chambers(Mix.env) |> seed()
+  mixtanks(Mix.env) |>
+    Enum.each( fn (x) -> Logger.info("seeding mixtank [#{x.name}]")
+                         Mixtank.add(x) end)
+  chambers(Mix.env) |> seed()
 
   dutycycles(Mix.env) |>
     Enum.each( fn (x) -> Logger.info("seeding dutycycle [#{x.name}]")

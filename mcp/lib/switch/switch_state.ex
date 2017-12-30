@@ -59,7 +59,7 @@ when is_binary(name) and is_boolean(position) do
            nil
     ss  -> change(ss, state: position) |> update!()
            SwitchCmd.record_cmd(name, ss)
-           Switch.states_updated(name, ss.switch_id)
+           # Switch.states_updated(name, ss.switch_id)
            position
   end
 end
