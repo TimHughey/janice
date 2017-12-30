@@ -184,9 +184,9 @@ defp update_from_reading(%{r: r, sw: sw}) do
   #  by PIO number!  PIO numbers always start at zero.
   ###
 
-  r.cmdack && Logger.info fn -> "updating from reading:\n " <>
-                                "  r : #{inspect(r)}\n\n" <>
-                                "  sw: #{inspect(sw)}\n" end
+  # r.cmdack && Logger.info fn -> "updating from reading:\n " <>
+  #                               "  r : #{inspect(r)}\n\n" <>
+  #                               "  sw: #{inspect(sw)}\n" end
 
 
   SwitchCmd.ack_if_needed(r)
@@ -194,9 +194,14 @@ defp update_from_reading(%{r: r, sw: sw}) do
   if Enum.count(r.states) == Enum.count(sw.states) do
     states =
       for new <- r.states do
+
         # since PIO numbers always start at zero they can be easily used
         # as list index ids
         ss = Enum.at(sw.states, new.pio)
+
+        r.cmdack && Logger.info fn -> "\n\n\n  new: #{inspect(new)}" <>
+                                      "\n\n  ss : #{inspect(ss)}" end
+
 
         unless r.cmdack do
           if ss.state != new.state do
@@ -207,7 +212,7 @@ defp update_from_reading(%{r: r, sw: sw}) do
         end
 
         new_ss = change(ss, %{state: new.state}) |> update!()
-        r.cmdack && Logger.info fn -> " updated ss: #{inspect(new_ss)}" end
+        # r.cmdack && Logger.info fn -> " updated ss: #{inspect(new_ss)}" end
       end
 
     opts = %{last_seen_at: Timex.from_unix(r.mtime)}

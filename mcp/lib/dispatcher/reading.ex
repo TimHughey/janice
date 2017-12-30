@@ -27,8 +27,6 @@ defstruct version: "undef",
           rh: nil,
           pio_count: 0,     # switch: num of unique pio
           states: nil,      # switch: array of states (for each pio)
-          state: nil,       # switch: state of each pio
-          pio: nil,         # switch: pio id (number)
           cmdack: false,
           latency: 0,
           refid: nil,
