@@ -57,8 +57,8 @@ when is_binary(name) and is_boolean(position) do
   case get_by_name(name) do
     nil -> Logger.warn fn -> "#{name} not found while SETTING state" end
            nil
-    ss  -> change(ss, state: position) |> update!()
-           SwitchCmd.record_cmd(name, ss)
+    ss  -> new_ss = change(ss, state: position) |> update!()
+           SwitchCmd.record_cmd(name, new_ss)
            # Switch.states_updated(name, ss.switch_id)
            position
   end
