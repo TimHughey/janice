@@ -27,12 +27,12 @@ defmodule Dutycycle.CycleTask do
   defp loop(%Dutycycle{} = dc) do
     profile = dc.profiles |> hd()
 
-    Logger.info fn -> "cycle running for #{profile.run_ms}ms" end
+    Logger.info fn -> "cycle [#{dc.name}] running for #{profile.run_ms}ms" end
     State.set_running(dc)
     SwitchState.state(dc.device, true, :lazy)
     :timer.sleep(profile.run_ms)
 
-    Logger.info fn -> "cycle idling for #{profile.idle_ms}ms" end
+    Logger.info fn -> "cycle [#{dc.name}] idling for #{profile.idle_ms}ms" end
     State.set_idling(dc)
     SwitchState.state(dc.device, false, :lazy)
     :timer.sleep(profile.idle_ms)
