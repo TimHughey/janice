@@ -134,7 +134,8 @@ defmodule Dutycycle.Control do
 
   def handle_call({:enable_cycle_msg, name}, _from, %{tasks: tasks} = s) do
     results = Dutycycle.enable(name)
-    tasks = start_single(name, tasks)
+    dc = Dutycycle.active_profile(name)
+    tasks = start_single(dc, tasks)
 
     s = Map.put(s, :tasks, tasks)
 
