@@ -29,7 +29,7 @@ import UUID, only: [uuid1: 0]
 import Ecto.Changeset, only: [change: 2]
 import Ecto.Query, only: [from: 2]
 import Repo, only: [all: 2, update: 1, one: 1, insert: 2, insert!: 1,
-                        preload: 2, get: 2]
+                        preload: 2, get: 2, update_all: 2]
 
 alias Fact.RunMetric
 
@@ -122,11 +122,9 @@ def external_update(%{device: device} = r) do
 end
 
 def states_updated(name, id) when is_integer(id) do
-  sw = get(Switch, id) |> preload([:states])
-
-  SwitchCmd.record_cmd(name, sw.states)
-
-  change(sw, %{last_cmd_at: Timex.now()}) |> update()
+  from(sw in Switch,
+        update: [set: [last_cmd_at: Timex.now()]],
+        where: sw.id == ^id) |> update_all([])
 end
 
 ##
@@ -163,7 +161,7 @@ defp ensure_states(%Switch{states: states} = sw) do
   end
 end
 
-defp get_by_device(device) do
+def get_by_device(device) do
   # last_cmd =
   #   from(sc in SwitchCmd,
   #     group_by: sc.switch_id,

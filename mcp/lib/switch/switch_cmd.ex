@@ -116,6 +116,8 @@ when is_map(opts) do
   query(sql) |> check_purge_acked_cmds()
 end
 
+def record_cmd(name, %SwitchState{} = ss), do: record_cmd(name, [ss])
+
 def record_cmd(name, [%SwitchState{} = ss_ref | _tail] = list) do
   ss_ref = preload(ss_ref, :switch)  # ensure the associated switch is loaded
   sw = ss_ref.switch
