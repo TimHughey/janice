@@ -7,6 +7,10 @@ defmodule Dutycycle.Profile do
   use Timex.Ecto.Timestamps
   use Ecto.Schema
 
+  import Repo, only: [all: 1, update_all: 2]
+  import Ecto.Changeset, only: [change: 2]
+  import Ecto.Query, only: [from: 2]
+
   schema "dutycycle_profile" do
     field :name
     field :active, :boolean, default: false
@@ -16,5 +20,18 @@ defmodule Dutycycle.Profile do
 
     timestamps usec: true
   end
+
+  def activate(%Dutycycle{} = dc, name) when is_binary(name) do
+    from(dp in Dutycycle.Profile,
+          where: dp.dutycycle_id == ^dc.id,
+          where: dp.active == true,
+          update: [set: [active: false]]) |> update_all([])
+
+    from(dp in Dutycycle.Profile,
+          where: dp.dutycycle_id == ^dc.id,
+          where: dp.name == ^name,
+          update: [set: [active: true]]) |> update_all([])
+  end
+
 
 end

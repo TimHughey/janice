@@ -27,10 +27,11 @@ defmodule Dutycycle.Control do
   use Timex
 
   import Application, only: [get_env: 3]
-  import Process, only: [cancel_timer: 1, send_after: 3]
+  import Process, only: [send_after: 3]
 
   alias Dutycycle.Control
   alias Dutycycle.CycleTask
+  alias Dutycycle.State
 
   #
   # alias Switch
@@ -75,6 +76,11 @@ defmodule Dutycycle.Control do
     Logger.info fn -> "terminating with reason #{inspect(reason)}" end
   end
 
+  def activate_profile(name, profile_name)
+  when is_binary(name) and is_binary(profile_name) do
+    GenServer.call(Control, {:activate_profile_msg, name, profile_name})
+  end
+
   def start_cycle(name) when is_binary(name) do
     GenServer.call(Control, {:start_cycle_msg, name})
   end
@@ -83,48 +89,52 @@ defmodule Dutycycle.Control do
     GenServer.call(Control, {:stop_cycle_msg, name})
   end
 
+  def handle_call({:activate_profile_msg, name, profile_name}, _from,
+      %{tasks: tasks} = s) do
+    tasks = Dutycycle.active_profile(name) |> stop_single(tasks)
+
+    Dutycycle.activate_profile(name, profile_name)
+
+    tasks = Dutycycle.active_profile(name) |> start_single(tasks)
+
+    s = Map.put(s, :tasks, tasks)
+
+    {:reply, {:ok}, s}
+  end
+
   def handle_call({:start_cycle_msg, name}, _from, %{tasks: tasks} = s) do
-    dc = Dutycycle.active_mode(name)
+    dc = Dutycycle.active_profile(name)
 
-    task = start_single(dc, tasks)
+    tasks = start_single(dc, tasks)
 
-    task =
-      case task do
-        {:not_found}  -> %{}
-        started_task  -> started_task
-      end
+    s = Map.put(s, :tasks, tasks)
 
-    all_tasks = Map.merge(tasks, task)
-
-    s = Map.put(s, :tasks, all_tasks)
-
-    {:reply, {:ok, task}, s}
+    {:reply, {:ok, tasks}, s}
   end
 
   def handle_call({:stop_cycle_msg, name}, _from, %{tasks: tasks} = s) do
 
     {result, s} =
       case Map.get(tasks, name) do
-        %{ref: nil} = t -> Logger.info fn ->
-                             "cycle not running for [#{name}]" end
-                           {:not_running, s}
-        %{ref: ref} = t -> Logger.info fn ->
-                             "shutting down cycle for [#{inspect(name)}] " <>
-                             "ref #{inspect(ref)}" end
-                           # Supervisor.terminate_child(Dutycycle.Supervisor, ref)
-                           Task.shutdown(ref)
-                           new_tasks = Map.merge(tasks, %{name => %{ref: nil}})
-                           {:ok, Map.put(s, :tasks, new_tasks)}
-        _not_found     -> Logger.info fn -> "cycle [#{name}] is unknown" end
-                          {:not_found, s}
+        %{task: nil} -> Logger.info fn -> "cycle not running for [#{name}]" end
+                       {:not_running, s}
+
+        %{task: task} -> Logger.info fn -> "shutting down cycle for "<>
+                                         "[#{inspect(name)}] task: #{inspect(task)}" end
+                       new_tasks = stop_single(name, tasks)
+                       {:ok, Map.put(s, :tasks, new_tasks)}
+
+        _not_found  -> Logger.info fn -> "cycle [#{name}] is unknown" end
+                       {:not_found, s}
       end
 
     {:reply, {result}, s}
   end
 
-  def handle_info({:startup}, s) do
+  def handle_info({:startup}, %{tasks: tasks} = s) do
     all_dcs = Dutycycle.all()
-    tasks = start_all(all_dcs)
+    stop_all(s, all_dcs)
+    tasks = start_all(all_dcs, tasks)
 
     s = Map.put(s, :tasks, tasks)
 
@@ -148,18 +158,18 @@ defmodule Dutycycle.Control do
     Logger.info fn -> "ref: #{inspect(ref)} pid: #{inspect(pid)} " <>
                       "reason: #{reason}\n" <> "tasks: #{tasks}" end
 
-    tasks =
-      for task <- tasks do
+    _tasks =
+      # for task <- tasks do
+      #   if task.ref == ref do
+      #     Logger.info fn -> "cycle for [#{task.name}] down" end
+      #     Map.put(task, :ref, nil)
+      #   else
+      #     task
+      #   end
+      # end
 
-        if task.ref == ref do
-          Logger.info fn -> "cycle for [#{task.name}] down" end
-          Map.put(task, :ref, nil)
-        else
-          task
-        end
-      end
-
-    s = Map.put(s, :tasks, tasks)
+    # FIXME -- above comprehension needs to return correct map
+    # s = Map.put(s, :tasks, tasks)
 
     {:noreply, s}
   end
@@ -171,33 +181,71 @@ defmodule Dutycycle.Control do
     {:noreply, state}
   end
 
-  defp start_all(list) when is_list(list) do
+  defp start_all(list, %{} = tasks) when is_list(list) do
+    tasks =
+      for %Dutycycle{enable: true} = dc <- list do
+        start_single(dc, tasks)
+      end |> Enum.reduce(fn(x, acc) -> Map.merge(acc, x) end)
 
-    for %Dutycycle{enable: true} = dc <- list do
-      Logger.info fn -> "start_all #{dc.name}" end
+    Logger.info fn ->
+      names = Map.keys(tasks) |>
+              Enum.map(fn(x) -> "[#{x}]" end) |>
+              Enum.join(" ")
 
-      start_single(dc, :force)
-    end |> Enum.reduce(fn(x, acc) -> Map.merge(acc, x) end)
+      "start_all(): #{names}" end
+
+    tasks
   end
 
-  defp start_single(nil, %{} = tasks), do: {:not_found}
-
+  defp start_single(nil, %{} = tasks), do: tasks
   defp start_single(%Dutycycle{name: name} = dc, %{} = tasks) do
-
-    task = Map.get(tasks, name)
-
-    cond do
-      nil == task         -> start_single(dc, :force)
-      %{ref: nil} == task -> start_single(dc, :force)
-      true                -> Logger.warn fn ->
-                              "cycle [#{name}] is already started" end
-                             tasks
-    end
+    task = Map.get(tasks, name, %{task: nil})
+    Map.merge(tasks, %{name => start_task(dc, task)})
   end
 
-  defp start_single(%Dutycycle{} = dc, :force) do
-    ref = Task.async(CycleTask, :run, [dc])
-    %{dc.name => %{ref: ref}}
+  defp start_task(%Dutycycle{} = dc, %{task: nil}) do
+    task = Task.async(CycleTask, :run, [dc])
+    %{task: task}
+  end
+
+  defp start_task(%Dutycycle{} = dc, %{task: %Task{}} = task) do
+    Logger.warn fn -> "cycle [#{dc.name}] is already started" end
+    task
+  end
+
+  defp stop_all(%{} = s, list) when is_list(list) do
+    # returns a map of tasks
+    tasks =
+      for %Dutycycle{} = dc <- list do
+        asis_task = Map.get(s.tasks, dc.name, %{task: nil})
+        State.set_stopped(dc)
+        stop_task(asis_task)
+        %{dc.name => %{task: nil}}
+      end |> Enum.reduce(fn(x, acc) -> Map.merge(acc, x) end)
+
+    Logger.info fn ->
+      names = Map.keys(tasks) |>
+              Enum.map(fn(x) -> "[#{x}]" end) |>
+              Enum.join(" ")
+
+      "stop_all(): #{names}" end
+
+    tasks
+  end
+
+  defp stop_single(nil, %{} = t), do: t
+  defp stop_single(%Dutycycle{name: name}, %{} = t), do: stop_single(name, t)
+  defp stop_single(name, %{} = tasks) when is_binary(name) do
+    State.set_stopped(name)
+    task = Map.get(tasks, name, %{task: nil})
+    Map.merge(tasks, %{name => stop_task(task)})
+  end
+
+
+  defp stop_task(%{task: nil}), do: %{task: nil}
+  defp stop_task(%{task: %Task{} = task}) do
+    Task.shutdown(task)
+    %{task: nil}
   end
 
 end

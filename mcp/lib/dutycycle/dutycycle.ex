@@ -32,6 +32,8 @@ defmodule Dutycycle do
   import Ecto.Changeset, only: [change: 2]
   import Ecto.Query, only: [from: 2]
 
+  alias Dutycycle.Profile
+
   @vsn 3
 
   schema "dutycycle" do
@@ -62,13 +64,32 @@ defmodule Dutycycle do
 
   def all do
     from(d in Dutycycle,
+      join: p in assoc(d, :profiles),
+      join: s in assoc(d, :state),
+      preload: [profiles: p, state: s],
+      select: d) |> all()
+  end
+
+  def all_active do
+    from(d in Dutycycle,
       join: p in assoc(d, :profiles), where: p.active == true,
       join: s in assoc(d, :state),
       preload: [profiles: p, state: s],
       select: d) |> all()
   end
 
-  def active_mode(name) do
+  def activate_profile(dc_name, profile_name)
+  when is_binary(dc_name) and is_binary(profile_name) do
+    dc = from(d in Dutycycle,
+               where: d.name == ^dc_name) |> one()
+
+    if %Dutycycle{} = dc,
+      do: Profile.activate(dc, profile_name),
+      else: Logger.warn fn -> "dutycycle [#{dc_name}] does not " <>
+                                   "exist, can't activate profile" end
+  end
+
+  def active_profile(name) do
     from(d in Dutycycle,
       join: m in assoc(d, :profiles),
       join: s in assoc(d, :state),
