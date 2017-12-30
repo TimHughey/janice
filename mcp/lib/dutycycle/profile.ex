@@ -7,8 +7,7 @@ defmodule Dutycycle.Profile do
   use Timex.Ecto.Timestamps
   use Ecto.Schema
 
-  import Repo, only: [all: 1, update_all: 2]
-  import Ecto.Changeset, only: [change: 2]
+  import Repo, only: [update_all: 2]
   import Ecto.Query, only: [from: 2]
 
   schema "dutycycle_profile" do

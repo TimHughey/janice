@@ -2,8 +2,6 @@ defmodule Dutycycle.CycleTask do
 @moduledoc """
 """
 
-  alias __MODULE__
-
   require Logger
   use Timex
   use Task
