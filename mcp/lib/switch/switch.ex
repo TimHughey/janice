@@ -188,43 +188,34 @@ defp update_from_reading(%{r: r, sw: sw}) do
   #                               "  r : #{inspect(r)}\n\n" <>
   #                               "  sw: #{inspect(sw)}\n" end
 
-
   SwitchCmd.ack_if_needed(r)
 
-  if Enum.count(r.states) == Enum.count(sw.states) do
-    states =
-      for new <- r.states do
+  case Enum.count(r.states) == Enum.count(sw.states) do
+    true  ->  for new <- r.states do
+                # since PIO numbers always start at zero
+                # they can be easily used
+                # as list index ids
+                ss = Enum.at(sw.states, new.pio)
 
-        # since PIO numbers always start at zero they can be easily used
-        # as list index ids
-        ss = Enum.at(sw.states, new.pio)
+                if (not r.cmdack) && (ss.state != new.state) do
+                  Logger.warn fn -> "sw_state [#{ss.name}] -> " <>
+                  "inbound [#{inspect(new.state)}] != " <>
+                  "stored [#{inspect(ss.state)}]" end
+                end
 
-        r.cmdack && Logger.info fn -> "\n\n\n  new: #{inspect(new)}" <>
-                                      "\n\n  ss : #{inspect(ss)}" end
+                change(ss, %{state: new.state}) |> update!()
+              end
 
+              opts = %{last_seen_at: Timex.from_unix(r.mtime)}
+              opts = if r.latency > 0,
+                        do: Map.put(opts, :dev_latency, r.latency),
+                        else: opts
 
-        unless r.cmdack do
-          if ss.state != new.state do
-            Logger.warn fn -> "state [#{ss.name}] -> " <>
-              "inbound state [#{inspect(new.state)}] != " <>
-              "stored state [#{inspect(ss.state)}]" end
-          end
-        end
+              change(sw, opts) |> update()
 
-        new_ss = change(ss, %{state: new.state}) |> update!()
-        # r.cmdack && Logger.info fn -> " updated ss: #{inspect(new_ss)}" end
-      end
-
-    opts = %{last_seen_at: Timex.from_unix(r.mtime)}
-
-    opts =
-      if r.latency > 0, do: Map.put(opts, :dev_latency, r.latency), else: opts
-
-    change(sw, opts) |> update()
-  else
-    Logger.warn fn ->
-      "number of states in reading does not match switch [#{sw.device}]" end
-    {:error, sw}
+    false ->  Logger.warn fn -> "number of states in reading " <>
+                                "does not match switch [#{sw.device}]" end
+              {:error, sw}
   end
 end
 

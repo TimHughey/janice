@@ -34,8 +34,8 @@ when is_binary(device) and is_list(states) and is_binary(refid) do
     Map.put_new(:states, states) |>
     Map.put_new(:refid, refid)
 
-  Logger.info fn -> "sw_cmd: #{inspect(cmd)}" end
-  cmd  
+  Logger.debug fn -> "sw_cmd: #{inspect(cmd)}" end
+  cmd
 end
 
 defp mtime(%SetSwitch{} = c) do
