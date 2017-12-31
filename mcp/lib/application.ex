@@ -25,7 +25,7 @@ defmodule Mcp.Application do
       {Fact.Supervisor, initial},
       {Mqtt.Supervisor, initial},
       {Dispatcher.Supervisor, initial},
-      {Command.Supervisor, initial},
+      {Command.Control, initial},
       {Janitor, initial},
       {Dutycycle.Control, initial},
       {Mixtank, initial},

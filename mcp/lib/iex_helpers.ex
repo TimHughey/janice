@@ -137,4 +137,6 @@ def switch_state_test(names, count, states) when is_list(states) do
   :ok
 end
 
+def observer, do: :observer.start
+
 end ## defmodule end

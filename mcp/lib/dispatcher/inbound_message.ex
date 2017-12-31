@@ -81,7 +81,7 @@ when is_binary(msg) and is_map(s) do
 
   if Reading.startup?(r) do
     Logger.info("#{r.host} version #{r.version} announced startup")
-    Timesync.send()
+    Command.Control.send_timesync()
   end
 
   if Reading.temperature?(r) || Reading.relhum?(r) do
