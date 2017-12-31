@@ -15,8 +15,6 @@ defmodule Web.McpDetailController do
     switches = for ss <- all_ss do
       cmd = SwitchCmd.get_rt_latency(last_cmds, ss.name)
 
-      Logger.info fn -> "found cmd: #{inspect(cmd)}" end
-
       %{id: ss.id,
           type: "switch",
           name: ss.name,

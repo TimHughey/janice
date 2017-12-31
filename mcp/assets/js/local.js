@@ -55,6 +55,10 @@ function pageReady(jQuery) {
       data: 'description',
     },
     {
+      data: 'dev_latency',
+      class: 'col-center',
+      render: prettyUs,
+    }, {
       data: 'rt_latency',
       class: 'col-center',
       render: prettyUs,
