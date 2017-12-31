@@ -68,7 +68,7 @@ defmodule MessageSave do
     {:reply, :ok, s}
   end
 
-  def handle_cast({@save_msg, _, _, _ }, %{opts: %{save: false}} = s) do
+  def handle_cast({@save_msg, _, _, _}, %{opts: %{save: false}} = s) do
     {:noreply, s}
   end
 

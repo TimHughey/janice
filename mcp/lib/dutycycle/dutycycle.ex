@@ -83,7 +83,7 @@ defmodule Dutycycle do
     dc = from(d in Dutycycle,
                where: d.name == ^dc_name) |> one()
 
-    if %Dutycycle{} = dc,
+    if dc != nil,
       do: Profile.activate(dc, profile_name),
       else: Logger.warn fn -> "dutycycle [#{dc_name}] does not " <>
                                    "exist, can't activate profile" end

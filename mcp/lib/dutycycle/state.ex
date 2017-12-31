@@ -86,6 +86,4 @@ defmodule Dutycycle.State do
          state_at: ^now]]) |> update_all([])
   end
 
-
-
 end

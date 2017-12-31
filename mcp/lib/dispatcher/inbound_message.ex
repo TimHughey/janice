@@ -10,7 +10,7 @@ alias Dispatcher.Reading
 alias Fact.FreeRamStat
 alias Fact.RunMetric
 
-alias Command.Timesync
+alias Command.Control
 
 def start_link(s) do
   GenServer.start_link(Dispatcher.InboundMessage, s,
@@ -81,7 +81,7 @@ when is_binary(msg) and is_map(s) do
 
   if Reading.startup?(r) do
     Logger.info("#{r.host} version #{r.version} announced startup")
-    Command.Control.send_timesync()
+    Control.send_timesync()
   end
 
   if Reading.temperature?(r) || Reading.relhum?(r) do

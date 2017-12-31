@@ -36,7 +36,10 @@ function pageReady(jQuery) {
     scrollY: '50vh',
     // deferRender: true,
     scroller: true,
-    select: true,
+    select: {
+      style: 'os',
+      items: 'cell',
+    },
     order: [
       [1, 'asc'],
     ],
@@ -52,7 +55,7 @@ function pageReady(jQuery) {
       data: 'description',
     },
     {
-      data: 'dev_latency',
+      data: 'rt_latency',
       class: 'col-center',
       render: prettyUs,
     }, {
@@ -139,6 +142,9 @@ function pageReady(jQuery) {
     ],
     buttons: [{
       text: 'Refresh',
+      attr: {
+        id: 'sensorRefreshButton',
+      },
       action(e, dt, node, config) {
         dt.button(0).processing(true);
         dt.ajax.reload();

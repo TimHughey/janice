@@ -1,4 +1,6 @@
 defmodule Web.Guardian do
+  @moduledoc """
+  """
   use Guardian, otp_app: :mcp
 
     def subject_for_token(resource, _claims), do: {:ok, to_string(resource.id)}

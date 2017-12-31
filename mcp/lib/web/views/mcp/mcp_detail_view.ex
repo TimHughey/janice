@@ -10,18 +10,18 @@ defmodule Web.McpDetailView do
   end
 
   def render("mcp_detail.json",
-             %{mcp_detail: %SwitchState{} = ss}) do
+             %{mcp_detail: %{type: "switch"} = ss}) do
 
     %{type: "switch",
       id: ss.id,
       friendly_name: ss.name,
-      device: ss.switch.device,
-      enabled: ss.switch.enabled,
+      device: ss.device,
+      enabled: ss.enabled,
       description: ss.description,
-      dev_latency: ss.switch.dev_latency,
-      # rt_latency: ss.switch.rt_latency |> hd(),
-      last_cmd_secs: humanize_secs(ss.switch.last_cmd_at),
-      last_seen_secs: humanize_secs(ss.switch.last_seen_at),
+      dev_latency: ss.dev_latency,
+      rt_latency: ss.rt_latency,
+      last_cmd_secs: humanize_secs(ss.last_cmd_at),
+      last_seen_secs: humanize_secs(ss.last_seen_at),
       state: ss.state}
   end
 
@@ -38,6 +38,8 @@ defmodule Web.McpDetailView do
       reading_secs: humanize_secs(s.reading_at),
       celsius: s.temperature.tc}
   end
+
+  defp humanize_secs(nil), do: 0
 
   defp humanize_secs(%DateTime{} = dt) do
     Timex.diff(Timex.now(), dt, :seconds) # |> humanize_secs

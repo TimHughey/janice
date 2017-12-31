@@ -140,14 +140,14 @@ end
 
 defp create_states(%{device: device, pio_count: pio_count})
 when is_binary(device) and is_integer(pio_count) do
-  for pio <- 0..(pio_count-1) do
+  for pio <- 0..(pio_count - 1) do
     name = "#{device}:#{pio}"
     %SwitchState{name: name, pio: pio}
   end
 end
 
 defp ensure_cmds(%Switch{cmds: cmds} = sw) do
-  unless Ecto.assoc_loaded?(cmds) do
+  if Ecto.assoc_loaded?(cmds) == false do
     Logger.info fn -> "default acked cmd added for switch [#{sw.device}]" end
     Map.put(sw, :cmds, create_cmds(%{}))
   else
@@ -156,7 +156,7 @@ defp ensure_cmds(%Switch{cmds: cmds} = sw) do
 end
 
 defp ensure_states(%Switch{states: states} = sw) do
-  unless Ecto.assoc_loaded?(states) do
+  if Ecto.assoc_loaded?(states) == false do
     Logger.info fn -> "default states added for switch [#{sw.device}]" end
     Map.put(sw, :states, create_states(%{device: sw.device, pio_count: 2}))
   else
@@ -198,9 +198,9 @@ defp update_from_reading(%{r: r, sw: sw}) do
                 ss = Enum.at(sw.states, new.pio)
 
                 if (not r.cmdack) && (ss.state != new.state) do
-                  Logger.warn fn -> "sw_state [#{ss.name}] -> " <>
+                  Logger.warn("sw_state [#{ss.name}] -> " <>
                   "inbound [#{inspect(new.state)}] != " <>
-                  "stored [#{inspect(ss.state)}]" end
+                  "stored [#{inspect(ss.state)}]")
                 end
 
                 change(ss, %{state: new.state}) |> update!()

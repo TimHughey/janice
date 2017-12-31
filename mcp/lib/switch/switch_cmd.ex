@@ -13,7 +13,7 @@ use Ecto.Schema
 import UUID, only: [uuid1: 0]
 import Ecto.Changeset, only: [change: 2]
 import Ecto.Query, only: [from: 2]
-import Repo, only: [all: 2, one: 1, query: 1, preload: 2,
+import Repo, only: [all: 1, all: 2, one: 1, query: 1, preload: 2,
                     insert!: 1, update: 1, update_all: 2]
 
 import Mqtt.Client, only: [publish_switch_cmd: 1]
@@ -80,6 +80,18 @@ def ack_orphans(opts) do
                        orphan: true]],
         where: sc.acked == false,
         where: sc.sent_at < ^before) |> update_all([])
+end
+
+def get_rt_latency(list, name) when is_list(list) and is_binary(name) do
+  Enum.find(list, %SwitchCmd{rt_latency: 0}, fn(x) -> x.name === name end)
+    |> Map.from_struct()
+end
+
+def last_cmds(max_rows) when is_integer(max_rows) do
+  from(sc in SwitchCmd,
+    where: not is_nil(sc.ack_at),
+    order_by: [desc: sc.ack_at],
+    limit: ^max_rows) |> all()
 end
 
 def unacked do

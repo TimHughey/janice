@@ -32,5 +32,4 @@ defmodule Dutycycle.Profile do
           update: [set: [active: true]]) |> update_all([])
   end
 
-
 end

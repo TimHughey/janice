@@ -13,7 +13,7 @@ series do
   tag :remote_host, default: "unknown-host"
   tag :device, default: "unknown-device"
   tag :friendly_name, default: "unknown-friendly"
-  tag :env, default: "dev" 
+  tag :env, default: "dev"
 
   field :val
 end

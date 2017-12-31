@@ -52,5 +52,4 @@ def dutycycles(:prod) do
   #    run_ms: 15 * 60 * 1000, idle_ms: 60 * 1000},
 end
 
-
 end

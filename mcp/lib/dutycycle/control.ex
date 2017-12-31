@@ -161,7 +161,7 @@ defmodule Dutycycle.Control do
         %{task: nil} -> Logger.info fn -> "cycle not running for [#{name}]" end
                        {:not_running, s}
 
-        %{task: task} -> Logger.info fn -> "shutting down cycle for "<>
+        %{task: task} -> Logger.info fn -> "shutting down cycle for " <>
                                          "[#{inspect(name)}] task: #{inspect(task)}" end
                        new_tasks = stop_single(name, tasks)
                        {:ok, Map.put(s, :tasks, new_tasks)}
@@ -183,7 +183,6 @@ defmodule Dutycycle.Control do
     {:noreply, s}
   end
 
-
   def handle_info({ref, result}, %{tasks: tasks} = s)
   when is_reference(ref) do
     Logger.info fn -> "ref: #{inspect(ref)} result: #{inspect(result)}" end
@@ -201,18 +200,9 @@ defmodule Dutycycle.Control do
     Logger.info fn -> "ref: #{inspect(ref)} pid: #{inspect(pid)} " <>
                       "reason: #{reason}\n" <> "tasks: #{tasks}" end
 
-    _tasks =
-      # for task <- tasks do
-      #   if task.ref == ref do
-      #     Logger.info fn -> "cycle for [#{task.name}] down" end
-      #     Map.put(task, :ref, nil)
-      #   else
-      #     task
-      #   end
-      # end
+    tasks = Enum.filter(tasks, fn(x) -> x.ref != ref end)
 
-    # FIXME -- above comprehension needs to return correct map
-    # s = Map.put(s, :tasks, tasks)
+    s = Map.put(s, :tasks, tasks)
 
     {:noreply, s}
   end
@@ -285,7 +275,6 @@ defmodule Dutycycle.Control do
     task = Map.get(tasks, name, %{task: nil})
     Map.merge(tasks, %{name => stop_task(task)})
   end
-
 
   defp stop_task(%{task: nil}), do: %{task: nil}
   defp stop_task(%{task: %Task{} = task}) do
