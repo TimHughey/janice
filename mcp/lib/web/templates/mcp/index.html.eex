@@ -35,8 +35,8 @@
             <th>Name</th>
             <th>Device</th>
             <th>Description</th>
-            <th>RT Latency</th>
             <th>Latency</th>
+            <th>RT Latency</th>
             <th>Cmd</th>
             <th>Seen</th>
             <th>State</th>
