@@ -32,6 +32,7 @@ defmodule Dutycycle.Profile do
           update: [set: [active: true]]) |> update_all([])
   end
 
+  def change(nil, _, _), do: %Dutycycle.Profile{}
   def change(%Dutycycle{} = dc, profile, opts)
   when is_binary(profile) and is_map(opts) do
     {rows_updated, _} =

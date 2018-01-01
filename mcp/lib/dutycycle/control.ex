@@ -131,8 +131,9 @@ defmodule Dutycycle.Control do
         do: do_activate_profile(name, profile, s),
       else: s
 
+    result = if dc.name == nil, do: {:not_found}, else: {:ok}
 
-    {:reply, {:ok}, s}
+    {:reply, result, s}
   end
 
   def handle_call({:disable_cycle_msg, name}, _from, %{tasks: tasks} = s) do
@@ -234,6 +235,16 @@ defmodule Dutycycle.Control do
   defp calculate_profile(%{run: run, idle: idle}),
     do: %{run_ms: run, idle_ms: idle}
 
+  defp do_activate_profile(name, profile, %{tasks: tasks} = s) do
+    tasks = Dutycycle.active_profile(name) |> stop_single(tasks)
+
+    Dutycycle.activate_profile(name, profile)
+
+    tasks = Dutycycle.active_profile(name) |> start_single(tasks)
+
+    Map.put(s, :tasks, tasks)
+  end
+
   defp start_all(list, %{} = tasks) when is_list(list) do
     tasks =
       for %Dutycycle{enable: true} = dc <- list do
@@ -248,16 +259,6 @@ defmodule Dutycycle.Control do
       "start_all(): #{names}" end
 
     tasks
-  end
-
-  defp do_activate_profile(name, profile, %{tasks: tasks} = s) do
-    tasks = Dutycycle.active_profile(name) |> stop_single(tasks)
-
-    Dutycycle.activate_profile(name, profile)
-
-    tasks = Dutycycle.active_profile(name) |> start_single(tasks)
-
-    Map.put(s, :tasks, tasks)
   end
 
   defp start_single(nil, %{} = tasks), do: tasks
