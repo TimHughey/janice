@@ -61,7 +61,7 @@ config :mcp, Mcp.Chamber,
   routine_check_ms: 1000
 
 config :mcp, Mixtank,
-  control_temp_ms: 1000,
+  control_temp_ms: 27000,
   activate_ms: 1000,
   manage_ms: 1000
 

@@ -32,6 +32,7 @@ defmodule Dutycycle.Control do
   alias Dutycycle.Control
   alias Dutycycle.CycleTask
   alias Dutycycle.State
+  alias Dutycycle.Profile
 
   #
   # alias Switch
@@ -88,6 +89,10 @@ defmodule Dutycycle.Control do
     GenServer.call(Control, {:activate_profile_msg, name, profile_name})
   end
 
+  def change_profile(name, profile, opts) do
+    GenServer.call(Control, {:change_profile_msg, name, profile, opts})
+  end
+
   def disable_cycle(name) when is_binary(name) do
     GenServer.call(Control, {:disable_cycle_msg, name})
   end
@@ -108,15 +113,24 @@ defmodule Dutycycle.Control do
   # GenServer callbacks #
   #######################
 
-  def handle_call({:activate_profile_msg, name, profile_name}, _from,
-      %{tasks: tasks} = s) do
-    tasks = Dutycycle.active_profile(name) |> stop_single(tasks)
+  def handle_call({:activate_profile_msg, name, profile_name}, _from, s) do
 
-    Dutycycle.activate_profile(name, profile_name)
+    s = do_activate_profile(name, profile_name, s)
 
-    tasks = Dutycycle.active_profile(name) |> start_single(tasks)
+    {:reply, {:ok}, s}
+  end
 
-    s = Map.put(s, :tasks, tasks)
+  def handle_call({:change_profile_msg, name, profile, opts}, _From, s) do
+
+    opts = Enum.into(opts, %{}) |> calculate_profile()
+
+    dc = Dutycycle.get(name)
+    dcp = Profile.change(dc, profile, opts)
+
+    s = if dcp.active and dc.enable,
+        do: do_activate_profile(name, profile, s),
+      else: s
+
 
     {:reply, {:ok}, s}
   end
@@ -214,6 +228,12 @@ defmodule Dutycycle.Control do
     {:noreply, state}
   end
 
+  defp calculate_profile(%{minutes: true, run: run, idle: idle}) do
+    %{run_ms: run * 60 * 1000, idle_ms: idle * 60 * 1000}
+  end
+  defp calculate_profile(%{run: run, idle: idle}),
+    do: %{run_ms: run, idle_ms: idle}
+
   defp start_all(list, %{} = tasks) when is_list(list) do
     tasks =
       for %Dutycycle{enable: true} = dc <- list do
@@ -228,6 +248,16 @@ defmodule Dutycycle.Control do
       "start_all(): #{names}" end
 
     tasks
+  end
+
+  defp do_activate_profile(name, profile, %{tasks: tasks} = s) do
+    tasks = Dutycycle.active_profile(name) |> stop_single(tasks)
+
+    Dutycycle.activate_profile(name, profile)
+
+    tasks = Dutycycle.active_profile(name) |> start_single(tasks)
+
+    Map.put(s, :tasks, tasks)
   end
 
   defp start_single(nil, %{} = tasks), do: tasks
