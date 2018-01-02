@@ -129,7 +129,7 @@ def dutycycles(:prod) do
   end
 
   def on_profile do
-    %Dutycycle.Profile{name: "off",
+    %Dutycycle.Profile{name: "on",
      run_ms: 600_000, idle_ms: 0}
   end
 
