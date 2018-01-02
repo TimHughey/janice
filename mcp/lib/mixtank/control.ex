@@ -226,7 +226,7 @@ defmodule Mixtank.Control do
     Map.merge(tasks, %{name => start_task(mt, task, opts)})
   end
 
-  defp start_task(%Mixtank{profiles: []} = mt, task, opts) do
+  defp start_task(%Mixtank{profiles: []} = mt, task, _opts) do
     Logger.info fn -> "[#{mt.name}] has no active profile, will not start" end
     task
   end

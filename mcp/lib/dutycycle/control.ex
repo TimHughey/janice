@@ -148,7 +148,7 @@ defmodule Dutycycle.Control do
 
     s = Map.put(s, :tasks, tasks)
 
-    Logger.info fn -> "cycle [#{name}] disabled" end
+    Logger.info fn -> "[#{name}] disabled" end
 
     {:reply, {:ok, results}, s}
   end
@@ -160,7 +160,7 @@ defmodule Dutycycle.Control do
 
     s = Map.put(s, :tasks, tasks)
 
-    Logger.info fn -> "cycle [#{name}] enabled" end
+    Logger.info fn -> "[#{name}] enabled" end
 
     {:reply, {:ok, results}, s}
   end
@@ -187,7 +187,7 @@ defmodule Dutycycle.Control do
                        new_tasks = stop_single(name, tasks, s.opts)
                        {:ok, Map.put(s, :tasks, new_tasks)}
 
-        _not_found  -> Logger.info fn -> "cycle [#{name}] is unknown" end
+        _not_found  -> Logger.info fn -> "[#{name}] is unknown" end
                        {:not_found, s}
       end
 
@@ -228,7 +228,7 @@ defmodule Dutycycle.Control do
     Logger.info fn -> "tasks: #{tasks}" end
 
     for %{ref: ^ref} = task <- tasks do
-      Logger.info fn -> "cycle for [#{task.name}] ended " <>
+      Logger.info fn -> "[#{task.name}] ended " <>
                         "with result #{inspect(result)}" end
     end
 
@@ -295,7 +295,7 @@ defmodule Dutycycle.Control do
   end
 
   defp start_task(%Dutycycle{profiles: []} = dc, task, _opts) do
-    Logger.info fn -> "[#{dc.name}] has not active profile, will not start" end
+    Logger.info fn -> "[#{dc.name}] has no active profile, will not start" end
     task
   end
 
@@ -311,7 +311,7 @@ defmodule Dutycycle.Control do
   end
 
   defp start_task(%Dutycycle{} = dc, %{task: %Task{}} = task, _opts) do
-    Logger.warn fn -> "cycle [#{dc.name}] is already started" end
+    Logger.warn fn -> "[#{dc.name}] is already started" end
     task
   end
 
@@ -341,7 +341,7 @@ defmodule Dutycycle.Control do
   defp stop_single(%Dutycycle{name: name}, %{} = t, opts),
     do: stop_single(name, t, opts)
   defp stop_single(name, %{} = tasks, opts) when is_binary(name) do
-    Logger.info fn -> "stopping cycle [#{name}]" end
+    Logger.info fn -> "[#{name}] stopping" end
 
     State.set_stopped(name)
     task = Map.get(tasks, name, %{task: nil})

@@ -14,9 +14,8 @@ defmodule Dutycycle.CycleTask do
   end
 
   def run(dc, opts) do
-    profile = dc.profiles |> hd()
-    Logger.info fn -> "cycle started for [#{dc.name}] " <>
-                      "with profile [#{profile.name}]" end
+    p = dc.profiles |> hd()
+    Logger.info fn -> "[#{dc.name}] started with profile [#{p.name}]" end
 
     State.set_started(dc)
 
@@ -43,7 +42,7 @@ defmodule Dutycycle.CycleTask do
   defp idle_phase(%Dutycycle{} = dc,
                   %Profile{idle_ms: idle_ms}, _opts)
   when idle_ms > 0 do
-    dc.log && Logger.info fn -> "cycle [#{dc.name}] idling for #{idle_ms}ms" end
+    dc.log && Logger.info fn -> "[#{dc.name}] idling for #{idle_ms}ms" end
     State.set_idling(dc)
     SwitchState.state(dc.device, false, :lazy)
     :timer.sleep(idle_ms)
@@ -60,7 +59,7 @@ defmodule Dutycycle.CycleTask do
   defp run_phase(%Dutycycle{} = dc,
                  %Profile{run_ms: run_ms}, _opts)
   when run_ms > 0 do
-    dc.log && Logger.info fn -> "cycle [#{dc.name}] running for #{run_ms}ms" end
+    dc.log && Logger.info fn -> "[#{dc.name}] running for #{run_ms}ms" end
     State.set_running(dc)
     SwitchState.state(dc.device, true, :lazy)
     :timer.sleep(run_ms)
