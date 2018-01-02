@@ -8,9 +8,10 @@ use Timex
 use Timex.Ecto.Timestamps
 use Ecto.Schema
 
-import Ecto.Changeset, only: [change: 2]
+#import Ecto.Changeset, only: [cast: 2, change: 2]
+import Ecto.Changeset
 import Ecto.Query, only: [from: 2]
-import Repo, only: [all: 2, update!: 1, one: 1]
+import Repo, only: [all: 2, update!: 1, update: 1, one: 1]
 
 schema "switch_state" do
   field :name, :string
@@ -37,6 +38,28 @@ end
 def as_list_of_maps(list) when is_list(list) do
   for ss <- list do
     %{pio: ss.pio, state: ss.state}
+  end
+end
+
+def changeset(ss, params \\ %{}) do
+  ss
+  |> cast(params, [:name, :description])
+  |> validate_required([:name])
+  |> validate_format(:name, ~r/^[\w]+[\w ]{1,}[\w]$/)
+  |> unique_constraint(:name)
+end
+
+def change_name(asis, tobe, comment \\ "")
+when is_binary(asis) and is_binary(tobe) do
+
+  ss = get_by_name(asis)
+
+  if not is_nil(ss) do
+    ss
+    |> changeset(%{name: tobe, description: comment})
+    |> update()
+  else
+    {:error, :not_found}
   end
 end
 

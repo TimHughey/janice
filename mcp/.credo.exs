@@ -58,7 +58,8 @@
         # For some checks, like AliasUsage, you can only customize the priority
         # Priority values are: `low, normal, high, higher`
         #
-        {Credo.Check.Design.AliasUsage, priority: :low},
+        #{Credo.Check.Design.AliasUsage, priority: :low},
+        {Credo.Check.Design.AliasUsage, false},
 
         # For others you can set parameters
 
@@ -101,7 +102,7 @@
         {Credo.Check.Refactor.MatchInCondition},
         {Credo.Check.Refactor.NegatedConditionsInUnless},
         {Credo.Check.Refactor.NegatedConditionsWithElse},
-        {Credo.Check.Refactor.Nesting},
+        {Credo.Check.Refactor.Nesting, :false},
         {Credo.Check.Refactor.PipeChainStart, :false},
         {Credo.Check.Refactor.UnlessWithElse},
 

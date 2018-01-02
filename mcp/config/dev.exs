@@ -11,7 +11,7 @@ config :mcp, MessageSave,
   delete_older_than_hrs: 12
 
 config :mcp, Command.Control,
-  timesync: [frequency: (60*1000), loops: 5, forever: false, log: false]
+  timesync: [frequency: (60 * 1000), loops: 5, forever: false, log: false]
 
 config :mcp, Dispatcher.InboundMessage,
   periodic_log_first_ms: (60 * 60 * 1000),
@@ -49,17 +49,15 @@ config :mcp, Switch,
 
 config :mcp, Janitor,
   switch_cmds: [purge: true, interval_mins: 2,
-                older_than_hrs: (24*7), log: true],
+                older_than_hrs: (24 * 7), log: true],
   orphan_acks: [interval_mins: 1, older_than_mins: 1, log: true]
 
 config :mcp, Mcp.Chamber,
   autostart_wait_ms: 0,
   routine_check_ms: 1000
 
-config :mcp, Mixtank,
-  control_temp_ms: 1000,
-  activate_ms: 1000,
-  manage_ms: 1000
+config :mcp, Mixtank.Control,
+  control_temp_secs: 27
 
 config :mcp, Dutycycle,
   routine_check_ms: 1000

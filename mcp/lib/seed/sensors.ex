@@ -115,6 +115,6 @@ defmodule Seed.Sensors do
               type: "relhum"},
      %Sensor{name: "chamber1_pri",
               device: "i2c/f8f005e944e2.01.am2315",
-              type: "relhum"},] end
+              type: "relhum"}] end
 
 end

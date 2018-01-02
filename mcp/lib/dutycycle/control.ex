@@ -75,7 +75,7 @@ defmodule Dutycycle.Control do
 
   def terminate(reason, s) do
     all_dcs = Dutycycle.all()
-    stop_all(s, all_dcs)
+    stop_all(s, all_dcs, s.opts)
 
     Logger.info fn -> "terminating with reason #{inspect(reason)}" end
   end
@@ -84,9 +84,10 @@ defmodule Dutycycle.Control do
   # Public Functions #
   ####################
 
-  def activate_profile(name, profile_name)
+  def activate_profile(name, profile_name, addl_opts \\ :none)
   when is_binary(name) and is_binary(profile_name) do
-    GenServer.call(Control, {:activate_profile_msg, name, profile_name})
+    msg = {:activate_profile_msg, name, profile_name, addl_opts}
+    GenServer.call(Control, msg)
   end
 
   def change_profile(name, profile, opts) do
@@ -109,13 +110,18 @@ defmodule Dutycycle.Control do
     GenServer.call(Control, {:stop_cycle_msg, name})
   end
 
+  def switch_state(name) when is_binary(name) do
+    GenServer.call(Control, {:switch_state_msg, name})
+  end
+
   #######################
   # GenServer callbacks #
   #######################
 
-  def handle_call({:activate_profile_msg, name, profile_name}, _from, s) do
+  def handle_call({:activate_profile_msg, name, profile_name, addl_opts},
+                    _from, s) do
 
-    s = do_activate_profile(name, profile_name, s)
+    s = do_activate_profile(name, profile_name, s, addl_opts)
 
     {:reply, {:ok}, s}
   end
@@ -138,7 +144,7 @@ defmodule Dutycycle.Control do
 
   def handle_call({:disable_cycle_msg, name}, _from, %{tasks: tasks} = s) do
     results = Dutycycle.disable(name)
-    tasks = stop_single(name, tasks)
+    tasks = stop_single(name, tasks, s.opts)
 
     s = Map.put(s, :tasks, tasks)
 
@@ -150,7 +156,7 @@ defmodule Dutycycle.Control do
   def handle_call({:enable_cycle_msg, name}, _from, %{tasks: tasks} = s) do
     results = Dutycycle.enable(name)
     dc = Dutycycle.active_profile(name)
-    tasks = start_single(dc, tasks)
+    tasks = start_single(dc, tasks, s.opts)
 
     s = Map.put(s, :tasks, tasks)
 
@@ -162,7 +168,7 @@ defmodule Dutycycle.Control do
   def handle_call({:start_cycle_msg, name}, _from, %{tasks: tasks} = s) do
     dc = Dutycycle.active_profile(name)
 
-    tasks = start_single(dc, tasks)
+    tasks = start_single(dc, tasks, s.opts)
 
     s = Map.put(s, :tasks, tasks)
 
@@ -178,7 +184,7 @@ defmodule Dutycycle.Control do
 
         %{task: task} -> Logger.info fn -> "shutting down cycle for " <>
                                          "[#{inspect(name)}] task: #{inspect(task)}" end
-                       new_tasks = stop_single(name, tasks)
+                       new_tasks = stop_single(name, tasks, s.opts)
                        {:ok, Map.put(s, :tasks, new_tasks)}
 
         _not_found  -> Logger.info fn -> "cycle [#{name}] is unknown" end
@@ -188,10 +194,26 @@ defmodule Dutycycle.Control do
     {:reply, {result}, s}
   end
 
+  def handle_call({:switch_state_msg, name}, _from, %{opts: _opts} = s) do
+    dc = Dutycycle.get(name)
+
+    ret =
+      if not is_nil(dc) do
+        SwitchState.state(dc.device)
+        else
+          Logger.warn fn ->
+                "request for switch state for unknwon dutycycle" <>
+                "[#{name}]" end
+          false
+      end
+
+    {:reply, ret, s}
+  end
+
   def handle_info({:startup}, %{tasks: tasks} = s) do
     all_dcs = Dutycycle.all()
-    stop_all(s, all_dcs)
-    tasks = start_all(all_dcs, tasks)
+    stop_all(s, all_dcs, s.opts)
+    tasks = start_all(all_dcs, tasks, s.opts)
 
     s = Map.put(s, :tasks, tasks)
 
@@ -235,20 +257,21 @@ defmodule Dutycycle.Control do
   defp calculate_profile(%{run: run, idle: idle}),
     do: %{run_ms: run, idle_ms: idle}
 
-  defp do_activate_profile(name, profile, %{tasks: tasks} = s) do
-    tasks = Dutycycle.active_profile(name) |> stop_single(tasks)
+  defp do_activate_profile(name, profile, %{tasks: tasks} = s,
+                            addl_opts \\ :none) do
+    tasks = Dutycycle.active_profile(name) |> stop_single(tasks, s.opts)
 
-    Dutycycle.activate_profile(name, profile)
+    Dutycycle.activate_profile(name, profile, addl_opts)
 
-    tasks = Dutycycle.active_profile(name) |> start_single(tasks)
+    tasks = Dutycycle.active_profile(name) |> start_single(tasks, s.opts)
 
     Map.put(s, :tasks, tasks)
   end
 
-  defp start_all(list, %{} = tasks) when is_list(list) do
+  defp start_all(list, %{} = tasks, opts) when is_list(list) do
     tasks =
       for %Dutycycle{enable: true} = dc <- list do
-        start_single(dc, tasks)
+        start_single(dc, tasks, opts)
       end |> Enum.reduce(tasks, fn(x, acc) -> Map.merge(acc, x) end)
 
     Logger.info fn ->
@@ -261,29 +284,35 @@ defmodule Dutycycle.Control do
     tasks
   end
 
-  defp start_single(nil, %{} = tasks), do: tasks
-  defp start_single(%Dutycycle{name: name} = dc, %{} = tasks) do
+  defp start_single(nil, %{} = tasks, _opts), do: tasks
+  defp start_single(%Dutycycle{name: name} = dc, %{} = tasks, opts) do
     task = Map.get(tasks, name, %{task: nil})
-    Map.merge(tasks, %{name => start_task(dc, task)})
+    Map.merge(tasks, %{name => start_task(dc, task, opts)})
   end
 
-  defp start_task(%Dutycycle{} = dc, %{task: nil}) do
-    task = Task.async(CycleTask, :run, [dc])
+  defp start_task(%Dutycycle{} = dc, %{task: nil}, opts) do
+    task =
+      if dc.enable,
+          do: Task.async(CycleTask, :run, [dc, opts]),
+        else: Logger.warn fn ->
+                "attempt to start disabled cycle [#{dc.name}]" end
+              nil
+
     %{task: task}
   end
 
-  defp start_task(%Dutycycle{} = dc, %{task: %Task{}} = task) do
+  defp start_task(%Dutycycle{} = dc, %{task: %Task{}} = task, _opts) do
     Logger.warn fn -> "cycle [#{dc.name}] is already started" end
     task
   end
 
-  defp stop_all(%{} = s, list) when is_list(list) do
+  defp stop_all(%{} = s, list, opts) when is_list(list) do
     # returns a map of tasks
     tasks =
       for %Dutycycle{} = dc <- list do
         asis_task = Map.get(s.tasks, dc.name, %{task: nil})
         State.set_stopped(dc)
-        stop_task(asis_task)
+        stop_task(asis_task, opts)
         %{dc.name => %{task: nil}}
       end |> Enum.reduce(fn(x, acc) -> Map.merge(acc, x) end)
 
@@ -297,18 +326,19 @@ defmodule Dutycycle.Control do
     tasks
   end
 
-  defp stop_single(nil, %{} = t), do: t
-  defp stop_single(%Dutycycle{name: name}, %{} = t), do: stop_single(name, t)
-  defp stop_single(name, %{} = tasks) when is_binary(name) do
+  defp stop_single(nil, %{} = t, _opts), do: t
+  defp stop_single(%Dutycycle{name: name}, %{} = t, opts),
+    do: stop_single(name, t, opts)
+  defp stop_single(name, %{} = tasks, opts) when is_binary(name) do
     Logger.info fn -> "stopping cycle [#{name}]" end
 
     State.set_stopped(name)
     task = Map.get(tasks, name, %{task: nil})
-    Map.merge(tasks, %{name => stop_task(task)})
+    Map.merge(tasks, %{name => stop_task(task, opts)})
   end
 
-  defp stop_task(%{task: nil}), do: %{task: nil}
-  defp stop_task(%{task: %Task{} = task}) do
+  defp stop_task(%{task: nil}, _opts), do: %{task: nil}
+  defp stop_task(%{task: %Task{} = task}, _opts) do
     Task.shutdown(task)
     %{task: nil}
   end

@@ -215,8 +215,8 @@ defmodule Repo.Migrations.Latest do
       add :relh_setpt, :integer, null: false, default: 90
       add :relh_control_ms, :integer, null: false, default: 30_000
       add :relh_sw, :string, size: 25, null: false, default: "foobar"
-      add :relh_freq_ms, :integer, null: false, default: 20*60*1000
-      add :relh_dur_ms, :integer, null: false, default: 2*60*1000
+      add :relh_freq_ms, :integer, null: false, default: 20 * 60 * 1000
+      add :relh_dur_ms, :integer, null: false, default: 2 * 60 * 1000
       add :air_stir_sw, :string, size: 25, null: false, default: "foobar"
       add :air_stir_temp_diff, :float, null: false, default: 0.0
       add :fresh_air_sw, :string, size: 25, null: false, default: "foobar"

@@ -29,6 +29,14 @@ def change_device(json, device) do
     Poison.encode!()
 end
 
+def change_temp(json, device, tf) do
+  Poison.decode!(json, [keys: :atoms]) |>
+    Map.put(:device, device) |>
+    Map.put(:tf, tf) |>
+    Map.put(:tc, ((tf - 32.0) / 1.8)) |>
+    Poison.encode!()
+end
+
 def tsensor_test do
   tsensor_test("ds/test_device4")
 end
@@ -45,6 +53,36 @@ def tsensor_test(device) do
   make_mtime_current(json) |>
     change_device(device) |>
     Dispatcher.InboundMessage.process(:save)
+end
+
+def tsensor_test(device, tf) do
+  json = ~s|{"version":"aac8961",
+            "host":"mcr.f8f005e944e2",
+            "device":"ds/test_device4",
+            "mtime":1512862674,
+            "type":"temp",
+            "tc":17.25,
+            "tf":63.05}|
+
+  make_mtime_current(json) |>
+    change_device(device) |>
+    change_temp(device, tf) |>
+    Dispatcher.InboundMessage.process(:save)
+end
+
+def mixtank_low_temp do
+  tsensor_test("ds/test_device2", 73.0)
+  tsensor_test("ds/test_device3", 79.0)
+end
+
+def mixtank_high_temp do
+  tsensor_test("ds/test_device2", 79.0)
+  tsensor_test("ds/test_device3", 73.0)
+end
+
+def mixtank_mid_temp do
+  tsensor_test("ds/test_device2", 75.0)
+  tsensor_test("ds/test_device3", 75.5)
 end
 
 def rsensor_test do
@@ -110,7 +148,9 @@ def ack_a_cmd(%SwitchCmd{} = cmd) do
     pio_count: pio_count,
     states: states,
     refid: cmd.refid,
-    cmdack: true} |> Poison.encode!() |> Dispatcher.InboundMessage.process(:save)
+    cmdack: true} |>
+      Poison.encode!() |>
+      Dispatcher.InboundMessage.process(:save)
 end
 
 def big_switch_state_test do

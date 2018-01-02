@@ -52,14 +52,15 @@ def run(args) do
     Enum.each(fn(x) -> Logger.info("seeding switch [#{x.device}]")
                        Switch.add(x) end)
 
-  mixtanks(Mix.env) |>
-    Enum.each( fn (x) -> Logger.info("seeding mixtank [#{x.name}]")
-                         Mixtank.add(x) end)
-  chambers(Mix.env) |> seed()
-
   dutycycles(Mix.env) |>
-    Enum.each( fn (x) -> Logger.info("seeding dutycycle [#{x.name}]")
-                         Dutycycle.add(x) end )
+    Enum.each(fn(x) -> Logger.info("seeding dutycycle [#{x.name}]")
+                         Dutycycle.add(x) end)
+
+  mixtanks(Mix.env) |>
+    Enum.each(fn(x) -> Logger.info("seeding mixtank [#{x.name}]")
+                         Mixtank.add(x) end)
+
+  chambers(Mix.env) |> seed()
 
   pid && repo.stop(pid)
 

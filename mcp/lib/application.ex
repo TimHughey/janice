@@ -28,7 +28,7 @@ defmodule Mcp.Application do
       {Command.Control, initial},
       {Janitor, initial},
       {Dutycycle.Control, initial},
-      {Mixtank, initial},
+      {Mixtank.Control, initial},
       {Web.Supervisor, initial}
       # {Mcp.SoakTest, initial},
       # {Mcp.Chamber, initial}

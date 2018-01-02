@@ -13,11 +13,23 @@ defmodule Seed.Switches do
                        %SwitchState{name: "sw4", pio: 1}]},
      %Switch{device: "ds/2pos3",
               states: [%SwitchState{name: "sw5", pio: 0},
-                       %SwitchState{name: "sw6", pio: 1}]}] end
+                       %SwitchState{name: "sw6", pio: 1}]},
+     %Switch{device: "ds/2pos4",
+              states: [%SwitchState{name: "sw7", pio: 0},
+                       %SwitchState{name: "sw8", pio: 1}]},
+     %Switch{device: "ds/2pos5",
+              states: [%SwitchState{name: "sw9", pio: 0},
+                       %SwitchState{name: "sw10", pio: 1}]},
+     %Switch{device: "ds/2pos6",
+              states: [%SwitchState{name: "sw11", pio: 0},
+                       %SwitchState{name: "sw12", pio: 1}]},
+     %Switch{device: "ds/2pos7",
+              states: [%SwitchState{name: "sw13", pio: 0},
+                       %SwitchState{name: "sw14", pio: 1}]}] end
 
   def switches(:prod) do
     [%Switch{device: "ds/12197521000000",
-              states: [%SwitchState{name: "unused1", pio: 0},
+              states: [%SwitchState{name: "display_tank_replenish", pio: 0},
                        %SwitchState{name: "mixtank_pump", pio: 1}]},
      %Switch{device: "ds/12328621000000",
               states: [%SwitchState{name: "loop_indicator", pio: 0},

@@ -33,6 +33,7 @@ defmodule Dutycycle do
   import Ecto.Query, only: [from: 2]
 
   alias Dutycycle.Profile
+  alias Dutycycle.State
 
   @vsn 3
 
@@ -40,9 +41,10 @@ defmodule Dutycycle do
     field :name
     field :comment
     field :enable, :boolean
+    field :log, :boolean
     field :device
-    has_one :state, Dutycycle.State
-    has_many :profiles, Dutycycle.Profile
+    has_one :state, State
+    has_many :profiles, Profile
 
     timestamps usec: true
   end
@@ -78,10 +80,12 @@ defmodule Dutycycle do
       select: d) |> all()
   end
 
-  def activate_profile(dc_name, profile_name)
+  def activate_profile(dc_name, profile_name, opts \\ :none)
   when is_binary(dc_name) and is_binary(profile_name) do
     dc = from(d in Dutycycle,
                where: d.name == ^dc_name) |> one()
+
+    if opts == :enable, do: enable(dc_name)
 
     if dc != nil,
       do: Profile.activate(dc, profile_name),
