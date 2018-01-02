@@ -12,9 +12,13 @@ defmodule Mixtank.TankTask do
     Logger.info fn -> "[#{name}] started with profile [#{p.name}]" end
 
     Dutycycle.Control.activate_profile(mt.pump, p.pump, :enable)
+    :timer.sleep(1000)
     Dutycycle.Control.activate_profile(mt.air, p.air, :enable)
+    :timer.sleep(1000)
     Dutycycle.Control.activate_profile(mt.fill, p.fill, :enable)
+    :timer.sleep(1000)
     Dutycycle.Control.activate_profile(mt.replenish, p.replenish, :enable)
+    :timer.sleep(1000)
 
     State.set_started(mt)
 
