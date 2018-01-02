@@ -86,8 +86,9 @@ defmodule Mixtank.Control do
   def handle_call({:disable_tank_msg, name}, _from,
     %{tasks: tasks, opts: opts} = s) do
 
-    results = Mixtank.disable(name)
-    tasks = stop_single(name, tasks, opts)
+    mt = Mixtank.get(name)
+    results = Mixtank.disable(mt)
+    tasks = stop_single(mt, tasks, opts)
 
     s = Map.put(s, :tasks, tasks)
 
@@ -132,7 +133,8 @@ defmodule Mixtank.Control do
 
         %{task: task} -> Logger.info fn -> "shutting down tank for " <>
                                          "[#{inspect(name)}] task: #{inspect(task)}" end
-                       new_tasks = stop_single(name, tasks, opts)
+                       new_tasks = Mixtank.get(name)
+                                   |> stop_single(tasks, opts)
                        {:ok, Map.put(s, :tasks, new_tasks)}
 
         _not_found  -> Logger.info fn -> "tank [#{name}] is unknown" end
@@ -184,11 +186,11 @@ defmodule Mixtank.Control do
   end
 
   defp do_activate_profile(name, profile, %{tasks: tasks, opts: opts} = s) do
-    tasks = Mixtank.active_profile(name) |> stop_single(tasks, opts)
+    tasks = Mixtank.get(name) |> stop_single(tasks, opts)
 
     Mixtank.activate_profile(name, profile)
 
-    tasks = Mixtank.active_profile(name) |> start_single(tasks, opts)
+    tasks = Mixtank.get(name) |> start_single(tasks, opts)
 
     Map.put(s, :tasks, tasks)
   end
@@ -232,6 +234,7 @@ defmodule Mixtank.Control do
         asis_task = Map.get(s.tasks, mt.name, %{task: nil})
         State.set_stopped(mt)
         stop_task(asis_task, opts)
+        stop_tank_cycles(mt, opts)
         %{mt.name => %{task: nil}}
       end |> Enum.reduce(%{}, fn(x, acc) -> Map.merge(acc, x) end)
 
@@ -245,9 +248,21 @@ defmodule Mixtank.Control do
     tasks
   end
 
+  defp stop_tank_cycles(%Mixtank{} = mt, _opts) do
+    Dutycycle.Control.disable_cycle(mt.pump)
+    Dutycycle.Control.disable_cycle(mt.air)
+    Dutycycle.Control.disable_cycle(mt.heater)
+    Dutycycle.Control.disable_cycle(mt.fill)
+    Dutycycle.Control.disable_cycle(mt.replenish)
+  end
+
   defp stop_single(nil, %{} = t, _opts), do: t
-  defp stop_single(%Mixtank{name: name}, %{} = t, opts),
-    do: stop_single(name, t, opts)
+
+  defp stop_single(%Mixtank{name: name} = mt, %{} = t, opts) do
+    stop_tank_cycles(mt, opts)
+    stop_single(name, t, opts)
+  end
+
   defp stop_single(name, %{} = tasks, opts) when is_binary(name) do
     Logger.info fn -> "stopping tank [#{name}]" end
 

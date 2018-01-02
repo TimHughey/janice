@@ -92,6 +92,7 @@ defmodule Mixtank do
           select: p.name) |> all()
   end
 
+  def disable(%Mixtank{name: name}), do: disable(name)
   def disable(name) when is_binary(name) do
     from(mt in Mixtank,
           where: mt.name == ^name,
