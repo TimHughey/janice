@@ -213,7 +213,9 @@ defmodule Dutycycle.Control do
   def handle_info({:startup}, %{tasks: tasks} = s) do
     all_dcs = Dutycycle.all()
     stop_all(s, all_dcs, s.opts)
-    tasks = start_all(all_dcs, tasks, s.opts)
+
+    active_dcs = Dutycycle.all_active()
+    tasks = start_all(active_dcs, tasks, s.opts)
 
     s = Map.put(s, :tasks, tasks)
 
@@ -269,6 +271,8 @@ defmodule Dutycycle.Control do
   end
 
   defp start_all(list, %{} = tasks, opts) when is_list(list) do
+    Logger.info fn -> "begin start_all()" end
+
     tasks =
       for %Dutycycle{enable: true} = dc <- list do
         start_single(dc, tasks, opts)
@@ -279,7 +283,7 @@ defmodule Dutycycle.Control do
               Enum.map(fn(x) -> "[#{x}]" end) |>
               Enum.join(" ")
 
-      "start_all(): #{names}" end
+      "end start_all(): #{names}" end
 
     tasks
   end
@@ -288,6 +292,11 @@ defmodule Dutycycle.Control do
   defp start_single(%Dutycycle{name: name} = dc, %{} = tasks, opts) do
     task = Map.get(tasks, name, %{task: nil})
     Map.merge(tasks, %{name => start_task(dc, task, opts)})
+  end
+
+  defp start_task(%Dutycycle{profiles: []} = dc, task, _opts) do
+    Logger.info fn -> "[#{dc.name}] has not active profile, will not start" end
+    task
   end
 
   defp start_task(%Dutycycle{} = dc, %{task: nil}, opts) do
@@ -307,6 +316,8 @@ defmodule Dutycycle.Control do
   end
 
   defp stop_all(%{} = s, list, opts) when is_list(list) do
+    Logger.info fn -> "begin stop_all()" end
+
     # returns a map of tasks
     tasks =
       for %Dutycycle{} = dc <- list do
@@ -321,7 +332,7 @@ defmodule Dutycycle.Control do
               Enum.map(fn(x) -> "[#{x}]" end) |>
               Enum.join(" ")
 
-      "stop_all(): #{names}" end
+      "end stop_all(): #{names}" end
 
     tasks
   end

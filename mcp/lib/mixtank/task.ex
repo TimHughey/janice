@@ -9,8 +9,7 @@ defmodule Mixtank.TankTask do
 
   def run(%Mixtank{name: name} = mt, opts) do
     p = mt.profiles |> hd()
-    Logger.info fn -> "tank task started for [#{name}] " <>
-                      "with profile [#{p.name}]" end
+    Logger.info fn -> "[#{name}] started with profile [#{p.name}]" end
 
     Dutycycle.Control.activate_profile(mt.pump, p.pump, :enable)
     Dutycycle.Control.activate_profile(mt.air, p.air, :enable)

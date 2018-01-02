@@ -147,7 +147,9 @@ defmodule Mixtank.Control do
   def handle_info({:startup}, %{tasks: tasks, opts: opts} = s) do
     all_mts = Mixtank.all()
     stop_all(s, all_mts, opts)
-    tasks = start_all(all_mts, tasks, opts)
+
+    active_mts = Mixtank.all_active()
+    tasks = start_all(active_mts, tasks, opts)
 
     s = Map.put(s, :tasks, tasks)
 
@@ -186,16 +188,22 @@ defmodule Mixtank.Control do
   end
 
   defp do_activate_profile(name, profile, %{tasks: tasks, opts: opts} = s) do
-    tasks = Mixtank.get(name) |> stop_single(tasks, opts)
+    tasks =
+      Mixtank.get(name)
+      |> stop_single(tasks, opts)
 
     Mixtank.activate_profile(name, profile)
 
-    tasks = Mixtank.get(name) |> start_single(tasks, opts)
+    tasks =
+      Mixtank.active_profile(name)
+      |> start_single(tasks, opts)
 
     Map.put(s, :tasks, tasks)
   end
 
   defp start_all(list, %{} = tasks, opts) when is_list(list) do
+    Logger.info fn -> "begin start_all()" end
+
     tasks =
       for %Mixtank{enable: true} = mt <- list do
         start_single(mt, tasks, opts)
@@ -206,15 +214,21 @@ defmodule Mixtank.Control do
               Enum.map(fn(x) -> "[#{x}]" end) |>
               Enum.join(" ")
 
-      "start_all(): #{names}" end
+      "end start_all(): #{names}" end
 
     tasks
   end
 
   defp start_single(nil, %{} = tasks, _opts), do: tasks
+
   defp start_single(%Mixtank{name: name} = mt, %{} = tasks, opts) do
     task = Map.get(tasks, name, %{task: nil})
     Map.merge(tasks, %{name => start_task(mt, task, opts)})
+  end
+
+  defp start_task(%Mixtank{profiles: []} = mt, task, opts) do
+    Logger.info fn -> "[#{mt.name}] has no active profile, will not start" end
+    task
   end
 
   defp start_task(%Mixtank{} = mt, %{task: nil}, opts) do
@@ -228,6 +242,7 @@ defmodule Mixtank.Control do
   end
 
   defp stop_all(%{} = s, list, opts) when is_list(list) do
+    Logger.info fn -> "begin stop_all()" end
     # returns a map of tasks
     tasks =
       for %Mixtank{} = mt <- list do
@@ -243,7 +258,7 @@ defmodule Mixtank.Control do
               Enum.map(fn(x) -> "[#{x}]" end) |>
               Enum.join(" ")
 
-      "stop_all(): #{names}" end
+      "end stop_all(): #{names}" end
 
     tasks
   end
