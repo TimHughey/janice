@@ -10,21 +10,7 @@ function humanizeState(data, type, row) {
   return 'off';
 }
 
-function prettyLastCommand(data, type, row) {
-  if (data === 0) {
-    return '-';
-  }
-
-  return prettyMs((data * 1000), {
-    compact: true,
-  });
-}
-
 function prettySeconds(data, type, row) {
-  // if (!isNumber(data)) {
-  //   return '-';
-  // }
-
   if (data > 0) {
     return prettyMs((data * 1000), {
       compact: true,
@@ -34,11 +20,17 @@ function prettySeconds(data, type, row) {
   return 'now';
 }
 
-function prettyUs(data, type, row) {
-  // if (!isNumber(data)) {
-  //   return '-';
-  // }
+function prettyLastCommand(data, type, row) {
+  if (data > 0) {
+    return prettyMs((data * 1000), {
+      compact: true,
+    });
+  }
 
+  return '-';
+}
+
+function prettyUs(data, type, row) {
   if (data > 0) {
     return prettyMs((data / 1000), {
       compact: true,
