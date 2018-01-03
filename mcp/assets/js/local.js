@@ -1,6 +1,6 @@
-function isNumber(value) {
-  return typeof value === 'number' && Number.isFinite(value);
-}
+// function isNumber(value) {
+//   return typeof value === 'number' && Number.isFinite(value);
+// }
 
 function humanizeState(data, type, row) {
   if (data) {
@@ -10,10 +10,20 @@ function humanizeState(data, type, row) {
   return 'off';
 }
 
-function prettySeconds(data, type, row) {
-  if (!isNumber(data)) {
+function prettyLastCommand(data, type, row) {
+  if (data === 0) {
     return '-';
   }
+
+  return prettyMs((data * 1000), {
+    compact: true,
+  });
+}
+
+function prettySeconds(data, type, row) {
+  // if (!isNumber(data)) {
+  //   return '-';
+  // }
 
   if (data > 0) {
     return prettyMs((data * 1000), {
@@ -25,9 +35,9 @@ function prettySeconds(data, type, row) {
 }
 
 function prettyUs(data, type, row) {
-  if (!isNumber(data)) {
-    return '-';
-  }
+  // if (!isNumber(data)) {
+  //   return '-';
+  // }
 
   if (data > 0) {
     return prettyMs((data / 1000), {
@@ -77,7 +87,7 @@ function pageReady(jQuery) {
     }, {
       data: 'last_cmd_secs',
       class: 'col-center',
-      render: prettySeconds,
+      render: prettyLastCommand,
     }, {
       data: 'last_seen_secs',
       class: 'col-center',
