@@ -1,3 +1,7 @@
+function isNumber(value) {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
 function humanizeState(data, type, row) {
   if (data) {
     return 'active';
@@ -7,16 +11,24 @@ function humanizeState(data, type, row) {
 }
 
 function prettySeconds(data, type, row) {
+  if (!isNumber(data)) {
+    return '-';
+  }
+
   if (data > 0) {
     return prettyMs((data * 1000), {
       compact: true,
     });
   }
 
-  return '-';
+  return 'now';
 }
 
 function prettyUs(data, type, row) {
+  if (!isNumber(data)) {
+    return '-';
+  }
+
   if (data > 0) {
     return prettyMs((data / 1000), {
       compact: true,

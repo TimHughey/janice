@@ -61,7 +61,7 @@ private:
   IPAddress broker;
   uint16_t port;
   PubSubClient mqtt;
-  elapsedMillis lastLoop;
+  elapsedMillis _lastLoop;
 
 #ifdef PROD_BUILD
   const char *_user = "mqtt";

@@ -133,7 +133,6 @@ when is_binary(name) do
     preload: [:temperature, :relhum]) |> one()
 end
 
-
 def get(device, type)
 when is_binary(device) and is_binary(type) do
   q =
@@ -172,7 +171,7 @@ def relhum(_anything), do: nil
 ###
 
 defp ensure_relhum(%Sensor{relhum: relhum} = s) do
-  unless Ecto.assoc_loaded?(relhum) do
+  if not Ecto.assoc_loaded?(relhum) do
     %{s | relhum: %SensorRelHum{}}
   else
     s
@@ -180,7 +179,7 @@ defp ensure_relhum(%Sensor{relhum: relhum} = s) do
 end
 
 defp ensure_temperature(%Sensor{temperature: temp} = s) do
-  unless Ecto.assoc_loaded?(temp) do
+  if not Ecto.assoc_loaded?(temp) do
     %{s | temperature: %SensorTemperature{}}
   else
     s
@@ -218,7 +217,6 @@ when is_map(r) do
 
   change(s, map) |> update!()
 end
-
 
 defp update_relhum(%Sensor{relhum: relhum}, r)
 when is_map(r) do

@@ -67,7 +67,7 @@ int debugMode = 0;
 void setup() {
   WiFi.setPins(8, 7, 4, 2);
   Serial.begin(115200);
-  while (!Serial && millis() < 15000) {
+  while (!Serial && (millis() < 15000)) {
     ;
   }
 
@@ -168,7 +168,6 @@ void loop() {
 
   statusIndicator();
   mcrUtil::printFreeMem(__PRETTY_FUNCTION__, 15);
-  mqtt->loop();
 
 // if WiFi is connected then reset the Watchdog
 // otherwise the watchdog will provide for an auto restart
