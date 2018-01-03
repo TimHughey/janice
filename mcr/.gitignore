@@ -1,3 +1,4 @@
+!lib/
 .pioenvs
 .piolibdeps
 .gcc-flags.json
