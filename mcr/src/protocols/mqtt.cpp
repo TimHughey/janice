@@ -37,7 +37,7 @@ static bool debugMode = false;
 
 mcrMQTT::mcrMQTT() {
   this->mqtt = PubSubClient();
-  this->lastLoop = 0;
+  this->_lastLoop = 0;
 }
 
 mcrMQTT::mcrMQTT(Client &client, IPAddress broker, uint16_t port) {
@@ -49,46 +49,14 @@ mcrMQTT::mcrMQTT(Client &client, IPAddress broker, uint16_t port) {
   mqtt.setClient(client);
 }
 
-bool mcrMQTT::loop(bool fullreport) {
-  elapsedMillis duration;
-  bool rc;
-
-  rc = loop();
-
-  String msg = String();
-  if (duration > 5) {
-    if (debugMode) {
-      msg = String("  mcrMQTT Loop elapsed millis =");
-    }
-
-    msg += " " + String(duration) + " ";
-
-    if (fullreport) {
-      msg += "\r\n";
-    }
-
-    debug(msg);
-  }
-
-  return rc;
-}
-
 bool mcrMQTT::loop() {
-  elapsedMillis timeslice;
   bool rc = false;
 
-  // safety mechanism to all loop() to be called as frequently as desired
-  // without creating unnecessary load
-  // if (lastLoop < _min_loop_ms) {
-  //  return true;
-  //}
-
-  // while (timeslice < _timeslice_ms) {
   if (connect() == 1) {
     rc = mqtt.loop();
   }
 
-  lastLoop = 0;
+  _lastLoop = 0;
   return rc;
 }
 
@@ -104,15 +72,7 @@ void mcrMQTT::announceStartup() {
   root["host"] = mcrUtil::hostID();
   root["type"] = "startup";
   root["mtime"] = millis();
-  root["version"] = Version::string();
-
-#ifdef GIT_REV
-#define MCR_VERSION(s) (const char *)AS_STRING(s)
-#define AS_STRING(s) #s
-  root["version"] = MCR_VERSION(GIT_REV);
-#else
-  root["version"] = "undef";
-#endif
+  root["version"] = Version::git();
 
   root.printTo(buffer, json_max);
   publish(buffer);
@@ -203,9 +163,12 @@ void mcrMQTT::publish(char *json) {
 }
 
 char *mcrMQTT::clientId() {
-  static char _client_id[16];
+  static char _client_id[16] = {0x00};
 
-  sprintf(_client_id, "fm0-%s", mcrUtil::macAddress());
+  if (_client_id[0] == 0x00) {
+    sprintf(_client_id, "fm0-%s", mcrUtil::macAddress());
+  }
+
   return _client_id;
 }
 

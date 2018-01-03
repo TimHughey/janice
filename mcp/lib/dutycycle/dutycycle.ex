@@ -28,19 +28,23 @@ defmodule Dutycycle do
   use Ecto.Schema
   use Timex
 
-  import Mcp.Repo, only: [all: 1, one: 1, insert_or_update!: 1]
+  import Repo, only: [all: 1, one: 1, insert_or_update!: 1, update_all: 2]
   import Ecto.Changeset, only: [change: 2]
   import Ecto.Query, only: [from: 2]
+
+  alias Dutycycle.Profile
+  alias Dutycycle.State
 
   @vsn 3
 
   schema "dutycycle" do
     field :name
-    field :description
+    field :comment
     field :enable, :boolean
+    field :log, :boolean
     field :device
-    has_one :state, Dutycycle.State
-    has_many :modes, Dutycycle.Mode
+    has_one :state, State
+    has_many :profiles, Profile
 
     timestamps usec: true
   end
@@ -62,22 +66,69 @@ defmodule Dutycycle do
 
   def all do
     from(d in Dutycycle,
-      join: m in assoc(d, :modes),
+      join: p in assoc(d, :profiles),
       join: s in assoc(d, :state),
-      preload: [modes: m, state: s],
-      select: {d}) |> all()
+      preload: [profiles: p, state: s],
+      select: d) |> all()
   end
 
-  def active_mode(name) do
+  def all_active do
     from(d in Dutycycle,
-      join: m in assoc(d, :modes),
+      join: p in assoc(d, :profiles), where: p.active == true,
+      join: s in assoc(d, :state),
+      preload: [profiles: p, state: s],
+      select: d) |> all()
+  end
+
+  def activate_profile(dc_name, profile_name, opts \\ :none)
+  when is_binary(dc_name) and is_binary(profile_name) do
+    dc = from(d in Dutycycle,
+               where: d.name == ^dc_name) |> one()
+
+    if opts == :enable, do: enable(dc_name)
+
+    if dc != nil,
+      do: Profile.activate(dc, profile_name),
+      else: Logger.warn fn -> "dutycycle [#{dc_name}] does not " <>
+                                   "exist, can't activate profile" end
+  end
+
+  def active_profile(name) do
+    from(d in Dutycycle,
+      join: m in assoc(d, :profiles),
       join: s in assoc(d, :state),
       where: m.active == true,
       where: d.name == ^name,
-      select: {d},
-      preload: [state: s, modes: m]) |> one()
-
+      select: d,
+      preload: [state: s, profiles: m]) |> one()
   end
 
+  def available_profiles(name) when is_binary(name) do
+    from(d in Dutycycle,
+          join: p in assoc(d, :profiles),
+          where: d.name == ^name,
+          select: p.name) |> all()
+  end
+
+  def disable(name) when is_binary(name) do
+    from(d in Dutycycle,
+          where: d.name == ^name,
+          update: [set: [enable: false]]) |> update_all([])
+  end
+
+  def enable(name) when is_binary(name) do
+    from(d in Dutycycle,
+          where: d.name == ^name,
+          update: [set: [enable: true]]) |> update_all([])
+  end
+
+  def get(name) do
+    from(d in Dutycycle,
+      join: p in assoc(d, :profiles),
+      join: s in assoc(d, :state),
+      where: d.name == ^name,
+      select: d,
+      preload: [state: s, profiles: p]) |> one()
+  end
 
 end

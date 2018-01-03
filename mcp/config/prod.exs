@@ -9,11 +9,12 @@ config :logger,
 config :mcp,
   feeds: [cmd: "prod/mcr/f/command", rpt: "prod/mcr/f/report"]
 
+config :mcp, MessageSave,
+  save: true,
+  delete_older_than_hrs: (7 * 24)
+
 config :mcp, Command.Control,
-  timesync_opts: [frequency: (60*1000), # millisecs
-                  # loops: 3,
-                  forever: true,
-                  log: false]
+  timesync: [frequency: (60 * 1000), loops: 0, forever: true, log: false]
 
 config :mcp, Dispatcher.InboundMessage,
   periodic_log_first_ms: (60 * 60 * 1000),
@@ -39,7 +40,7 @@ config :mcp, Mcp.SoakTest,
   periodic_log_ms: (60 * 60 * 1000),
   flash_led_ms: (3 * 1000)
 
-config :mcp, Mcp.Repo,
+config :mcp, Repo,
   adapter: Ecto.Adapters.Postgres,
   database: "merc_prod",
   username: "merc_prod",
@@ -47,20 +48,20 @@ config :mcp, Mcp.Repo,
   hostname: "** set in prod.secret.exs",
   pool_size: 10
 
-config :mcp, Mcp.Switch,
+config :mcp, Switch,
   logCmdAck: false
 
 config :mcp, Janitor,
-  purge_switch_cmds: [interval_mins: 2, older_than_hrs: (24*7), log: true]
+  switch_cmds: [purge: true, interval_mins: 2,
+                older_than_hrs: (24 * 14), log: true],
+  orphan_acks: [interval_mins: 1, older_than_mins: 1, log: true]
 
 config :mcp, Mcp.Chamber,
   autostart_wait_ms: 0,
   routine_check_ms: 1000
 
 config :mcp, Mixtank,
-  control_temp_ms: 1000,
-  activate_ms: 1000,
-  manage_ms: 1000
+  control_temp_secs: 27
 
 config :mcp, Dutycycle,
   routine_check_ms: 1000
@@ -92,7 +93,7 @@ config :ueberauth, Ueberauth,
               [default_scope: "user,public_repo",
                # set URI redirect mismatch errors since we are
                # proxied behind nginx
-               send_redirect_uri: false] }]
+               send_redirect_uri: false]}]
 
 # Tell phoenix to actually serve endpoints when run as a release
 config :phoenix, :serve_endpoints, true

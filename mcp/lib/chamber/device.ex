@@ -24,7 +24,6 @@ defmodule Mcp.Chamber.Device do
     use Timex
 
     alias __MODULE__
-    alias Mcp.Switch
 
     @def_name :new_device
 
@@ -109,7 +108,7 @@ defmodule Mcp.Chamber.Device do
     # the cycle (e.g warm, mist, fae, stir) that uses it is disabled
     defp ctrl_dev_position(dev, pos)
     when is_binary(dev) and is_boolean(pos) do
-      Switch.set_state(dev, pos)
+      SwitchState.state(dev, pos)
     end
     defp ctrl_dev_position("foobar", false), do: :nil
     defp ctrl_dev_position("foobar", true) do

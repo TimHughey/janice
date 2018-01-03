@@ -35,7 +35,7 @@ config :mcp, Mcp.SoakTest,
   periodic_log_ms: (15 * 50 * 1000),
   flash_led_ms: 1000
 
-config :mcp, Mcp.Repo,
+config :mcp, Repo,
   adapter: Ecto.Adapters.Postgres,
   username: "merc_test",
   password: "merc_test",
@@ -43,7 +43,7 @@ config :mcp, Mcp.Repo,
   hostname: "jophiel.wisslanding.com",
   pool_size: 10
 
-config :mcp, Mcp.Switch,
+config :mcp, Switch,
   logCmdAck: false
 
 config :mcp, Mcp.Janitor,

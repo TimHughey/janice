@@ -278,9 +278,6 @@ bool mcrDS::handleCmd() {
       pushPendingCmdAck(&cmd);
     }
   }
-
-  // must call the base case to ensure remaining work is done
-  // return mcrEngine::loop();
   return true;
 }
 

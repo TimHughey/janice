@@ -32,8 +32,8 @@
 #include <Wire.h>
 
 #include "../devs/addr.hpp"
-#include "../devs/id.hpp"
 #include "../devs/i2c.hpp"
+#include "../devs/id.hpp"
 #include "../include/readings.hpp"
 #include "../misc/util.hpp"
 #include "../protocols/mqtt.hpp"
@@ -65,24 +65,6 @@ private:
   inline uint8_t search_addrs_count() {
     return sizeof(_search_addrs) / sizeof(mcrDevAddr_t);
   };
-
-  // DEPRECATED with move to mcrEngine handling known devices
-  // i2cDev *addDevice(byte addr, bool use_multiplexer, byte bus) {
-  //   i2cDev *dev = NULL;
-  //
-  //   if (devCount() < maxDevices()) {
-  //     dev = new i2cDev(addr, use_multiplexer, bus);
-  //     dev->setDesc(i2cDev::i2cDevDesc(addr));
-  //     known_devs[devCount()] = dev;
-  //     mcrEngine::addDevice();
-  //   } else {
-  //     log("    ");
-  //     log(__PRETTY_FUNCTION__);
-  //     logln(" attempt to exceed maximum devices");
-  //   }
-  //
-  //   return dev;
-  // };
 
   bool discover();
   bool report();

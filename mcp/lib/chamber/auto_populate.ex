@@ -21,7 +21,7 @@ defmodule Mcp.Chamber.AutoPopulate do
     """
 
   import Ecto.Query, only: [from: 2]
-  alias Mcp.{Repo, Chamber}
+  alias Mcp.Chamber
 
   defp default_chambers do
     [%Chamber{name: "test chamber", description: "-- FOR TESTING ONLY --",

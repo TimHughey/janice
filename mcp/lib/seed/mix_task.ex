@@ -5,12 +5,13 @@ defmodule Mix.Tasks.Seed do
 require Logger
 use Mix.Task
 import Mix.Ecto
-import Seeds
+import Seed.Chambers
+import Seed.Dutycycles
+import Seed.Mixtanks
+import Seed.Sensors
+import Seed.Switches
 
 # alias Mcp.Chamber
-alias Mcp.DevAlias
-# alias Mcp.Repo
-#alias Mcp.Sensor
 
 def run(args) do
 
@@ -43,23 +44,44 @@ def run(args) do
 
   Logger.info fn -> ":timex started" end
 
-  dev_aliases(Mix.env) |>
-    Enum.each( fn (x) -> Logger.info("seeding devalias [#{x.friendly_name}]")
-                         DevAlias.add(x) end)
+  sensors(Mix.env) |>
+    Enum.each(fn(x) -> Logger.info("seeding sensor [#{x.name}]")
+                        Sensor.add(x) end)
+
+  switches(Mix.env) |>
+    Enum.each(fn(x) -> Logger.info("seeding switch [#{x.device}]")
+                       Switch.add(x) end)
+
+  dutycycles(Mix.env) |>
+    Enum.each(fn(x) -> Logger.info("seeding dutycycle [#{x.name}]")
+                         Dutycycle.add(x) end)
 
   mixtanks(Mix.env) |>
-    Enum.each( fn (x) -> Logger.info("seeding mixtank [#{x.name}]")
+    Enum.each(fn(x) -> Logger.info("seeding mixtank [#{x.name}]")
                          Mixtank.add(x) end)
 
   chambers(Mix.env) |> seed()
-
-  dutycycles(Mix.env) |>
-    Enum.each( fn (x) -> Logger.info("seeding dutycycle [#{x.name}]")
-                         Dutycycle.add(x) end )
 
   pid && repo.stop(pid)
 
   Logger.info fn -> "#{inspect(repo)} stopped" end
 end
+
+defp seed([]), do: []
+defp seed(%{__struct__: type, name: name} = thing) do
+  Logger.info "seeding #{type} #{name}"
+
+  case Repo.insert(thing) do
+    {:ok, item}   -> item
+    {:error, err} -> Logger.warn fn -> "seed failed #{inspect(type)} " <>
+                                      "#{thing.name} #{inspect(err)}" end
+                     %{}
+    unknown       -> Logger.warn fn -> "unknown failure #{inspect(unknown)}" end
+                     %{}
+  end
+end
+
+defp seed([thing | list]), do: [seed(thing)] ++ seed(list)
+
 
 end

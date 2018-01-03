@@ -27,12 +27,15 @@ Create a setswitch command with all map values required set to appropriate value
 """
 def new_cmd(device, states, refid)
 when is_binary(device) and is_list(states) and is_binary(refid) do
-  %SetSwitch{} |>
+  cmd = %SetSwitch{} |>
     Map.put(:cmd, @setswitch) |>
     mtime() |>
     Map.put_new(:switch, device) |>
     Map.put_new(:states, states) |>
     Map.put_new(:refid, refid)
+
+  Logger.debug fn -> "sw_cmd: #{inspect(cmd)}" end
+  cmd
 end
 
 defp mtime(%SetSwitch{} = c) do

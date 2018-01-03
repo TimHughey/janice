@@ -27,8 +27,6 @@ defstruct version: "undef",
           rh: nil,
           pio_count: 0,     # switch: num of unique pio
           states: nil,      # switch: array of states (for each pio)
-          state: nil,       # switch: state of each pio
-          pio: nil,         # switch: pio id (number)
           cmdack: false,
           latency: 0,
           refid: nil,
@@ -51,7 +49,6 @@ when is_binary(json) do
   r = Poison.decode!(json, [keys: :atoms, as: %Dispatcher.Reading{}])
   Map.put(r, :json, json)
   Map.put(r, :msg_recv_dt, Timex.now())
-  #Map.put(r, :friendly_name, DevAlias.friendly_name(r.device))
 end
 
 @doc ~S"""

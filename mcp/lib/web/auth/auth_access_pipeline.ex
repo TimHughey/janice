@@ -1,4 +1,6 @@
 defmodule Web.AuthAccessPipeline do
+  @moduledoc """
+  """
   use Guardian.Plug.Pipeline, otp_app: :mcp
 
   plug Guardian.Plug.VerifySession, claims: %{"typ" => "access"}

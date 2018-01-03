@@ -99,7 +99,10 @@ def handle_call({:publish, opts}, _from,
 
   msg = opts |> Keyword.fetch!(:message)
 
-  Logger.warn fn -> ~s/not connected, dropping msg #{msg}/ end
+  MessageSave.save(:out, msg, true)
+
+  config(:log_dropped_msgs) && Logger.warn fn ->
+                                ~s/not connected, dropping msg #{msg}/ end
 
   {:reply, :ok, s}
 end
@@ -112,6 +115,7 @@ def handle_call({:publish, opts}, _from, %{connection: _} = s) do
   retain = opts |> Keyword.fetch!(:retain)
 
   Logger.debug fn -> "outbound: #{msg}" end
+  MessageSave.save(:out, msg)
 
   {message, s} =
     case qos do
@@ -278,7 +282,7 @@ end
 
 def on_subscribed_publish([message: %Message.Publish{} = data, state: _s]) do
   msg = data.message
-
+  MessageSave.save(:in, msg)
   # Logger.info fn -> "#{msg}" end
 
   GenServer.cast(Dispatcher.InboundMessage, {:incoming_message, msg})

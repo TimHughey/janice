@@ -87,30 +87,13 @@ const uint8_t mcrEngine::numKnownDevices() {
 bool mcrEngine::loop() {
   resetLoopRuntime();
 
-  // while (timesliceRemaining()) {
+  cmdAck();
+  cmd();
 
-  while (isIdle() && timesliceRemaining() &&
-         (pendingCmd() || pendingCmdAcks())) {
-    cmd();
-    cmdAck();
-  }
+  discover();
+  convert();
+  report();
 
-  if (timesliceRemaining())
-    discover();
-
-  if (timesliceRemaining())
-    convert();
-
-  if (timesliceRemaining())
-    report();
-
-  //   while (timesliceRemaining() && isIdle() &&   // give Cmd and CmdAcks
-  //          (pendingCmd() || pendingCmdAcks())) { // a "higher" priority
-  //     cmd();                                     // by allowing processing
-  //     cmdAck();                                  // of the pending queues
-  //   }                                            // for the remainder of
-  // }                                              // the timeslice
-  //  }
   return true;
 }
 
@@ -123,12 +106,14 @@ bool mcrEngine::loop() {
 //     a single search
 
 bool mcrEngine::discover() {
-  if (needDiscover()) {
-    if (isIdle())
-      startDiscover();
+  if (timesliceRemaining()) {
+    if (needDiscover()) {
+      if (isIdle())
+        startDiscover();
 
-    if (isDiscoveryActive())
-      idle(__PRETTY_FUNCTION__);
+      if (isDiscoveryActive())
+        idle(__PRETTY_FUNCTION__);
+    }
   }
 
   return true;
@@ -137,12 +122,14 @@ bool mcrEngine::discover() {
 bool mcrEngine::report() {
   bool rc = true;
 
-  if (needReport()) {
-    if (isIdle())
-      startReport();
+  if (timesliceRemaining()) {
+    if (needReport()) {
+      if (isIdle())
+        startReport();
 
-    if (isReportActive())
-      idle(__PRETTY_FUNCTION__);
+      if (isReportActive())
+        idle(__PRETTY_FUNCTION__);
+    }
   }
 
   return rc;
@@ -160,14 +147,16 @@ bool mcrEngine::report() {
 bool mcrEngine::convert() {
   bool rc = true;
 
-  if (needConvert()) {
-    // start a temperature conversion if one isn't already in-progress
-    // TODO - only handles powered devices as of 2017-09-11
-    if (isIdle()) {
-      startConvert();
-    } else {
-      if (isConvertActive())
-        idle(__PRETTY_FUNCTION__);
+  if (timesliceRemaining()) {
+    if (needConvert()) {
+      // start a temperature conversion if one isn't already in-progress
+      // TODO - only handles powered devices as of 2017-09-11
+      if (isIdle()) {
+        startConvert();
+      } else {
+        if (isConvertActive())
+          idle(__PRETTY_FUNCTION__);
+      }
     }
   }
   return rc;
@@ -180,10 +169,8 @@ bool mcrEngine::convertTimeout() {
 time_t mcrEngine::lastConvertTimestamp() { return _last_convert_timestamp; };
 
 bool mcrEngine::cmd() {
-  if (isIdle() && pendingCmd()) {
-    // startCmd();
+  if (timesliceRemaining() && isIdle() && pendingCmd()) {
     handleCmd();
-    // idle(__PRETTY_FUNCTION__);
   }
   return true;
 }
@@ -191,7 +178,7 @@ bool mcrEngine::cmd() {
 bool mcrEngine::cmdAck() {
   bool rc = true;
 
-  if (isIdle() && pendingCmdAcks()) {
+  if (timesliceRemaining() && isIdle() && pendingCmdAcks()) {
     mcrCmd_t cmd;
 
     if (popPendingCmdAck(&cmd)) {

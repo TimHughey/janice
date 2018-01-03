@@ -10,7 +10,7 @@ alias Dispatcher.Reading
 alias Fact.FreeRamStat
 alias Fact.RunMetric
 
-alias Command.Timesync
+alias Command.Control
 
 def start_link(s) do
   GenServer.start_link(Dispatcher.InboundMessage, s,
@@ -41,8 +41,14 @@ def log_json(args) do
 end
 
 # internal work functions
+def process(msg, :save) do
+  MessageSave.save(:in, msg)
+  process(msg)
+end
+
 def process(msg)
 when is_binary(msg) do
+
   GenServer.cast(Dispatcher.InboundMessage, {:incoming_message, msg})
 end
 
@@ -75,7 +81,7 @@ when is_binary(msg) and is_map(s) do
 
   if Reading.startup?(r) do
     Logger.info("#{r.host} version #{r.version} announced startup")
-    Timesync.send()
+    Control.send_timesync()
   end
 
   if Reading.temperature?(r) || Reading.relhum?(r) do

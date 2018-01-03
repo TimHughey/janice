@@ -71,20 +71,6 @@ bool mcrI2c::discover() {
     }
 
     bool more_buses = useMultiplexer() ? (bus < (maxBuses())) : (bus == 0);
-    // bool more_devs = ((dev_index) < search_devs_count());
-
-    // if (isDiscoveryActive())
-    //
-    //   if (specialDebugMode) {
-    //     logDateTime(__PRETTY_FUNCTION__);
-    //     log(" discovery active, more_buses: ");
-    //     log(more_buses);
-    //     log(" bus: ");
-    //     log(bus);
-    //     log(" addrs_index: ");
-    //     log(addrs_index);
-    //     log("", true);
-    //   }
 
     if (!more_buses) {           // reached the
       idle(__PRETTY_FUNCTION__); // end of the discover cycle

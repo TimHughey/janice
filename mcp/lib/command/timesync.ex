@@ -9,7 +9,6 @@ use Timex
 use Task
 
 import Mqtt.Client, only: [publish: 1]
-import Application, only: [get_env: 2, get_env: 3]
 
 @undef "undef"
 @timesync "time.sync"
@@ -20,40 +19,29 @@ defstruct cmd: @undef,
           version: 1
 
 def run(opts) do
-  frequency = Keyword.get(opts, :frequency, 1000)
-  loops = Keyword.get(opts, :loops, 1)
-  forever = Keyword.get(opts, :forever, false)
-  feed = get_env(:mcp, :feeds, []) |> Keyword.get(:cmd, nil)
-  log = Keyword.get(opts, :log, false)
-  single = Keyword.get(opts, :single, false)
+  frequency = opts.timesync.frequency
+  loops = opts.timesync.loops
+  forever = opts.timesync.forever
+  log = opts.timesync.log
+  single = opts.timesync.single
 
+  msg = Timesync.new_cmd() |> Timesync.json()
+  res = publish_opts(opts.feeds.cmd, msg) |> publish()
 
-  if feed do
-    msg = Timesync.new_cmd() |> Timesync.json()
-    cmd = publish_opts(feed, msg)
+  log && Logger.info fn -> "published timesync #{inspect(res)}" end
 
-    res = publish(cmd)
+  opts = update_in(opts, [:timesync, :loops], fn(x) -> x-1 end)
 
-    log && Logger.info fn -> "published timesync #{inspect(res)}" end
-
-    :timer.sleep(frequency)
-
-    cond do
-      single    -> :ok
-      forever or (loops-1) > 0 -> Keyword.replace(opts, :loops, (loops-1)) |>
-                                  run()
-      true                     -> :executed_requested_loops
-
-    end
-  else
-    :cmd_feed_config_missing
+  cond do
+    single    -> :ok
+    forever or (loops-1) > 0 -> :timer.sleep(frequency)
+                                run(opts)
+    true                     -> :executed_requested_loops
   end
 end
 
-def send do
-  opts = get_env(:mcp, Command.Control) |>
-          Keyword.get(:timesync_opts) |>
-          Keyword.put(:single, true)
+def send(%{timesync: _} = opts) do
+  opts = update_in(opts, [:timesync, :single], fn(_) -> true end)
 
   run(opts)
 end
