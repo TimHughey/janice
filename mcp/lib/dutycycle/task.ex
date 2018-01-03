@@ -44,7 +44,7 @@ defmodule Dutycycle.CycleTask do
   when idle_ms > 0 do
     dc.log && Logger.info fn -> "[#{dc.name}] idling for #{idle_ms}ms" end
     State.set_idling(dc)
-    SwitchState.state(dc.device, false)
+
     :timer.sleep(idle_ms)
   end
 
@@ -61,7 +61,7 @@ defmodule Dutycycle.CycleTask do
   when run_ms > 0 do
     dc.log && Logger.info fn -> "[#{dc.name}] running for #{run_ms}ms" end
     State.set_running(dc)
-    SwitchState.state(dc.device, true)
+
     :timer.sleep(run_ms)
   end
 

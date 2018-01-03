@@ -55,13 +55,13 @@ defmodule Dutycycle.Control do
   def init(s) when is_map(s) do
     Logger.info fn -> "init() state: #{inspect(s)}" end
 
-    all_dcs = Dutycycle.all()
-    all_switches = Enum.map(all_dcs, fn(x) -> x.device end)
-
-    Logger.info fn -> "setting all switches off at startup " <>
-                      "#{inspect(all_switches)}" end
-
-    Enum.each(all_switches, fn(x) -> SwitchState.state(x, false) end)
+    # all_dcs = Dutycycle.all()
+    # all_switches = Enum.map(all_dcs, fn(x) -> x.device end)
+    #
+    # Logger.info fn -> "setting all switches off at startup " <>
+    #                   "#{inspect(all_switches)}" end
+    #
+    # Enum.each(all_switches, fn(x) -> SwitchState.state(x, false) end)
 
     Process.flag(:trap_exit, true)
 

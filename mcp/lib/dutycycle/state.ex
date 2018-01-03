@@ -25,6 +25,8 @@ defmodule Dutycycle.State do
   end
 
   def set_idling(%Dutycycle{} = dc) do
+    SwitchState.state(dc.device, false)
+
     now = Timex.now()
     profile = dc.profiles |> hd()
     idle_end_at = Timex.to_datetime(now, "UTC") |>
@@ -40,6 +42,8 @@ defmodule Dutycycle.State do
   end
 
   def set_running(%Dutycycle{} = dc) do
+    SwitchState.state(dc.device, true)
+
     now = Timex.now()
     profile = dc.profiles |> hd()
     run_end_at = Timex.to_datetime(now, "UTC") |>
@@ -73,7 +77,7 @@ defmodule Dutycycle.State do
 
   def set_stopped(nil), do: {:not_found}
   def set_stopped(%Dutycycle{} = dc) do
-    SwitchState.state(dc.device, false, :lazy)
+    SwitchState.state(dc.device, false)
     now = Timex.now()
 
     from(s in Dutycycle.State,
