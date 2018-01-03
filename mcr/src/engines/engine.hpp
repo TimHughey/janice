@@ -68,7 +68,7 @@ private:
   uint8_t _next_known_index = 0;
 
   // Engine runtime controls
-  uint32_t _loop_timeslice_ms = 50;
+  uint32_t _loop_timeslice_ms = 10;
   uint32_t _discover_interval_ms = 30000;
   uint32_t _convert_interval_ms = 9000;
   uint32_t _report_interval_ms = 11000;

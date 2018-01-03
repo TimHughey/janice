@@ -67,7 +67,7 @@ int debugMode = 0;
 void setup() {
   WiFi.setPins(8, 7, 4, 2);
   Serial.begin(115200);
-  while (!Serial && millis() < 5000) {
+  while (!Serial && millis() < 15000) {
     ;
   }
 
@@ -97,6 +97,18 @@ void setup() {
   logDateTime(__PRETTY_FUNCTION__);
   Serial.print("mcrID: ");
   Serial.println(mcrUtil::hostID());
+
+  logDateTime(__PRETTY_FUNCTION__);
+  Serial.print("git HEAD rev: ");
+  Serial.println(Version::git());
+
+  logDateTime(__PRETTY_FUNCTION__);
+  Serial.print("mcr stable rev: ");
+  Serial.println(Version::mcr_stable());
+
+  logDateTime(__PRETTY_FUNCTION__);
+  Serial.print("env: ");
+  Serial.println(Version::env());
 
   setSyncInterval(120); // setting a high time sync interval since we rely on
   // updates via MQTT
@@ -147,11 +159,16 @@ void loop() {
   }
 
   mqtt->loop();
+
   ds->loop();
+  mqtt->loop();
+
   i2c->loop();
+  mqtt->loop();
 
   statusIndicator();
   mcrUtil::printFreeMem(__PRETTY_FUNCTION__, 15);
+  mqtt->loop();
 
 // if WiFi is connected then reset the Watchdog
 // otherwise the watchdog will provide for an auto restart

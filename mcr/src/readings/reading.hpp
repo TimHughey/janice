@@ -46,7 +46,7 @@ private:
   mcrDevID_t _id;
   time_t _mtime = now(); // time the reading was measureed
   reading_t _type = UNDEF;
-  const char *_version = Version::string();
+  const char *_version = Version::git();
 
   // tracking info
   mcrRefID_t _refid;

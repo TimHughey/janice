@@ -104,15 +104,7 @@ void mcrMQTT::announceStartup() {
   root["host"] = mcrUtil::hostID();
   root["type"] = "startup";
   root["mtime"] = millis();
-  root["version"] = Version::string();
-
-#ifdef GIT_REV
-#define MCR_VERSION(s) (const char *)AS_STRING(s)
-#define AS_STRING(s) #s
-  root["version"] = MCR_VERSION(GIT_REV);
-#else
-  root["version"] = "undef";
-#endif
+  root["version"] = Version::git();
 
   root.printTo(buffer, json_max);
   publish(buffer);

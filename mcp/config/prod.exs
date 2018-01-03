@@ -14,7 +14,7 @@ config :mcp, MessageSave,
   delete_older_than_hrs: (7 * 24)
 
 config :mcp, Command.Control,
-  timesync: [frequency: (60*1000), loops: 0, forever: true, log: false]
+  timesync: [frequency: (60 * 1000), loops: 0, forever: true, log: false]
 
 config :mcp, Dispatcher.InboundMessage,
   periodic_log_first_ms: (60 * 60 * 1000),
@@ -53,7 +53,7 @@ config :mcp, Switch,
 
 config :mcp, Janitor,
   switch_cmds: [purge: true, interval_mins: 2,
-                older_than_hrs: (24*7), log: true],
+                older_than_hrs: (24 * 14), log: true],
   orphan_acks: [interval_mins: 1, older_than_mins: 1, log: true]
 
 config :mcp, Mcp.Chamber,
@@ -61,9 +61,7 @@ config :mcp, Mcp.Chamber,
   routine_check_ms: 1000
 
 config :mcp, Mixtank,
-  control_temp_ms: 27000,
-  activate_ms: 1000,
-  manage_ms: 1000
+  control_temp_secs: 27
 
 config :mcp, Dutycycle,
   routine_check_ms: 1000
@@ -95,7 +93,7 @@ config :ueberauth, Ueberauth,
               [default_scope: "user,public_repo",
                # set URI redirect mismatch errors since we are
                # proxied behind nginx
-               send_redirect_uri: false] }]
+               send_redirect_uri: false]}]
 
 # Tell phoenix to actually serve endpoints when run as a release
 config :phoenix, :serve_endpoints, true
