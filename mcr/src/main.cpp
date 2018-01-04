@@ -10,7 +10,7 @@
 #include "engines/i2c.hpp"
 #include "misc/util.hpp"
 #include "protocols/mqtt.hpp"
-#include "readings/ramUtil.hpp"
+#include "readings/ramutil.hpp"
 
 // boards 32u4, M0, and 328p
 #define LED 13
