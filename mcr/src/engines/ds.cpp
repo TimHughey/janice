@@ -35,15 +35,17 @@
 #include "ds.hpp"
 #include "engine.hpp"
 
-// this must be a global (at least to this file) due to the MQTT callback
-// static.  i really don't like this.  TODO fix MQTT library
-static Queue cmd_queue(sizeof(mcrCmd), 25, FIFO); // Instantiate queue
+static Queue cmd_queue(sizeof(mcrCmd_t), 25, FIFO); // Instantiate queue
+static Queue ack_queue(sizeof(mcrCmd_t), 25, FIFO);
 
 mcrDS::mcrDS(mcrMQTT *mqtt) : mcrEngine(mqtt) { ds = new OneWire(W1_PIN); }
 
 bool mcrDS::init() {
+  debugMode = true;
+  infoMode = true;
+
   mcrMQTT::registerCmdCallback(&cmdCallback);
-  mcrEngine::init();
+  mcrEngine::init(&ack_queue);
   return true;
 }
 
@@ -268,7 +270,7 @@ bool mcrDS::handleCmd() {
       logDateTime(__PRETTY_FUNCTION__);
       log("qdepth=");
       log(recs);
-      log(" popped: name=");
+      log(" popped: ");
       log(cmd.dev_id());
       log(" new_state=");
       log(cmd.state(), true);
@@ -671,7 +673,6 @@ bool mcrDS::setDS2408(mcrCmd &cmd) {
   return rc;
 }
 bool mcrDS::cmdCallback(JsonObject &root) {
-
   // json format of pio state key/value pairs
   // {"pio":[{"1":false}]}
   const char *switch_id = root["switch"];

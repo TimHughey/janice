@@ -85,7 +85,7 @@ const char *mcrDevID::asString() { return _id; }
 
 void mcrDevID::debug(bool newline) {
   log("mcrDevID_t id: ");
-  log(_id, true);
+  log(_id, newline);
 }
 
 #endif

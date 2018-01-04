@@ -101,8 +101,9 @@ private:
 public:
   mcrEngine(mcrMQTT *mqtt);
 
-  virtual boolean init();
-  virtual boolean loop();
+  virtual bool init();
+  bool init(Queue *pending_ack_q = nullptr);
+  virtual bool loop();
 
   const static uint16_t maxDevices();
 
@@ -162,6 +163,7 @@ public:
   void printStopConvert(const char *func_name = nullptr, uint8_t indent = 2);
   void printStartReport(const char *func_name = nullptr, uint8_t indent = 2);
   void printStopReport(const char *func_name = nullptr, uint8_t indent = 2);
+  const char *stateAsString(mcrEngineState_t state);
 
 protected:
   bool specialDebugMode = false;

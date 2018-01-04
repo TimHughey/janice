@@ -91,7 +91,7 @@ const char *mcrUtil::dateTimeString(time_t t) {
   static char dt[30] = {0x00};
 
   if (mcrUtil::isTimeByeondEpochYear()) {
-    t -= (4 * 60 * 60); // rough conversion to EDT
+    t -= (5 * 60 * 60); // rough conversion to ET
 
     // example: "01/01/17 00:00:00 "
     sprintf(dt, "%02d/%02d/%02d %02d:%02d:%02d ", month(t), day(t), year(t),

@@ -35,12 +35,12 @@
 //        so, as a workaround, we will statically allocate a single queue.
 //        This implies that only one instantied class of mcrEngine can handle
 //        command acks
-static Queue queue = Queue(sizeof(mcrCmd_t), 10, FIFO);
+// static Queue queue = Queue(sizeof(mcrCmd_t), 10, FIFO);
 
 mcrEngine::mcrEngine(mcrMQTT *mqtt) {
 
   _mqtt = mqtt;
-  // setting  to the discover interval will
+  // setting to the discover interval will
   // prevent a delay for first discovery cycle at startup
   _last_discover = _discover_interval_ms;
 
@@ -48,26 +48,25 @@ mcrEngine::mcrEngine(mcrMQTT *mqtt) {
   _last_convert = 0;
   _dev_count = 0;
   _state = IDLE;
-
-  // memset(_known_devs, 0x00,
-  //       sizeof(MAX_DEVICES_PER_ENGINE) * sizeof(mcrDev_t *));
 }
 
 const uint16_t mcrEngine::maxDevices() { return MAX_DEVICES_PER_ENGINE; };
 uint16_t mcrEngine::devCount() { return _dev_count; };
 
-bool mcrEngine::init() {
+bool mcrEngine::init() { return init(nullptr); }
+bool mcrEngine::init(Queue *pending_ack_q) {
   bool rc = true;
 
   // Serial.print("before new Queue, sizeof(mcrCmd_t)=");
   // Serial.print(sizeof(mcrCmd_t));
   // _pending_ack_q = new Queue(sizeof(mcrCmd_t), 10, FIFO);
-  _pending_ack_q = &queue; // See FIXME above!!
+  // _pending_ack_q = &queue; // See FIXME above!!
   // Serial.print(" after new Queue");
 
-  if (_pending_ack_q == nullptr) {
-    rc = false;
-  }
+  _pending_ack_q = pending_ack_q;
+  // if (_pending_ack_q == nullptr) {
+  //   rc = false;
+  // }
 
   return rc;
 }
@@ -200,8 +199,8 @@ void mcrEngine::idle(const char *func) {
     else
       logDateTime(__PRETTY_FUNCTION__);
 
-    log("invoked idle() with state = ");
-    log(_state, true);
+    log("invoked idle() with state ");
+    log(stateAsString(_state), true);
   }
 
   switch (_state) {
@@ -409,6 +408,12 @@ mcrDev_t *mcrEngine::getDevice(mcrDevID_t &id) {
     }
   }
 
+  if (debugMode && found_dev == nullptr) {
+    logDateTime(__PRETTY_FUNCTION__);
+    id.debug(false);
+    log(" not known", true);
+  }
+
   return found_dev;
 }
 
@@ -484,13 +489,19 @@ bool mcrEngine::pendingCmdAcks() {
 bool mcrEngine::popPendingCmdAck(mcrCmd_t *cmd) {
   if (_pending_ack_q == nullptr)
     return false;
+
   return _pending_ack_q->pop(cmd);
 }
 
 bool mcrEngine::pushPendingCmdAck(mcrCmd_t *cmd) {
   bool rc = false;
 
-  rc = _pending_ack_q->push(cmd);
+  if (_pending_ack_q != nullptr) {
+    rc = _pending_ack_q->push(cmd);
+  } else {
+    logDateTime(__PRETTY_FUNCTION__);
+    log("[WARNING] attempt to push cmd_ack to null queue", true);
+  }
 
   return rc;
 }
@@ -561,11 +572,13 @@ void mcrEngine::printStopDiscover(const char *func_name, uint8_t indent) {
   if (infoMode || debugMode) {
     logDateTime(func_name);
 
-    if (devCount() == 0)
-      log("[WARNING] ");
-
     log("finished, found ");
-    log(devCount());
+
+    if (devCount() == 0)
+      log("** ZERO **");
+    else
+      log(devCount());
+
     log(" devices in ");
     logElapsed(lastDiscoverRunMS(), true);
   }
@@ -615,5 +628,28 @@ void mcrEngine::printStopReport(const char *func_name, uint8_t indent) {
 
     log("finished, took ");
     logElapsed(lastReportRunMS(), true);
+  }
+}
+
+const char *mcrEngine::stateAsString(mcrEngineState_t state) {
+  switch (state) {
+  case INIT:
+    return (const char *)"INIT";
+  case IDLE:
+    return (const char *)"IDLE";
+  case DISCOVER:
+    return (const char *)"DISCOVER";
+  case CONVERT:
+    return (const char *)"CONVERT";
+  case REPORT:
+    return (const char *)"REPORT";
+  case CMD:
+    return (const char *)"CMD";
+  case CMD_ACK:
+    return (const char *)"CMD_ACK";
+  case STATS:
+    return (const char *)"STATS";
+  default:
+    return (const char *)"UNKNOWN";
   }
 }
