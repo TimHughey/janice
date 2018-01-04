@@ -286,7 +286,6 @@ bool mcrEngine::justSeenDevice(mcrDev_t &dev) {
 
   if (debugMode) {
     logDateTime(__PRETTY_FUNCTION__);
-    log(" called for ");
     dev.debug(true);
   }
 
@@ -393,7 +392,7 @@ mcrDev_t *mcrEngine::getDevice(mcrDevID_t &id) {
 
   if (debugMode) {
     logDateTime(__PRETTY_FUNCTION__);
-    log("getting (looking up) ");
+    log("looking up ");
     id.debug(true);
   }
 
@@ -497,6 +496,13 @@ bool mcrEngine::pushPendingCmdAck(mcrCmd_t *cmd) {
   bool rc = false;
 
   if (_pending_ack_q != nullptr) {
+
+    if (debugMode) {
+      logDateTime(__PRETTY_FUNCTION__);
+      log("device: ");
+      cmd->dev_id().debug(true);
+    }
+
     rc = _pending_ack_q->push(cmd);
   } else {
     logDateTime(__PRETTY_FUNCTION__);

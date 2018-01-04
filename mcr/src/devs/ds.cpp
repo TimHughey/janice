@@ -28,11 +28,11 @@
 
 #include <OneWire.h>
 
-#include "../misc/util.hpp"
 #include "../misc/refid.hpp"
+#include "../misc/util.hpp"
 #include "addr.hpp"
-#include "ds.hpp"
 #include "base.hpp"
+#include "ds.hpp"
 
 dsDev::dsDev(mcrDevAddr_t &addr, bool power) : mcrDev(addr) {
   char buff[_id_len] = {0x00};
@@ -160,9 +160,9 @@ bool dsDev::validAddress(mcrDevAddr_t *addr) {
 
 void dsDev::debug(bool newline) {
   log("dsDev_t id: ");
-  log(id());
-  log(" ");
-  addr().debug(newline);
+  log(id(), newline);
+  // log(" ");
+  // addr().debug(newline);
 }
 
 #endif

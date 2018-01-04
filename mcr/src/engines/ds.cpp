@@ -93,10 +93,10 @@ bool mcrDS::discover() {
         if (justSeenDevice(dev)) {
           if (infoMode || discoverLogMode) {
             logDateTime(__PRETTY_FUNCTION__);
-            log("flagging device as just seen: ");
-            dev.debug();
-            log(" sizeof(dsDev_t)=");
-            log(sizeof(dsDev_t), true);
+            log("just saw ");
+            dev.debug(true);
+            // log(" sizeof(dsDev_t)=");
+            // log(sizeof(dsDev_t), true);
           }
         } else { // device was not known, must addr
           dsDev_t *new_dev = new dsDev(dev);
@@ -268,7 +268,7 @@ bool mcrDS::handleCmd() {
 
     if (debugMode) {
       logDateTime(__PRETTY_FUNCTION__);
-      log("qdepth=");
+      log("qdepth: ");
       log(recs);
       log(" popped: ");
       log(cmd.dev_id());
@@ -277,6 +277,12 @@ bool mcrDS::handleCmd() {
     }
 
     if (setSwitch(cmd)) {
+      if (debugMode) {
+        logDateTime(__PRETTY_FUNCTION__);
+        log("setSwitch() complete device: ");
+        cmd.dev_id().debug(true);
+      }
+
       pushPendingCmdAck(&cmd);
     }
   }
