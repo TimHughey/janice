@@ -54,19 +54,11 @@ const uint16_t mcrEngine::maxDevices() { return MAX_DEVICES_PER_ENGINE; };
 uint16_t mcrEngine::devCount() { return _dev_count; };
 
 bool mcrEngine::init() { return init(nullptr); }
-bool mcrEngine::init(Queue *pending_ack_q) {
+bool mcrEngine::init(Queue *cmd_q, Queue *ack_q) {
   bool rc = true;
 
-  // Serial.print("before new Queue, sizeof(mcrCmd_t)=");
-  // Serial.print(sizeof(mcrCmd_t));
-  // _pending_ack_q = new Queue(sizeof(mcrCmd_t), 10, FIFO);
-  // _pending_ack_q = &queue; // See FIXME above!!
-  // Serial.print(" after new Queue");
-
-  _pending_ack_q = pending_ack_q;
-  // if (_pending_ack_q == nullptr) {
-  //   rc = false;
-  // }
+  _cmd_q = cmd_q;
+  _ack_q = ack_q;
 
   return rc;
 }
@@ -183,9 +175,8 @@ bool mcrEngine::cmdAck() {
     if (popPendingCmdAck(&cmd)) {
       handleCmdAck(cmd);
     } else {
-      Serial.println();
-      Serial.print(__PRETTY_FUNCTION__);
-      Serial.println(" popPendingCmdAck() returned false");
+      logDateTime(__PRETTY_FUNCTION__);
+      log("[WARNING] popPendingCmdAck() returned false", true);
     }
   }
   return rc;
@@ -429,6 +420,7 @@ bool mcrEngine::needDiscover() {
 }
 
 bool mcrEngine::needConvert() {
+
   if (isConvertActive() || (_last_convert > _convert_interval_ms))
     return true;
 
@@ -478,32 +470,116 @@ bool mcrEngine::isConvertActive() { return _state == CONVERT ? true : false; }
 bool mcrEngine::isCmdActive() { return _state == CMD ? true : false; }
 bool mcrEngine::isCmdAckActive() { return _state == CMD_ACK ? true : false; }
 
-bool mcrEngine::pendingCmdAcks() {
-  if (_pending_ack_q == nullptr)
+bool mcrEngine::areCmdQueuesEmpty() {
+  if ((_cmd_q == nullptr) || (_ack_q == nullptr))
+    return true;
+
+  return (_cmd_q->isEmpty() && _ack_q->isEmpty());
+}
+
+bool mcrEngine::isCmdQueueEmpty() {
+  if (_cmd_q == nullptr)
+    return true;
+  return _cmd_q->isEmpty();
+}
+
+bool mcrEngine::pendingCmd() {
+  if (_cmd_q == nullptr)
     return false;
 
-  return (_pending_ack_q->nbRecs() > 0) ? true : false;
+  return !(_cmd_q->isEmpty());
+}
+
+int mcrEngine::pendingCmdRecs() {
+  if (_cmd_q == nullptr)
+    return 0;
+
+  return _cmd_q->nbRecs();
+}
+
+bool mcrEngine::popCmd(mcrCmd_t *cmd) {
+  bool rc = false;
+
+  if (_cmd_q == nullptr)
+    return false;
+
+  if (debugMode || cmdLogMode) {
+    logDateTime(__PRETTY_FUNCTION__);
+    log("CMD qdepth: ");
+    log(_cmd_q->nbRecs());
+  }
+
+  rc = _cmd_q->pop(cmd);
+
+  if (debugMode || cmdLogMode) {
+    log(" popped: ");
+    cmd->debug(true);
+  }
+
+  return rc;
+}
+
+bool mcrEngine::pushCmd(mcrCmd_t *cmd) {
+  bool rc = false;
+
+  if (_cmd_q != nullptr) {
+    rc = _cmd_q->push(cmd);
+
+    if (debugMode || cmdLogMode) {
+      logDateTime(__PRETTY_FUNCTION__);
+      log("CMD qdepth: ");
+      log(_cmd_q->nbRecs());
+      log(" pushed ");
+
+      cmd->debug(true);
+    }
+  }
+
+  return rc;
+}
+
+bool mcrEngine::pendingCmdAcks() {
+  if (_ack_q == nullptr)
+    return false;
+
+  return (_ack_q->nbRecs() > 0) ? true : false;
 };
 
 bool mcrEngine::popPendingCmdAck(mcrCmd_t *cmd) {
-  if (_pending_ack_q == nullptr)
+  bool rc = false;
+
+  if (_ack_q == nullptr)
     return false;
 
-  return _pending_ack_q->pop(cmd);
+  int recs = _ack_q->nbRecs();
+
+  if (recs > 0) {
+    rc = _ack_q->pop(cmd);
+
+    if (debugMode || cmdLogMode) {
+      logDateTime(__PRETTY_FUNCTION__);
+      log("CMDACK qdepth: ");
+      log(recs);
+      log(" popped: ");
+      cmd->debug(true);
+    }
+  }
+
+  return rc;
 }
 
 bool mcrEngine::pushPendingCmdAck(mcrCmd_t *cmd) {
   bool rc = false;
 
-  if (_pending_ack_q != nullptr) {
+  if (_ack_q != nullptr) {
 
-    if (debugMode) {
+    if (debugMode || cmdLogMode) {
       logDateTime(__PRETTY_FUNCTION__);
-      log("device: ");
-      cmd->dev_id().debug(true);
+      log("CMDACK pushed: ");
+      cmd->debug(true);
     }
 
-    rc = _pending_ack_q->push(cmd);
+    rc = _ack_q->push(cmd);
   } else {
     logDateTime(__PRETTY_FUNCTION__);
     log("[WARNING] attempt to push cmd_ack to null queue", true);

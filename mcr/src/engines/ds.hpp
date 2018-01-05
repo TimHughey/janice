@@ -69,9 +69,6 @@ private:
   bool handleCmd();
   bool handleCmdAck(mcrCmd_t &cmd);
 
-  bool isCmdQueueEmpty();
-  bool pendingCmd();
-
   // accept a mcrCmd_t as input to reportDevice
   bool readDevice(mcrCmd_t &cmd);
   bool readDevice(mcrDevID_t &id);

@@ -32,8 +32,8 @@
 #include <TimeLib.h>
 
 #include "../devs/base.hpp"
-#include "../misc/util.hpp"
 #include "../misc/refid.hpp"
+#include "../misc/util.hpp"
 
 typedef class mcrCmd mcrCmd_t;
 
@@ -61,6 +61,7 @@ public:
 
   static const uint8_t size();
 
+  void debug(bool newline = false);
   void printLog(bool newline = false);
 };
 

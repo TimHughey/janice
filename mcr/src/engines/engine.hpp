@@ -63,7 +63,8 @@ private:
   mcrEngineState_t _state = IDLE;
   mcrDev_t *_known_devs[MAX_DEVICES_PER_ENGINE] = {0x00};
   uint16_t _dev_count = 0;
-  Queue *_pending_ack_q = nullptr;
+  Queue *_cmd_q = nullptr;
+  Queue *_ack_q = nullptr;
   bool _savedDebugMode = false;
   uint8_t _next_known_index = 0;
 
@@ -102,7 +103,7 @@ public:
   mcrEngine(mcrMQTT *mqtt);
 
   virtual bool init();
-  bool init(Queue *pending_ack_q = nullptr);
+  bool init(Queue *cmd_q = nullptr, Queue *ack_q = nullptr);
   virtual bool loop();
 
   const static uint16_t maxDevices();
@@ -138,8 +139,13 @@ public:
   bool isCmdActive();
   bool isCmdAckActive();
 
-  virtual bool isCmdQueueEmpty() { return true; }
-  virtual bool pendingCmd() { return false; }
+  bool areCmdQueuesEmpty();
+
+  bool isCmdQueueEmpty();
+  bool pendingCmd();
+  int pendingCmdRecs();
+  bool popCmd(mcrCmd_t *cmd);
+  bool pushCmd(mcrCmd_t *cmd);
 
   bool isCmdAckQueueEmpty();
   bool pendingCmdAcks();
@@ -171,6 +177,7 @@ protected:
   bool infoMode = false;
   bool noticeMode = false;
   bool discoverLogMode = false;
+  bool cmdLogMode = false;
 
   virtual bool discover();
   bool needDiscover();

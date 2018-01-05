@@ -41,11 +41,11 @@ static Queue ack_queue(sizeof(mcrCmd_t), 25, FIFO);
 mcrDS::mcrDS(mcrMQTT *mqtt) : mcrEngine(mqtt) { ds = new OneWire(W1_PIN); }
 
 bool mcrDS::init() {
-  debugMode = true;
+  cmdLogMode = true;
   infoMode = true;
 
   mcrMQTT::registerCmdCallback(&cmdCallback);
-  mcrEngine::init(&ack_queue);
+  mcrEngine::init(&cmd_queue, &ack_queue);
   return true;
 }
 
@@ -74,7 +74,7 @@ bool mcrDS::discover() {
       if (OneWire::crc8(addr, 7) == addr[7]) {
         mcrDevAddr_t found_addr(addr, 8);
 
-        if (debugMode) {
+        if (debugMode || infoMode) {
           logDateTime(__PRETTY_FUNCTION__);
           log("discovered ");
           found_addr.debug(true);
@@ -260,43 +260,36 @@ bool mcrDS::convert() {
 }
 
 bool mcrDS::handleCmd() {
-  int recs = cmd_queue.nbRecs();
+  bool rc = false;
 
-  if (recs > 0) {
+  if (pendingCmd()) {
     mcrCmd_t cmd;
-    cmd_queue.pop(&cmd);
-
-    if (debugMode) {
-      logDateTime(__PRETTY_FUNCTION__);
-      log("qdepth: ");
-      log(recs);
-      log(" popped: ");
-      log(cmd.dev_id());
-      log(" new_state=");
-      log(cmd.state(), true);
-    }
+    rc = popCmd(&cmd);
 
     if (setSwitch(cmd)) {
-      if (debugMode) {
+      if (debugMode || cmdLogMode) {
         logDateTime(__PRETTY_FUNCTION__);
         log("setSwitch() complete device: ");
         cmd.dev_id().debug(true);
       }
 
       pushPendingCmdAck(&cmd);
+    } else {
+      if (debugMode || cmdLogMode) {
+        logDateTime(__PRETTY_FUNCTION__);
+        log("unknown device, quietly dropping ");
+        cmd.debug(true);
+      }
     }
   }
-  return true;
-}
 
-bool mcrDS::isCmdQueueEmpty() { return cmd_queue.isEmpty(); }
-bool mcrDS::pendingCmd() { return !cmd_queue.isEmpty(); }
+  return rc;
+}
 
 bool mcrDS::handleCmdAck(mcrCmd_t &cmd) {
   bool rc = true;
 
-  // tempDebugOn();
-  if (debugMode) {
+  if (debugMode || cmdLogMode) {
     logDateTime(__PRETTY_FUNCTION__);
     log("handling CmdAck for: ");
     cmd.printLog(true);
@@ -307,7 +300,6 @@ bool mcrDS::handleCmdAck(mcrCmd_t &cmd) {
     setCmdAck(cmd);
     publishDevice(cmd);
   }
-  // tempDebugOff();
 
   return rc;
 }
@@ -679,6 +671,8 @@ bool mcrDS::setDS2408(mcrCmd &cmd) {
   return rc;
 }
 bool mcrDS::cmdCallback(JsonObject &root) {
+  bool rc = false;
+
   // json format of pio state key/value pairs
   // {"pio":[{"1":false}]}
   const char *switch_id = root["switch"];
@@ -697,11 +691,6 @@ bool mcrDS::cmdCallback(JsonObject &root) {
     const uint8_t bit = atoi(requested_state["pio"]);
     const bool state = requested_state["state"].as<bool>();
 
-    // use ArduionJson ability to iterate through the key/value pairs
-    // for (auto kv : object) {
-    //   uint8_t bit = atoi(kv.key);
-    //   const bool position = kv.value.as<bool>();
-
     // set the mask with each bit that should be adjusted
     mask |= (0x01 << bit);
 
@@ -713,20 +702,16 @@ bool mcrDS::cmdCallback(JsonObject &root) {
     }
   }
 
-  mcrCmd_t cmd(sw, mask, tobe_state, refid);
-  cmd_queue.push(&cmd);
-#ifdef VERBOSE
-  uint8_t pio_count = root["pio_count"];
-  Serial.print("  mcrDS::cmdCallback() invoked for switch: ");
-  Serial.print(sw);
-  Serial.print(" pio_count=");
-  Serial.print(pio_count);
-  Serial.print(" requested_state=");
-  Serial.print(tobe_state, HEX);
-  Serial.println();
-#endif
+  logDateTime(__PRETTY_FUNCTION__);
+  log("invoked for dev: ");
+  log(sw, true);
 
-  return true;
+  // since this is a static member function to comply with the implementation
+  // of the MQTT client the cmd will pushed directly to the cmd_queue
+  mcrCmd_t cmd(sw, mask, tobe_state, refid);
+  rc = cmd_queue.push(&cmd);
+
+  return rc;
 }
 
 // dsDev_t *mcrDS::dsDevgetDevice(mcrDevID_t &id) {
