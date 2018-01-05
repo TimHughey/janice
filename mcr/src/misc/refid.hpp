@@ -34,7 +34,7 @@ typedef class mcrRefID mcrRefID_t;
 class mcrRefID {
 private:
   static const uint8_t _max_len = 39;
-  char _id[_max_len] = {0x00};
+  char _id[_max_len + 1] = {0x00}; // +1 for null terminating byte
 
 public:
   static const int max_id_len = _max_len;

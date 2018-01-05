@@ -78,7 +78,7 @@ mcrDevID_t &mcrDevID::operator=(const char *id) {
 
 void mcrDevID::initAndCopy(const char *id) {
   _id[0] = 0x00;
-  strncat(_id, id, _max_len - 1);
+  strncat(_id, id, _max_len);
 }
 
 const char *mcrDevID::asString() { return _id; }

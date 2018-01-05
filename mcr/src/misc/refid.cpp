@@ -26,8 +26,8 @@
 #include <WProgram.h>
 #endif
 
-#include "util.hpp"
 #include "refid.hpp"
+#include "util.hpp"
 
 mcrRefID::mcrRefID(const char *id) { this->initAndCopy(id); };
 
@@ -76,7 +76,7 @@ void mcrRefID::initAndCopy(const char *id) {
   _id[0] = 0x00;
 
   if (id)
-    strncat(_id, id, _max_len - 1);
+    strncat(_id, id, _max_len);
 }
 
 const char *mcrRefID::asString() { return _id; }

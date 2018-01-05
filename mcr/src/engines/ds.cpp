@@ -270,14 +270,14 @@ bool mcrDS::handleCmd() {
       if (debugMode || cmdLogMode) {
         logDateTime(__PRETTY_FUNCTION__);
         log("setSwitch() complete device: ");
-        cmd.dev_id().debug(true);
+        cmd.debug(true);
       }
 
       pushPendingCmdAck(&cmd);
     } else {
       if (debugMode || cmdLogMode) {
         logDateTime(__PRETTY_FUNCTION__);
-        log("unknown device, quietly dropping ");
+        log("setSwitch() failed, quietly dropping ");
         cmd.debug(true);
       }
     }
@@ -534,6 +534,10 @@ bool mcrDS::setSwitch(mcrCmd_t &cmd) {
   dsDev_t *dev = (dsDev_t *)getDeviceByCmd(cmd);
 
   if (dev == nullptr) {
+    logDateTime(__PRETTY_FUNCTION__);
+    log("could not find device for ");
+    cmd.debug(true);
+
     return false;
   }
 
@@ -552,6 +556,10 @@ bool mcrDS::setDS2406(mcrCmd_t &cmd) {
   dsDev_t *dev = (dsDev_t *)getDeviceByCmd(cmd);
 
   if (dev == nullptr) {
+    logDateTime(__PRETTY_FUNCTION__);
+    log("could not find device for ");
+    cmd.debug(true);
+
     return false;
   }
 
@@ -614,6 +622,10 @@ bool mcrDS::setDS2408(mcrCmd &cmd) {
   dsDev_t *dev = (dsDev_t *)getDeviceByCmd(cmd);
 
   if (dev == nullptr) {
+    logDateTime(__PRETTY_FUNCTION__);
+    log("could not find device for ");
+    cmd.debug(true);
+
     return false;
   }
 

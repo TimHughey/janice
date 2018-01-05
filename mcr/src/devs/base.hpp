@@ -43,7 +43,7 @@ protected:
   static const uint8_t _id_len = mcrDevID::max_id_len;
   static const uint8_t _desc_len = 15; // max length of desciption
 
-  char _desc[_desc_len] = {0x00}; // desciption of the device
+  char _desc[_desc_len + 1] = {0x00}; // desciption of the device
   Reading_t *_reading = nullptr;
 
   time_t _created_mtime = now();

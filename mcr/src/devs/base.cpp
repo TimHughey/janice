@@ -71,7 +71,7 @@ void mcrDev::setReading(Reading_t *reading) {
 
 void mcrDev::setDesc(const char *desc) {
   _desc[0] = 0x00;
-  strncat(_desc, desc, _desc_len - 1);
+  strncat(_desc, desc, _desc_len);
 }
 
 uint8_t mcrDev::firstAddressByte() { return _addr.firstAddressByte(); };
