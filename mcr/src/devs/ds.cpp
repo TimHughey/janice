@@ -137,10 +137,10 @@ void dsDev::printWriteMS(const char *func, uint8_t indent) {
   Serial.println("ms");
 }
 
-void dsDev::printPresenceFailed(const char *func, uint8_t indent) {
-  mcrUtil::printDateTime(func);
-  Serial.print("presence failure while trying to access ");
-  Serial.println(familyDesc());
+void dsDev::logPresenceFailed(const char *func, uint8_t indent) {
+  logDateTime(func);
+  log("presence failure while trying to access ");
+  log(familyDesc(), true);
 }
 
 // static member function for validating an address (ROM) is validAddress

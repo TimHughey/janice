@@ -68,7 +68,7 @@ public:
   // info / debugg functions
   void printReadMS(const char *func, uint8_t indent = 2);
   void printWriteMS(const char *func, uint8_t indent = 2);
-  void printPresenceFailed(const char *func, uint8_t indent = 2);
+  void logPresenceFailed(const char *func, uint8_t indent = 2);
 
   // static member function for validating an address (ROM) is validAddress
   static bool validAddress(uint8_t *addr);

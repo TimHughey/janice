@@ -321,7 +321,7 @@ bool mcrDS::readDS1820(dsDev *dev, celsiusReading_t **reading) {
   bool rc = true;
 
   if (ds->reset() == 0x00) {
-    dev->printPresenceFailed(__PRETTY_FUNCTION__);
+    dev->logPresenceFailed(__PRETTY_FUNCTION__);
     return false;
   };
 
@@ -403,7 +403,7 @@ bool mcrDS::readDS2406(dsDev *dev, positionsReading_t **reading) {
   bool rc = true;
 
   if (ds->reset() == 0x00) {
-    dev->printPresenceFailed(__PRETTY_FUNCTION__);
+    dev->logPresenceFailed(__PRETTY_FUNCTION__);
     return false;
   };
 
@@ -469,7 +469,7 @@ bool mcrDS::readDS2408(dsDev *dev, positionsReading_t **reading) {
   // byte data[12]
 
   if (ds->reset() == 0x00) {
-    dev->printPresenceFailed(__PRETTY_FUNCTION__);
+    dev->logPresenceFailed(__PRETTY_FUNCTION__);
     return false;
   };
 
@@ -564,7 +564,7 @@ bool mcrDS::setDS2406(mcrCmd_t &cmd) {
   }
 
   if (ds->reset() == 0x00) {
-    dev->printPresenceFailed(__PRETTY_FUNCTION__);
+    dev->logPresenceFailed(__PRETTY_FUNCTION__);
     return false;
   };
 
@@ -630,9 +630,20 @@ bool mcrDS::setDS2408(mcrCmd &cmd) {
   }
 
   if (ds->reset() == 0x00) {
-    dev->printPresenceFailed(__PRETTY_FUNCTION__);
+    dev->logPresenceFailed(__PRETTY_FUNCTION__);
     return false;
   };
+
+  // read the device to ensure we have the current state
+  // important because setting the new state relies, in part, on the existing
+  // state for the pios not changing
+  if (readDevice(dev) == false) {
+    logDateTime(__PRETTY_FUNCTION__);
+    log("read before set failed ");
+    dev->debug(true);
+
+    return false;
+  }
 
   positionsReading_t *reading = (positionsReading_t *)dev->reading();
 
@@ -667,21 +678,24 @@ bool mcrDS::setDS2408(mcrCmd &cmd) {
     dev->printWriteMS(__PRETTY_FUNCTION__);
 
   // check what the device returned to determine success or failure
-  if (check[0] == 0xAA) {
-// #define VERBOSE
-#ifdef VERBOSE
-    Serial.print("    ");
-    Serial.println("received 0xAA, success");
-    Serial.print("    ");
-#endif
-
+  if (check[0] == 0xAA) { // byte 0 = 0xAA is a success
+    if (debugMode) {
+      logDateTime(__PRETTY_FUNCTION__);
+      log("successfully set ");
+      dev->debug();
+      log(" state: ");
+      log(check[1], true);
+    }
   } else {
-    Serial.println("    set device failure");
+    logDateTime(__PRETTY_FUNCTION__);
+    log("failed to set ");
+    dev->debug(true);
     rc = false;
   }
 
   return rc;
 }
+
 bool mcrDS::cmdCallback(JsonObject &root) {
   bool rc = false;
 
