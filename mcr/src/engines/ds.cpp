@@ -74,7 +74,7 @@ bool mcrDS::discover() {
       if (OneWire::crc8(addr, 7) == addr[7]) {
         mcrDevAddr_t found_addr(addr, 8);
 
-        if (debugMode || infoMode) {
+        if (debugMode) {
           logDateTime(__PRETTY_FUNCTION__);
           log("discovered ");
           found_addr.debug(true);
@@ -93,7 +93,7 @@ bool mcrDS::discover() {
         if (justSeenDevice(dev)) {
           if (infoMode || discoverLogMode) {
             logDateTime(__PRETTY_FUNCTION__);
-            log("just saw ");
+            log("just saw: ");
             dev.debug(true);
             // log(" sizeof(dsDev_t)=");
             // log(sizeof(dsDev_t), true);
@@ -535,7 +535,7 @@ bool mcrDS::setSwitch(mcrCmd_t &cmd) {
 
   if (dev == nullptr) {
     logDateTime(__PRETTY_FUNCTION__);
-    log("could not find device for ");
+    log("could not find: ");
     cmd.debug(true);
 
     return false;
