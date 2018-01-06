@@ -198,7 +198,7 @@ void mcrUtil::printFreeMem(const char *func, uint8_t secs) {
       min_free = free_ram;
   }
 
-  if (freeMemReport >= (secs * 1000)) {
+  if ((delta != 0) && (freeMemReport >= (secs * 1000))) {
     int percentFree = ((float)freeRAM() / (float)(32 * 1024)) * 100;
     int freeK = freeRAM() / 1024;
 
