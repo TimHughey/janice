@@ -81,11 +81,13 @@ void setup() {
     logDateTime(__PRETTY_FUNCTION__);
     Serial.print("connecting to WPA SSID ");
     Serial.print(ssid);
-    Serial.print("...");
+    Serial.print("(firmware: ");
+    Serial.println(WiFi.firmwareVersion());
+    Serial.print(")...");
     while (wifiStatus != WL_CONNECTED) {
       wifiStatus = WiFi.begin(ssid, pass);
 
-      delay(1);
+      delayMicroseconds(250);
       Serial.print(".");
     }
   }
@@ -99,16 +101,14 @@ void setup() {
   Serial.println(mcrUtil::hostID());
 
   logDateTime(__PRETTY_FUNCTION__);
-  Serial.print("git HEAD rev: ");
+  Serial.print("build_env: ");
+  Serial.println(Version::env());
+  Serial.print("git HEAD=");
   Serial.println(Version::git());
-
-  logDateTime(__PRETTY_FUNCTION__);
-  Serial.print("mcr stable rev: ");
+  Serial.print(" mcr_stable=");
   Serial.println(Version::mcr_stable());
 
   logDateTime(__PRETTY_FUNCTION__);
-  Serial.print("env: ");
-  Serial.println(Version::env());
 
   setSyncInterval(120); // setting a high time sync interval since we rely on
   // updates via MQTT

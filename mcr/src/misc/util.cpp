@@ -164,14 +164,12 @@ void mcrUtil::printNet(const char *func) {
   Serial.print(encryption, HEX);
 
   IPAddress ip = WiFi.localIP();
-  Serial.print(" IP=");
+  logContinued();
+  Serial.print("IP=");
   Serial.print(ip);
 
   Serial.print(" MAC=");
-  Serial.print(mcrUtil::macAddress());
-
-  Serial.print(" FW=");
-  Serial.println(WiFi.firmwareVersion());
+  Serial.println(mcrUtil::macAddress());
 }
 
 void mcrUtil::printFreeMem(const char *func, uint8_t secs) {
