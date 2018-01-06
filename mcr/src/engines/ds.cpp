@@ -693,13 +693,21 @@ bool mcrDS::setDS2408(mcrCmd &cmd) {
       logAsBinary(dev_state, true);
     }
   } else {
+    uint8_t report_state = ~new_state;
+    uint8_t dev_state = ~check[1];
+
     logDateTime(__PRETTY_FUNCTION__);
+    log(" FAILED for ");
+    dev->debug();
+    logContinued();
     log("asis: ");
     logAsBinary(asis_state);
     log(" new: ");
-    logAsBinary(new_state);
-    log(" FAILED for ");
-    dev->debug(true);
+    logAsBinary(report_state);
+    log(" check[0]: ");
+    logAsHex(check[0]);
+    log(" check[1]: ");
+    logAsBinary(dev_state, true);
 
     rc = false;
   }
