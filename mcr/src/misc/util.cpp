@@ -245,6 +245,7 @@ void mcrUtil::printLog(int value, bool newline) {
 }
 
 void mcrUtil::printLogAsBinary(uint8_t value, bool newline) {
+  Serial.print("0b");
   if (newline)
     Serial.println(value, BIN);
   else
@@ -252,6 +253,7 @@ void mcrUtil::printLogAsBinary(uint8_t value, bool newline) {
 }
 
 void mcrUtil::printLogAsHex(uint8_t value, bool newline) {
+  Serial.print("0x");
   if (newline)
     Serial.println(value, HEX);
   else
@@ -259,8 +261,9 @@ void mcrUtil::printLogAsHex(uint8_t value, bool newline) {
 }
 
 void mcrUtil::printLogContinued() {
-  Serial.print("\n");
+  Serial.print(" ...\n");
   printIndent(22);
+  Serial.print("... ");
 }
 
 void mcrUtil::printElapsedMicros(elapsedMicros e, bool newline) {
