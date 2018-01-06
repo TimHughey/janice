@@ -697,7 +697,7 @@ bool mcrDS::setDS2408(mcrCmd &cmd) {
     uint8_t dev_state = (~check[1]) & 0x0F;
 
     logDateTime(__PRETTY_FUNCTION__);
-    log(" FAILED for ");
+    log("FAILED for ");
     dev->debug();
     log(" asis: ");
     logAsBinary(asis_state);

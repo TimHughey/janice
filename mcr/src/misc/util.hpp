@@ -64,8 +64,8 @@ public:
   static void printFreeMem(const char *func = nullptr, uint8_t secs = 15);
   static void printLog(const char *string, bool newline = false);
   static void printLog(int value, bool newline = false);
-  static void printLogAsBinary(int value, bool newline = false);
-  static void printLogAsHex(int value, bool newline = false);
+  static void printLogAsBinary(uint8_t value, bool newline = false);
+  static void printLogAsHex(uint8_t value, bool newline = false);
   static void printLogContinued();
   static void printElapsedMicros(elapsedMicros e, bool newline = false);
 };

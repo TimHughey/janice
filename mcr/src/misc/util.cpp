@@ -241,14 +241,14 @@ void mcrUtil::printLog(int value, bool newline) {
     Serial.print(value);
 }
 
-void mcrUtil::printLogAsBinary(int value, bool newline) {
+void mcrUtil::printLogAsBinary(uint8_t value, bool newline) {
   if (newline)
     Serial.println(value, BIN);
   else
     Serial.print(value, BIN);
 }
 
-void mcrUtil::printLogAsHex(int value, bool newline) {
+void mcrUtil::printLogAsHex(uint8_t value, bool newline) {
   if (newline)
     Serial.println(value, HEX);
   else
