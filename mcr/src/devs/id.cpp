@@ -73,8 +73,9 @@ void mcrDevID::initAndCopy(const char *id) {
 const char *mcrDevID::asString() { return _id; }
 
 void mcrDevID::debug(bool newline) {
-  log("mcrDevID_t ");
-  log(_id, newline);
+  log("mcrDevID_t {");
+  log(_id);
+  log("}", newline);
 }
 
 #endif

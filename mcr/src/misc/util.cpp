@@ -259,7 +259,7 @@ void mcrUtil::printLogAsHex(uint8_t value, bool newline) {
 }
 
 void mcrUtil::printLogContinued() {
-  Serial.println();
+  Serial.print("\n");
   printIndent(22);
 }
 

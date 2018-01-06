@@ -53,6 +53,7 @@ mcrRefID_t &mcrCmd::refID() { return _refid; }
 const uint8_t mcrCmd::size() { return sizeof(mcrCmd_t); }
 
 void mcrCmd::debug(bool newline) {
+  logContinued();
   log("mcrCmd_t ");
   _dev_id.debug();
   log(" mask: ");
