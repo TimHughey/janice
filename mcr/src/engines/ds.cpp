@@ -268,7 +268,8 @@ bool mcrDS::handleCmd() {
     if (setSwitch(cmd)) {
       if (debugMode || cmdLogMode) {
         logDateTime(__PRETTY_FUNCTION__);
-        log("setSwitch() complete device: ");
+        log("setSwitch() complete");
+        logContinued();
         cmd.debug(true);
       }
 
@@ -276,7 +277,8 @@ bool mcrDS::handleCmd() {
     } else {
       if (debugMode || cmdLogMode) {
         logDateTime(__PRETTY_FUNCTION__);
-        log("setSwitch() failed, quietly dropping ");
+        log("setSwitch() failed, quietly dropping");
+        logContinued();
         cmd.debug(true);
       }
     }
@@ -290,8 +292,9 @@ bool mcrDS::handleCmdAck(mcrCmd_t &cmd) {
 
   if (debugMode || cmdLogMode) {
     logDateTime(__PRETTY_FUNCTION__);
-    log("handling CmdAck for: ");
-    cmd.printLog(true);
+    log("handling CmdAck");
+    logContinued();
+    cmd.debug(true);
   }
 
   rc = readDevice(cmd);
@@ -535,6 +538,7 @@ bool mcrDS::setSwitch(mcrCmd_t &cmd) {
   if (dev == nullptr) {
     logDateTime(__PRETTY_FUNCTION__);
     log("could not find: ");
+    logContinued();
     cmd.debug(true);
 
     return false;
@@ -557,6 +561,7 @@ bool mcrDS::setDS2406(mcrCmd_t &cmd) {
   if (dev == nullptr) {
     logDateTime(__PRETTY_FUNCTION__);
     log("could not find device for ");
+    logContinued();
     cmd.debug(true);
 
     return false;
@@ -623,6 +628,7 @@ bool mcrDS::setDS2408(mcrCmd &cmd) {
   if (dev == nullptr) {
     logDateTime(__PRETTY_FUNCTION__);
     log("could not find device for ");
+    logContinued();
     cmd.debug(true);
 
     return false;
@@ -685,28 +691,37 @@ bool mcrDS::setDS2408(mcrCmd &cmd) {
       uint8_t dev_state = check[1];
 
       logDateTime(__PRETTY_FUNCTION__);
+      log("SUCCESS");
+
+      logContinued();
+      dev->debug();
+
+      logContinued();
       log("asis: ");
       logAsBinary(asis_state);
-      log(" new: ");
+      log("  new: ");
       logAsBinary(report_state);
-      log(" set for ");
-      dev->debug();
-      log(" state: ");
+      log("  dev state: ");
       logAsBinary(dev_state, true);
     }
   } else {
     uint8_t dev_state = check[1];
 
     logDateTime(__PRETTY_FUNCTION__);
-    log("FAILED for ");
+    log("FAILED");
+
+    logContinued();
     dev->debug();
-    log(" asis: ");
+
+    logContinued();
+    log("asis: ");
     logAsBinary(asis_state);
-    log(" new: ");
+    log("  new: ");
     logAsBinary(report_state);
-    log(" check[0]: ");
+    logContinued();
+    log("check[0]: ");
     logAsHex(check[0]);
-    log(" check[1]: ");
+    log("  check[1]: ");
     logAsBinary(dev_state, true);
 
     rc = false;
@@ -758,6 +773,7 @@ bool mcrDS::cmdCallback(JsonObject &root) {
 
   logDateTime(__PRETTY_FUNCTION__);
   log("pushed ");
+  logContinued();
   cmd.debug(true);
 
   return rc;
