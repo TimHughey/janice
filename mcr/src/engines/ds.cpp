@@ -650,6 +650,7 @@ bool mcrDS::setDS2408(mcrCmd &cmd) {
   uint8_t changes = cmd.state();
   uint8_t asis_state = reading->state();
   uint8_t new_state = 0x00;
+  uint8_t report_state = 0x00;
 
   // use XOR tricks to apply the state changes to the as_is state using the
   // mask computed
@@ -659,6 +660,7 @@ bool mcrDS::setDS2408(mcrCmd &cmd) {
   // on = 0
   // off = 1
 
+  report_state = new_state;
   new_state = ~new_state;
 
   ds->reset();
@@ -680,8 +682,8 @@ bool mcrDS::setDS2408(mcrCmd &cmd) {
   // byte 0 = 0xAA is a success, byte 1 = new_state
   if ((check[0] == 0xAA) && (check[1] == new_state)) {
     if (cmdLogMode) {
-      uint8_t report_state = (~new_state) & 0x0F;
-      uint8_t dev_state = (~check[1]) & 0x0F;
+      uint8_t dev_state = check[1];
+
       logDateTime(__PRETTY_FUNCTION__);
       log("asis: ");
       logAsBinary(asis_state);
@@ -693,8 +695,7 @@ bool mcrDS::setDS2408(mcrCmd &cmd) {
       logAsBinary(dev_state, true);
     }
   } else {
-    uint8_t report_state = (~new_state) & 0x0F;
-    uint8_t dev_state = (~check[1]) & 0x0F;
+    uint8_t dev_state = check[1];
 
     logDateTime(__PRETTY_FUNCTION__);
     log("FAILED for ");
