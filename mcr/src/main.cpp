@@ -63,6 +63,8 @@ void setup() {
     ;
   }
 
+  log("\n", true);
+
   logDateTime(__PRETTY_FUNCTION__);
   log("startup, serial initialized", true);
 
@@ -74,7 +76,7 @@ void setup() {
 
   default:
     logDateTime(__PRETTY_FUNCTION__);
-    log("WiFi (firwmare: ");
+    log("WiFi (firmware: ");
     log(WiFi.firmwareVersion());
     log(") connecting to WPA SSID ");
     log(ssid);
