@@ -680,15 +680,17 @@ bool mcrDS::setDS2408(mcrCmd &cmd) {
   // byte 0 = 0xAA is a success, byte 1 = new_state
   if ((check[0] == 0xAA) && (check[1] == new_state)) {
     if (cmdLogMode) {
+      uint8_t report_state = ~new_state;
+      uint8_t dev_state = ~check[1];
       logDateTime(__PRETTY_FUNCTION__);
       log("asis: ");
       logAsBinary(asis_state);
       log(" new: ");
-      logAsBinary(~new_state);
+      logAsBinary(report_state);
       log(" set for ");
       dev->debug();
       log(" state: ");
-      logAsBinary(~check[1], true);
+      logAsBinary(dev_state, true);
     }
   } else {
     logDateTime(__PRETTY_FUNCTION__);
