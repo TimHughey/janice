@@ -36,8 +36,8 @@
 #include "positions.hpp"
 #include "reading.hpp"
 
-positionsReading::positionsReading(mcrDevID_t &id, time_t mtime,
-                                   uint16_t states, uint8_t pios)
+positionsReading::positionsReading(mcrDevID_t &id, time_t mtime, uint8_t states,
+                                   uint8_t pios)
     : Reading(id, mtime) {
   if (pios <= _max_pios) {
     _pios = pios;
@@ -52,7 +52,7 @@ void positionsReading::populateJSON(JsonObject &root) {
   JsonArray &pio = root.createNestedArray("states");
 
   for (uint8_t i = 0; i < _pios; i++) {
-    bool pio_state = (_states & (0x0001 << i));
+    bool pio_state = (_states & ((uint8_t)0x01 << i));
     JsonObject &item = pio.createNestedObject();
 
     item["pio"] = i;

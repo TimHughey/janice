@@ -242,7 +242,6 @@ void mcrUtil::printLog(int value, bool newline) {
 }
 
 void mcrUtil::printLogAsBinary(uint8_t value, bool newline) {
-  value = value & 0x0F;
   if (newline)
     Serial.println(value, BIN);
   else
@@ -250,7 +249,6 @@ void mcrUtil::printLogAsBinary(uint8_t value, bool newline) {
 }
 
 void mcrUtil::printLogAsHex(uint8_t value, bool newline) {
-  value = value & 0x0F;
   if (newline)
     Serial.println(value, HEX);
   else

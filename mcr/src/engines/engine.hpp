@@ -62,7 +62,7 @@ private:
   mcrMQTT_t *_mqtt;
   mcrEngineState_t _state = IDLE;
   mcrDev_t *_known_devs[MAX_DEVICES_PER_ENGINE] = {0x00};
-  uint16_t _dev_count = 0;
+  uint8_t _dev_count = 0;
   Queue *_cmd_q = nullptr;
   Queue *_ack_q = nullptr;
   bool _savedDebugMode = false;
@@ -106,7 +106,7 @@ public:
   bool init(Queue *cmd_q = nullptr, Queue *ack_q = nullptr);
   virtual bool loop();
 
-  const static uint16_t maxDevices();
+  const static uint8_t maxDevices();
 
   // functions for handling known devices
   mcrDev_t *findDevice(mcrDev_t &dev);
@@ -209,7 +209,7 @@ protected:
   virtual bool handleCmd() { return true; }
   virtual bool handleCmdAck(mcrCmd_t &cmd) { return true; }
 
-  uint16_t devCount();
+  uint8_t devCount();
 
   void tempDebugOn();
   void tempDebugOff();
