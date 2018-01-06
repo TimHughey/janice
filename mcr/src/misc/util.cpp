@@ -135,13 +135,13 @@ void mcrUtil::printNet(const char *func) {
     printDateTime(__PRETTY_FUNCTION__);
 
   // print the SSID of the network you're attached to:
-  log("SSID=");
+  log("ssid: ");
   log(WiFi.SSID());
 
   // print the MAC address of the router you're attached to:
   uint8_t bssid[6];
   WiFi.BSSID(bssid);
-  log(" BSSID=");
+  log(" bssid: ");
   logAsHexRaw(bssid[5]);
   log(":");
   logAsHexRaw(bssid[4]);
@@ -155,12 +155,12 @@ void mcrUtil::printNet(const char *func) {
   logAsHexRaw(bssid[0]);
 
   // print the received signal strength:
-  log(" RSSI=");
+  log(" rssi: ");
   log(WiFi.RSSI());
 
   // print the encryption type:
   byte encryption = WiFi.encryptionType();
-  log(" Encryption: ");
+  log(" encryption: ");
   logAsHex(encryption, true);
 
   if (func)
@@ -169,7 +169,7 @@ void mcrUtil::printNet(const char *func) {
     printDateTime(__PRETTY_FUNCTION__);
 
   IPAddress ip = WiFi.localIP();
-  log("IP=");
+  log("ip: ");
   log(ip[0]);
   log(".");
   log(ip[1]);
@@ -178,7 +178,7 @@ void mcrUtil::printNet(const char *func) {
   log(".");
   log(ip[3]);
 
-  log(" MAC=");
+  log(" mac: ");
   log(mcrUtil::macAddress(), true);
 }
 
