@@ -15,35 +15,27 @@
 // boards 32u4, M0, and 328p
 #define LED 13
 #define VBAT_PIN A7
-// #define AM215_PWR_PIN 12
 // #define SOIL_METER_PWR_PIN 11
 // #define SOIL_METER_ANALOG_PIN A5
 
-//#if defined(ARDUINO_SAMD_ZERO) && defined(SERIAL_PORT_USBVIRTUAL)
+#if defined(ARDUINO_SAMD_ZERO) && defined(SERIAL_PORT_USBVIRTUAL)
 // Required for Serial on Zero based boards
-//#define Serial SERIAL_PORT_USBVIRTUAL
-//#endif
-
-// prototypes
-void printFreeMem(uint8_t secs);
-void printWiFiData();
-void printCurrentNet();
+#define Serial SERIAL_PORT_USBVIRTUAL
+#endif
 
 #ifdef WATCHDOG_TIMEOUT
 #define USE_WATCHDOG
 #endif
 
 #ifdef ALT_WIFI
-const char ssid[] = "TravelerVI";
-const char pass[] = "425voosgt5ti8";
+const char ssid[] = "";
+const char pass[] = "";
 #else
 const char ssid[] = "WissLanding";               //  your network SSID (name)
 const char pass[] = "I once was a porch kitty."; // your network password
 #endif
 
 int wifiStatus = WL_IDLE_STATUS; // the WiFi radio's status
-
-// char mcrID[25];
 
 #define MQTT_SERVER "jophiel.wisslanding.com"
 #define MQTT_PORT 1883
@@ -84,6 +76,7 @@ void setup() {
     log("(firmware: ");
     log(WiFi.firmwareVersion());
     log(")...");
+
     while (wifiStatus != WL_CONNECTED) {
       wifiStatus = WiFi.begin(ssid, pass);
 
