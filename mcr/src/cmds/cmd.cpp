@@ -53,20 +53,21 @@ mcrRefID_t &mcrCmd::refID() { return _refid; }
 const uint8_t mcrCmd::size() { return sizeof(mcrCmd_t); }
 
 void mcrCmd::debug(bool newline) {
-  logContinued();
   log("mcrCmd_t:: ");
   _dev_id.debug();
   log(" mask: ");
   logAsBinary(_mask);
   log(" state: ");
-  logAsBinary(_state, true);
+  logAsBinary(_state);
+  log("latency: ");
+  logElapsedMicros(latency(), newline);
 }
 
-void mcrCmd::printLog(bool newline) {
-  log("mcrCmd_t ");
-  _dev_id.debug();
-  log(" latency: ");
-  mcrUtil::printElapsedMicros(latency(), newline);
-}
+// void mcrCmd::printLog(bool newline) {
+//   log("mcrCmd_t ");
+//   _dev_id.debug();
+//   log(" latency: ");
+//   mcrUtil::printElapsedMicros(latency(), newline);
+// }
 
 #endif // __cplusplus
