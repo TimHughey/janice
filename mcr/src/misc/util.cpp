@@ -71,8 +71,8 @@ const char *mcrUtil::indentString(uint8_t indent) {
 
   indent = (indent < max_indent) ? indent : max_indent;
 
-  memset(indent_str, 0x20, indent);
-  indent_str[indent + 1] = 0x00;
+  memset(indent_str, 0x20, indent - 1);
+  indent_str[indent] = 0x00;
 
   return indent_str;
 }
