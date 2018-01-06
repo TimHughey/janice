@@ -536,10 +536,12 @@ bool mcrDS::setSwitch(mcrCmd_t &cmd) {
   dsDev_t *dev = (dsDev_t *)getDeviceByCmd(cmd);
 
   if (dev == nullptr) {
-    logDateTime(__PRETTY_FUNCTION__);
-    log("could not find: ");
-    logContinued();
-    cmd.debug(true);
+    if (debugMode) {
+      logDateTime(__PRETTY_FUNCTION__);
+      log("could not find: ");
+      logContinued();
+      cmd.debug(true);
+    }
 
     return false;
   }
