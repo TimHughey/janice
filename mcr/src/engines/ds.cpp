@@ -675,9 +675,8 @@ bool mcrDS::setDS2408(mcrCmd &cmd) {
   ds->write(new_state, 1);  // state to set on the device
   ds->write(~new_state, 1); // send the negated as a check
 
-  uint8_t check[2];
-  check[0] = ds->read();
-  check[1] = ds->read();
+  uint8_t check[3] = {0x00};
+  ds->read_bytes(check, 2);
   ds->reset();
   dev->stopWrite();
   if (debugMode)

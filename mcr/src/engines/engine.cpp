@@ -503,7 +503,7 @@ bool mcrEngine::popCmd(mcrCmd_t *cmd) {
   if (_cmd_q == nullptr)
     return false;
 
-  if (debugMode || cmdLogMode) {
+  if (debugMode) {
     logDateTime(__PRETTY_FUNCTION__);
     log("CMD qdepth: ");
     log(_cmd_q->nbRecs());
@@ -511,7 +511,7 @@ bool mcrEngine::popCmd(mcrCmd_t *cmd) {
 
   rc = _cmd_q->pop(cmd);
 
-  if (debugMode || cmdLogMode) {
+  if (debugMode) {
     logContinued();
     cmd->debug(true);
   }
@@ -556,7 +556,7 @@ bool mcrEngine::popPendingCmdAck(mcrCmd_t *cmd) {
   if (recs > 0) {
     rc = _ack_q->pop(cmd);
 
-    if (debugMode || cmdLogMode) {
+    if (debugMode) {
       logDateTime(__PRETTY_FUNCTION__);
       log("CMDACK qdepth: ");
       log(recs);
@@ -574,7 +574,7 @@ bool mcrEngine::pushPendingCmdAck(mcrCmd_t *cmd) {
 
   if (_ack_q != nullptr) {
 
-    if (debugMode || cmdLogMode) {
+    if (debugMode) {
       logDateTime(__PRETTY_FUNCTION__);
       log("CMDACK qdepth: ");
       log(_ack_q->nbRecs());
