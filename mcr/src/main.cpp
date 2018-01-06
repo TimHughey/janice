@@ -98,7 +98,7 @@ void setup() {
   logDateTime(__PRETTY_FUNCTION__);
   log("build_env: ");
   log(Version::env());
-  log("git HEAD=");
+  log(" git: HEAD=");
   log(Version::git());
   log(" mcr_stable=");
   log(Version::mcr_stable(), true);
