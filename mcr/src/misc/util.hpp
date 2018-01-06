@@ -37,6 +37,7 @@
 #define log mcrUtil::printLog
 #define logAsBinary mcrUtil::printLogAsBinary
 #define logAsHex mcrUtil::printLogAsHex
+#define logAsHexRaw mcrUtil::printLogAsHexRaw
 #define logDateTime mcrUtil::printDateTime
 #define logElapsed mcrUtil::printElapsed
 #define logElapsedMicros mcrUtil::printElapsedMicros
@@ -66,6 +67,7 @@ public:
   static void printLog(int value, bool newline = false);
   static void printLogAsBinary(uint8_t value, bool newline = false);
   static void printLogAsHex(uint8_t value, bool newline = false);
+  static void printLogAsHexRaw(uint8_t value, bool newline = false);
   static void printLogContinued();
   static void printElapsedMicros(elapsedMicros e, bool newline = false);
 };

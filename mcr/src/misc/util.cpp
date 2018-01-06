@@ -37,7 +37,7 @@ char *mcrUtil::macAddress() {
   static char _mac[13] = {0x00};
 
   if (_mac[0] == 0x00) {
-    byte mac[6];
+    uint8_t mac[6];
 
     WiFi.macAddress(mac);
 
@@ -66,15 +66,13 @@ int mcrUtil::freeRAM() {
 };
 
 const char *mcrUtil::indentString(uint8_t indent) {
-  static char indent_str[25] = {0x00}; // used for indenting
+  const uint8_t max_indent = 25;
+  static char indent_str[max_indent + 1] = {0x00}; // used for indenting
 
-  if (indent > sizeof(indent_str))
-    indent = sizeof(indent_str);
+  indent = (indent < max_indent) ? indent : max_indent;
 
-  for (uint8_t i = 0; i < indent; i++) {
-    indent_str[i] = ' '; // this is just a space
-  }
-  indent_str[indent] = 0x00; // null terminate the string
+  memset(indent_str, 0x20, indent);
+  indent_str[indent + 1] = 0x00;
 
   return indent_str;
 }
@@ -106,12 +104,14 @@ const char *mcrUtil::dateTimeString(time_t t) {
 void mcrUtil::printDateTime(time_t t) { Serial.print(dateTimeString(t)); }
 
 void mcrUtil::printElapsed(elapsedMillis e, bool newline) {
-  const char *units = "ms";
+  const char *ms = "ms";
+  const char *secs = "s";
+  const char *units = ms;
   float val = e;
 
   if (e > 1000) {          // if needed, convert to secs for human
     val = (float)e / 1000; // readability.  yes, this is a bit much but
-    units = "s";           // it's my software
+    units = secs;          // it's my software
   }
 
   Serial.print(val);
@@ -133,43 +133,48 @@ void mcrUtil::printNet(const char *func) {
     printDateTime(func);
   else
     printDateTime(__PRETTY_FUNCTION__);
+
   // print the SSID of the network you're attached to:
-  Serial.print("SSID=");
-  Serial.print(WiFi.SSID());
+  log("SSID=");
+  log(WiFi.SSID());
 
   // print the MAC address of the router you're attached to:
-  byte bssid[6];
+  uint8_t bssid[6];
   WiFi.BSSID(bssid);
-  Serial.print(" BSSID=");
-  Serial.print(bssid[5], HEX);
-  Serial.print(":");
-  Serial.print(bssid[4], HEX);
-  Serial.print(":");
-  Serial.print(bssid[3], HEX);
-  Serial.print(":");
-  Serial.print(bssid[2], HEX);
-  Serial.print(":");
-  Serial.print(bssid[1], HEX);
-  Serial.print(":");
-  Serial.print(bssid[0], HEX);
+  log(" BSSID=");
+  logAsHexRaw(bssid[5]);
+  log(":");
+  logAsHexRaw(bssid[4]);
+  log(":");
+  logAsHexRaw(bssid[3]);
+  log(":");
+  logAsHexRaw(bssid[2]);
+  log(":");
+  logAsHexRaw(bssid[1]);
+  log(":");
+  logAsHexRaw(bssid[0]);
 
   // print the received signal strength:
-  long rssi = WiFi.RSSI();
-  Serial.print(" RSSI=");
-  Serial.print(rssi);
+  log(" RSSI=");
+  log(WiFi.RSSI());
 
   // print the encryption type:
   byte encryption = WiFi.encryptionType();
-  Serial.print(" Encrypt=");
-  Serial.print(encryption, HEX);
+  log(" Encryption: ");
+  logAsHex(encryption);
 
   IPAddress ip = WiFi.localIP();
-  logContinued();
-  Serial.print("IP=");
-  Serial.print(ip);
 
-  Serial.print(" MAC=");
-  Serial.println(mcrUtil::macAddress());
+  if (func)
+    printDateTime(func);
+  else
+    printDateTime(__PRETTY_FUNCTION__);
+
+  log("IP=");
+  log(ip);
+
+  log(" MAC=");
+  log(mcrUtil::macAddress(), true);
 }
 
 void mcrUtil::printFreeMem(const char *func, uint8_t secs) {
@@ -179,7 +184,7 @@ void mcrUtil::printFreeMem(const char *func, uint8_t secs) {
   static int max_free = 0;
   static elapsedMillis freeMemReport;
   int free_ram = freeRAM();
-  int delta = free_ram - prev_free;
+  int delta = (prev_free > 0) ? free_ram - prev_free : 0;
 
   if (first_free == 0) {
     first_free = free_ram;
@@ -250,6 +255,13 @@ void mcrUtil::printLogAsBinary(uint8_t value, bool newline) {
 
 void mcrUtil::printLogAsHex(uint8_t value, bool newline) {
   Serial.print("0x");
+  if (newline)
+    Serial.println(value, HEX);
+  else
+    Serial.print(value, HEX);
+}
+
+void mcrUtil::printLogAsHexRaw(uint8_t value, bool newline) {
   if (newline)
     Serial.println(value, HEX);
   else
