@@ -42,7 +42,6 @@ mcrDS::mcrDS(mcrMQTT *mqtt) : mcrEngine(mqtt) { ds = new OneWire(W1_PIN); }
 
 bool mcrDS::init() {
   cmdLogMode = true;
-  infoMode = true;
 
   mcrMQTT::registerCmdCallback(&cmdCallback);
   mcrEngine::init(&cmd_queue, &ack_queue);
@@ -712,7 +711,6 @@ bool mcrDS::cmdCallback(JsonObject &root) {
   logDateTime(__PRETTY_FUNCTION__);
   log("invoked for ");
   sw.debug(true);
-  log(sw, true);
 
   // iterate through the array of new states
   for (auto element : states) {
