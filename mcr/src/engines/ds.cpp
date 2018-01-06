@@ -266,7 +266,7 @@ bool mcrDS::handleCmd() {
     rc = popCmd(&cmd);
 
     if (setSwitch(cmd)) {
-      if (debugMode || cmdLogMode) {
+      if (debugMode) {
         logDateTime(__PRETTY_FUNCTION__);
         log("setSwitch() complete");
         logContinued();
@@ -275,7 +275,7 @@ bool mcrDS::handleCmd() {
 
       pushPendingCmdAck(&cmd);
     } else {
-      if (debugMode || cmdLogMode) {
+      if (debugMode) {
         logDateTime(__PRETTY_FUNCTION__);
         log("setSwitch() failed, quietly dropping");
         logContinued();
@@ -290,7 +290,7 @@ bool mcrDS::handleCmd() {
 bool mcrDS::handleCmdAck(mcrCmd_t &cmd) {
   bool rc = true;
 
-  if (debugMode || cmdLogMode) {
+  if (debugMode) {
     logDateTime(__PRETTY_FUNCTION__);
     log("handling CmdAck");
     logContinued();
@@ -622,7 +622,6 @@ bool mcrDS::setDS2406(mcrCmd_t &cmd) {
 
 bool mcrDS::setDS2408(mcrCmd &cmd) {
   bool rc = true;
-  // mcrDevID id = cmd.name();
   dsDev_t *dev = (dsDev_t *)getDeviceByCmd(cmd);
 
   if (dev == nullptr) {
@@ -733,8 +732,13 @@ bool mcrDS::setDS2408(mcrCmd &cmd) {
 bool mcrDS::cmdCallback(JsonObject &root) {
   bool rc = false;
 
-  // json format of pio state key/value pairs
-  // {"pio":[{"1":false}]}
+  // json format of states command:
+  // {"version":1,
+  //   "switch":"ds/29463408000000",
+  //   "states":[{"state":false,"pio":3}],
+  //   "refid":"0fc4417c-f1bb-11e7-86bd-6cf049e7139f",
+  //   "mtime":1515117138,
+  //   "cmd":"set.switch"}
   const char *switch_id = root["switch"];
   mcrRefID_t refid = (const char *)root["refid"];
   mcrDevID_t sw(switch_id);
@@ -743,9 +747,9 @@ bool mcrDS::cmdCallback(JsonObject &root) {
   uint8_t mask = 0x00;
   uint8_t tobe_state = 0x00;
 
-  logDateTime(__PRETTY_FUNCTION__);
-  log("invoked for ");
-  sw.debug(true);
+  // logDateTime(__PRETTY_FUNCTION__);
+  // log("invoked for ");
+  // sw.debug(true);
 
   // iterate through the array of new states
   for (auto element : states) {
@@ -771,10 +775,10 @@ bool mcrDS::cmdCallback(JsonObject &root) {
   mcrCmd_t cmd(sw, mask, tobe_state, refid);
   rc = cmd_queue.push(&cmd);
 
-  logDateTime(__PRETTY_FUNCTION__);
-  log("pushed ");
-  logContinued();
-  cmd.debug(true);
+  // logDateTime(__PRETTY_FUNCTION__);
+  // log("pushed ");
+  // logContinued();
+  // cmd.debug(true);
 
   return rc;
 }
