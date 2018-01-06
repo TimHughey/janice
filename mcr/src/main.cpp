@@ -64,12 +64,15 @@ void setup() {
   }
 
   logDateTime(__PRETTY_FUNCTION__);
-  log("serial initialized", true);
+  log("startup, serial initialized", true);
 
-  if (WiFi.status() == WL_NO_SHIELD) {
+  switch (WiFi.status()) {
+  case WL_NO_SHIELD:
     logDateTime(__PRETTY_FUNCTION__);
-    log("wifi shield not detected");
-  } else {
+    log("wifi shield not detected", true);
+    break;
+
+  default:
     logDateTime(__PRETTY_FUNCTION__);
     log("connecting to WPA SSID ");
     log(ssid);
@@ -83,9 +86,8 @@ void setup() {
       delayMicroseconds(100);
       log(".");
     }
+    log(".", true);
   }
-
-  log(" ", true);
 
   mcrUtil::printNet(__PRETTY_FUNCTION__);
 
@@ -101,10 +103,8 @@ void setup() {
   log(" mcr_stable=");
   log(Version::mcr_stable(), true);
 
-  logDateTime(__PRETTY_FUNCTION__);
-
-  setSyncInterval(120); // setting a high time sync interval since we rely on
-  // updates via MQTT
+  // setting a high time sync interval since we rely on updates via MQTT
+  setSyncInterval(300);
 
   logDateTime(__PRETTY_FUNCTION__);
   log("mcrMQTT");
