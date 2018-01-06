@@ -207,20 +207,18 @@ void mcrUtil::printFreeMem(const char *func, uint8_t secs) {
       else
         printDateTime(__PRETTY_FUNCTION__);
 
-      Serial.print("free SRAM: ");
-      Serial.print(percentFree);
-      Serial.print("% (");
-      Serial.print(freeK);
-      Serial.print("k of 32k) dif: ");
-      Serial.print(delta);
-      Serial.print(" min: ");
-      Serial.print(min_free);
-      Serial.print(" now: ");
-      Serial.print(free_ram);
-      Serial.print(" max: ");
-      Serial.print(max_free);
-
-      Serial.println();
+      log("free SRAM: ");
+      log(percentFree);
+      log("% (");
+      log(freeK);
+      log("k of 32k) dif: ");
+      log(delta);
+      log(" min: ");
+      log(min_free);
+      log(" now: ");
+      log(free_ram);
+      log(" max: ");
+      log(max_free, true);
     }
 
     freeMemReport = 0;

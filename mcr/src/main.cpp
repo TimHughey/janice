@@ -76,37 +76,37 @@ void setup() {
 
   if (WiFi.status() == WL_NO_SHIELD) {
     logDateTime(__PRETTY_FUNCTION__);
-    Serial.println("wifi shield not detected");
+    log("wifi shield not detected");
   } else {
     logDateTime(__PRETTY_FUNCTION__);
-    Serial.print("connecting to WPA SSID ");
-    Serial.print(ssid);
-    Serial.print("(firmware: ");
-    Serial.println(WiFi.firmwareVersion());
-    Serial.print(")...");
+    log("connecting to WPA SSID ");
+    log(ssid);
+    log("(firmware: ");
+    log(WiFi.firmwareVersion());
+    log(")...");
     while (wifiStatus != WL_CONNECTED) {
       wifiStatus = WiFi.begin(ssid, pass);
 
-      delayMicroseconds(250);
-      Serial.print(".");
+      delayMicroseconds(100);
+      log(".");
     }
   }
 
-  Serial.println();
+  log(" ", true);
 
   mcrUtil::printNet(__PRETTY_FUNCTION__);
 
   logDateTime(__PRETTY_FUNCTION__);
-  Serial.print("mcrID: ");
-  Serial.println(mcrUtil::hostID());
+  log("mcrID: ");
+  log(mcrUtil::hostID(), true);
 
   logDateTime(__PRETTY_FUNCTION__);
-  Serial.print("build_env: ");
-  Serial.println(Version::env());
-  Serial.print("git HEAD=");
-  Serial.println(Version::git());
-  Serial.print(" mcr_stable=");
-  Serial.println(Version::mcr_stable());
+  log("build_env: ");
+  log(Version::env());
+  log("git HEAD=");
+  log(Version::git());
+  log(" mcr_stable=");
+  log(Version::mcr_stable(), true);
 
   logDateTime(__PRETTY_FUNCTION__);
 
@@ -114,31 +114,31 @@ void setup() {
   // updates via MQTT
 
   logDateTime(__PRETTY_FUNCTION__);
-  Serial.print("mcrMQTT");
+  log("mcrMQTT");
   mqtt = new mcrMQTT(wifi, broker, MQTT_PORT);
-  Serial.print(" created, ");
+  log(" created, ");
   mqtt->connect();
-  Serial.print("connected, ");
+  log("connected, ");
   mqtt->announceStartup();
-  Serial.println("announced startup");
+  log("announced startup", true);
 
   logDateTime(__PRETTY_FUNCTION__);
-  Serial.print("mcrDS");
+  log("mcrDS");
   ds = new mcrDS(mqtt);
-  Serial.print(" created,");
+  log(" created,");
   ds->init();
-  Serial.println(" initialized");
+  log(" initialized", true);
 
   logDateTime(__PRETTY_FUNCTION__);
-  Serial.print("mcrI2C");
+  log("mcrI2C");
   i2c = new mcrI2c(mqtt);
-  Serial.print(" created, ");
+  log(" created, ");
   i2c->init();
-  Serial.println("initialized");
+  log("initialized", true);
 
   mcrUtil::printFreeMem(__PRETTY_FUNCTION__, 0);
   logDateTime(__PRETTY_FUNCTION__);
-  Serial.println("completed, transition to main::loop()");
+  log("completed, transition to main::loop()", true);
 
 #ifdef USE_WATCHDOG
   Watchdog.enable(WATCHDOG_TIMEOUT);
