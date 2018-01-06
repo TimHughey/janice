@@ -17,11 +17,11 @@
 #define VBAT_PIN A7
 // #define SOIL_METER_PWR_PIN 11
 // #define SOIL_METER_ANALOG_PIN A5
-
-#if defined(ARDUINO_SAMD_ZERO) && defined(SERIAL_PORT_USBVIRTUAL)
-// Required for Serial on Zero based boards
-#define Serial SERIAL_PORT_USBVIRTUAL
-#endif
+//
+// #if defined(ARDUINO_SAMD_ZERO) && defined(SERIAL_PORT_USBVIRTUAL)
+// // Required for Serial on Zero based boards
+// #define Serial SERIAL_PORT_USBVIRTUAL
+// #endif
 
 #ifdef WATCHDOG_TIMEOUT
 #define USE_WATCHDOG
@@ -74,11 +74,10 @@ void setup() {
 
   default:
     logDateTime(__PRETTY_FUNCTION__);
-    log("connecting to WPA SSID ");
-    log(ssid);
-    log("(firmware: ");
+    log("WiFi (firwmare: ");
     log(WiFi.firmwareVersion());
-    log(")...");
+    log(") connecting to WPA SSID ");
+    log(ssid);
 
     while (wifiStatus != WL_CONNECTED) {
       wifiStatus = WiFi.begin(ssid, pass);
