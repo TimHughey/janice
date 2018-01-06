@@ -76,9 +76,9 @@ void setup() {
 
   default:
     logDateTime(__PRETTY_FUNCTION__);
-    log("WiFi (firmware: ");
+    log("wifi (firmware: ");
     log(WiFi.firmwareVersion());
-    log(") connecting to WPA SSID ");
+    log(") connecting to wpa ssid: ");
     log(ssid);
 
     while (wifiStatus != WL_CONNECTED) {
@@ -94,10 +94,8 @@ void setup() {
 
   logDateTime(__PRETTY_FUNCTION__);
   log("mcrID: ");
-  log(mcrUtil::hostID(), true);
-
-  logDateTime(__PRETTY_FUNCTION__);
-  log("build_env: ");
+  log(mcrUtil::hostID());
+  log(" build_env: ");
   log(Version::env());
   log(" git: HEAD=");
   log(Version::git());
