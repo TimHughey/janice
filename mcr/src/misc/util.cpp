@@ -198,29 +198,32 @@ void mcrUtil::printFreeMem(const char *func, uint8_t secs) {
       min_free = free_ram;
   }
 
-  if ((delta != 0) && (freeMemReport >= (secs * 1000))) {
+  if (freeMemReport >= (secs * 1000)) {
     int percentFree = ((float)freeRAM() / (float)(32 * 1024)) * 100;
     int freeK = freeRAM() / 1024;
 
-    if (func)
-      printDateTime(func);
-    else
-      printDateTime(__PRETTY_FUNCTION__);
+    if (delta != 0) {
 
-    Serial.print("free SRAM: ");
-    Serial.print(percentFree);
-    Serial.print("% (");
-    Serial.print(freeK);
-    Serial.print("k of 32k) dif: ");
-    Serial.print(delta);
-    Serial.print(" min: ");
-    Serial.print(min_free);
-    Serial.print(" now: ");
-    Serial.print(free_ram);
-    Serial.print(" max: ");
-    Serial.print(max_free);
+      if (func)
+        printDateTime(func);
+      else
+        printDateTime(__PRETTY_FUNCTION__);
 
-    Serial.println();
+      Serial.print("free SRAM: ");
+      Serial.print(percentFree);
+      Serial.print("% (");
+      Serial.print(freeK);
+      Serial.print("k of 32k) dif: ");
+      Serial.print(delta);
+      Serial.print(" min: ");
+      Serial.print(min_free);
+      Serial.print(" now: ");
+      Serial.print(free_ram);
+      Serial.print(" max: ");
+      Serial.print(max_free);
+
+      Serial.println();
+    }
 
     freeMemReport = 0;
     prev_free = mcrUtil::freeRAM();
