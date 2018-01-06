@@ -684,11 +684,11 @@ bool mcrDS::setDS2408(mcrCmd &cmd) {
       log("asis: ");
       logAsBinary(asis_state);
       log(" new: ");
-      logAsBinary(new_state);
+      logAsBinary(~new_state);
       log(" set for ");
       dev->debug();
       log(" state: ");
-      logAsBinary(check[1], true);
+      logAsBinary(~check[1], true);
     }
   } else {
     logDateTime(__PRETTY_FUNCTION__);
