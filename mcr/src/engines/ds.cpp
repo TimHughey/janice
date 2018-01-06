@@ -709,6 +709,11 @@ bool mcrDS::cmdCallback(JsonObject &root) {
   uint8_t mask = 0x00;
   uint8_t tobe_state = 0x00;
 
+  logDateTime(__PRETTY_FUNCTION__);
+  log("invoked for ");
+  sw.debug(true);
+  log(sw, true);
+
   // iterate through the array of new states
   for (auto element : states) {
     // get a reference to the object from the array
@@ -728,14 +733,14 @@ bool mcrDS::cmdCallback(JsonObject &root) {
     }
   }
 
-  logDateTime(__PRETTY_FUNCTION__);
-  log("invoked for dev: ");
-  log(sw, true);
-
   // since this is a static member function to comply with the implementation
   // of the MQTT client the cmd will pushed directly to the cmd_queue
   mcrCmd_t cmd(sw, mask, tobe_state, refid);
   rc = cmd_queue.push(&cmd);
+
+  logDateTime(__PRETTY_FUNCTION__);
+  log("pushed ");
+  cmd.debug(true);
 
   return rc;
 }

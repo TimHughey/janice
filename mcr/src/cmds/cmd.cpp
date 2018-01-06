@@ -55,8 +55,10 @@ const uint8_t mcrCmd::size() { return sizeof(mcrCmd); }
 void mcrCmd::debug(bool newline) {
   log("mcrCmd_t ");
   _dev_id.debug();
+  log(" mask: ");
+  logAsBinary(_mask);
   log(" state: ");
-  log(_state, newline);
+  logAsBinary(_state, true);
 }
 
 void mcrCmd::printLog(bool newline) {

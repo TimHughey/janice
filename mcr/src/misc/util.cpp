@@ -66,10 +66,10 @@ int mcrUtil::freeRAM() {
 };
 
 const char *mcrUtil::indentString(uint8_t indent) {
-  static char indent_str[10] = {0x00}; // used for indenting
+  static char indent_str[25] = {0x00}; // used for indenting
 
-  if (indent > 9)
-    indent = 9;
+  if (indent > sizeof(indent_str))
+    indent = sizeof(indent_str);
 
   for (uint8_t i = 0; i < indent; i++) {
     indent_str[i] = ' '; // this is just a space
@@ -239,6 +239,25 @@ void mcrUtil::printLog(int value, bool newline) {
     Serial.println(value);
   else
     Serial.print(value);
+}
+
+void mcrUtil::printLogAsBinary(int value, bool newline) {
+  if (newline)
+    Serial.println(value, BIN);
+  else
+    Serial.print(value, BIN);
+}
+
+void mcrUtil::printLogAsHex(int value, bool newline) {
+  if (newline)
+    Serial.println(value, HEX);
+  else
+    Serial.print(value, HEX);
+}
+
+void mcrUtil::printLogContinued() {
+  Serial.println();
+  printIndent(22);
 }
 
 void mcrUtil::printElapsedMicros(elapsedMicros e, bool newline) {
