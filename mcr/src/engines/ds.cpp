@@ -677,18 +677,28 @@ bool mcrDS::setDS2408(mcrCmd &cmd) {
     dev->printWriteMS(__PRETTY_FUNCTION__);
 
   // check what the device returned to determine success or failure
-  if (check[0] == 0xAA) { // byte 0 = 0xAA is a success
-    if (debugMode) {
+  // byte 0 = 0xAA is a success, byte 1 = new_state
+  if ((check[0] == 0xAA) && (check[1] == new_state)) {
+    if (cmdLogMode) {
       logDateTime(__PRETTY_FUNCTION__);
-      log("successfully set ");
+      log("asis: ");
+      logAsBinary(asis_state);
+      log(" new: ");
+      logAsBinary(new_state);
+      log(" set for ");
       dev->debug();
       log(" state: ");
-      log(check[1], true);
+      logAsBinary(check[1], true);
     }
   } else {
     logDateTime(__PRETTY_FUNCTION__);
-    log("failed to set ");
+    log("asis: ");
+    logAsBinary(asis_state);
+    log(" new: ");
+    logAsBinary(new_state);
+    log(" FAILED for ");
     dev->debug(true);
+
     rc = false;
   }
 
