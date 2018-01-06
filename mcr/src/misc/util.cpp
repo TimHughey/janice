@@ -179,7 +179,7 @@ void mcrUtil::printFreeMem(const char *func, uint8_t secs) {
   static int max_free = 0;
   static elapsedMillis freeMemReport;
   int free_ram = freeRAM();
-  int delta = prev_free - free_ram;
+  int delta = free_ram - prev_free;
 
   if (first_free == 0) {
     first_free = free_ram;
