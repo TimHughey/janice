@@ -161,17 +161,22 @@ void mcrUtil::printNet(const char *func) {
   // print the encryption type:
   byte encryption = WiFi.encryptionType();
   log(" Encryption: ");
-  logAsHex(encryption);
-
-  IPAddress ip = WiFi.localIP();
+  logAsHex(encryption, true);
 
   if (func)
     printDateTime(func);
   else
     printDateTime(__PRETTY_FUNCTION__);
 
+  IPAddress ip = WiFi.localIP();
   log("IP=");
-  log(ip);
+  log(ip[0]);
+  log(".");
+  log(ip[1]);
+  log(".");
+  log(ip[2]);
+  log(".");
+  log(ip[3]);
 
   log(" MAC=");
   log(mcrUtil::macAddress(), true);
