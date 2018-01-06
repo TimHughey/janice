@@ -90,7 +90,10 @@ defmodule Dutycycle.Control do
     GenServer.call(Control, msg)
   end
 
-  def change_profile(name, profile, opts) do
+  def change_profile(name, profile, %{minutes: in_minutes,
+                                      run: run,
+                                      idle: idle} = opts)
+  when is_boolean(in_minutes) and is_integer(run) and is_integer(idle) do
     GenServer.call(Control, {:change_profile_msg, name, profile, opts})
   end
 
