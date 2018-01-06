@@ -52,7 +52,9 @@ dsDev::dsDev(mcrDevAddr_t &addr, bool power) : mcrDev(addr) {
           addr[0],                    // byte 0: family code
           addr[1], addr[2], addr[3],  // byte 1-3: serial number
           addr[4], addr[5], addr[6]); // byte 4-6: serial number
-  setID(buff);
+
+  mcrDevID_t dev_id = mcrDevID(buff);
+  setID(dev_id);
   // always calculate the crc8 and tack onto the end of the address
   // reminder the crc8 is of the first seven bytes
   //_addr[_crc_byte] = OneWire::crc8(_addr, _addr_len - 1);

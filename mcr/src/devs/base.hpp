@@ -75,7 +75,8 @@ public:
 
   // updaters
   void justSeen();
-  void setID(char *id);
+  // void setID(char *id);
+  void setID(mcrDevID_t &new_id);
   void setReading(Reading_t *reading);
   void setDesc(const char *desc);
 

@@ -42,22 +42,11 @@ const uint8_t mcrDevID::max_len() { return _max_len; };
 mcrDevID::operator char *() { return _id; };
 
 bool mcrDevID::operator==(mcrDevID_t &rhs) {
-  // logDateTime(__PRETTY_FUNCTION__);
-  // log("comparing ");
-  // log(_id);
-  // log(" to ");
-  // log(rhs._id);
 
   auto rc = false;
   if (strncmp(_id, rhs._id, _max_len) == 0) {
     rc = true;
   }
-
-  // if (rc) {
-  //   log(" true", true);
-  // } else {
-  //   log(" false", true);
-  // }
 
   return rc;
 }
@@ -71,10 +60,10 @@ bool mcrDevID::operator==(char *rhs) {
   return rc;
 };
 
-mcrDevID_t &mcrDevID::operator=(const char *id) {
-  initAndCopy(id);
-  return *this;
-};
+// mcrDevID_t &mcrDevID::operator=(const char *id) {
+//   initAndCopy(id);
+//   return *this;
+// };
 
 void mcrDevID::initAndCopy(const char *id) {
   _id[0] = 0x00;
@@ -84,7 +73,7 @@ void mcrDevID::initAndCopy(const char *id) {
 const char *mcrDevID::asString() { return _id; }
 
 void mcrDevID::debug(bool newline) {
-  log("mcrDevID_t id: ");
+  log("mcrDevID_t ");
   log(_id, newline);
 }
 

@@ -50,7 +50,7 @@ uint8_t mcrCmd::state() { return _state; }
 uint8_t mcrCmd::mask() { return _mask; }
 time_t mcrCmd::latency() { return _latency; }
 mcrRefID_t &mcrCmd::refID() { return _refid; }
-const uint8_t mcrCmd::size() { return sizeof(mcrCmd); }
+const uint8_t mcrCmd::size() { return sizeof(mcrCmd_t); }
 
 void mcrCmd::debug(bool newline) {
   log("mcrCmd_t ");

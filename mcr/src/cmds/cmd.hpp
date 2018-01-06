@@ -39,7 +39,6 @@ typedef class mcrCmd mcrCmd_t;
 
 class mcrCmd {
 private:
-  static const uint8_t _max_len = 30;
   mcrDevID_t _dev_id;
   uint8_t _state = 0x00;
   uint8_t _mask = 0x00;

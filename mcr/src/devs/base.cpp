@@ -58,7 +58,8 @@ bool mcrDev::operator==(mcrDevID_t &rhs) { return (_id == rhs); };
 
 void mcrDev::justSeen() { _last_seen = now(); }
 
-void mcrDev::setID(char *id) { _id = id; }
+// void mcrDev::setID(char *id) { _id = id; }
+void mcrDev::setID(mcrDevID_t &new_id) { _id = new_id; }
 
 // updaters
 void mcrDev::setReading(Reading_t *reading) {

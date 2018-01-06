@@ -34,7 +34,7 @@ typedef class mcrDevAddr mcrDevAddr_t;
 class mcrDevAddr {
 private:
   static const uint8_t _max_len = 10;
-  uint8_t _addr[_max_len] = {0x00};
+  uint8_t _addr[_max_len + 1] = {0x00};
   uint8_t _len = 0;
 
   void initAndCopy(uint8_t *addr, uint8_t len);

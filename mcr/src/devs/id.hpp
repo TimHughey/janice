@@ -55,7 +55,7 @@ public:
 
   // copy constructor
   // mcrDevID_t &operator=(mcrDevID_t dev_id);
-  mcrDevID_t &operator=(const char *id);
+  // mcrDevID_t &operator=(const char *id);
 
   const char *asString();
   void debug(bool newline = false);

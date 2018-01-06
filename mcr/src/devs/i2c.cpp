@@ -28,8 +28,8 @@
 
 #include "../include/readings.hpp"
 #include "../misc/util.hpp"
-#include "i2c.hpp"
 #include "base.hpp"
+#include "i2c.hpp"
 
 const char *i2cDev::i2cDevDesc(uint8_t addr) {
   switch (addr) {
@@ -62,7 +62,9 @@ i2cDev::i2cDev(mcrDevAddr_t &addr, bool use_multiplexer, uint8_t bus)
   //    format of id: i2c/mac_address/bus/desc
   //        max len: 30 bytes (id + string terminator)
   sprintf(buff, "i2c/%s.%02x.%s", mcrUtil::macAddress(), this->bus(), desc());
-  setID(buff);
+
+  mcrDevID_t new_id = mcrDevID(buff);
+  setID(new_id);
 };
 
 uint8_t i2cDev::devAddr() { return firstAddressByte(); };
