@@ -262,8 +262,7 @@ void mcrUtil::printLogAsHex(uint8_t value, bool newline) {
 
 void mcrUtil::printLogContinued() {
   Serial.print("\n");
-  printIndent(22);
-  Serial.print(".. ");
+  printIndent(24);
 }
 
 void mcrUtil::printElapsedMicros(elapsedMicros e, bool newline) {

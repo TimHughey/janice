@@ -59,15 +59,8 @@ void mcrCmd::debug(bool newline) {
   logAsBinary(_mask);
   log(" state: ");
   logAsBinary(_state);
-  log("latency: ");
+  log(" latency: ");
   logElapsedMicros(latency(), newline);
 }
-
-// void mcrCmd::printLog(bool newline) {
-//   log("mcrCmd_t ");
-//   _dev_id.debug();
-//   log(" latency: ");
-//   mcrUtil::printElapsedMicros(latency(), newline);
-// }
 
 #endif // __cplusplus

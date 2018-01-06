@@ -61,7 +61,6 @@ public:
   static const uint8_t size();
 
   void debug(bool newline = false);
-  // void printLog(bool newline = false);
 };
 
 #endif // __cplusplus

@@ -512,7 +512,7 @@ bool mcrEngine::popCmd(mcrCmd_t *cmd) {
   rc = _cmd_q->pop(cmd);
 
   if (debugMode || cmdLogMode) {
-    log(" popped: ");
+    logContinued();
     cmd->debug(true);
   }
 
@@ -529,8 +529,8 @@ bool mcrEngine::pushCmd(mcrCmd_t *cmd) {
       logDateTime(__PRETTY_FUNCTION__);
       log("CMD qdepth: ");
       log(_cmd_q->nbRecs());
-      log(" pushed ");
 
+      logContinued();
       cmd->debug(true);
     }
   }
@@ -560,7 +560,8 @@ bool mcrEngine::popPendingCmdAck(mcrCmd_t *cmd) {
       logDateTime(__PRETTY_FUNCTION__);
       log("CMDACK qdepth: ");
       log(recs);
-      log(" popped: ");
+
+      logContinued();
       cmd->debug(true);
     }
   }
@@ -575,7 +576,10 @@ bool mcrEngine::pushPendingCmdAck(mcrCmd_t *cmd) {
 
     if (debugMode || cmdLogMode) {
       logDateTime(__PRETTY_FUNCTION__);
-      log("CMDACK pushed: ");
+      log("CMDACK qdepth: ");
+      log(_ack_q->nbRecs());
+
+      logContinued();
       cmd->debug(true);
     }
 

@@ -5,19 +5,18 @@
 -I/Users/thughey/.platformio/packages/framework-arduinosam/system/samd/CMSIS-Atmel/CMSIS/Device/ATMEL
 -I/Users/thughey/.platformio/packages/framework-arduinosam/variants/feather_m0
 -I/Users/thughey/devel/mercurial/mcr/src
--I/Users/thughey/devel/mercurial/mcr/include
 -I/Users/thughey/devel/mercurial/mcr/.piolibdeps/Adafruit Arduino Zero ASF Core Library_ID1849
 -I/Users/thughey/devel/mercurial/mcr/.piolibdeps/Adafruit SleepyDog Library_ID401
 -I/Users/thughey/devel/mercurial/mcr/.piolibdeps/Adafruit SleepyDog Library_ID401/utility
--I/Users/thughey/.platformio/packages/framework-arduinosam/libraries/__cores__/adafruit/SPI
 -I/Users/thughey/devel/mercurial/mcr/.piolibdeps/Queue_ID1566/src
 -I/Users/thughey/devel/mercurial/mcr/.piolibdeps/OneWire_ID1
+-I/Users/thughey/.platformio/packages/framework-arduinosam/libraries/__cores__/adafruit/Wire
 -I/Users/thughey/devel/mercurial/mcr/.piolibdeps/elapsedMillis_ID1002
--I/Users/thughey/devel/mercurial/mcr/.piolibdeps/ArduinoJson_ID64/src
 -I/Users/thughey/devel/mercurial/mcr/.piolibdeps/Time_ID44
 -I/Users/thughey/devel/mercurial/mcr/.piolibdeps/PubSubClient_ID89/src
+-I/Users/thughey/devel/mercurial/mcr/.piolibdeps/ArduinoJson_ID64/src
+-I/Users/thughey/.platformio/packages/framework-arduinosam/libraries/__cores__/adafruit/SPI
 -I/Users/thughey/devel/mercurial/mcr/.piolibdeps/WiFi101_ID299/src
--I/Users/thughey/.platformio/packages/framework-arduinosam/libraries/__cores__/adafruit/Wire
 -I/Users/thughey/devel/mercurial/mcr/.piolibdeps/Adafruit Arduino Zero ASF Core Library_ID1849
 -I/Users/thughey/devel/mercurial/mcr/.piolibdeps/Adafruit SleepyDog Library_ID401
 -I/Users/thughey/devel/mercurial/mcr/.piolibdeps/Adafruit SleepyDog Library_ID401/utility
@@ -54,7 +53,7 @@
 -DARDUINO_SAMD_FEATHER_M0
 -D__SAMD21G18A__
 -DMCR_REV=e3daf83
--DGIT_REV=623600a
+-DGIT_REV=a07f55a
 -DMQTT_MAX_PACKET_SIZE=1024
 -DPROD_BUILD
 -DARDUINO_SAMD_ZERO
