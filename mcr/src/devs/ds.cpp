@@ -161,10 +161,10 @@ bool dsDev::validAddress(mcrDevAddr_t *addr) {
 }
 
 void dsDev::debug(bool newline) {
-  log("dsDev_t id: ");
-  log(id(), newline);
-  // log(" ");
-  // addr().debug(newline);
+  log("dsDev_t: ");
+  id().debug();
+  log(" ");
+  addr().debug(newline);
 }
 
 #endif

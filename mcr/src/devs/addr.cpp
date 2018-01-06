@@ -75,7 +75,7 @@ void mcrDevAddr::initAndCopy(uint8_t *addr, uint8_t len) {
 void mcrDevAddr::debug(bool newline) {
   char buff[5] = {0x00};
 
-  log("mcrDevAddr_t addr: ");
+  log("mcrDevAddr_t ");
 
   for (uint8_t i = 0; i < _len; i++) {
     sprintf(buff, "%02x", _addr[i]);
