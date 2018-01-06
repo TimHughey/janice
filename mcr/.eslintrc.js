@@ -1,1 +1,0 @@
-mcp/assets/.eslintrc.js
