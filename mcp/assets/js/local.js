@@ -40,10 +40,12 @@ function prettyUs(data, type, row) {
   return '-';
 }
 
-function pageReady(jQuery) {
-  jQuery.fn.dataTable.ext.errMode = 'throw';
+/* eslint-disable no-console */
+function dataTableErrorHandler(settings, techNote, message) {
+  console.log(settings, techNote, message);
+}
 
-  // Code to run when the document is ready.
+function createSwitchesTable() {
   jQuery('#switchesTable').DataTable({
     dom: 'Bfrtip',
     ajax: 'mcp/api/detail/switches',
@@ -106,14 +108,16 @@ function pageReady(jQuery) {
         dt.button(0).text('Refreshed');
         dt.button(0).disable();
         setTimeout(() => {
-          const dt = $('#switchesTable').DataTable();
+          $('#switchesTable').DataTable();
           dt.button(0).text('Refresh');
           dt.button(0).enable();
-        }, 10000);
+        }, 1000);
       },
     }],
   });
+}
 
+function createSensorsTable() {
   jQuery('#sensorsTable').DataTable({
     dom: 'Bfrtip',
     ajax: 'mcp/api/detail/sensors',
@@ -170,12 +174,47 @@ function pageReady(jQuery) {
         dt.button(0).text('Refreshed');
         dt.button(0).disable();
         setTimeout(() => {
-          const dt = $('#sensorsTable').DataTable();
+          $('#sensorsTable').DataTable();
           dt.button(0).text('Refresh');
           dt.button(0).enable();
-        }, 10000);
+        }, 1000);
       },
     }],
+  });
+}
+
+function pageReady(jQuery) {
+  /* eslint-disable no-param-reassign */
+  jQuery.fn.dataTable.ext.errMode = dataTableErrorHandler;
+  /* eslint-enable no-param-reassign */
+
+  createSwitchesTable();
+  createSensorsTable();
+
+  jQuery('#mixtankProfile,dropdown-item').on('click', (event) => {
+    const parent = event.target.parentNode;
+    const mixtankName = parent.attributes.mixtankName.value;
+    const newProfile = event.target.text;
+    console.log('via div ->', mixtankName, newProfile);
+    console.log(parent);
+
+    jQuery.getJSON('mcp/api/mixtank', {
+      action: 'change_profile',
+      mixtank: mixtankName,
+      profile: newProfile,
+    }).done((data) => {
+      console.log(data);
+    });
+
+    jQuery('#dropdownMenuButton').text(newProfile);
+  });
+
+  jQuery('a[href="#switchesTab"]').on('shown.bs.tab', (event) => {
+    $('#switchesTable').DataTable().ajax.reload();
+  });
+
+  jQuery('a[href="#sensorsTab"]').on('shown.bs.tab', (event) => {
+    $('#sensorsTable').DataTable().ajax.reload();
   });
 }
 
@@ -186,40 +225,6 @@ function pageFullyLoaded() {
   }, 10);
 }
 
-// var dt = require( 'datatables.net' )();
-// $().DataTable();
-
 jQuery(document).ready(pageReady);
 
 jQuery(window).on('load', pageFullyLoaded);
-
-jQuery('a[href="#switchesTab"]').on('shown.bs.tab', (event) => {
-  $('#switchesTable').DataTable().ajax.reload();
-});
-
-jQuery('a[href="#sensorsTab"]').on('shown.bs.tab', (event) => {
-  $('#sensorsTable').DataTable().ajax.reload();
-});
-
-// $('a[data-toggle="tab"]').on('show.bs.tab', (e) => {
-//   console.log('data toggle');
-//   console.log($(this).attr('id'));
-//
-//   if ($(this).attr('id') === 'nav-switches-tab') {
-//     $('#switchesTable').DataTable().ajax.reload();
-//   }
-//
-//   if ($(this).attr('id') === 'nav-sensors-tab') {
-//     $('#sensorsTable').DataTable().ajax.reload();
-//   }
-//
-//   // jQuery(e.target.href).DataTable().ajax.reload();
-//   // console.log(e.target); // newly activated tab
-//   // console.log(e.relatedTarget); // previous active tab
-// });
-
-// DEPRECATED -- left as a future example
-//   jQuery.get( "mcp/detail/nodevice", function( data ) {
-//     $( "#noDeviceCard" ).html( data );
-//   });
-// });

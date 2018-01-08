@@ -47,8 +47,9 @@ defmodule Web.Router do
 
   scope "/mercurial/mcp/api", Web do
     pipe_through [:api]
-    resources "/detail/:type", McpDetailController,
-      only: [:index, :show]
+    resources "/detail/:type", McpDetailController, only: [:index, :show]
+    get "/mixtank", MixtankController, :manage
+    get "/mixtank/all", MixtankController, :all
   end
 
   scope "/mercurial", Web do
