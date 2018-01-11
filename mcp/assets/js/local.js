@@ -201,11 +201,6 @@ function createSensorsTable() {
           selected: true,
         }).data()[0];
 
-          // const {
-          //   friendly_name: name,
-          //   id,
-          // } = sensorTable.row(row).data();
-
           // console.log(
           //   'sensorDeleteButton action:', e, dt, node,
           //   config, name, row,
@@ -213,17 +208,27 @@ function createSensorsTable() {
 
         dt.button(0).processing(true);
         jQuery.ajax({
-          url: 'mcp/api/sensor/manage',
-          // type: 'DELETE',
-          data: {
-            action: 'delete',
-            name,
-            id,
+          url: `mcp/api/sensor/${id}`,
+          type: 'DELETE',
+          // data: {
+          //   // action: 'delete',
+          //   // name,
+          //   id,
+          // },
+          beforeSend(xhr) {
+            // send the CSRF token included as a meta on the HTML page
+            const token = jQuery("meta[name='csrf-token']").attr('content');
+            xhr.setRequestHeader('X-CSRF-Token', token);
+          },
+          error(xhr, status, error) {
+            console.log('error xhr:', xhr);
+            displayStatus(`Error deleting ${name}`);
+          },
+          success(xhr, status) {
+            displayStatus(`Deleted sensor ${name}`);
           },
         });
-        dt.ajax.reload(() => {
-          displayStatus(`Deleted sensor ${name}`);
-        }, false);
+        dt.ajax.reload();
         dt.button(0).processing(false);
       },
     },
@@ -269,7 +274,11 @@ function pageReady(jQuery) {
       mixtank: mixtankName,
       profile: newProfile,
     }).done((data) => {
-      displayStatus(`Activated profile ${data.active_profile}`);
+      displayStatus(`
+                Activated profile $ {
+                  data.active_profile
+                }
+                `);
       // console.log(data);
     });
 

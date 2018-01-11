@@ -64,6 +64,10 @@ def all(:everything) do
     preload: [:temperature, :relhum]) |> all(timeout: 100)
 end
 
+def delete(id) when is_integer(id) do
+  from(s in Sensor, where: s.id == ^id) |> delete_all()
+end
+
 def delete(name) when is_binary(name) do
   from(s in Sensor, where: s.name == ^name) |> delete_all()
 end

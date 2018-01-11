@@ -5,13 +5,12 @@ defmodule Web.SensorController do
   use Timex
   use Web, :controller
 
-  def manage(conn, %{"action" => "delete", "name" => name} = params) do
-    Logger.info fn -> inspect(params) end
+  def delete(conn, %{"id" => id}) do
+    Logger.info fn -> ~s(DELETE #{conn.request_path}) end
 
-    Sensor.delete(name)
+    {rows, _} = Sensor.delete(String.to_integer(id))
 
-    conn
-    |> put_resp_content_type("application/json")
-    |> send_resp(200, "{}")
+    json(conn, %{rows: rows})
   end
+
 end

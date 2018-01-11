@@ -353,7 +353,7 @@ defmodule Dutycycle.Control do
 
   defp stop_task(%{task: nil}, _opts), do: %{task: nil}
   defp stop_task(%{task: %Task{} = task}, _opts) do
-    Logger.info fn -> "task stopped #{inspect(task)}" end
+    Logger.info fn -> "stopped #{inspect(task.ref)}" end
     Task.shutdown(task)
     %{task: nil}
   end
