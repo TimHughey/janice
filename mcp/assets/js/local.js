@@ -210,11 +210,6 @@ function createSensorsTable() {
         jQuery.ajax({
           url: `mcp/api/sensor/${id}`,
           type: 'DELETE',
-          // data: {
-          //   // action: 'delete',
-          //   // name,
-          //   id,
-          // },
           beforeSend(xhr) {
             // send the CSRF token included as a meta on the HTML page
             const token = jQuery("meta[name='csrf-token']").attr('content');
@@ -269,16 +264,23 @@ function pageReady(jQuery) {
     // console.log('via div ->', mixtankName, newProfile);
     // console.log(parent);
 
-    jQuery.getJSON('mcp/api/mixtank', {
-      action: 'change_profile',
-      mixtank: mixtankName,
-      profile: newProfile,
+    jQuery.ajax({
+      url: `mcp/api/mixtank/${mixtankName}`,
+      type: 'PATCH',
+      data: {
+        newprofile: newProfile,
+      },
+      beforeSend(xhr) {
+        // send the CSRF token included as a meta on the HTML page
+        const token = jQuery("meta[name='csrf-token']").attr('content');
+        xhr.setRequestHeader('X-CSRF-Token', token);
+      },
+      error(xhr, status, error) {
+        console.log('error xhr:', xhr);
+        displayStatus(`Error activating profile ${newProfile}`);
+      },
     }).done((data) => {
-      displayStatus(`
-                Activated profile $ {
-                  data.active_profile
-                }
-                `);
+      displayStatus(`Activated profile ${data.active_profile}`);
       // console.log(data);
     });
 

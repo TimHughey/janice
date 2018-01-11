@@ -5,22 +5,18 @@ defmodule Web.MixtankController do
   use Timex
   use Web, :controller
 
-  def manage(conn, %{"action" => "change_profile"} = params) do
-    Logger.info fn -> "#{inspect(params)}" end
-    mixtank = Map.get(params, "mixtank")
-    profile = Map.get(params, "profile")
+  def update(%{method: "PATCH"} = conn, %{"id" => mixtank, "newprofile" => profile} = params)
+  when is_binary(mixtank) do
+    Logger.info fn -> ~s(#{conn.method} #{conn.request_path}) end
+
     Mixtank.Control.activate_profile(mixtank, profile)
     active_profile = Mixtank.active_profile(mixtank, :name)
 
-    conn
-    |> put_resp_content_type("application/json")
-    |> send_resp(200, Poison.encode!(%{active_profile: active_profile}))
-
-    # render conn, "index.json", params
+    json(conn, %{active_profile: active_profile})
   end
 
-  def all(conn, params) do
-    Logger.info fn -> "#{inspect(params)}" end
+  def index(conn, _params) do
+    Logger.info fn -> ~s(INDEX #{conn.request_path}) end
 
     all_mts = Mixtank.all()
 
@@ -33,6 +29,5 @@ defmodule Web.MixtankController do
     end
 
     render conn, "all.json", %{all: mts}
-
   end
 end
