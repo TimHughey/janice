@@ -11,7 +11,7 @@ use Ecto.Schema
 #import Application, only: [get_env: 2]
 import Ecto.Changeset, only: [change: 2]
 import Ecto.Query, only: [from: 2]
-import Repo, only: [all: 2, insert!: 1, update!: 1, one: 1]
+import Repo, only: [all: 2, delete_all: 1, insert!: 1, update!: 1, one: 1]
 
 alias Fact.Fahrenheit
 alias Fact.Celsius
@@ -62,6 +62,10 @@ end
 def all(:everything) do
   from(s in Sensor, order_by: [asc: s.name],
     preload: [:temperature, :relhum]) |> all(timeout: 100)
+end
+
+def delete(name) when is_binary(name) do
+  from(s in Sensor, where: s.name == ^name) |> delete_all()
 end
 
 @doc ~S"""

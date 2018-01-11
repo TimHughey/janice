@@ -2,7 +2,7 @@
 
 exports.files = {
   javascripts: {
-    joinTo: 'js/app.js'
+    joinTo: 'js/app.js',
     // {}
     // "js/app.js": /^(js)/,
     // "js/vendor.js": /^(vendor|deps|node_modules).*/
@@ -18,10 +18,12 @@ exports.files = {
     // ] }
   },
   stylesheets: {
-    joinTo: "css/app.css",
+    joinTo: 'css/app.css',
     // concat app.css last
-    order: {after: [ "priv/static/css/app.scss" ]}
-  }
+    order: {
+      after: ['priv/static/css/app.scss'],
+    },
+  },
   // templates: {joinTo: "js/app.js"}
 };
 
@@ -29,51 +31,57 @@ exports.conventions = {
   // This option sets where we should place non-css and non-js assets in. By
   // default, we set this to "/assets/static". Files in this directory will
   // be copied to `paths.public`, which is "priv/static" by default.
-  assets: /^(static)/
+  assets: /^(static)/,
 };
 
 // Phoenix paths configuration
 exports.paths = {
   // Dependencies and current project directories to watch
   watched: [
-    "static", "css", "js", "vendor"
+    'static', 'css', 'js', 'vendor',
   ],
   // Where to compile files to
-  public: "../priv/static"
+  public: '../priv/static',
 };
 
 // Configure your plugins
 exports.plugins = {
   babel: {
-    presets: [ "latest", "stage-0" ]
+    presets: ['latest', 'stage-0'],
     // Do not use ES6 compiler in vendor code ignore: [ /vendor/ ]
   },
   pleeease: {
     sass: true,
-    autoprefixer: {browsers: [ '> 1%' ]}
+    autoprefixer: {
+      browsers: ['> 1%'],
+    },
   },
   copycat: {
-    "images": [
-      "static/images", "node_modules/datatables.net-dt/images"
+    images: [
+      'static/images', 'node_modules/datatables.net-dt/images',
     ],
-    onlyChanged: true
+    onlyChanged: true,
   },
   sass: {
     options: {
       // tell sass-brunch where to look for files to @import
-      includePaths: [ "node_modules/bootstrap/scss",
+      includePaths: ['node_modules/bootstrap/scss',
         'node_modules/datatables.net-dt/css',
         'node_modules/datatables.net-buttons-dt/css',
         'node_modules/datatables.net-scroller-dt/css',
-        'node_modules/datatables.net-select-dt/css'
+        'node_modules/datatables.net-select-dt/css',
       ],
       // minimum precision required by bootstrap
-      precision: 8
-    }
-  }
+      precision: 8,
+    },
+  },
 };
 
-exports.modules = {autoRequire: {"js/app.js": [ "js/app" ]}};
+exports.modules = {
+  autoRequire: {
+    'js/app.js': ['js/app'],
+  },
+};
 
 exports.npm = {
   enabled: true,
@@ -86,6 +94,7 @@ exports.npm = {
     Popper: 'popper.js',
     bootstrap: 'bootstrap',
     dt: 'datatables.net',
-    prettyMs: 'pretty-ms'
-  }
+    buttons: 'datatables.net-buttons',
+    prettyMs: 'pretty-ms',
+  },
 };

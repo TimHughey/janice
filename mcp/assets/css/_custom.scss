@@ -120,20 +120,6 @@ hr {
   font-size: 20px;
 }
 
-.alias-text {
-  font-size: 150%;
-  font-weight: bold;
-  vertical-align: middle;
-}
-
-.alias-count {
-  font-size: 112%;
-  font-weight: bolder;
-  color: #f84324;
-  vertical-align: middle;
-  align-content: center;
-}
-
 // .nav-link {
 //   font-size: 125%;
 //
@@ -168,19 +154,4 @@ hr {
 
 .mixtank-wrapper {
   height: 50vh;
-}
-
-.section {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-}
-
-.half {
-  background: #f9f9f9;
-  height: 50%;
-  width: 100%;
-  margin: 15px 0;
 }

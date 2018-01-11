@@ -75,6 +75,13 @@ defmodule Mixtank do
                                    "exist, can't activate profile" end
   end
 
+  def active_profile(name, :name) do
+    active_profile(name)
+    |> Map.get(:profiles)
+    |> hd()
+    |> Map.get(:name)
+  end
+
   def active_profile(name) do
     from(mt in Mixtank,
       join: p in assoc(mt, :profiles),

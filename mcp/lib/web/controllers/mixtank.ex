@@ -10,7 +10,13 @@ defmodule Web.MixtankController do
     mixtank = Map.get(params, "mixtank")
     profile = Map.get(params, "profile")
     Mixtank.Control.activate_profile(mixtank, profile)
-    render conn, "index.json", params
+    active_profile = Mixtank.active_profile(mixtank, :name)
+
+    conn
+    |> put_resp_content_type("application/json")
+    |> send_resp(200, Poison.encode!(%{active_profile: active_profile}))
+
+    # render conn, "index.json", params
   end
 
   def all(conn, params) do

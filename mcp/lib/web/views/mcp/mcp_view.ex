@@ -10,11 +10,9 @@ defmodule Web.McpView do
 
   def dropdown_items(profiles) do
     items = for p <- profiles do
-      ~S(<a class="dropdown-item" href="#">) <>
-      "#{p}" <>
-      ~S(</a>)
+      link(p, to: "#", class: "dropdown-item") |> safe_to_string()
     end
 
-    Enum.join(items, "\n")
+    Enum.join(items, "\n") |> raw()
   end
 end

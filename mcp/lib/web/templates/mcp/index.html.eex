@@ -2,11 +2,12 @@
 
 <div class="container main-wrapper">
 
-<div class="row" id="mcpSubsystemsRow">
-  <div class="col text-center">
-    <span class="alias-text">Subsystems</span>
-  </div>
+<div class="row align-items-center" id="mcpSubsystemsRow">
+  <div class="col-4"></div>
+  <div class="col-4 text-center h3 px-2">Subsystems</div>
+  <div class="col-4"></div>
 </div>
+
 <div class="row" id="mcpSubsystemsRow">
   <div class="col-2">
   <div class="nav flex-column nav-pills" id="mcpSubsystems" role="tablist" aria-orientation="vertical">
@@ -65,6 +66,9 @@
           <div class="col-3">
             <h5>Profile</h5>
           </div>
+          <div class="col-3">
+            <h5>Status</h5>
+          </div>
         </div>
 
         <%= for m <- @mixtanks do %>
@@ -78,14 +82,11 @@
               <%= m.active %>
             </button>
             <div class="dropdown-menu" mixtankName="reefwater" id="mixtankProfile" aria-labelledby="dropdownMenuButton">
-              <%= for p <- m.profiles do %>
-                <a class="dropdown-item" href="#"><%= p %></a>
-              <% end %>
-              <!-- <a class="dropdown-item" href="#">off</a>
-              <a class="dropdown-item" href="#">on</a>
-              <a class="dropdown-item" href="#">change</a>
-              <a class="dropdown-item" href="#">mix</a> -->
+              <%= dropdown_items(m.profiles) %>
             </div>
+          </div>
+          <div class="col-3">
+            <%= m.state %>
           </div>
         </div>
       <% end %>
@@ -94,6 +95,19 @@
   </div>
 </div>
 </div>
+
+<div class="row" id="generalPurposeFormID">
+  <div class="col-2"></div>
+  <div class="col-10">
+    <div class="input-group mb-3">
+      <div class="input-group-prepend">
+        <span class="input-group-text" id="generalInputLabel"></span>
+      </div>
+      <input type="text" id="generalInputBox" class="form-control" placeholder="General Input" aria-label="General Input" aria-describedby="generalInputLabel">
+    </div>
+  </div>
+</div>
+
 </div>
 
 <%= render_shared "footer.html", assigns %>

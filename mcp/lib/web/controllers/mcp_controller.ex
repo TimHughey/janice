@@ -15,8 +15,9 @@ defmodule Web.McpController do
       end
 
       active = for p <- mt.profiles, p.active, do: p.name
+      state = mt.state.state
 
-      %{mixtank: mt.name, profiles: profiles, active: active}
+      %{mixtank: mt.name, profiles: profiles, active: active, state: state}
     end
 
     render conn, "index.html",

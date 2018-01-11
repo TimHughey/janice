@@ -3,6 +3,13 @@ defmodule Seed.Sensors do
   """
 
   def sensors(env) when env in [:dev, :test] do
+
+    s = for i <- 10..20 do
+      %Sensor{name: "test relhum #{i}",
+               device: "2ic/relhum_device#{i}",
+               type: "relhum"}
+    end
+
     [%Sensor{name: "test temperature 1",
               device: "ds/test_device1",
               type: "temp"},
@@ -20,7 +27,13 @@ defmodule Seed.Sensors do
               type: "relhum"},
      %Sensor{name: "test relhum 3",
               device: "i2c/relhum_device3",
-              type: "relhum"}] end
+              type: "relhum"},
+     %Sensor{name: "test relhum 4",
+              device: "i2c/relhum_device4",
+              type: "relhum"},
+     %Sensor{name: "test relhum 5",
+              device: "i2c/relhum_device5",
+              type: "relhum"}] ++ s end
 
   def sensors(:prod) do
     [%Sensor{name: "attic",

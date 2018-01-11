@@ -32,6 +32,8 @@
         <%= if get_flash(@conn, "info") do %>
           <span class="alert alert-info" role="alert"><%= get_flash(@conn, "info") %></span>
         <% end %>
+
+        <span class="alert alert-success mx-1" role="alert" style="display:none;" id="navbarAlert"></span>
       </span>
       <span>
         <%= if @current_user do
