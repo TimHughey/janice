@@ -59,7 +59,7 @@ int debugMode = 0;
 void setup() {
   WiFi.setPins(8, 7, 4, 2);
   Serial.begin(115200);
-  while (!Serial && (millis() < 15000)) {
+  while (!Serial && (millis() < 1000)) {
     ;
   }
 
@@ -80,6 +80,8 @@ void setup() {
     log(WiFi.firmwareVersion());
     log(") connecting to wpa ssid: ");
     log(ssid);
+
+    Watchdog.enable(3000);
 
     while (wifiStatus != WL_CONNECTED) {
       wifiStatus = WiFi.begin(ssid, pass);
