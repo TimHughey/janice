@@ -104,7 +104,7 @@ def external_update(%{device: device} = r) do
       if sw == nil do
         %Switch{device: device,
                 states: create_states(r),
-                cmds: create_cmds(r)} |> insert(sw)
+                cmds: create_cmds(r)} |> insert()
       else
         %{r: r, sw: sw} |> update_from_reading()
       end

@@ -14,7 +14,7 @@ defmodule Fact.StartupAnnouncement do
     tag :application, default: "mercurial"
     tag :metric, default: "startup_announcement"
     tag :env, default: "#{Mix.env}"
-    tag :host, default: "unknown-host" 
+    tag :host, default: "unknown-host"
     tag :vsn, default: "unknown-vsn"
 
     field :val

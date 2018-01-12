@@ -414,6 +414,11 @@ uint8_t mcrI2c::crcSHT31(const uint8_t *data, uint8_t len) {
 bool mcrI2c::detectDev(mcrDevAddr_t &addr, bool use_multiplexer, uint8_t bus) {
   bool rc = false;
 
+  // if the sda pin is low then i2c is disabled
+  if (digitalRead(SDA) == false) {
+    return rc;
+  }
+
   Wire.beginTransmission(addr.firstAddressByte());
 
   // handle special cases where certain i2c devices
