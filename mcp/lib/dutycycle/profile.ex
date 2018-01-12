@@ -43,7 +43,7 @@ defmodule Dutycycle.Profile do
       update_all([])
 
     (rows_updated > 0) && Logger.info fn -> "dutycycle [#{dc.name}] " <>
-                      "profile [#{profile}]] updated" end
+                      "profile [#{profile}] updated" end
 
     from(dp in Dutycycle.Profile,
           where: dp.dutycycle_id == ^dc.id,
