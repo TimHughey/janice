@@ -45,6 +45,7 @@ private:
   elapsedMicros _latency = 0;
   time_t _mtime = now();
   mcrRefID_t _refid; // example: 2d931510-d99f-494a-8c67-87feb05e1594
+  bool _ack = true;
 
 public:
   mcrCmd() {}
@@ -57,6 +58,8 @@ public:
   uint8_t mask();
   time_t latency();
   mcrRefID_t &refID();
+  void ack(bool ack);
+  const bool ack();
 
   static const uint8_t size();
 

@@ -51,6 +51,8 @@ uint8_t mcrCmd::mask() { return _mask; }
 time_t mcrCmd::latency() { return _latency; }
 mcrRefID_t &mcrCmd::refID() { return _refid; }
 const uint8_t mcrCmd::size() { return sizeof(mcrCmd_t); }
+void mcrCmd::ack(bool ack) { _ack = ack; }
+const bool mcrCmd::ack() { return _ack; }
 
 void mcrCmd::debug(bool newline) {
   log("mcrCmd_t:: ");
@@ -59,6 +61,7 @@ void mcrCmd::debug(bool newline) {
   logAsBinary(_mask);
   log(" state: ");
   logAsBinary(_state);
+  (_ack) ? log(" ACK") : log(" NOACK");
   log(" latency: ");
   logElapsedMicros(latency(), newline);
 }

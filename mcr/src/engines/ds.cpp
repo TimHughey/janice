@@ -745,6 +745,7 @@ bool mcrDS::cmdCallback(JsonObject &root) {
   mcrDevID_t sw(switch_id);
   const JsonVariant &variant = root.get<JsonVariant>("states");
   const JsonArray &states = variant.as<JsonArray>();
+  const JsonVariant ack_flag = root["ack"];
   uint8_t mask = 0x00;
   uint8_t tobe_state = 0x00;
 
@@ -774,6 +775,12 @@ bool mcrDS::cmdCallback(JsonObject &root) {
   // since this is a static member function to comply with the implementation
   // of the MQTT client the cmd will pushed directly to the cmd_queue
   mcrCmd_t cmd(sw, mask, tobe_state, refid);
+
+  // set the ack flag if it's in the json; if not defaults to true
+  if (ack_flag.success()) {
+    cmd.ack(ack_flag.as<bool>());
+  }
+
   rc = cmd_queue.push(&cmd);
 
   // logDateTime(__PRETTY_FUNCTION__);
@@ -784,11 +791,6 @@ bool mcrDS::cmdCallback(JsonObject &root) {
   return rc;
 }
 
-// dsDev_t *mcrDS::dsDevgetDevice(mcrDevID_t &id) {
-//   mcrDev_t *dev = mcrEngine::getDevice(id);
-//   return (dsDev_t *)dev;
-// }
-//
 dsDev_t *mcrDS::getDeviceByCmd(mcrCmd_t &cmd) {
   if (debugMode) {
     logDateTime(__PRETTY_FUNCTION__);
