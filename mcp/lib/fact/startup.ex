@@ -4,7 +4,7 @@ defmodule Fact.StartupAnnouncement do
   use Instream.Series
   use Timex
 
-  alias Fact.RunMetric
+  alias Fact.StartupAnnouncement
   import(Fact.Influx, only: [write: 2])
 
   series do
@@ -12,9 +12,10 @@ defmodule Fact.StartupAnnouncement do
     measurement "run_metric"
 
     tag :application, default: "mercurial"
-    tag :metric, default: "startup-announcement"
+    tag :metric, default: "startup_announcement"
     tag :env, default: "#{Mix.env}"
-    tag :host, default: "unkown-device"
+    tag :host, default: "unknown-host" 
+    tag :vsn, default: "unknown-vsn"
 
     field :val
   end
@@ -22,10 +23,11 @@ defmodule Fact.StartupAnnouncement do
   def record(opts)
   when is_list(opts) do
     def_mtime = Timex.now() |> Timex.to_unix()
-    f = %RunMetric{}
+    f = %StartupAnnouncement{}
 
     f = set_tag(f, opts, :host)
-    f = set_field(f, opts, :val)
+    f = set_tag(f, opts, :vsn)
+    f = set_field(f, [val: 1], :val)
 
     f = %{f | timestamp: Keyword.get(opts, :mtime, def_mtime)}
     write(f, [precision: :seconds, async: true])

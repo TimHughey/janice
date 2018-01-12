@@ -82,7 +82,7 @@ when is_binary(msg) and is_map(s) do
 
   if Reading.startup?(r) do
     Logger.info("#{r.host} version #{r.version} announced startup")
-    StartupAnnouncement.record(host: r.host, val: r.version)
+    StartupAnnouncement.record(host: r.host, vsn: r.version)
     Control.send_timesync()
   end
 

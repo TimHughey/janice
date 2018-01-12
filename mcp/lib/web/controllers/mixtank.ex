@@ -5,7 +5,7 @@ defmodule Web.MixtankController do
   use Timex
   use Web, :controller
 
-  def update(%{method: "PATCH"} = conn, %{"id" => mixtank, "newprofile" => profile} = params)
+  def update(%{method: "PATCH"} = conn, %{"id" => mixtank, "newprofile" => profile} = _params)
   when is_binary(mixtank) do
     Logger.info fn -> ~s(#{conn.method} #{conn.request_path}) end
 
