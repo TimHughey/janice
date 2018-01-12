@@ -116,9 +116,10 @@ function createSwitchesTable() {
         // );
 
         switchTable.button(0).processing(true);
-        switchTable.ajax.reload();
+        switchTable.ajax.reload(null, false);
         switchTable.button(0).processing(false);
         displayStatus('Switches refreshed');
+        jQuery('#generalPurposeForm').fadeOut('fast');
       },
     },
     {
@@ -142,7 +143,7 @@ function createSwitchesTable() {
 
         const newName = jQuery('#generalInputBox').val();
 
-        switchTable.button(0).processing(true);
+        switchTable.button(1).processing(true);
         jQuery.ajax({
           url: `mcp/api/switch/${id}`,
           type: 'PATCH',
@@ -162,8 +163,9 @@ function createSwitchesTable() {
             displayStatus(`Switch name changed to ${name}`);
           },
         });
-        switchTable.ajax.reload();
-        switchTable.button(0).processing(false);
+        switchTable.ajax.reload(null, false);
+        switchTable.button(1).processing(false);
+        jQuery('#generalPurposeForm').fadeToggle();
       },
     },
     {
@@ -174,15 +176,14 @@ function createSwitchesTable() {
       },
       action(e, dt, node, config) {
         const {
-          friendly_name: name,
-          id,
+          device,
         } = switchTable.rows({
           selected: true,
         }).data()[0];
 
-        switchTable.button(1).processing(true);
+        switchTable.button(2).processing(true);
         jQuery.ajax({
-          url: `mcp/api/switch/${id}`,
+          url: `mcp/api/switch/${encodeURIComponent(device)}`,
           type: 'DELETE',
           beforeSend(xhr) {
             // send the CSRF token included as a meta on the HTML page
@@ -191,14 +192,15 @@ function createSwitchesTable() {
           },
           error(xhr, status, error) {
             console.log('error xhr:', xhr);
-            displayStatus(`Error deleting ${name}`);
+            displayStatus(`Error deleting ${device}`);
           },
           success(xhr, status) {
-            displayStatus(`Deleted switch ${name}`);
+            displayStatus(`Deleted switch ${device}`);
           },
         });
-        switchTable.ajax.reload();
-        switchTable.button(1).processing(false);
+        switchTable.ajax.reload(null, false);
+        switchTable.button(2).processing(false);
+        jQuery('#generalPurposeForm').fadeToggle();
       },
     },
     {
@@ -216,7 +218,6 @@ function createSwitchesTable() {
         }).data()[0];
 
         switchTable.button(3).processing(true);
-        jQuery('#generalInputBox').fadeOut('fast');
 
         jQuery.ajax({
           url: `mcp/api/switch/${id}`,
@@ -237,8 +238,9 @@ function createSwitchesTable() {
             displayStatus(`Toggled switch ${name}`);
           },
         });
-        switchTable.ajax.reload();
+        switchTable.ajax.reload(null, false);
         switchTable.button(3).processing(false);
+        jQuery('#generalPurposeForm').fadeToggle();
       },
     }],
   });
@@ -258,10 +260,6 @@ function createSwitchesTable() {
     // console.log(e, dt, type, indexes);
     const inputBox = jQuery('#generalPurposeForm');
 
-    jQuery('#generalInputBox').attr(
-      'placeholder',
-      'Enter new switch name then click Rename',
-    );
     inputBox.fadeOut('fast');
   });
 }
@@ -365,7 +363,7 @@ function createSensorsTable() {
             displayStatus(`Deleted sensor ${name}`);
           },
         });
-        sensorTable.ajax.reload();
+        sensorTable.ajax.reload(null, false);
         sensorTable.button(0).processing(false);
       },
     },
@@ -430,11 +428,11 @@ function pageReady(jQuery) {
   });
 
   jQuery('a[href="#switchesTab"]').on('shown.bs.tab', (event) => {
-    $('#switchesTable').DataTable().ajax.reload();
+    $('#switchesTable').DataTable().ajax.reload(null, false);
   });
 
   jQuery('a[href="#sensorsTab"]').on('shown.bs.tab', (event) => {
-    $('#sensorsTable').DataTable().ajax.reload();
+    $('#sensorsTable').DataTable().ajax.reload(null, false);
   });
 }
 

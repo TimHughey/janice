@@ -5,10 +5,10 @@ defmodule Web.SwitchController do
   use Timex
   use Web, :controller
 
-  def delete(conn, %{"id" => id}) do
+  def delete(conn, %{"id" => device}) do
     Logger.info fn -> ~s(DELETE #{conn.request_path}) end
 
-    {rows, _} = SwitchState.delete(String.to_integer(id))
+    {rows, _} = Switch.delete(device)
 
     json(conn, %{rows: rows})
   end

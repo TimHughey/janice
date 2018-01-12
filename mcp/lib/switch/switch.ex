@@ -28,7 +28,7 @@ use Ecto.Schema
 import UUID, only: [uuid1: 0]
 import Ecto.Changeset, only: [change: 2]
 import Ecto.Query, only: [from: 2]
-import Repo, only: [all: 2, insert: 1, insert!: 1, one: 1,
+import Repo, only: [all: 2, delete_all: 1, insert: 1, insert!: 1, one: 1,
                     update: 1, update!: 1]
 
 alias Fact.RunMetric
@@ -86,12 +86,23 @@ def all(:everything) do
 end
 
 def all(:devices) do
-  from(sw in Switch, select: sw.device) |> all(timeout: 100)
+  from(sw in Switch, select: sw.device)
+  |> all(timeout: 100)
 end
 
 def all(:names) do
-  from(ss in SwitchState, order_by: [asc: ss.name], select: ss.name) |>
-    all(timeout: 100)
+  from(ss in SwitchState, order_by: [asc: ss.name], select: ss.name)
+  |> all(timeout: 100)
+end
+
+def delete(id) when is_integer(id) do
+  from(s in Switch, where: s.id == ^id)
+  |> delete_all()
+end
+
+def delete(device) when is_binary(device) do
+  from(s in Switch, where: s.device == ^device)
+  |> delete_all()
 end
 
 def external_update(%{device: device} = r) do
@@ -104,9 +115,11 @@ def external_update(%{device: device} = r) do
       if sw == nil do
         %Switch{device: device,
                 states: create_states(r),
-                cmds: create_cmds(r)} |> insert()
+                cmds: create_cmds(r)}
+        |> insert()
       else
-        %{r: r, sw: sw} |> update_from_reading()
+        %{r: r, sw: sw}
+        |> update_from_reading()
       end
     end
 
