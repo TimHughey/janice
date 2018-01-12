@@ -50,6 +50,7 @@ defmodule Web.Router do
     resources "/detail/:type", McpDetailController, only: [:index, :show]
     resources "/mixtank", MixtankController, only: [:index, :update]
     resources "/sensor", SensorController, only: [:delete]
+    resources "/switch", SwitchController, only: [:delete, :update]
   end
 
   scope "/mercurial", Web do

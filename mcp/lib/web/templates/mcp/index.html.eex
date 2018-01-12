@@ -96,14 +96,14 @@
 </div>
 </div>
 
-<div class="row" id="generalPurposeFormID">
+<div class="row" id="generalPurposeForm" style="display:none;">
   <div class="col-2"></div>
   <div class="col-10">
-    <div class="input-group mb-3">
+    <div class="input-group mb-3 border border-danger">
       <div class="input-group-prepend">
-        <span class="input-group-text" id="generalInputLabel"></span>
+        <span class="input-group-text" id="basic-addon1"></span>
       </div>
-      <input type="text" id="generalInputBox" class="form-control" placeholder="General Input" aria-label="General Input" aria-describedby="generalInputLabel">
+      <input type="text" id="generalInputBox" class="form-control" placeholder="General Input" aria-label="General Input" aria-describedby="generalInputLabel" >
     </div>
   </div>
 </div>

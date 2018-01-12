@@ -28,7 +28,7 @@ use Ecto.Schema
 import UUID, only: [uuid1: 0]
 import Ecto.Changeset, only: [change: 2]
 import Ecto.Query, only: [from: 2]
-import Repo, only: [all: 2, insert: 2, insert: 1, insert!: 1, one: 1,
+import Repo, only: [all: 2, insert: 1, insert!: 1, one: 1,
                     update: 1, update!: 1]
 
 alias Fact.RunMetric

@@ -54,15 +54,15 @@ function dataTableErrorHandler(settings, techNote, message) {
 }
 
 function createSwitchesTable() {
-  jQuery('#switchesTable').DataTable({
+  const switchTable = jQuery('#switchesTable').DataTable({
     dom: 'Bfrtip',
     ajax: 'mcp/api/detail/switches',
     scrollY: '50vh',
     // deferRender: true,
     scroller: true,
     select: {
-      style: 'os',
-      items: 'cell',
+      style: 'single',
+      items: 'row',
     },
     order: [
       [1, 'asc'],
@@ -115,12 +115,154 @@ function createSwitchesTable() {
         //   config,
         // );
 
-        dt.button(0).processing(true);
-        dt.ajax.reload();
-        dt.button(0).processing(false);
+        switchTable.button(0).processing(true);
+        switchTable.ajax.reload();
+        switchTable.button(0).processing(false);
         displayStatus('Switches refreshed');
       },
+    },
+    {
+      text: 'Rename',
+      extend: 'selected',
+      attr: {
+        id: 'switchRenameButton',
+      },
+      action(e, dt, node, config) {
+        const {
+          friendly_name: name,
+          id,
+        } = switchTable.rows({
+          selected: true,
+        }).data()[0];
+
+          // console.log(
+          //   'sensorDeleteButton action:', e, dt, node,
+          //   config, name, row,
+          // );
+
+        const newName = jQuery('#generalInputBox').val();
+
+        switchTable.button(0).processing(true);
+        jQuery.ajax({
+          url: `mcp/api/switch/${id}`,
+          type: 'PATCH',
+          data: {
+            name: newName,
+          },
+          beforeSend(xhr) {
+            // send the CSRF token included as a meta on the HTML page
+            const token = jQuery("meta[name='csrf-token']").attr('content');
+            xhr.setRequestHeader('X-CSRF-Token', token);
+          },
+          error(xhr, status, error) {
+            console.log('error xhr:', xhr);
+            displayStatus(`Error changing name of ${name}`);
+          },
+          success(xhr, status) {
+            displayStatus(`Switch name changed to ${name}`);
+          },
+        });
+        switchTable.ajax.reload();
+        switchTable.button(0).processing(false);
+      },
+    },
+    {
+      text: 'Delete',
+      extend: 'selected',
+      attr: {
+        id: 'switchDeleteButton',
+      },
+      action(e, dt, node, config) {
+        const {
+          friendly_name: name,
+          id,
+        } = switchTable.rows({
+          selected: true,
+        }).data()[0];
+
+        switchTable.button(1).processing(true);
+        jQuery.ajax({
+          url: `mcp/api/switch/${id}`,
+          type: 'DELETE',
+          beforeSend(xhr) {
+            // send the CSRF token included as a meta on the HTML page
+            const token = jQuery("meta[name='csrf-token']").attr('content');
+            xhr.setRequestHeader('X-CSRF-Token', token);
+          },
+          error(xhr, status, error) {
+            console.log('error xhr:', xhr);
+            displayStatus(`Error deleting ${name}`);
+          },
+          success(xhr, status) {
+            displayStatus(`Deleted switch ${name}`);
+          },
+        });
+        switchTable.ajax.reload();
+        switchTable.button(1).processing(false);
+      },
+    },
+    {
+      text: 'Toggle',
+      extend: 'selected',
+      attr: {
+        id: 'switchToggleButton',
+      },
+      action(e, dt, node, config) {
+        const {
+          friendly_name: name,
+          id,
+        } = switchTable.rows({
+          selected: true,
+        }).data()[0];
+
+        switchTable.button(3).processing(true);
+        jQuery('#generalInputBox').fadeOut('fast');
+
+        jQuery.ajax({
+          url: `mcp/api/switch/${id}`,
+          type: 'PATCH',
+          data: {
+            toggle: true,
+          },
+          beforeSend(xhr) {
+            // send the CSRF token included as a meta on the HTML page
+            const token = jQuery("meta[name='csrf-token']").attr('content');
+            xhr.setRequestHeader('X-CSRF-Token', token);
+          },
+          error(xhr, status, error) {
+            console.log('error xhr:', xhr);
+            displayStatus(`Error toggling ${name}`);
+          },
+          success(xhr, status) {
+            displayStatus(`Toggled switch ${name}`);
+          },
+        });
+        switchTable.ajax.reload();
+        switchTable.button(3).processing(false);
+      },
     }],
+  });
+
+  switchTable.on('select', (e, dt, type, indexes) => {
+    // console.log(e, dt, type, indexes);
+    const inputBox = jQuery('#generalPurposeForm');
+
+    jQuery('#generalInputBox').attr(
+      'placeholder',
+      'Enter new switch name then click Rename',
+    );
+    inputBox.fadeIn('fast');
+  });
+
+  switchTable.on('deselect', (e, dt, type, indexes) => {
+    // console.log(e, dt, type, indexes);
+    const inputBox = jQuery('#generalPurposeForm');
+
+    jQuery('#generalInputBox').attr(
+      'placeholder',
+      'Enter new switch name then click Rename',
+    );
+    inputBox.fadeOut('fast');
   });
 }
 
@@ -134,7 +276,7 @@ function createSensorsTable() {
     select: {
       style: 'single',
       items: 'row',
-      selector: 'td:nth-child(1)', // only allow devices to be selected
+      // selector: 'td:nth-child(1)', // only allow devices to be selected
     },
     order: [
       [1, 'asc'],
@@ -181,9 +323,9 @@ function createSensorsTable() {
       action(e, dt, node, config) {
         // console.log('Sensor Button Action', e, dt, node, config);
 
-        dt.button(0).processing(true);
-        dt.ajax.reload(null, false);
-        dt.button(0).processing(false);
+        sensorTable.button(0).processing(true);
+        sensorTable.ajax.reload(null, false);
+        sensorTable.button(0).processing(false);
 
         displayStatus('Sensors refreshed');
       },
@@ -206,7 +348,7 @@ function createSensorsTable() {
           //   config, name, row,
           // );
 
-        dt.button(0).processing(true);
+        sensorTable.button(0).processing(true);
         jQuery.ajax({
           url: `mcp/api/sensor/${id}`,
           type: 'DELETE',
@@ -223,8 +365,8 @@ function createSensorsTable() {
             displayStatus(`Deleted sensor ${name}`);
           },
         });
-        dt.ajax.reload();
-        dt.button(0).processing(false);
+        sensorTable.ajax.reload();
+        sensorTable.button(0).processing(false);
       },
     },
     ],
