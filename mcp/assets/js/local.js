@@ -54,19 +54,22 @@ function dataTableErrorHandler(settings, techNote, message) {
 }
 
 function autoRefresh() {
-  clearInterval(sessionStorage.getItem('autoRefreshInterval'));
+  let ari = sessionStorage.getItem('autoRefreshInterval');
+  if (ari !== 'undefined') {
+    clearInterval(ari);
+  }
 
-  const ri = setInterval(
+  ari = setInterval(
     () => {
       const tabs = ['switches', 'sensors'];
       tabs.forEach((elem) => {
         const table = jQuery(`#${elem}Table`);
-        const button = table.buttons(0);
+        const button = table.button(0);
 
         if (jQuery(`#${elem}Tab`).hasClass('active') && (button.active())) {
           button.processing(true);
           table.ajax.reload(() => {
-            button(0).processing(false);
+            button.processing(false);
           }, false);
         }
       });
@@ -74,7 +77,7 @@ function autoRefresh() {
     3000,
   );
 
-  sessionStorage(sessionStorage.setItem('autoRefreshInterval'), ri);
+  sessionStorage(sessionStorage.setItem('autoRefreshInterval'), ari);
 }
 
 function switchColumns() {
