@@ -60,10 +60,10 @@ function autoRefresh() {
     () => {
       const tabs = ['switches', 'sensors'];
       tabs.forEach((elem) => {
-        const table = jQuery('#$(elem)Table');
+        const table = jQuery(`#${elem}Table`);
         const button = table.buttons(0);
 
-        if (jQuery('#$(elem)Tab').hasClass('active') && (button.active())) {
+        if (jQuery(`#${elem}Tab`).hasClass('active') && (button.active())) {
           button.processing(true);
           table.ajax.reload(() => {
             button(0).processing(false);
