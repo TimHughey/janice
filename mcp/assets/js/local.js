@@ -358,49 +358,12 @@ function createSensorsTable() {
         id: 'sensorRefreshButton',
       },
       action(e, dt, node, config) {
-        // console.log('Sensor Button Action', e, dt, node, config);
         if (sensorTable.button(0).active()) {
           sensorTable.button(0).active(false);
         } else {
           sensorTable.button(0).active(true);
           autoRefresh();
         }
-      },
-    }, {
-      text: 'Delete',
-      extend: 'selected',
-      attr: {
-        id: 'sensorDeleteButton',
-      },
-      action(e, dt, node, config) {
-        const {
-          name,
-          id,
-        } = sensorTable.rows({
-          selected: true,
-        }).data()[0];
-
-        sensorTable.button(0).processing(true);
-        jQuery.ajax({
-          url: `mcp/api/sensor/${id}`,
-          type: 'DELETE',
-          beforeSend(xhr) {
-            // send the CSRF token included as a meta on the HTML page
-            const token = jQuery("meta[name='csrf-token']").attr('content');
-            xhr.setRequestHeader('X-CSRF-Token', token);
-          },
-          error(xhr, status, error) {
-            console.log('error xhr:', xhr);
-            displayStatus(`Error deleting ${name}`);
-          },
-          success(xhr, status) {
-            displayStatus(`Deleted sensor ${name}`);
-          },
-          complete(xhr, status) {
-            sensorTable.ajax.reload(null, false);
-            sensorTable.button(0).processing(false);
-          },
-        });
       },
     },
     {
@@ -442,6 +405,44 @@ function createSensorsTable() {
           complete(xhr, status) {
             sensorTable.ajax.reload(null, false);
             sensorTable.button(1).processing(false);
+            jQuery('#generalPurposeForm').fadeToggle();
+            sensorTable.button(0).active(true);
+          },
+        });
+      },
+    }, {
+      text: 'Delete',
+      extend: 'selected',
+      attr: {
+        id: 'sensorDeleteButton',
+      },
+      action(e, dt, node, config) {
+        const {
+          name,
+          id,
+        } = sensorTable.rows({
+          selected: true,
+        }).data()[0];
+
+        sensorTable.button(2).processing(true);
+        jQuery.ajax({
+          url: `mcp/api/sensor/${id}`,
+          type: 'DELETE',
+          beforeSend(xhr) {
+            // send the CSRF token included as a meta on the HTML page
+            const token = jQuery("meta[name='csrf-token']").attr('content');
+            xhr.setRequestHeader('X-CSRF-Token', token);
+          },
+          error(xhr, status, error) {
+            console.log('error xhr:', xhr);
+            displayStatus(`Error deleting ${name}`);
+          },
+          success(xhr, status) {
+            displayStatus(`Deleted sensor ${name}`);
+          },
+          complete(xhr, status) {
+            sensorTable.ajax.reload(null, false);
+            sensorTable.button(2).processing(false);
             jQuery('#generalPurposeForm').fadeToggle();
             sensorTable.button(0).active(true);
           },

@@ -23,7 +23,9 @@ when is_list(opts) do
   f = %RelativeHumidity{}
 
   f = set_tag(f, opts, :remote_host)
-  f = set_tag(f, opts, :friendly_name)
+  f = set_tag(f, opts, :name)
+  # HACK: to support deprecation of friendly_name
+  f = set_tag(f, [friendly_name: opts[:name]], :friendly_name)
   f = set_tag(f, opts, :device)
 
   f = set_field(f, opts, :val)
