@@ -6,8 +6,8 @@ defmodule Web.McpDetailController do
   use Timex
   use Web, :controller
 
-  def index(conn, %{"type" => "switches"} = params) do
-    Logger.info fn -> inspect(params) end
+  def index(conn, %{"type" => "switches"} = _params) do
+    # Logger.info fn -> inspect(params) end
 
     all_ss = SwitchState.all(:everything)
     last_cmds = SwitchCmd.last_cmds(100)
@@ -31,9 +31,9 @@ defmodule Web.McpDetailController do
     render conn, "index.json", mcp_details: switches
   end
 
-  def index(conn, %{"type" => "sensors"} = params) do
-    Logger.info fn -> inspect(params) end
-    Logger.debug fn -> inspect(conn) end
+  def index(conn, %{"type" => "sensors"} = _params) do
+    # Logger.info fn -> inspect(params) end
+    # Logger.debug fn -> inspect(conn) end
 
     sensors = Sensor.all(:everything)
 

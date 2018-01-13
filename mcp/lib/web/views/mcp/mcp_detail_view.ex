@@ -14,7 +14,7 @@ defmodule Web.McpDetailView do
 
     %{type: "switch",
       id: ss.id,
-      friendly_name: ss.name,
+      name: ss.name,
       device: ss.device,
       enabled: ss.enabled,
       description: ss.description,
@@ -30,7 +30,7 @@ defmodule Web.McpDetailView do
 
     %{type: "sensor",
       id: s.id,
-      friendly_name: s.name,
+      name: s.name,
       device: s.device,
       description: s.description,
       dev_latency: s.dev_latency,

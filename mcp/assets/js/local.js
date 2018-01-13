@@ -53,6 +53,96 @@ function dataTableErrorHandler(settings, techNote, message) {
   console.log(settings, techNote, message);
 }
 
+function autoRefresh() {
+  clearInterval(sessionStorage.getItem('autoRefreshInterval'));
+
+  const ri = setInterval(
+    () => {
+      const tabs = ['switches', 'sensors'];
+      tabs.foreach((elem) => {
+        const table = jQuery('$(elem)Table');
+        const button = table.buttons(0);
+
+        if (jQuery('$(elem)Tab').hasClass('active') && (button.active())) {
+          button.processing(true);
+          table.ajax.reload(() => {
+            button(0).processing(false);
+          }, false);
+        }
+      });
+    },
+    3000,
+  );
+
+  sessionStorage(sessionStorage.setItem('autoRefreshInterval'), ri);
+}
+
+function switchColumns() {
+  return [{
+    data: 'id',
+    class: 'col-center',
+  },
+  {
+    data: 'name',
+  }, {
+    data: 'device',
+  }, {
+    data: 'description',
+  },
+  {
+    data: 'dev_latency',
+    class: 'col-center',
+    render: prettyUs,
+  }, {
+    data: 'rt_latency',
+    class: 'col-center',
+    render: prettyUs,
+  }, {
+    data: 'last_cmd_secs',
+    class: 'col-center',
+    render: prettyLastCommand,
+  }, {
+    data: 'last_seen_secs',
+    class: 'col-center',
+    render: prettySeconds,
+  }, {
+    data: 'state',
+    class: 'col-state-off',
+    render: humanizeState,
+  },
+  ];
+}
+
+function sensorColumns() {
+  return [{
+    data: 'id',
+    class: 'col-center',
+  }, {
+    data: 'name',
+  }, {
+    data: 'device',
+  }, {
+    data: 'description',
+  },
+  {
+    data: 'dev_latency',
+    class: 'col-center',
+    render: prettyUs,
+  }, {
+    data: 'last_seen_secs',
+    class: 'col-center',
+    render: prettySeconds,
+  }, {
+    data: 'reading_secs',
+    class: 'col-center',
+    render: prettySeconds,
+  }, {
+    data: 'celsius',
+    class: 'col-center',
+  },
+  ];
+}
+
 function createSwitchesTable() {
   const switchTable = jQuery('#switchesTable').DataTable({
     dom: 'Bfrtip',
@@ -67,39 +157,7 @@ function createSwitchesTable() {
     order: [
       [1, 'asc'],
     ],
-    columns: [{
-      data: 'id',
-      class: 'col-center',
-    },
-    {
-      data: 'friendly_name',
-    }, {
-      data: 'device',
-    }, {
-      data: 'description',
-    },
-    {
-      data: 'dev_latency',
-      class: 'col-center',
-      render: prettyUs,
-    }, {
-      data: 'rt_latency',
-      class: 'col-center',
-      render: prettyUs,
-    }, {
-      data: 'last_cmd_secs',
-      class: 'col-center',
-      render: prettyLastCommand,
-    }, {
-      data: 'last_seen_secs',
-      class: 'col-center',
-      render: prettySeconds,
-    }, {
-      data: 'state',
-      class: 'col-state-off',
-      render: humanizeState,
-    },
-    ],
+    columns: switchColumns(),
     columnDefs: [
       {
         targets: [0],
@@ -115,26 +173,12 @@ function createSwitchesTable() {
         //   config,
         // );
 
-        switchTable.button(0).processing(true);
-        switchTable.ajax.reload(null, false);
-        switchTable.button(0).processing(false);
-        displayStatus('Switches auto refreshed enabled');
-        jQuery('#generalPurposeForm').fadeOut('fast');
-
-        clearInterval(sessionStorage.getItem('switchRefreshInterval'));
-
-        const ri = setInterval(
-          () => {
-            switchTable.buttons(0).processing(true);
-            switchTable.ajax.reload(() => {
-              switchTable.buttons(0).processing(false);
-            }, false);
-          },
-          3000,
-        );
-
-        sessionStorage.setItem('switchRefreshInterval', ri);
-        switchTable.button(0).active(true);
+        if (switchTable.button(0).active()) {
+          switchTable.button(0).active(false);
+        } else {
+          switchTable.button(0).active(true);
+          autoRefresh();
+        }
       },
     },
     {
@@ -145,7 +189,7 @@ function createSwitchesTable() {
       },
       action(e, dt, node, config) {
         const {
-          friendly_name: name,
+          name,
           id,
         } = switchTable.rows({
           selected: true,
@@ -226,7 +270,7 @@ function createSwitchesTable() {
       },
       action(e, dt, node, config) {
         const {
-          friendly_name: name,
+          name,
           id,
         } = switchTable.rows({
           selected: true,
@@ -262,17 +306,6 @@ function createSwitchesTable() {
     }],
   });
 
-  const ri = setInterval(
-    () => {
-      switchTable.buttons(0).processing(true);
-      switchTable.ajax.reload(() => {
-        switchTable.buttons(0).processing(false);
-      }, false);
-    },
-    3000,
-  );
-
-  sessionStorage.setItem('switchRefreshInterval', ri);
   switchTable.button(0).active(true);
 
   switchTable.on('select', (e, dt, type, indexes) => {
@@ -313,33 +346,7 @@ function createSensorsTable() {
     order: [
       [1, 'asc'],
     ],
-    columns: [{
-      data: 'id',
-      class: 'col-center',
-    }, {
-      data: 'friendly_name',
-    }, {
-      data: 'device',
-    }, {
-      data: 'description',
-    },
-    {
-      data: 'dev_latency',
-      class: 'col-center',
-      render: prettyUs,
-    }, {
-      data: 'last_seen_secs',
-      class: 'col-center',
-      render: prettySeconds,
-    }, {
-      data: 'reading_secs',
-      class: 'col-center',
-      render: prettySeconds,
-    }, {
-      data: 'celsius',
-      class: 'col-center',
-    },
-    ],
+    columns: sensorColumns(),
     columnDefs: [
       {
         targets: [0],
@@ -354,12 +361,12 @@ function createSensorsTable() {
       },
       action(e, dt, node, config) {
         // console.log('Sensor Button Action', e, dt, node, config);
-
-        sensorTable.button(0).processing(true);
-        sensorTable.ajax.reload(null, false);
-        sensorTable.button(0).processing(false);
-
-        displayStatus('Sensors refreshed');
+        if (sensorTable.button(0).active()) {
+          sensorTable.button(0).active(false);
+        } else {
+          sensorTable.button(0).active(true);
+          autoRefresh();
+        }
       },
     }, {
       text: 'Delete',
@@ -369,16 +376,11 @@ function createSensorsTable() {
       },
       action(e, dt, node, config) {
         const {
-          friendly_name: name,
+          name,
           id,
         } = sensorTable.rows({
           selected: true,
         }).data()[0];
-
-          // console.log(
-          //   'sensorDeleteButton action:', e, dt, node,
-          //   config, name, row,
-          // );
 
         sensorTable.button(0).processing(true);
         jQuery.ajax({
@@ -406,26 +408,7 @@ function createSensorsTable() {
     ],
   });
 
-  // setInterval(() => {
-  //   sensorTable.ajax.reload(null, false);
-  // }, 3000);
-  // sensorTable.on('select', (e, dt, type, indexes) => {
-  //   console.log(e, dt, type, indexes);
-  //   sensorTable.buttons('delete:name').enable();
-  //
-  //   if ((type === 'cell') && (indexes[0].column === 2)) {
-  //     const { // object destructuring, retrieves embedded data
-  //       row: rowNum,
-  //       column: colNum,
-  //     } = indexes[0];
-  //
-  //     console.log('index info (row, col):', rowNum, colNum);
-  //
-  //     const data = sensorTable.cells(indexes).data()[0];
-  //
-  //     console.log(data);
-  //   }
-  // });
+  sensorTable.button(0).active(true);
 }
 
 function pageReady(jQuery) {
@@ -435,6 +418,7 @@ function pageReady(jQuery) {
 
   createSwitchesTable();
   createSensorsTable();
+  autoRefresh();
 
   jQuery('#mixtankProfile,dropdown-item').on('click', (event) => {
     const parent = event.target.parentNode;

@@ -92,7 +92,6 @@ when is_map(r) do
     end
 
   s = update_reading(s, r)
-  fname = s.name
 
   case s.type do
     "temp"   ->
@@ -102,13 +101,13 @@ when is_map(r) do
 
         tc = s.temperature.tc
         tc = Float.to_string(tc) |> String.pad_leading(8)
-        ~s/#{fname} #{tf}F #{tc}C/ end
+        ~s/#{s.name} #{tf}F #{tc}C/ end
 
       Fahrenheit.record(remote_host: r.host, device: r.device,
-        friendly_name: fname, mtime: r.mtime, val: s.temperature.tf)
+        name: s.name, mtime: r.mtime, val: s.temperature.tf)
 
       Celsius.record(remote_host: r.host, device: r.device,
-        friendly_name: fname, mtime: r.mtime, val: s.temperature.tc)
+        name: s.name, mtime: r.mtime, val: s.temperature.tc)
 
     "relhum" ->
       Logger.debug fn ->
@@ -120,16 +119,16 @@ when is_map(r) do
 
         rh = s.relhum.rh
         rh = Float.to_string(rh) |> String.pad_leading(8)
-        ~s/#{fname} #{tf}F #{tc}C #{rh}RH/ end
+        ~s/#{s.name} #{tf}F #{tc}C #{rh}RH/ end
 
       Fahrenheit.record(remote_host: r.host, device: r.device,
-        friendly_name: fname, mtime: r.mtime, val: s.temperature.tf)
+        name: s.name, mtime: r.mtime, val: s.temperature.tf)
 
       Celsius.record(remote_host: r.host, device: r.device,
-        friendly_name: fname, mtime: r.mtime, val: s.temperature.tc)
+        name: s.name, mtime: r.mtime, val: s.temperature.tc)
 
       RelativeHumidity.record(remote_host: r.host, device: r.device,
-        friendly_name: fname, mtime: r.mtime, val: s.relhum.rh)
+        name: s.name, mtime: r.mtime, val: s.relhum.rh)
   end
   s
 end
