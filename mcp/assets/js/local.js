@@ -118,8 +118,23 @@ function createSwitchesTable() {
         switchTable.button(0).processing(true);
         switchTable.ajax.reload(null, false);
         switchTable.button(0).processing(false);
-        displayStatus('Switches refreshed');
+        displayStatus('Switches auto refreshed enabled');
         jQuery('#generalPurposeForm').fadeOut('fast');
+
+        clearInterval(sessionStorage.getItem('switchRefreshInterval'));
+
+        const ri = setInterval(
+          () => {
+            switchTable.buttons(0).processing(true);
+            switchTable.ajax.reload(() => {
+              switchTable.buttons(0).processing(false);
+            }, false);
+          },
+          3000,
+        );
+
+        sessionStorage.setItem('switchRefreshInterval', ri);
+        switchTable.button(0).active(true);
       },
     },
     {
@@ -135,11 +150,6 @@ function createSwitchesTable() {
         } = switchTable.rows({
           selected: true,
         }).data()[0];
-
-          // console.log(
-          //   'sensorDeleteButton action:', e, dt, node,
-          //   config, name, row,
-          // );
 
         const newName = jQuery('#generalInputBox').val();
 
@@ -160,12 +170,15 @@ function createSwitchesTable() {
             displayStatus(`Error changing name of ${name}`);
           },
           success(xhr, status) {
-            displayStatus(`Switch name changed to ${name}`);
+            const response = xhr.responseJSON();
+            displayStatus(`Switch name changed to ${response.name}`);
+          },
+          complete(xhr, status) {
+            switchTable.ajax.reload(null, false);
+            switchTable.button(1).processing(false);
+            jQuery('#generalPurposeForm').fadeToggle();
           },
         });
-        switchTable.ajax.reload(null, false);
-        switchTable.button(1).processing(false);
-        jQuery('#generalPurposeForm').fadeToggle();
       },
     },
     {
@@ -197,10 +210,12 @@ function createSwitchesTable() {
           success(xhr, status) {
             displayStatus(`Deleted switch ${device}`);
           },
+          complete(xhr, status) {
+            switchTable.ajax.reload(null, false);
+            switchTable.button(2).processing(false);
+            jQuery('#generalPurposeForm').fadeToggle();
+          },
         });
-        switchTable.ajax.reload(null, false);
-        switchTable.button(2).processing(false);
-        jQuery('#generalPurposeForm').fadeToggle();
       },
     },
     {
@@ -237,16 +252,35 @@ function createSwitchesTable() {
           success(xhr, status) {
             displayStatus(`Toggled switch ${name}`);
           },
+          complete(xhr, status) {
+            switchTable.ajax.reload(null, false);
+            switchTable.button(3).processing(false);
+            jQuery('#generalPurposeForm').fadeToggle();
+          },
         });
-        switchTable.ajax.reload(null, false);
-        switchTable.button(3).processing(false);
-        jQuery('#generalPurposeForm').fadeToggle();
       },
     }],
   });
 
+  const ri = setInterval(
+    () => {
+      switchTable.buttons(0).processing(true);
+      switchTable.ajax.reload(() => {
+        switchTable.buttons(0).processing(false);
+      }, false);
+    },
+    3000,
+  );
+
+  sessionStorage.setItem('switchRefreshInterval', ri);
+  switchTable.button(0).active(true);
+
   switchTable.on('select', (e, dt, type, indexes) => {
     // console.log(e, dt, type, indexes);
+    const lri = sessionStorage.getItem('switchRefreshInterval');
+    clearInterval(lri);
+    switchTable.button(0).active(false);
+
     const inputBox = jQuery('#generalPurposeForm');
 
     jQuery('#generalInputBox').attr(
@@ -362,14 +396,19 @@ function createSensorsTable() {
           success(xhr, status) {
             displayStatus(`Deleted sensor ${name}`);
           },
+          complete(xhr, status) {
+            sensorTable.ajax.reload(null, false);
+            sensorTable.button(0).processing(false);
+          },
         });
-        sensorTable.ajax.reload(null, false);
-        sensorTable.button(0).processing(false);
       },
     },
     ],
   });
 
+  // setInterval(() => {
+  //   sensorTable.ajax.reload(null, false);
+  // }, 3000);
   // sensorTable.on('select', (e, dt, type, indexes) => {
   //   console.log(e, dt, type, indexes);
   //   sensorTable.buttons('delete:name').enable();
