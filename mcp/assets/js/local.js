@@ -63,13 +63,13 @@ function autoRefresh() {
     () => {
       const tabs = ['switches', 'sensors'];
       tabs.forEach((elem) => {
-        const table = jQuery(`#${elem}Table`);
-        const button = table.button(0);
+        const table = jQuery(`#${elem}Table`).DataTable();
+        const button = table.button(0).button();
 
-        if (jQuery(`#${elem}Tab`).hasClass('active') && (button.active())) {
+        if (jQuery(`#${elem}Tab`).hasClass('active') && (table.button(0).active())) {
           button.processing(true);
           table.ajax.reload(() => {
-            button.processing(false);
+            table.button(0).processing(false);
           }, false);
         }
       });
@@ -77,7 +77,7 @@ function autoRefresh() {
     3000,
   );
 
-  sessionStorage(sessionStorage.setItem('autoRefreshInterval'), ari);
+  sessionStorage.setItem('autoRefreshInterval', ari);
 }
 
 function switchColumns() {
@@ -171,11 +171,6 @@ function createSwitchesTable() {
     buttons: [{
       text: 'Refresh',
       action(e, dt, node, config) {
-        // console.log(
-        //   'Switch Button Action', e, dt.ajax, node,
-        //   config,
-        // );
-
         if (switchTable.button(0).active()) {
           switchTable.button(0).active(false);
         } else {
@@ -224,6 +219,7 @@ function createSwitchesTable() {
             switchTable.ajax.reload(null, false);
             switchTable.button(1).processing(false);
             jQuery('#generalPurposeForm').fadeToggle();
+            switchTable.button(0).active(true);
           },
         });
       },
@@ -261,6 +257,7 @@ function createSwitchesTable() {
             switchTable.ajax.reload(null, false);
             switchTable.button(2).processing(false);
             jQuery('#generalPurposeForm').fadeToggle();
+            switchTable.button(0).active(true);
           },
         });
       },
@@ -303,6 +300,7 @@ function createSwitchesTable() {
             switchTable.ajax.reload(null, false);
             switchTable.button(3).processing(false);
             jQuery('#generalPurposeForm').fadeToggle();
+            switchTable.button(0).active(true);
           },
         });
       },
@@ -312,9 +310,6 @@ function createSwitchesTable() {
   switchTable.button(0).active(true);
 
   switchTable.on('select', (e, dt, type, indexes) => {
-    // console.log(e, dt, type, indexes);
-    const lri = sessionStorage.getItem('switchRefreshInterval');
-    clearInterval(lri);
     switchTable.button(0).active(false);
 
     const inputBox = jQuery('#generalPurposeForm');
@@ -327,8 +322,8 @@ function createSwitchesTable() {
   });
 
   switchTable.on('deselect', (e, dt, type, indexes) => {
-    // console.log(e, dt, type, indexes);
     const inputBox = jQuery('#generalPurposeForm');
+    switchTable.button(0).active(true);
 
     inputBox.fadeOut('fast');
   });
@@ -408,7 +403,71 @@ function createSensorsTable() {
         });
       },
     },
+    {
+      text: 'Rename',
+      extend: 'selected',
+      attr: {
+        id: 'sensorRenameButton',
+      },
+      action(e, dt, node, config) {
+        const {
+          name,
+          id,
+        } = sensorTable.rows({
+          selected: true,
+        }).data()[0];
+
+        const newName = jQuery('#generalInputBox').val();
+
+        sensorTable.button(1).processing(true);
+        jQuery.ajax({
+          url: `mcp/api/sensor/${id}`,
+          type: 'PATCH',
+          data: {
+            name: newName,
+          },
+          beforeSend(xhr) {
+            // send the CSRF token included as a meta on the HTML page
+            const token = jQuery("meta[name='csrf-token']").attr('content');
+            xhr.setRequestHeader('X-CSRF-Token', token);
+          },
+          error(xhr, status, error) {
+            console.log('error xhr:', xhr);
+            displayStatus(`Error changing name of ${name}`);
+          },
+          success(xhr, status) {
+            const response = xhr.responseJSON();
+            displayStatus(`Sensor name changed to ${response.name}`);
+          },
+          complete(xhr, status) {
+            sensorTable.ajax.reload(null, false);
+            sensorTable.button(1).processing(false);
+            jQuery('#generalPurposeForm').fadeToggle();
+            sensorTable.button(0).active(true);
+          },
+        });
+      },
+    },
     ],
+  });
+
+  sensorTable.on('select', (e, dt, type, indexes) => {
+    sensorTable.button(0).active(false);
+
+    const inputBox = jQuery('#generalPurposeForm');
+
+    jQuery('#generalInputBox').attr(
+      'placeholder',
+      'Enter new sensor name here then press Rename',
+    );
+    inputBox.fadeIn('fast');
+  });
+
+  sensorTable.on('deselect', (e, dt, type, indexes) => {
+    const inputBox = jQuery('#generalPurposeForm');
+    sensorTable.button(0).active(true);
+
+    inputBox.fadeOut('fast');
   });
 
   sensorTable.button(0).active(true);
