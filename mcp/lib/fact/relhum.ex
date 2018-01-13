@@ -9,9 +9,10 @@ series do
   database    "merc_repo"
   measurement "relative_humidity"
 
-  tag :remote_host, default: "unknown-host"
-  tag :device, default: "unknown-device"
-  tag :friendly_name, default: "unknown-friendly"
+  tag :remote_host, default: "unknown_host"
+  tag :device, default: "unknown_device"
+  tag :friendly_name, default: "unknown_friendly"
+  tag :name, default: "unknown_name"
   tag :env, default: "dev"
 
   field :val
