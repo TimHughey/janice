@@ -59,7 +59,7 @@ function autoRefresh() {
   const ri = setInterval(
     () => {
       const tabs = ['switches', 'sensors'];
-      tabs.foreach((elem) => {
+      tabs.forEach((elem) => {
         const table = jQuery('#$(elem)Table');
         const button = table.buttons(0);
 
