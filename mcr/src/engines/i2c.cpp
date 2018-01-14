@@ -415,9 +415,9 @@ bool mcrI2c::detectDev(mcrDevAddr_t &addr, bool use_multiplexer, uint8_t bus) {
   bool rc = false;
 
   // if the sda pin is low then i2c is disabled
-  if (digitalRead(SDA) == false) {
-    return rc;
-  }
+  // if (digitalRead(SCL) == false) {
+  //   return rc;
+  // }
 
   Wire.beginTransmission(addr.firstAddressByte());
 
