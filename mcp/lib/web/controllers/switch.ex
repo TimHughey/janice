@@ -20,8 +20,8 @@ defmodule Web.SwitchController do
           description: ss.description,
           dev_latency: ss.switch.dev_latency,
           rt_latency: cmd.rt_latency,
-          last_cmd_at: humanize_secs(cmd.sent_at),
-          last_seen_at: humanize_secs(ss.switch.last_seen_at),
+          last_cmd_secs: humanize_secs(cmd.sent_at),
+          last_seen_secs: humanize_secs(ss.switch.last_seen_at),
           state: ss.state}
       end
 
