@@ -81,7 +81,7 @@ void setup() {
     log(") connecting to wpa ssid: ");
     log(ssid);
 
-    Watchdog.enable(3000);
+    Watchdog.enable(15000);
 
     while (wifiStatus != WL_CONNECTED) {
       wifiStatus = WiFi.begin(ssid, pass);
