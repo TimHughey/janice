@@ -57,13 +57,13 @@ defp log_reading(%Reading{}, false), do: nil
 defp log_reading(%Reading{} = r, true) do
   if Reading.temperature?(r) do
     Logger.info fn ->
-      ~s(#{r.host} #{r.device} #{r.friendly_name} #{r.tc} #{r.tf})
+      ~s(#{r.host} #{r.device} #{r.tc} #{r.tf})
     end
   end
 
   if Reading.relhum?(r) do
     Logger.info fn ->
-      ~s(#{r.host} #{r.device} #{r.friendly_name} #{r.tc} #{r.tf} #{r.rh})
+      ~s(#{r.host} #{r.device} #{r.tc} #{r.tf} #{r.rh})
     end
   end
 end

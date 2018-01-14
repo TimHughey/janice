@@ -151,7 +151,7 @@ function sensorColumns() {
 function createSwitchesTable() {
   const switchTable = jQuery('#switchesTable').DataTable({
     dom: 'Bfrtip',
-    ajax: 'mcp/api/detail/switches',
+    ajax: 'mcp/api/switch',
     scrollY: '50vh',
     // deferRender: true,
     scroller: true,
@@ -334,7 +334,7 @@ function createSwitchesTable() {
 function createSensorsTable() {
   const sensorTable = jQuery('#sensorsTable').DataTable({
     dom: 'Bfrtip',
-    ajax: 'mcp/api/detail/sensors',
+    ajax: 'mcp/api/sensor',
     scrollY: '50vh',
     // deferRender: true,
     scroller: true,

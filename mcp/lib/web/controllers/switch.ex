@@ -5,6 +5,33 @@ defmodule Web.SwitchController do
   use Timex
   use Web, :controller
 
+  def index(conn, _params) do
+    all_ss = SwitchState.all(:everything)
+    last_cmds = SwitchCmd.last_cmds(100)
+
+    data =
+      for ss <- all_ss do
+        cmd = SwitchCmd.get_rt_latency(last_cmds, ss.name)
+
+        %{id: ss.id,
+          name: ss.name,
+          device: ss.switch.device,
+          enabled: ss.switch.enabled,
+          description: ss.description,
+          dev_latency: ss.switch.dev_latency,
+          rt_latency: cmd.rt_latency,
+          last_cmd_at: humanize_secs(cmd.sent_at),
+          last_seen_at: humanize_secs(ss.switch.last_seen_at),
+          state: ss.state}
+      end
+
+    resp = %{data: data,
+             items: Enum.count(data),
+             mtime: Timex.local |> Timex.to_unix}
+
+    json(conn, resp)
+  end
+
   def delete(conn, %{"id" => device}) do
     Logger.info fn -> ~s(DELETE #{conn.request_path}) end
 
@@ -33,4 +60,9 @@ defmodule Web.SwitchController do
     json(conn, %{state: new_state})
   end
 
+  defp humanize_secs(nil), do: 0
+
+  defp humanize_secs(%DateTime{} = dt) do
+    Timex.diff(Timex.now(), dt, :seconds) # |> humanize_secs
+  end
 end

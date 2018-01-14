@@ -11,7 +11,7 @@ defmodule Fact.LedFlashes do
     database    "merc_repo"
     measurement "led_flashes"
 
-    tag :friendly_name, default: "unknown-friendly"
+    tag :name, default: "unknown-friendly"
     tag :application, default: "unknown-application"
     tag :env, default: "dev"
 
@@ -23,7 +23,7 @@ defmodule Fact.LedFlashes do
     def_mtime = Timex.now() |> Timex.to_unix()
     f = %LedFlashes{}
 
-    f = set_tag(f, opts, :friendly_name)
+    f = set_tag(f, opts, :name)
     f = set_tag(f, opts, :application)
     f = set_field(f, opts, :val)
 

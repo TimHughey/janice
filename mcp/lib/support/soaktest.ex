@@ -86,7 +86,7 @@ def handle_info({:flash_led}, s) do
   SwitchState.state(dev, false)
 
   LedFlashes.record(application: "mcp_soaktest",
-    friendly_name: dev, val: led_flashes)
+    name: dev, val: led_flashes)
 
   s = %{s | led_flashes: led_flashes}
 

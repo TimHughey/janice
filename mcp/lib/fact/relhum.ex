@@ -11,7 +11,6 @@ series do
 
   tag :remote_host, default: "unknown_host"
   tag :device, default: "unknown_device"
-  tag :friendly_name, default: "unknown_friendly"
   tag :name, default: "unknown_name"
   tag :env, default: "dev"
 
@@ -25,8 +24,6 @@ when is_list(opts) do
 
   f = set_tag(f, opts, :remote_host)
   f = set_tag(f, opts, :name)
-  # HACK: to support deprecation of friendly_name
-  f = set_tag(f, [friendly_name: opts[:name]], :friendly_name)
   f = set_tag(f, opts, :device)
 
   f = set_field(f, opts, :val)

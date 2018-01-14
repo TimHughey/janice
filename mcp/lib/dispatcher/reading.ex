@@ -19,7 +19,6 @@ alias Poison
 defstruct version: "undef",
           host: @undef,
           device: nil,
-          friendly_name: nil,
           type: nil,
           mtime: 0,
           tc: nil,

@@ -42,15 +42,13 @@ defmodule Web.Router do
     pipe_through [:browser, :browser_session, :browser_authenticated]
 
     get "/", McpController, :index
-    get "/detail/:type", McpController, :show
   end
 
   scope "/mercurial/mcp/api", Web do
     pipe_through [:api]
-    resources "/detail/:type", McpDetailController, only: [:index, :show]
     resources "/mixtank", MixtankController, only: [:index, :update]
-    resources "/sensor", SensorController, only: [:delete]
-    resources "/switch", SwitchController, only: [:delete, :update]
+    resources "/sensor", SensorController, only: [:delete, :index, :update]
+    resources "/switch", SwitchController, only: [:delete, :index, :update]
   end
 
   scope "/mercurial", Web do
