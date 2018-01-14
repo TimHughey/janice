@@ -61,18 +61,20 @@ function autoRefresh() {
 
   ari = setInterval(
     () => {
-      const tabs = ['switches', 'sensors'];
-      tabs.forEach((elem) => {
-        const table = jQuery(`#${elem}Table`).DataTable();
-        const button = table.button(0).button();
+      if (document.visibilityState === 'visible') {
+        const tabs = ['switches', 'sensors'];
+        tabs.forEach((elem) => {
+          const table = jQuery(`#${elem}Table`).DataTable();
+          const button = table.button(0).button();
 
-        if (jQuery(`#${elem}Tab`).hasClass('active') && (table.button(0).active())) {
-          button.processing(true);
-          table.ajax.reload(() => {
-            table.button(0).processing(false);
-          }, false);
-        }
-      });
+          if (jQuery(`#${elem}Tab`).hasClass('active') && (table.button(0).active())) {
+            button.processing(true);
+            table.ajax.reload(() => {
+              table.button(0).processing(false);
+            }, false);
+          }
+        });
+      }
     },
     3000,
   );
@@ -520,6 +522,8 @@ function pageReady(jQuery) {
   jQuery('a[href="#sensorsTab"]').on('shown.bs.tab', (event) => {
     $('#sensorsTable').DataTable().ajax.reload(null, false);
   });
+
+  document.addEventListener('visibilitychange', autoRefresh, false);
 }
 
 function pageFullyLoaded() {
