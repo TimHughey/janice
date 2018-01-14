@@ -57,7 +57,7 @@ bool mcrDS::init() {
 //     a single search
 
 bool mcrDS::discover() {
-  uint8_t addr[8];
+  byte addr[8];
   auto rc = true;
 
   if (needDiscover()) {
@@ -85,7 +85,7 @@ bool mcrDS::discover() {
         // ds->reset();
         // ds->select(addr);
         // ds->write(0xB4); // Read Power Supply
-        // uint8_t pwr = ds->read_bit();
+        // byte pwr = ds->read_bit();
 
         dsDev_t dev(found_addr, true);
 
@@ -339,7 +339,7 @@ bool mcrDS::readDS1820(dsDev *dev, celsiusReading_t **reading) {
   ds->select(dev->addr());
   ds->write(0xBE); // Read Scratchpad
 
-  for (uint8_t i = 0; i < 9; i++) { // we need 9 bytes
+  for (uint32_t i = 0; i < 9; i++) { // we need 9 bytes
     data[i] = ds->read();
   }
   ds->reset();
@@ -349,7 +349,7 @@ bool mcrDS::readDS1820(dsDev *dev, celsiusReading_t **reading) {
 
 #ifdef VERBOSE
   Serial.print("    Read Scratchpad + received bytes = ");
-  for (uint8_t i = 0; i < sizeof(data); i++) {
+  for (uint32_t i = 0; i < sizeof(data); i++) {
     Serial.print("0x");
     Serial.print(data[i], HEX);
     Serial.print(" ");
@@ -376,7 +376,7 @@ bool mcrDS::readDS1820(dsDev *dev, celsiusReading_t **reading) {
         raw = (raw & 0xFFF0) + 12 - data[6];
       }
     } else {
-      byte cfg = (data[4] & 0x60);
+      uint32_t cfg = (data[4] & 0x60);
       // at lower res, the low bits are undefined, so let's zero them
       if (cfg == 0x00)
         raw = raw & ~7; // 9 bit resolution, 93.75 ms
@@ -409,13 +409,13 @@ bool mcrDS::readDS2406(dsDev *dev, positionsReading_t **reading) {
     return false;
   };
 
-  uint8_t buff[] = {0xAA,       // byte 0:     Read Status
-                    0x00, 0x00, // byte 1-2:   Address (start a beginning)
-                    0x00, 0x00, 0x00, 0x00, 0x00, // byte 3-7:   EPROM Bitmaps
-                    0x00, // byte 8:     EPROM Factory Test Byte
-                    0x00, // byte 9:     Don't care (always reads 0x00)
-                    0x00, // byte 10:    SRAM (channel flip-flops, power, etc.)
-                    0x00, 0x00}; // byte 11-12: CRC16
+  byte buff[] = {0xAA,       // byte 0:     Read Status
+                 0x00, 0x00, // byte 1-2:   Address (start a beginning)
+                 0x00, 0x00, 0x00, 0x00, 0x00, // byte 3-7:   EPROM Bitmaps
+                 0x00, // byte 8:     EPROM Factory Test Byte
+                 0x00, // byte 9:     Don't care (always reads 0x00)
+                 0x00, // byte 10:    SRAM (channel flip-flops, power, etc.)
+                 0x00, 0x00}; // byte 11-12: CRC16
 
   dev->startRead();
   ds->select(dev->addr());
@@ -431,7 +431,7 @@ bool mcrDS::readDS2406(dsDev *dev, positionsReading_t **reading) {
 
 #ifdef VERBOSE
   Serial.print("    Read Status + received bytes = ");
-  for (uint8_t i = 0; i < sizeof(buff); i++) {
+  for (uint32_t i = 0; i < sizeof(buff); i++) {
     Serial.print(buff[i], HEX);
     Serial.print(" ");
   }
@@ -441,9 +441,9 @@ bool mcrDS::readDS2406(dsDev *dev, positionsReading_t **reading) {
 #endif
 
   if (OneWire::check_crc16(buff, (sizeof(buff) - 2), &buff[sizeof(buff) - 2])) {
-    uint8_t raw = buff[sizeof(buff) - 3];
+    uint32_t raw = buff[sizeof(buff) - 3];
 
-    uint8_t positions = 0x00;   // translate raw status to 0b000000xx
+    uint32_t positions = 0x00;  // translate raw status to 0b000000xx
     if ((raw & 0x20) == 0x00) { // to represent PIO.A as bit 0
       positions = 0x01;         // and PIO.B as bit 1
     }                           // reminder to invert the bits since the device
@@ -455,7 +455,7 @@ bool mcrDS::readDS2406(dsDev *dev, positionsReading_t **reading) {
 #ifdef VERBOSE
     Serial.println("good");
 #endif
-    *reading = new positionsReading(dev->id(), now(), positions, (uint8_t)2);
+    *reading = new positionsReading(dev->id(), now(), positions, (byte)2);
   } else {
 #ifdef VERBOSE
     Serial.println("bad");
@@ -475,16 +475,16 @@ bool mcrDS::readDS2408(dsDev *dev, positionsReading_t **reading) {
     return false;
   };
 
-  uint8_t buff[] = {0xF5, // byte 0:      Channel-Access Read 0xF5
-                    0x00, 0x00, 0x00, 0x00, // bytes 1-4:   channel state data
-                    0x00, 0x00, 0x00, 0x00, // bytes 5-8:   channel state data
-                    0x00, 0x00, 0x00, 0x00, // bytes 9-12:  channel state data
-                    0x00, 0x00, 0x00, 0x00, // bytes 13-16: channel state data
-                    0x00, 0x00, 0x00, 0x00, // bytes 17-20: channel state data
-                    0x00, 0x00, 0x00, 0x00, // bytes 21-24: channel state data
-                    0x00, 0x00, 0x00, 0x00, // bytes 25-28: channel state data
-                    0x00, 0x00, 0x00, 0x00, // bytes 29-32: channel state data
-                    0x00, 0x00};            // bytes 33-34: CRC16
+  byte buff[] = {0xF5, // byte 0:      Channel-Access Read 0xF5
+                 0x00, 0x00, 0x00, 0x00, // bytes 1-4:   channel state data
+                 0x00, 0x00, 0x00, 0x00, // bytes 5-8:   channel state data
+                 0x00, 0x00, 0x00, 0x00, // bytes 9-12:  channel state data
+                 0x00, 0x00, 0x00, 0x00, // bytes 13-16: channel state data
+                 0x00, 0x00, 0x00, 0x00, // bytes 17-20: channel state data
+                 0x00, 0x00, 0x00, 0x00, // bytes 21-24: channel state data
+                 0x00, 0x00, 0x00, 0x00, // bytes 25-28: channel state data
+                 0x00, 0x00, 0x00, 0x00, // bytes 29-32: channel state data
+                 0x00, 0x00};            // bytes 33-34: CRC16
 
   dev->startRead();
   ds->select(dev->addr());
@@ -499,7 +499,7 @@ bool mcrDS::readDS2408(dsDev *dev, positionsReading_t **reading) {
 
 #ifdef VERBOSE
   Serial.print("  DS2408 Channel-Access Read + received bytes = ");
-  for (uint8_t i = 0; i < sizeof(buff); i++) {
+  for (uint32_t i = 0; i < sizeof(buff); i++) {
     Serial.print(buff[i], HEX);
     Serial.print(" ");
   }
@@ -510,14 +510,14 @@ bool mcrDS::readDS2408(dsDev *dev, positionsReading_t **reading) {
 
   if (OneWire::check_crc16(buff, (sizeof(buff) - 2), &buff[sizeof(buff) - 2])) {
     // negate positions since device sees on/off opposite of true/false
-    uint8_t positions = ~buff[sizeof(buff) - 3];
+    uint32_t positions = ~buff[sizeof(buff) - 3];
 
 #ifdef VERBOSE
     Serial.println("good");
 #endif
 
     if (reading != nullptr) {
-      *reading = new positionsReading(dev->id(), now(), positions, (uint8_t)8);
+      *reading = new positionsReading(dev->id(), now(), positions, (uint32_t)8);
     }
   } else {
 #ifdef VERBOSE
@@ -575,19 +575,35 @@ bool mcrDS::setDS2406(mcrCmd_t &cmd) {
   };
 
   positionsReading_t *reading = (positionsReading_t *)dev->reading();
-  uint8_t mask = cmd.mask();
-  uint8_t tobe_state = cmd.state();
-  uint8_t asis_state = reading->state();
+  uint32_t mask = cmd.mask();
+  uint32_t tobe_state = cmd.state();
+  uint32_t asis_state = reading->state();
+
+  if (cmdLogMode) {
+    logDateTime(__PRETTY_FUNCTION__);
+    log("mask: ");
+    logAsBinary(mask);
+    log(" asis: ");
+    logAsBinary(asis_state);
+    log(" tobe: ");
+    logAsBinary(tobe_state);
+  }
 
   bool pio_a = (mask & 0x01) ? (tobe_state & 0x01) : (asis_state & 0x01);
   bool pio_b = (mask & 0x02) ? (tobe_state & 0x02) : (asis_state & 0x02);
 
-  uint8_t new_state = (!pio_a << 5) | (!pio_b << 6) | 0xf;
+  uint32_t new_state = (!pio_a << 5) | (!pio_b << 6) | 0xf;
 
-  uint8_t buff[] = {0x55,        // byte 0:     Write Status
-                    0x07, 0x00,  // byte 1-2:   Address of Status byte
-                    0x00,        // byte 3-7:   Status byte to send
-                    0x00, 0x00}; // byte 11-12: CRC16
+  if (cmdLogMode) {
+    logContinued();
+    log(" status: ");
+    logAsBinary(new_state);
+  }
+
+  byte buff[] = {0x55,        // byte 0:     Write Status
+                 0x07, 0x00,  // byte 1-2:   Address of Status byte
+                 0x00,        // byte 3-7:   Status byte to send
+                 0x00, 0x00}; // byte 11-12: CRC16
 
   buff[3] = new_state;
 
@@ -597,28 +613,23 @@ bool mcrDS::setDS2406(mcrCmd_t &cmd) {
   ds->write_bytes(buff, sizeof(buff) - 2);
   ds->read_bytes(buff + 4, sizeof(buff) - 4);
 
-#ifdef VERBOSE
-  Serial.print("    Write Status CRC16 = ");
-#endif
+  bool crc_good =
+      OneWire::check_crc16(buff, (sizeof(buff) - 2), &buff[sizeof(buff) - 2]);
 
-  if (OneWire::check_crc16(buff, (sizeof(buff) - 2), &buff[sizeof(buff) - 2])) {
-#ifdef VERBOSE
-    Serial.print("good");
-    Serial.println();
-#endif
-
+  if (crc_good) {
     ds->write(0xFF, 1); // writing 0xFF will copy scratchpad to status
     ds->reset();
     dev->stopWrite();
     if (debugMode)
       dev->printWriteMS(__PRETTY_FUNCTION__);
   } else {
-#ifdef VERBOSE
-    Serial.print("bad");
-    Serial.println();
-#endif
     rc = false;
   }
+
+  if (cmdLogMode) {
+    (rc) ? log(" SUCCESS", true) : log(" FAILED", true);
+  }
+
   return rc;
 }
 
@@ -653,11 +664,11 @@ bool mcrDS::setDS2408(mcrCmd &cmd) {
 
   positionsReading_t *reading = (positionsReading_t *)dev->reading();
 
-  uint8_t mask = cmd.mask();
-  uint8_t changes = cmd.state();
-  uint8_t asis_state = reading->state();
-  uint8_t new_state = 0x00;
-  uint8_t report_state = 0x00;
+  uint32_t mask = cmd.mask();
+  uint32_t changes = cmd.state();
+  uint32_t asis_state = reading->state();
+  uint32_t new_state = 0x00;
+  uint32_t report_state = 0x00;
 
   // use XOR tricks to apply the state changes to the as_is state using the
   // mask computed
@@ -677,7 +688,7 @@ bool mcrDS::setDS2408(mcrCmd &cmd) {
   ds->write(new_state, 1);  // state to set on the device
   ds->write(~new_state, 1); // send the negated as a check
 
-  uint8_t check[3] = {0x00};
+  byte check[3] = {0x00};
   ds->read_bytes(check, 2);
   ds->reset();
   dev->stopWrite();
@@ -688,7 +699,7 @@ bool mcrDS::setDS2408(mcrCmd &cmd) {
   // byte 0 = 0xAA is a success, byte 1 = new_state
   if ((check[0] == 0xAA) && (check[1] == new_state)) {
     if (cmdLogMode) {
-      uint8_t dev_state = check[1];
+      uint32_t dev_state = check[1];
 
       logDateTime(__PRETTY_FUNCTION__);
       log("SUCCESS");
@@ -705,7 +716,7 @@ bool mcrDS::setDS2408(mcrCmd &cmd) {
       logAsBinary(dev_state, true);
     }
   } else {
-    uint8_t dev_state = check[1];
+    uint32_t dev_state = check[1];
 
     logDateTime(__PRETTY_FUNCTION__);
     log("FAILED");
@@ -746,8 +757,8 @@ bool mcrDS::cmdCallback(JsonObject &root) {
   const JsonVariant &variant = root.get<JsonVariant>("states");
   const JsonArray &states = variant.as<JsonArray>();
   const JsonVariant ack_flag = root["ack"];
-  uint8_t mask = 0x00;
-  uint8_t tobe_state = 0x00;
+  uint32_t mask = 0x00;
+  uint32_t tobe_state = 0x00;
 
   // logDateTime(__PRETTY_FUNCTION__);
   // log("invoked for ");
@@ -758,7 +769,7 @@ bool mcrDS::cmdCallback(JsonObject &root) {
     // get a reference to the object from the array
     const JsonObject &requested_state = element.as<JsonObject>();
 
-    const uint8_t bit = atoi(requested_state["pio"]);
+    const uint32_t bit = atoi(requested_state["pio"]);
     const bool state = requested_state["state"].as<bool>();
 
     // set the mask with each bit that should be adjusted
