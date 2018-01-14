@@ -583,9 +583,11 @@ bool mcrDS::setDS2406(mcrCmd_t &cmd) {
     logDateTime(__PRETTY_FUNCTION__);
     log("mask: ");
     logAsBinary(mask);
-    log(" asis: ");
+    logContinued();
+    log("asis  : ");
     logAsBinary(asis_state);
-    log(" tobe: ");
+    logContinued();
+    log("tobe  : ");
     logAsBinary(tobe_state);
   }
 
@@ -596,7 +598,7 @@ bool mcrDS::setDS2406(mcrCmd_t &cmd) {
 
   if (cmdLogMode) {
     logContinued();
-    log(" status: ");
+    log("status: ");
     logAsBinary(new_state);
   }
 
@@ -708,11 +710,13 @@ bool mcrDS::setDS2408(mcrCmd &cmd) {
       dev->debug();
 
       logContinued();
-      log("asis: ");
+      log("asis : ");
       logAsBinary(asis_state);
-      log("  new: ");
+      logContinued();
+      log("tobe : ");
       logAsBinary(report_state);
-      log("  dev state: ");
+      logContinued();
+      log("state: ");
       logAsBinary(dev_state, true);
     }
   } else {
@@ -725,9 +729,10 @@ bool mcrDS::setDS2408(mcrCmd &cmd) {
     dev->debug();
 
     logContinued();
-    log("asis: ");
+    log("asis : ");
     logAsBinary(asis_state);
-    log("  new: ");
+    logContinued();
+    log("tobe : ");
     logAsBinary(report_state);
     logContinued();
     log("check[0]: ");
