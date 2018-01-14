@@ -75,13 +75,13 @@ void mcrDev::setDesc(const char *desc) {
   strncat(_desc, desc, _desc_len);
 }
 
-uint8_t mcrDev::firstAddressByte() { return _addr.firstAddressByte(); };
+byte mcrDev::firstAddressByte() { return _addr.firstAddressByte(); };
 mcrDevAddr_t &mcrDev::addr() { return _addr; }
-// uint8_t *addr() { return _addr; };
+// byte *addr() { return _addr; };
 mcrDevID_t &mcrDev::id() { return _id; };
 const char *mcrDev::desc() { return _desc; };
 Reading_t *mcrDev::reading() { return _reading; }
-const uint8_t mcrDev::idMaxLen() { return _id_len; };
+const uint32_t mcrDev::idMaxLen() { return _id_len; };
 bool mcrDev::isValid() { return firstAddressByte() != 0x00 ? true : false; };
 bool mcrDev::isNotValid() { return !isValid(); }
 

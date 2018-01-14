@@ -38,25 +38,25 @@ typedef class i2cDev i2cDev_t;
 class i2cDev : public mcrDev {
 public:
   i2cDev() {}
-  static const char *i2cDevDesc(uint8_t addr);
+  static const char *i2cDevDesc(byte addr);
 
 private:
-  static const uint8_t _i2c_max_addr_len = 1;
-  static const uint8_t _i2c_max_id_len = 30;
-  static const uint8_t _i2c_addr_byte = 0;
+  static const uint32_t _i2c_max_addr_len = 1;
+  static const uint32_t _i2c_max_id_len = 30;
+  static const uint32_t _i2c_addr_byte = 0;
   bool _use_multiplexer = false; // is the multiplexer is needed to reach device
-  uint8_t _bus = 0; // if using multiplexer then this is the bus number
-                    // where the device is hoste
+  byte _bus = 0; // if using multiplexer then this is the bus number
+                 // where the device is hoste
 public:
   // construct a new i2cDev with a known address and compute the id
-  i2cDev(mcrDevAddr_t &addr, bool use_multiplexer = false, uint8_t bus = 0);
+  i2cDev(mcrDevAddr_t &addr, bool use_multiplexer = false, byte bus = 0);
 
-  uint8_t devAddr();
-  boolean useMultiplexer();
-  uint8_t bus();
+  byte devAddr();
+  bool useMultiplexer();
+  byte bus();
 
   // info / debugg functions
-  void printReadMS(const char *func, uint8_t indent = 2);
+  void printReadMS(const char *func, uint32_t indent = 2);
 };
 
 #endif // __cplusplus

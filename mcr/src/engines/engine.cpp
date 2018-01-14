@@ -50,8 +50,8 @@ mcrEngine::mcrEngine(mcrMQTT *mqtt) {
   _state = IDLE;
 }
 
-const uint8_t mcrEngine::maxDevices() { return MAX_DEVICES_PER_ENGINE; };
-uint8_t mcrEngine::devCount() { return _dev_count; };
+const uint32_t mcrEngine::maxDevices() { return MAX_DEVICES_PER_ENGINE; };
+uint32_t mcrEngine::devCount() { return _dev_count; };
 
 bool mcrEngine::init() { return init(nullptr); }
 bool mcrEngine::init(Queue *cmd_q, Queue *ack_q) {
@@ -63,10 +63,10 @@ bool mcrEngine::init(Queue *cmd_q, Queue *ack_q) {
   return rc;
 }
 
-const uint8_t mcrEngine::numKnownDevices() {
-  uint8_t dev_count = 0;
+const uint32_t mcrEngine::numKnownDevices() {
+  uint32_t dev_count = 0;
 
-  for (uint8_t i = 0; i < maxDevices(); i++) {
+  for (uint32_t i = 0; i < maxDevices(); i++) {
     if (_known_devs[i] != nullptr) {
       dev_count = dev_count + 1;
     }
@@ -261,7 +261,7 @@ mcrDev_t *mcrEngine::findDevice(mcrDev_t &dev) {
 bool mcrEngine::isDeviceKnown(mcrDevID_t &id) {
   auto rc = false;
 
-  for (uint8_t i = 0; ((i < maxDevices()) && (!rc)); i++) {
+  for (uint32_t i = 0; ((i < maxDevices()) && (!rc)); i++) {
     mcrDev_t *dev = _known_devs[i];
 
     if (dev->id() == id) {
@@ -280,7 +280,7 @@ bool mcrEngine::justSeenDevice(mcrDev_t &dev) {
     dev.debug(true);
   }
 
-  for (uint8_t i = 0; ((i < maxDevices()) && (!rc)); i++) {
+  for (uint32_t i = 0; ((i < maxDevices()) && (!rc)); i++) {
     mcrDev_t *search_dev = _known_devs[i];
 
     if ((search_dev) && (search_dev->id() == dev.id())) {
@@ -301,7 +301,7 @@ bool mcrEngine::addDevice(mcrDev_t *dev) {
     dev->debug(true);
   }
 
-  for (uint8_t i = 0; ((i < maxDevices()) && (!rc)); i++) {
+  for (uint32_t i = 0; ((i < maxDevices()) && (!rc)); i++) {
     mcrDev_t *search_dev = _known_devs[i];
 
     // find the first empty device location and store the new device
@@ -333,7 +333,7 @@ bool mcrEngine::forgetDevice(mcrDev_t &dev) {
   auto rc = true;
   mcrDev_t *found_dev = nullptr;
 
-  for (uint8_t i = 0; ((i < maxDevices()) && (found_dev == nullptr)); i++) {
+  for (uint32_t i = 0; ((i < maxDevices()) && (found_dev == nullptr)); i++) {
     if (_known_devs[i] && (dev.id() == _known_devs[i]->id())) {
       found_dev = _known_devs[i];
       delete found_dev;
@@ -369,7 +369,7 @@ mcrDev_t *mcrEngine::getNextKnownDevice() {
 mcrDev_t *mcrEngine::getDevice(mcrDevAddr_t &addr) {
   mcrDev_t *found_dev = nullptr;
 
-  for (uint8_t i = 0; ((i < maxDevices()) && (found_dev == nullptr)); i++) {
+  for (uint32_t i = 0; ((i < maxDevices()) && (found_dev == nullptr)); i++) {
     if (_known_devs[i] && (addr == _known_devs[i]->addr())) {
       found_dev = _known_devs[i];
     }
@@ -387,7 +387,7 @@ mcrDev_t *mcrEngine::getDevice(mcrDevID_t &id) {
     id.debug(true);
   }
 
-  for (uint8_t i = 0; ((i < maxDevices()) && (found_dev == nullptr)); i++) {
+  for (uint32_t i = 0; ((i < maxDevices()) && (found_dev == nullptr)); i++) {
     //  log(i);
     //  log(" ");
     if (_known_devs[i] && (id == _known_devs[i]->id())) {
@@ -643,7 +643,7 @@ void mcrEngine::debugIdle(const char *c, mcrEngineState_t s) {
   // Serial.println();
 }
 
-void mcrEngine::printStartDiscover(const char *func_name, uint8_t indent) {
+void mcrEngine::printStartDiscover(const char *func_name, uint32_t indent) {
 
   if (infoMode || debugMode) {
     logDateTime(func_name);
@@ -654,7 +654,7 @@ void mcrEngine::printStartDiscover(const char *func_name, uint8_t indent) {
   }
 }
 
-void mcrEngine::printStopDiscover(const char *func_name, uint8_t indent) {
+void mcrEngine::printStopDiscover(const char *func_name, uint32_t indent) {
   if (infoMode || debugMode) {
     logDateTime(func_name);
 
@@ -670,7 +670,7 @@ void mcrEngine::printStopDiscover(const char *func_name, uint8_t indent) {
   }
 }
 
-void mcrEngine::printStartConvert(const char *func_name, uint8_t indent) {
+void mcrEngine::printStartConvert(const char *func_name, uint32_t indent) {
   if (infoMode || debugMode) {
     logDateTime(func_name);
 
@@ -680,7 +680,7 @@ void mcrEngine::printStartConvert(const char *func_name, uint8_t indent) {
   }
 }
 
-void mcrEngine::printStopConvert(const char *func_name, uint8_t indent) {
+void mcrEngine::printStopConvert(const char *func_name, uint32_t indent) {
   if (infoMode || debugMode) {
     logDateTime(func_name);
 
@@ -698,7 +698,7 @@ void mcrEngine::printStopConvert(const char *func_name, uint8_t indent) {
   }
 }
 
-void mcrEngine::printStartReport(const char *func_name, uint8_t indent) {
+void mcrEngine::printStartReport(const char *func_name, uint32_t indent) {
   if (infoMode || debugMode) {
     logDateTime(func_name);
 
@@ -708,7 +708,7 @@ void mcrEngine::printStartReport(const char *func_name, uint8_t indent) {
   }
 }
 
-void mcrEngine::printStopReport(const char *func_name, uint8_t indent) {
+void mcrEngine::printStopReport(const char *func_name, uint32_t indent) {
   if (infoMode || debugMode) {
     logDateTime(func_name);
 

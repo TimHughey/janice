@@ -62,11 +62,11 @@ private:
   mcrMQTT_t *_mqtt;
   mcrEngineState_t _state = IDLE;
   mcrDev_t *_known_devs[MAX_DEVICES_PER_ENGINE] = {0x00};
-  uint8_t _dev_count = 0;
+  uint32_t _dev_count = 0;
   Queue *_cmd_q = nullptr;
   Queue *_ack_q = nullptr;
   bool _savedDebugMode = false;
-  uint8_t _next_known_index = 0;
+  uint32_t _next_known_index = 0;
 
   // Engine runtime controls
   uint32_t _loop_timeslice_ms = 5;
@@ -106,7 +106,7 @@ public:
   bool init(Queue *cmd_q = nullptr, Queue *ack_q = nullptr);
   virtual bool loop();
 
-  const static uint8_t maxDevices();
+  const static uint32_t maxDevices();
 
   // functions for handling known devices
   mcrDev_t *findDevice(mcrDev_t &dev);
@@ -129,7 +129,7 @@ public:
   mcrDev_t *getNextKnownDevice();
   mcrDev_t *getDevice(mcrDevAddr_t &addr);
   mcrDev_t *getDevice(mcrDevID_t &id);
-  const uint8_t numKnownDevices();
+  const uint32_t numKnownDevices();
 
   // state helper methods (grouped together for readability)
   bool isDiscoveryActive();
@@ -163,12 +163,12 @@ public:
   uint32_t lastReportRunMS() { return _last_report_ms; }
   uint32_t lastAckCmdMS() { return _last_ackcmd_ms; }
 
-  void printStartDiscover(const char *func_name = nullptr, uint8_t indent = 2);
-  void printStopDiscover(const char *func_name = nullptr, uint8_t indent = 2);
-  void printStartConvert(const char *func_name = nullptr, uint8_t indent = 2);
-  void printStopConvert(const char *func_name = nullptr, uint8_t indent = 2);
-  void printStartReport(const char *func_name = nullptr, uint8_t indent = 2);
-  void printStopReport(const char *func_name = nullptr, uint8_t indent = 2);
+  void printStartDiscover(const char *func_name = nullptr, uint32_t indent = 2);
+  void printStopDiscover(const char *func_name = nullptr, uint32_t indent = 2);
+  void printStartConvert(const char *func_name = nullptr, uint32_t indent = 2);
+  void printStopConvert(const char *func_name = nullptr, uint32_t indent = 2);
+  void printStartReport(const char *func_name = nullptr, uint32_t indent = 2);
+  void printStopReport(const char *func_name = nullptr, uint32_t indent = 2);
   const char *stateAsString(mcrEngineState_t state);
 
 protected:
@@ -209,7 +209,7 @@ protected:
   virtual bool handleCmd() { return true; }
   virtual bool handleCmdAck(mcrCmd_t &cmd) { return true; }
 
-  uint8_t devCount();
+  uint32_t devCount();
 
   void tempDebugOn();
   void tempDebugOff();

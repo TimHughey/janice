@@ -40,8 +40,8 @@ typedef class mcrCmd mcrCmd_t;
 class mcrCmd {
 private:
   mcrDevID_t _dev_id;
-  uint8_t _state = 0x00;
-  uint8_t _mask = 0x00;
+  uint32_t _state = 0x00;
+  uint32_t _mask = 0x00;
   elapsedMicros _latency = 0;
   time_t _mtime = now();
   mcrRefID_t _refid; // example: 2d931510-d99f-494a-8c67-87feb05e1594
@@ -50,18 +50,18 @@ private:
 public:
   mcrCmd() {}
 
-  mcrCmd(mcrDevID_t &id, uint8_t mask, uint8_t state, mcrRefID_t &cmd);
-  mcrCmd(mcrDevID_t &id, uint8_t mask, uint8_t state);
+  mcrCmd(mcrDevID_t &id, uint32_t mask, uint32_t state, mcrRefID_t &cmd);
+  mcrCmd(mcrDevID_t &id, uint32_t mask, uint32_t state);
 
   mcrDevID_t &dev_id();
-  uint8_t state();
-  uint8_t mask();
+  uint32_t state();
+  uint32_t mask();
   time_t latency();
   mcrRefID_t &refID();
   void ack(bool ack);
   const bool ack();
 
-  static const uint8_t size();
+  static const uint32_t size();
 
   void debug(bool newline = false);
 };

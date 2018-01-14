@@ -40,14 +40,14 @@ typedef class ramUtilReading ramUtilReading_t;
 
 class ramUtilReading : public Reading {
 private:
-  const uint16_t _max_ram = 32 * 1024;
+  const uint32_t _max_ram = 32 * 1024;
   // actual reading data
-  uint16_t _free_ram = 0;
+  uint32_t _free_ram = 0;
 
 public:
   // undefined reading
-  ramUtilReading(uint16_t free_ram, time_t mtime = now());
-  uint16_t freeRAM() { return _free_ram; }
+  ramUtilReading(uint32_t free_ram, time_t mtime = now());
+  uint32_t freeRAM() { return _free_ram; }
 
 protected:
   virtual void populateJSON(JsonObject &root);

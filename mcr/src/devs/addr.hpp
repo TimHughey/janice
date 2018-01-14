@@ -33,29 +33,29 @@ typedef class mcrDevAddr mcrDevAddr_t;
 
 class mcrDevAddr {
 private:
-  static const uint8_t _max_len = 10;
-  uint8_t _addr[_max_len + 1] = {0x00};
-  uint8_t _len = 0;
+  static const uint32_t _max_len = 10;
+  byte _addr[_max_len + 1] = {0x00};
+  byte _len = 0;
 
-  void initAndCopy(uint8_t *addr, uint8_t len);
+  void initAndCopy(byte *addr, uint32_t len);
 
 public:
   static const int max_addr_len = _max_len;
   mcrDevAddr(){};
   // construct a very simple device address of only one byte
-  mcrDevAddr(uint8_t addr);
+  mcrDevAddr(byte addr);
   // construct a slightly more complex device of a multi byte address
-  mcrDevAddr(uint8_t *addr, uint8_t len);
+  mcrDevAddr(byte *addr, uint32_t len);
 
-  uint8_t len();
-  uint8_t firstAddressByte();
-  uint8_t addressByteByIndex(uint8_t index);
-  static const uint8_t max_len();
+  uint32_t len();
+  byte firstAddressByte();
+  byte addressByteByIndex(uint32_t index);
+  static const uint32_t max_len();
 
   // support type casting from mcrDevID_t to a plain ole char array
-  operator uint8_t *();
+  operator byte *();
 
-  uint8_t operator[](int i);
+  byte operator[](int i);
 
   // NOTE:
   //    1. the == ooperator will compare the actual addr and not the pointers
@@ -63,7 +63,7 @@ public:
   bool operator==(const mcrDevAddr_t &rhs);
 
   // allow comparsions of a mcrDeviID to a plain ole char string array
-  bool operator==(uint8_t *rhs);
+  bool operator==(byte *rhs);
 
   void debug(bool newline = false);
 

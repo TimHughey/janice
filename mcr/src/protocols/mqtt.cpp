@@ -31,7 +31,7 @@
 #include "../misc/version.hpp"
 #include "mqtt.hpp"
 
-static uint8_t cmd_callback_count = 0;
+static uint32_t cmd_callback_count = 0;
 static cmdCallback_t cmd_callback[10] = {nullptr};
 static bool debugMode = false;
 
@@ -172,7 +172,7 @@ char *mcrMQTT::clientId() {
   return _client_id;
 }
 
-void mcrMQTT::incomingMsg(char *topic, uint8_t *payload, unsigned int length) {
+void mcrMQTT::incomingMsg(char *topic, byte *payload, unsigned int length) {
   static char msg[1024] = {0x00};
   elapsedMicros callback_elapsed;
   StaticJsonBuffer<1024> jsonBuffer;
@@ -277,7 +277,7 @@ bool mcrMQTT::handleTimeSyncCmd(JsonObject &root) {
 bool mcrMQTT::handleSetSwitchCmd(JsonObject &root) {
   bool rc = true;
 
-  for (uint8_t i = 0; i < cmd_callback_count; i++) {
+  for (uint32_t i = 0; i < cmd_callback_count; i++) {
     cmd_callback[i](root);
   }
 

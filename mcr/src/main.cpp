@@ -188,7 +188,7 @@ void loop() {
 void statusIndicator() {
   static boolean led_state = true;
   static elapsedMillis statusMillis = 0;
-  uint8_t flash_rate = 100;
+  uint32_t flash_rate = 100;
 
   if (ds->isConvertActive() == true) {
     flash_rate = 35;

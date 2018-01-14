@@ -31,7 +31,7 @@
 #include "base.hpp"
 #include "i2c.hpp"
 
-const char *i2cDev::i2cDevDesc(uint8_t addr) {
+const char *i2cDev::i2cDevDesc(byte addr) {
   switch (addr) {
   case 0x5C:
     return (const char *)"am2315";
@@ -48,7 +48,7 @@ const char *i2cDev::i2cDevDesc(uint8_t addr) {
 }
 
 // construct a new i2cDev with a known address and compute the id
-i2cDev::i2cDev(mcrDevAddr_t &addr, bool use_multiplexer, uint8_t bus)
+i2cDev::i2cDev(mcrDevAddr_t &addr, bool use_multiplexer, byte bus)
     : mcrDev(addr) {
   _use_multiplexer = use_multiplexer;
   _bus = bus;
@@ -67,12 +67,12 @@ i2cDev::i2cDev(mcrDevAddr_t &addr, bool use_multiplexer, uint8_t bus)
   setID(new_id);
 };
 
-uint8_t i2cDev::devAddr() { return firstAddressByte(); };
+byte i2cDev::devAddr() { return firstAddressByte(); };
 bool i2cDev::useMultiplexer() { return _use_multiplexer; };
-uint8_t i2cDev::bus() { return _bus; };
+byte i2cDev::bus() { return _bus; };
 
 // info / debugg functions
-void i2cDev::printReadMS(const char *func, uint8_t indent) {
+void i2cDev::printReadMS(const char *func, uint32_t indent) {
   mcrUtil::printDateTime(func);
   Serial.print(desc());
   Serial.print(" ");

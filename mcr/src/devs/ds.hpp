@@ -36,26 +36,26 @@ typedef class dsDev dsDev_t;
 
 class dsDev : public mcrDev {
 private:
-  // static const uint8_t _addr_len = 8;
-  // static const uint8_t _id_len = 18;
-  static const uint8_t _ds_max_addr_len = 8;
-  static const uint8_t _family_byte = 0;
-  static const uint8_t _crc_byte = 7;
+  // static const uint32_t _addr_len = 8;
+  // static const uint32_t _id_len = 18;
+  static const uint32_t _ds_max_addr_len = 8;
+  static const byte _family_byte = 0;
+  static const byte _crc_byte = 7;
 
-  static const uint8_t _family_DS2408 = 0x29;
-  static const uint8_t _family_DS2406 = 0x12;
+  static const byte _family_DS2408 = 0x29;
+  static const byte _family_DS2406 = 0x12;
 
   bool _power = false; // is the device powered?
 
-  static const char *familyDesc(uint8_t family);
+  static const char *familyDesc(byte family);
   const char *familyDesc();
 
 public:
   dsDev();
   dsDev(mcrDevAddr_t &addr, bool power = false);
 
-  uint8_t family();
-  uint8_t crc();
+  byte family();
+  byte crc();
   bool isPowered();
   void setReadingCmdAck(time_t latency, mcrRefID_t &refid);
   Reading_t *reading();
@@ -63,15 +63,15 @@ public:
   bool isDS2406();
   bool isDS2408();
 
-  static uint8_t *parseId(char *name);
+  static byte *parseId(char *name);
 
   // info / debugg functions
-  void printReadMS(const char *func, uint8_t indent = 2);
-  void printWriteMS(const char *func, uint8_t indent = 2);
-  void logPresenceFailed(const char *func, uint8_t indent = 2);
+  void printReadMS(const char *func, uint32_t indent = 2);
+  void printWriteMS(const char *func, uint32_t indent = 2);
+  void logPresenceFailed(const char *func, uint32_t indent = 2);
 
   // static member function for validating an address (ROM) is validAddress
-  static bool validAddress(uint8_t *addr);
+  static bool validAddress(byte *addr);
   bool validAddress(mcrDevAddr_t *addr);
 
   void debug(bool newline = false);

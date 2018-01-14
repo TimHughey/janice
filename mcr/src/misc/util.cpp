@@ -37,7 +37,7 @@ char *mcrUtil::macAddress() {
   static char _mac[13] = {0x00};
 
   if (_mac[0] == 0x00) {
-    uint8_t mac[6];
+    byte mac[6];
 
     WiFi.macAddress(mac);
 
@@ -65,8 +65,8 @@ int mcrUtil::freeRAM() {
   return &stack_dummy - sbrk(0);
 };
 
-const char *mcrUtil::indentString(uint8_t indent) {
-  const uint8_t max_indent = 25;
+const char *mcrUtil::indentString(uint32_t indent) {
+  const uint32_t max_indent = 25;
   static char indent_str[max_indent + 1] = {0x00}; // used for indenting
 
   indent = (indent < max_indent) ? indent : max_indent;
@@ -77,7 +77,7 @@ const char *mcrUtil::indentString(uint8_t indent) {
   return indent_str;
 }
 
-void mcrUtil::printIndent(uint8_t indent) {
+void mcrUtil::printIndent(uint32_t indent) {
   Serial.print(indentString(indent));
 }
 
@@ -139,7 +139,7 @@ void mcrUtil::printNet(const char *func) {
   log(WiFi.SSID());
 
   // print the MAC address of the router you're attached to:
-  uint8_t bssid[6];
+  byte bssid[6];
   WiFi.BSSID(bssid);
   log(" bssid: ");
   logAsHexRaw(bssid[5]);
@@ -182,7 +182,7 @@ void mcrUtil::printNet(const char *func) {
   log(mcrUtil::macAddress(), true);
 }
 
-void mcrUtil::printFreeMem(const char *func, uint8_t secs) {
+void mcrUtil::printFreeMem(const char *func, uint32_t secs) {
   static int first_free = 0;
   static int prev_free = 0;
   static int min_free = 0;
@@ -250,7 +250,7 @@ void mcrUtil::printLog(int value, bool newline) {
     Serial.print(value);
 }
 
-void mcrUtil::printLogAsBinary(uint8_t value, bool newline) {
+void mcrUtil::printLogAsBinary(uint32_t value, bool newline) {
   Serial.print("0b");
   if (newline)
     Serial.println(value, BIN);
@@ -258,7 +258,7 @@ void mcrUtil::printLogAsBinary(uint8_t value, bool newline) {
     Serial.print(value, BIN);
 }
 
-void mcrUtil::printLogAsHex(uint8_t value, bool newline) {
+void mcrUtil::printLogAsHex(uint32_t value, bool newline) {
   Serial.print("0x");
   if (newline)
     Serial.println(value, HEX);
@@ -266,7 +266,7 @@ void mcrUtil::printLogAsHex(uint8_t value, bool newline) {
     Serial.print(value, HEX);
 }
 
-void mcrUtil::printLogAsHexRaw(uint8_t value, bool newline) {
+void mcrUtil::printLogAsHexRaw(uint32_t value, bool newline) {
   if (newline)
     Serial.println(value, HEX);
   else

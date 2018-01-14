@@ -31,7 +31,7 @@
 
 mcrRefID::mcrRefID(const char *id) { this->initAndCopy(id); };
 
-const uint8_t mcrRefID::max_len() { return _max_len; };
+const uint32_t mcrRefID::max_len() { return _max_len; };
 
 // mcrRefID_t &mcrRefID::operator=(mcrRefID_t &id) {
 //   initAndCopy(id._id);

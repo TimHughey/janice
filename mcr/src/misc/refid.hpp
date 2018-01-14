@@ -33,7 +33,7 @@ typedef class mcrRefID mcrRefID_t;
 
 class mcrRefID {
 private:
-  static const uint8_t _max_len = 39;
+  static const uint32_t _max_len = 39;
   char _id[_max_len + 1] = {0x00}; // +1 for null terminating byte
 
 public:
@@ -42,7 +42,7 @@ public:
   mcrRefID(){};
   mcrRefID(const char *id);
 
-  static const uint8_t max_len();
+  static const uint32_t max_len();
 
   // support type casting to a plain ole char array
   operator char *();

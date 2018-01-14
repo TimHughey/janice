@@ -32,13 +32,14 @@
 #include "../misc/util.hpp"
 #include "cmd.hpp"
 
-mcrCmd::mcrCmd(mcrDevID_t &id, uint8_t mask, uint8_t state) {
+mcrCmd::mcrCmd(mcrDevID_t &id, uint32_t mask, uint32_t state) {
   _dev_id = id;
   _mask = mask;
   _state = state;
 }
 
-mcrCmd::mcrCmd(mcrDevID_t &id, uint8_t mask, uint8_t state, mcrRefID_t &refid) {
+mcrCmd::mcrCmd(mcrDevID_t &id, uint32_t mask, uint32_t state,
+               mcrRefID_t &refid) {
   _dev_id = id;
   _mask = mask;
   _state = state;
@@ -46,11 +47,11 @@ mcrCmd::mcrCmd(mcrDevID_t &id, uint8_t mask, uint8_t state, mcrRefID_t &refid) {
 }
 
 mcrDevID_t &mcrCmd::dev_id() { return _dev_id; }
-uint8_t mcrCmd::state() { return _state; }
-uint8_t mcrCmd::mask() { return _mask; }
+uint32_t mcrCmd::state() { return _state; }
+uint32_t mcrCmd::mask() { return _mask; }
 time_t mcrCmd::latency() { return _latency; }
 mcrRefID_t &mcrCmd::refID() { return _refid; }
-const uint8_t mcrCmd::size() { return sizeof(mcrCmd_t); }
+const uint32_t mcrCmd::size() { return sizeof(mcrCmd_t); }
 void mcrCmd::ack(bool ack) { _ack = ack; }
 const bool mcrCmd::ack() { return _ack; }
 

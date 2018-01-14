@@ -53,8 +53,8 @@ public:
 
   static int freeRAM();
 
-  static const char *indentString(uint8_t indent = 2);
-  static void printIndent(uint8_t indent = 2);
+  static const char *indentString(uint32_t indent = 2);
+  static void printIndent(uint32_t indent = 2);
   static bool isTimeByeondEpochYear();
   static const char *dateTimeString(time_t t = now());
 
@@ -62,12 +62,12 @@ public:
   static void printElapsed(elapsedMillis e, bool newline = false);
   static void printDateTime(const char *func);
   static void printNet(const char *func = nullptr);
-  static void printFreeMem(const char *func = nullptr, uint8_t secs = 15);
+  static void printFreeMem(const char *func = nullptr, uint32_t secs = 15);
   static void printLog(const char *string, bool newline = false);
   static void printLog(int value, bool newline = false);
-  static void printLogAsBinary(uint8_t value, bool newline = false);
-  static void printLogAsHex(uint8_t value, bool newline = false);
-  static void printLogAsHexRaw(uint8_t value, bool newline = false);
+  static void printLogAsBinary(uint32_t value, bool newline = false);
+  static void printLogAsHex(uint32_t value, bool newline = false);
+  static void printLogAsHexRaw(uint32_t value, bool newline = false);
   static void printLogContinued();
   static void printElapsedMicros(elapsedMicros e, bool newline = false);
 };

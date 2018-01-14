@@ -77,8 +77,8 @@ private:
 
   const int _msg_version = 1;
 
-  uint8_t _min_loop_ms = 10;
-  uint8_t _timeslice_ms = 10;
+  uint32_t _min_loop_ms = 10;
+  uint32_t _timeslice_ms = 10;
 
 public:
   mcrMQTT();
@@ -99,7 +99,7 @@ private:
   void publish(char *json);
 
   // callback invoked when a message arrives on any subscribed feed
-  static void incomingMsg(char *topic, uint8_t *payload, unsigned int length);
+  static void incomingMsg(char *topic, byte *payload, unsigned int length);
 
   // command message helpers
   static remoteCommand_t parseCmd(JsonObject &root);

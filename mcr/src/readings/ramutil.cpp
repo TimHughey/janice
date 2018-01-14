@@ -36,7 +36,7 @@
 #include "ramutil.hpp"
 #include "reading.hpp"
 
-ramUtilReading::ramUtilReading(uint16_t free_ram, time_t mtime)
+ramUtilReading::ramUtilReading(uint32_t free_ram, time_t mtime)
     : Reading(mtime) {
   _free_ram = free_ram;
 }

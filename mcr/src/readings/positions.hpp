@@ -41,15 +41,16 @@ typedef class positionsReading positionsReading_t;
 
 class positionsReading : public Reading {
 private:
-  static const uint8_t _max_pios = 16;
+  static const uint32_t _max_pios = 16;
   // actual reading data
-  uint8_t _pios = 0;
-  uint8_t _states = 0x0000;
+  uint32_t _pios = 0;
+  uint32_t _states = 0x00;
 
 public:
   // undefined reading
-  positionsReading(mcrDevID_t &id, time_t mtime, uint8_t states, uint8_t pios);
-  uint8_t state() { return _states; }
+  positionsReading(mcrDevID_t &id, time_t mtime, uint32_t states,
+                   uint32_t pios);
+  uint32_t state() { return _states; }
 
 protected:
   virtual void populateJSON(JsonObject &root);

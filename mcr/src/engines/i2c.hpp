@@ -52,7 +52,7 @@
 typedef class mcrI2c mcrI2c_t;
 class mcrI2c : public mcrEngine {
 private:
-  static const uint8_t _max_buses = 8;
+  static const uint32_t _max_buses = 8;
   bool _use_multiplexer = false;
 
 public:
@@ -62,7 +62,7 @@ public:
 private:
   mcrDevAddr_t _search_addrs[2] = {mcrDevAddr(0x5C), mcrDevAddr(0x44)};
   mcrDevAddr_t *search_addrs() { return _search_addrs; };
-  inline uint8_t search_addrs_count() {
+  inline uint32_t search_addrs_count() {
     return sizeof(_search_addrs) / sizeof(mcrDevAddr_t);
   };
 
@@ -74,14 +74,14 @@ private:
   bool readSHT31(i2cDev_t *dev, humidityReading_t **reading);
 
   // utility methods
-  uint8_t crcSHT31(const uint8_t *data, uint8_t len);
+  uint32_t crcSHT31(const byte *data, uint32_t len);
   bool detectDev(mcrDevAddr_t &addr, boolean use_multiplexer = false,
-                 uint8_t bus = 0x00);
+                 uint32_t bus = 0x00);
 
   bool detectMultiplexer();
-  uint8_t maxBuses();
+  uint32_t maxBuses();
   bool useMultiplexer();
-  void selectBus(uint8_t bus);
+  void selectBus(uint32_t bus);
   void printUnhandledDev(const char *func, i2cDev_t *dev);
 };
 

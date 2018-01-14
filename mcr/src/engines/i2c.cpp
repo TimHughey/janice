@@ -55,8 +55,8 @@ bool mcrI2c::init() { return true; }
 // this method should be called often to ensure proper operator.
 bool mcrI2c::discover() {
   mcrDevAddr_t *addrs = search_addrs();
-  static uint8_t addrs_index = 0;
-  static uint8_t bus = 0;
+  static uint32_t addrs_index = 0;
+  static uint32_t bus = 0;
   auto rc = true;
 
   if (needDiscover()) {
@@ -173,11 +173,11 @@ bool mcrI2c::report() {
 
 bool mcrI2c::readAM2315(i2cDev_t *dev, humidityReading_t **reading) {
   elapsedMillis read_elapsed;
-  static uint8_t error_count = 0;
+  static uint32_t error_count = 0;
   auto rc = true;
 
-  uint8_t cmd[] = {0x03, 0x00, 0x04};
-  uint8_t buff[] = {
+  byte cmd[] = {0x03, 0x00, 0x04};
+  byte buff[] = {
       0x00,       // cmd code
       0x00,       // byte count
       0x00, 0x00, // relh high byte, low byte
@@ -207,7 +207,7 @@ bool mcrI2c::readAM2315(i2cDev_t *dev, humidityReading_t **reading) {
   Serial.print("    Read Device bytes = ");
 #endif
 
-  for (uint8_t i = 0; i < 8; i++) {
+  for (uint32_t i = 0; i < 8; i++) {
     buff[i] = Wire.read();
 
 #ifdef VERBOSE
@@ -230,10 +230,10 @@ bool mcrI2c::readAM2315(i2cDev_t *dev, humidityReading_t **reading) {
   Serial.print(crc, HEX);
 #endif
 
-  for (uint8_t i = 0; i < 6; i++) {
+  for (uint32_t i = 0; i < 6; i++) {
     crc_calc = crc_calc ^ buff[i];
 
-    for (uint8_t j = 0; j < 8; j++) {
+    for (uint32_t j = 0; j < 8; j++) {
       if (crc_calc & 0x01) {
         crc_calc = crc_calc >> 1;
         crc_calc = crc_calc ^ 0xA001;
@@ -290,11 +290,11 @@ bool mcrI2c::readAM2315(i2cDev_t *dev, humidityReading_t **reading) {
 
 bool mcrI2c::readSHT31(i2cDev_t *dev, humidityReading_t **reading) {
   elapsedMillis read_elapsed;
-  static uint8_t error_count = 0;
+  static uint32_t error_count = 0;
   auto rc = true;
 
-  uint8_t cmd[] = {0x24, 0x00};
-  uint8_t buff[] = {
+  byte cmd[] = {0x24, 0x00};
+  byte buff[] = {
       0x00, 0x00, // tempC high byte, low byte
       0x00,       // crc8 of temp
       0x00, 0x00, // relh high byte, low byte
@@ -319,7 +319,7 @@ bool mcrI2c::readSHT31(i2cDev_t *dev, humidityReading_t **reading) {
   Serial.print("    Read Device bytes = ");
 #endif
 
-  for (uint8_t i = 0; i < sizeof(buff); i++) {
+  for (uint32_t i = 0; i < sizeof(buff); i++) {
     buff[i] = Wire.read();
 
 #ifdef VERBOSE
@@ -333,8 +333,8 @@ bool mcrI2c::readSHT31(i2cDev_t *dev, humidityReading_t **reading) {
   Serial.println();
 #endif
 
-  uint8_t crc_temp = crcSHT31(buff, 2);
-  uint8_t crc_relh = crcSHT31(buff + 3, 2);
+  uint32_t crc_temp = crcSHT31(buff, 2);
+  uint32_t crc_relh = crcSHT31(buff + 3, 2);
 
 #ifdef VERBOSE
   Serial.print("    crc check: 0x");
@@ -398,20 +398,20 @@ bool mcrI2c::readSHT31(i2cDev_t *dev, humidityReading_t **reading) {
   return rc;
 }
 
-uint8_t mcrI2c::crcSHT31(const uint8_t *data, uint8_t len) {
-  uint8_t crc = 0xFF;
+uint32_t mcrI2c::crcSHT31(const byte *data, uint32_t len) {
+  uint32_t crc = 0xFF;
 
-  for (uint8_t j = len; j; --j) {
+  for (uint32_t j = len; j; --j) {
     crc ^= *data++;
 
-    for (uint8_t i = 8; i; --i) {
+    for (uint32_t i = 8; i; --i) {
       crc = (crc & 0x80) ? (crc << 1) ^ 0x31 : (crc << 1);
     }
   }
   return crc;
 }
 
-bool mcrI2c::detectDev(mcrDevAddr_t &addr, bool use_multiplexer, uint8_t bus) {
+bool mcrI2c::detectDev(mcrDevAddr_t &addr, bool use_multiplexer, uint32_t bus) {
   bool rc = false;
 
   // if the scl pin is low then i2c is disabled
@@ -441,7 +441,7 @@ bool mcrI2c::detectDev(mcrDevAddr_t &addr, bool use_multiplexer, uint8_t bus) {
 
   // Wire.endTransmission() returns 0 if the
   // device acknowledged it's address
-  uint8_t error = Wire.endTransmission(true);
+  byte error = Wire.endTransmission(true);
 
   switch (error) {
   case 0x00:
@@ -490,10 +490,10 @@ bool mcrI2c::detectMultiplexer() {
   return _use_multiplexer;
 }
 
-uint8_t mcrI2c::maxBuses() { return _max_buses; }
+uint32_t mcrI2c::maxBuses() { return _max_buses; }
 bool mcrI2c::useMultiplexer() { return _use_multiplexer; }
 
-void mcrI2c::selectBus(uint8_t bus) {
+void mcrI2c::selectBus(uint32_t bus) {
   if (bus >= _max_buses) {
     logDateTime(__PRETTY_FUNCTION__);
     log("[WARNING] attempt to select bus >= ");

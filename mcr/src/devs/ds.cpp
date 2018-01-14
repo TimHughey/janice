@@ -60,8 +60,8 @@ dsDev::dsDev(mcrDevAddr_t &addr, bool power) : mcrDev(addr) {
   //_addr[_crc_byte] = OneWire::crc8(_addr, _addr_len - 1);
 };
 
-uint8_t dsDev::family() { return firstAddressByte(); };
-uint8_t dsDev::crc() { return addr()[_crc_byte]; };
+byte dsDev::family() { return firstAddressByte(); };
+byte dsDev::crc() { return addr()[_crc_byte]; };
 bool dsDev::isPowered() { return _power; };
 Reading_t *dsDev::reading() { return _reading; };
 
@@ -74,20 +74,20 @@ void dsDev::setReadingCmdAck(time_t latency, mcrRefID_t &refid) {
   }
 }
 
-uint8_t *dsDev::parseId(char *name) {
-  static uint8_t addr[_addr_len] = {0x00};
+byte *dsDev::parseId(char *name) {
+  static byte addr[_addr_len] = {0x00};
   //                 00000000001111111
   //       byte num: 01234567890123456
   // format of name: ds/01020304050607
   //      total len: 18 bytes (id + string terminator)
   if ((name[0] == 'd') && (name[1] == 's') && (name[2] == '/') &&
       (name[_id_len - 1] == 0x00)) {
-    for (uint8_t i = 3, j = 0; j < _addr_len; i = i + 2, j++) {
+    for (uint32_t i = 3, j = 0; j < _addr_len; i = i + 2, j++) {
       char digit[3] = {name[i], name[i + 1], 0x00};
       char *end_ptr;
       unsigned long val = strtoul(digit, &end_ptr, 16); // convert from hex
 
-      addr[j] = (uint8_t)val;
+      addr[j] = (byte)val;
     }
   }
 
@@ -97,7 +97,7 @@ uint8_t *dsDev::parseId(char *name) {
 }
 
 const char *dsDev::familyDesc() { return familyDesc(family()); }
-const char *dsDev::familyDesc(uint8_t family) {
+const char *dsDev::familyDesc(byte family) {
   switch (family) {
   case 0x10:
   case 0x22:
@@ -121,7 +121,7 @@ const char *dsDev::familyDesc(uint8_t family) {
 };
 
 // info / debugg functions
-void dsDev::printReadMS(const char *func, uint8_t indent) {
+void dsDev::printReadMS(const char *func, uint32_t indent) {
   mcrUtil::printDateTime(func);
   Serial.print(familyDesc());
   Serial.print(" ");
@@ -131,7 +131,7 @@ void dsDev::printReadMS(const char *func, uint8_t indent) {
   Serial.println("ms");
 }
 
-void dsDev::printWriteMS(const char *func, uint8_t indent) {
+void dsDev::printWriteMS(const char *func, uint32_t indent) {
   mcrUtil::printDateTime(func);
   Serial.print(id());
   Serial.print(" write took ");
@@ -139,7 +139,7 @@ void dsDev::printWriteMS(const char *func, uint8_t indent) {
   Serial.println("ms");
 }
 
-void dsDev::logPresenceFailed(const char *func, uint8_t indent) {
+void dsDev::logPresenceFailed(const char *func, uint32_t indent) {
   logDateTime(func);
   log("presence failure while trying to access ");
   log(familyDesc(), true);
@@ -153,8 +153,8 @@ bool dsDev::validAddress(mcrDevAddr_t *addr) {
     rc = false;
 
   // reminder crc8 is only first seven bytes
-  uint8_t crc = addr->addressByteByIndex(_crc_byte);
-  if (OneWire::crc8((uint8_t *)addr, _addr_len - 2) != crc)
+  byte crc = addr->addressByteByIndex(_crc_byte);
+  if (OneWire::crc8((byte *)addr, _addr_len - 2) != crc)
     rc = false;
 
   return rc;

@@ -30,19 +30,19 @@
 #include "addr.hpp"
 
 // construct a very simple device address of only one byte
-mcrDevAddr::mcrDevAddr(uint8_t addr) { _addr[0] = addr, _len = 1; }
+mcrDevAddr::mcrDevAddr(byte addr) { _addr[0] = addr, _len = 1; }
 // construct a slightly more complex device of a multi byte address
-mcrDevAddr::mcrDevAddr(uint8_t *addr, uint8_t len) { initAndCopy(addr, len); }
+mcrDevAddr::mcrDevAddr(byte *addr, uint32_t len) { initAndCopy(addr, len); }
 
-uint8_t mcrDevAddr::len() { return _len; }
-uint8_t mcrDevAddr::firstAddressByte() { return _addr[0]; }
-uint8_t mcrDevAddr::addressByteByIndex(uint8_t index) { return _addr[0]; }
-const uint8_t mcrDevAddr::max_len() { return _max_len; }
+uint32_t mcrDevAddr::len() { return _len; }
+byte mcrDevAddr::firstAddressByte() { return _addr[0]; }
+byte mcrDevAddr::addressByteByIndex(uint32_t index) { return _addr[0]; }
+const uint32_t mcrDevAddr::max_len() { return _max_len; }
 
 // support type casting from mcrDevID_t to a plain ole char array
-mcrDevAddr::operator uint8_t *() { return _addr; }
+mcrDevAddr::operator byte *() { return _addr; }
 
-uint8_t mcrDevAddr::operator[](int i) { return _addr[i]; }
+byte mcrDevAddr::operator[](int i) { return _addr[i]; }
 
 // NOTE:
 //    1. the == ooperator will compare the actual addr and not the pointers
@@ -57,7 +57,7 @@ bool mcrDevAddr::operator==(const mcrDevAddr_t &rhs) {
 }
 
 // allow comparsions of a mcrDeviID to a plain ole char string array
-bool mcrDevAddr::operator==(uint8_t *rhs) {
+bool mcrDevAddr::operator==(byte *rhs) {
   auto rc = false;
   if (memcmp(_addr, rhs, _len) == 0) {
     rc = true;
@@ -66,7 +66,7 @@ bool mcrDevAddr::operator==(uint8_t *rhs) {
   return rc;
 };
 
-void mcrDevAddr::initAndCopy(uint8_t *addr, uint8_t len) {
+void mcrDevAddr::initAndCopy(byte *addr, uint32_t len) {
   memset(_addr, 0x00, _max_len);
   memcpy(_addr, addr, len);
   _len = len;
@@ -77,7 +77,7 @@ void mcrDevAddr::debug(bool newline) {
 
   log("mcrDevAddr_t(");
 
-  for (uint8_t i = 0; i < _len; i++) {
+  for (uint32_t i = 0; i < _len; i++) {
     sprintf(buff, "%02x", _addr[i]);
     log(buff);
   }

@@ -39,9 +39,9 @@ private:
   mcrDevAddr_t _addr; // address of this device
 
 protected:
-  static const uint8_t _addr_len = mcrDevAddr::max_addr_len;
-  static const uint8_t _id_len = mcrDevID::max_id_len;
-  static const uint8_t _desc_len = 15; // max length of desciption
+  static const uint32_t _addr_len = mcrDevAddr::max_addr_len;
+  static const uint32_t _id_len = mcrDevID::max_id_len;
+  static const uint32_t _desc_len = 15; // max length of desciption
 
   char _desc[_desc_len + 1] = {0x00}; // desciption of the device
   Reading_t *_reading = nullptr;
@@ -80,12 +80,12 @@ public:
   void setReading(Reading_t *reading);
   void setDesc(const char *desc);
 
-  uint8_t firstAddressByte();
+  byte firstAddressByte();
   mcrDevAddr_t &addr();
   mcrDevID_t &id();
   const char *desc();
   Reading_t *reading();
-  static const uint8_t idMaxLen();
+  static const uint32_t idMaxLen();
   bool isValid();
   bool isNotValid();
 
