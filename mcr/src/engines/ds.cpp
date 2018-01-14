@@ -699,7 +699,7 @@ bool mcrDS::setDS2408(mcrCmd &cmd) {
 
   // check what the device returned to determine success or failure
   // byte 0 = 0xAA is a success, byte 1 = new_state
-  if (check[0] == 0xAA) {
+  if ((check[0] == 0xAA) && (check[1] == (new_state & 0xFF))) {
     if (cmdLogMode) {
       uint32_t dev_state = check[1];
 
