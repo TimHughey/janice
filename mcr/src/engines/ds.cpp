@@ -429,17 +429,6 @@ bool mcrDS::readDS2406(dsDev *dev, positionsReading_t **reading) {
   if (debugMode)
     dev->printReadMS(__PRETTY_FUNCTION__);
 
-#ifdef VERBOSE
-  Serial.print("    Read Status + received bytes = ");
-  for (uint32_t i = 0; i < sizeof(buff); i++) {
-    Serial.print(buff[i], HEX);
-    Serial.print(" ");
-  }
-  Serial.println();
-
-  Serial.print("    Read Status CRC16 = ");
-#endif
-
   if (OneWire::check_crc16(buff, (sizeof(buff) - 2), &buff[sizeof(buff) - 2])) {
     uint32_t raw = buff[sizeof(buff) - 3];
 
@@ -452,14 +441,8 @@ bool mcrDS::readDS2406(dsDev *dev, positionsReading_t **reading) {
       positions = (positions | 0x02);
     }
 
-#ifdef VERBOSE
-    Serial.println("good");
-#endif
     *reading = new positionsReading(dev->id(), now(), positions, (byte)2);
   } else {
-#ifdef VERBOSE
-    Serial.println("bad");
-#endif
     rc = false;
   }
 
@@ -497,32 +480,14 @@ bool mcrDS::readDS2408(dsDev *dev, positionsReading_t **reading) {
   if (debugMode)
     dev->printReadMS(__PRETTY_FUNCTION__);
 
-#ifdef VERBOSE
-  Serial.print("  DS2408 Channel-Access Read + received bytes = ");
-  for (uint32_t i = 0; i < sizeof(buff); i++) {
-    Serial.print(buff[i], HEX);
-    Serial.print(" ");
-  }
-  Serial.println();
-
-  Serial.print("    Channel-Access Read CRC16 = ");
-#endif
-
   if (OneWire::check_crc16(buff, (sizeof(buff) - 2), &buff[sizeof(buff) - 2])) {
     // negate positions since device sees on/off opposite of true/false
-    uint32_t positions = ~buff[sizeof(buff) - 3];
-
-#ifdef VERBOSE
-    Serial.println("good");
-#endif
+    uint32_t positions = (~buff[sizeof(buff) - 3]) & 0xFF; // constrain to 8bits
 
     if (reading != nullptr) {
       *reading = new positionsReading(dev->id(), now(), positions, (uint32_t)8);
     }
   } else {
-#ifdef VERBOSE
-    Serial.println("bad");
-#endif
     rc = false;
   }
 
@@ -681,7 +646,7 @@ bool mcrDS::setDS2408(mcrCmd &cmd) {
   // off = 1
 
   report_state = new_state;
-  new_state = ~new_state;
+  new_state = (~new_state) & 0xFF; // constrain to 8-bits
 
   ds->reset();
   dev->startWrite();
@@ -699,12 +664,13 @@ bool mcrDS::setDS2408(mcrCmd &cmd) {
 
   // check what the device returned to determine success or failure
   // byte 0 = 0xAA is a success, byte 1 = new_state
-  // removed the read back check as it's unreliable with the iorelay board
-  // design -- see RSTZ
-  if (check[0] == 0xAA) {
+  // this might be a bit of a hack however let's accept success if either
+  // the check byte is 0xAA *OR* the reported dev_state == new_state
+  // this handles the occasional situation where there is a single dropped
+  // bit in either (but hopefully not both)
+  uint32_t dev_state = check[1];
+  if ((check[0] == 0xAA) || (dev_state == (new_state & 0xFF))) {
     if (cmdLogMode) {
-      uint32_t dev_state = check[1];
-
       logDateTime(__PRETTY_FUNCTION__);
       log("SUCCESS");
 
@@ -722,8 +688,6 @@ bool mcrDS::setDS2408(mcrCmd &cmd) {
       logAsBinary(dev_state, true);
     }
   } else {
-    uint32_t dev_state = check[1];
-
     logDateTime(__PRETTY_FUNCTION__);
     log("FAILED");
 
