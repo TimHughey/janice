@@ -335,8 +335,8 @@ bool mcrI2c::readSHT31(i2cDev_t *dev, humidityReading_t **reading) {
   Serial.println();
 #endif
 
-  uint32_t crc_temp = crcSHT31(buff, 2);
-  uint32_t crc_relh = crcSHT31(buff + 3, 2);
+  byte crc_temp = crcSHT31(buff, 2);
+  byte crc_relh = crcSHT31(buff + 3, 2);
 
 #ifdef VERBOSE
   Serial.print("    crc check: 0x");
