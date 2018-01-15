@@ -347,22 +347,7 @@ bool mcrDS::readDS1820(dsDev *dev, celsiusReading_t **reading) {
   if (debugMode)
     dev->printReadMS(__PRETTY_FUNCTION__);
 
-#ifdef VERBOSE
-  Serial.print("    Read Scratchpad + received bytes = ");
-  for (uint32_t i = 0; i < sizeof(data); i++) {
-    Serial.print("0x");
-    Serial.print(data[i], HEX);
-    Serial.print(" ");
-  }
-  Serial.println();
-
-  Serial.print("    Read Scratchpad CRC8 = ");
-#endif
   if (OneWire::crc8(data, 8) == data[8]) {
-
-#ifdef VERBOSE
-    Serial.println("good");
-#endif
 
     // Convert the data to actual temperature
     // because the result is a 16 bit signed integer, it should
@@ -390,11 +375,6 @@ bool mcrDS::readDS1820(dsDev *dev, celsiusReading_t **reading) {
 
     *reading = new celsiusReading(dev->id(), lastConvertTimestamp(), celsius);
   } else {
-
-#ifdef VERBOSE
-    Serial.println("  bad");
-#endif
-
     rc = false;
   }
 
