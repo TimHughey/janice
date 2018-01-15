@@ -401,7 +401,7 @@ bool mcrI2c::readSHT31(i2cDev_t *dev, humidityReading_t **reading) {
 }
 
 uint32_t mcrI2c::crcSHT31(const byte *data, uint32_t len) {
-  uint32_t crc = 0xFF;
+  byte crc = 0xFF;
 
   for (uint32_t j = len; j; --j) {
     crc ^= *data++;
