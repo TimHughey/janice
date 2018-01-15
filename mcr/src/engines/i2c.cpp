@@ -40,6 +40,8 @@
 #include "i2c.hpp"
 
 mcrI2c::mcrI2c(mcrMQTT_t *mqtt) : mcrEngine(mqtt) {
+  discoverLogMode = true;
+  debugMode = true;
   // power up the i2c devices
   pinMode(I2C_PWR_PIN, OUTPUT);
   digitalWrite(I2C_PWR_PIN, HIGH);
