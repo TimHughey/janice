@@ -33,7 +33,7 @@
 
 static uint32_t cmd_callback_count = 0;
 static cmdCallback_t cmd_callback[10] = {nullptr};
-static bool debugMode = false;
+static bool debugMode = true;
 
 mcrMQTT::mcrMQTT() {
   this->mqtt = PubSubClient();
