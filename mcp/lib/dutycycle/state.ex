@@ -25,7 +25,7 @@ defmodule Dutycycle.State do
   end
 
   def set_idling(%Dutycycle{} = dc) do
-    SwitchState.state(dc.device, false)
+    SwitchState.state(dc.device, false, :lazy)
 
     now = Timex.now()
     profile = dc.profiles |> hd()
@@ -42,7 +42,7 @@ defmodule Dutycycle.State do
   end
 
   def set_running(%Dutycycle{} = dc) do
-    SwitchState.state(dc.device, true)
+    SwitchState.state(dc.device, true, :lazy)
 
     now = Timex.now()
     profile = dc.profiles |> hd()
