@@ -11,8 +11,8 @@ use Ecto.Schema
 #import Application, only: [get_env: 2]
 import Ecto.Changeset
 import Ecto.Query, only: [from: 2]
-import Repo, only: [all: 2, delete_all: 1, insert!: 1, update: 1, update!: 1,
-                    one: 1]
+import Repo, only: [all: 2, delete_all: 1, insert!: 1, update: 1,
+                    update!: 1, one: 1]
 
 alias Fact.Fahrenheit
 alias Fact.Celsius
@@ -67,7 +67,7 @@ end
 
 def change_name(id, to_be, comment \\ "")
 def change_name(id, tobe, comment) when is_integer(id) do
-  s = get(Sensor, id)
+  s = Repo.get(Sensor, id)
 
   if not is_nil(s) do
     s
