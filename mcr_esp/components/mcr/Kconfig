@@ -1,0 +1,19 @@
+menu "MCR"
+
+config MCR_DEBUG
+	bool "Global debug"
+	default false
+	help
+	  Set to true to indicate debug should be set globally
+
+config PROD_BUILD
+	bool "Build for Production"
+	default true
+	help
+		Set to true to indicate this is a production build
+
+config MG_ENABLE_SYNC_RESOLVER
+	bool "Use Mongoose synchronous DNS resolver"
+	default true
+
+endmenu
