@@ -9,9 +9,10 @@ use Timex.Ecto.Timestamps
 use Ecto.Schema
 
 #import Application, only: [get_env: 2]
-import Ecto.Changeset, only: [change: 2]
+import Ecto.Changeset
 import Ecto.Query, only: [from: 2]
-import Repo, only: [all: 2, delete_all: 1, insert!: 1, update!: 1, one: 1]
+import Repo, only: [all: 2, delete_all: 1, insert!: 1, update: 1, update!: 1,
+                    one: 1]
 
 alias Fact.Fahrenheit
 alias Fact.Celsius
@@ -62,6 +63,28 @@ end
 def all(:everything) do
   from(s in Sensor, order_by: [asc: s.name],
     preload: [:temperature, :relhum]) |> all(timeout: 100)
+end
+
+def change_name(asis, tobe, comment)
+when is_binary(asis) and is_binary(tobe) do
+
+  s = get_by_name(asis)
+
+  if not is_nil(s) do
+    s
+    |> changeset(%{name: tobe, description: comment})
+    |> update()
+  else
+    {:error, :not_found}
+  end
+end
+
+def changeset(ss, params \\ %{}) do
+  ss
+  |> cast(params, [:name, :description])
+  |> validate_required([:name])
+  |> validate_format(:name, ~r/^[\w]+[\w ]{1,}[\w]$/)
+  |> unique_constraint(:name)
 end
 
 def delete(id) when is_integer(id) do
@@ -167,6 +190,10 @@ when is_binary(device) and is_binary(type) do
            %Sensor{name: device, device: device, type: type} |> add()
     s   -> s
   end
+end
+
+def get_by_name(name) when is_binary(name) do
+  from(s in Sensor, where: s.name == ^name) |> one()
 end
 
 def relhum(name) when is_binary(name), do: get(name) |> relhum()
