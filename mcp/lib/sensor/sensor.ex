@@ -65,6 +65,20 @@ def all(:everything) do
     preload: [:temperature, :relhum]) |> all(timeout: 100)
 end
 
+def change_name(id, to_be, comment \\ "")
+def change_name(id, tobe, comment) when is_integer(id) do
+  s = get(Sensor, id)
+
+  if not is_nil(s) do
+    s
+    |> changeset(%{name: tobe, description: comment})
+    |> update()
+  else
+    Logger.info fn -> "change name failed" end
+    {:error, :not_found}
+  end
+end
+
 def change_name(asis, tobe, comment)
 when is_binary(asis) and is_binary(tobe) do
 
