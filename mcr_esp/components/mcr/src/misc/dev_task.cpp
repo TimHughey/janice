@@ -70,16 +70,16 @@ void mcrDevTask::run(void *data) {
              (int)(availHeap - prevHeap));
     prevHeap = availHeap;
 
-    char *json = reading->json();
-    ESP_LOGI(tTAG, "reading json (len=%u): %s", strlen(json), json);
+    // const std::string &json = reading->json();
+    // ESP_LOGI(tTAG, "reading json (len=%u): %s", json.length(), json.c_str());
+    //
+    // const std::string positions_json = positions->json();
+    // ESP_LOGI(tTAG, "positions json (len=%u): %s", positions_json.length(),
+    //          positions_json.c_str());
 
-    json = positions->json();
-    ESP_LOGI(tTAG, "positions json (len=%u): %s", strlen(json), json);
+    ESP_LOGI(tTAG, "dev (sizeof=%u) debug: %s", sizeof(mcrDevID_t),
+             dev.debug().c_str());
 
-    dev.debug(buffer, buff_len);
-    ESP_LOGI(tTAG, "dev (sizeof=%u) debug: %s", sizeof(mcrDevID_t), buffer);
-
-    bzero(buffer, buff_len);
     ESP_LOGI(tTAG, "cmd (sizeof=%u) debug: %s", sizeof(mcrCmd_t),
              cmd->debug().c_str());
 

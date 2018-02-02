@@ -30,8 +30,8 @@
 #include "humidity.hpp"
 #include "id.hpp"
 
-humidityReading::humidityReading(mcrDevID_t &id, time_t mtime, float celsius,
-                                 float relhum)
+humidityReading::humidityReading(const mcrDevID_t &id, time_t mtime,
+                                 float celsius, float relhum)
     : celsiusReading(id, mtime, celsius) {
   _relhum = relhum;
 }

@@ -59,12 +59,12 @@ protected:
 public:
   // default constructor, Reading type undefined
   Reading(){};
-  Reading(mcrDevID_t &id, time_t mtime = time(nullptr));
+  Reading(const mcrDevID_t &id, time_t mtime = time(nullptr));
   Reading(time_t mtime = time(nullptr));
   virtual ~Reading();
 
   void setCmdAck(time_t latency, const char *refid_raw = NULL);
-  char *json(char *buffer = nullptr, size_t len = 0);
+  std::string *json(char *buffer = nullptr, size_t len = 0);
 };
 
 #endif // reading_h

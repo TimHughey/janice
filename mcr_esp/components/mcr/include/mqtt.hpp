@@ -22,7 +22,7 @@
 #define mcr_mqtt_h
 
 #include <cstdlib>
-#include <cstring>
+#include <string>
 
 #include <FreeRTOS.h>
 #include <System.h>
@@ -31,11 +31,11 @@
 #include <WiFiEventHandler.h>
 #include <esp_log.h>
 #include <freertos/event_groups.h>
+#include <sdkconfig.h>
 
 #include "mongoose.h"
 #include "mqtt_in.hpp"
 #include "readings.hpp"
-#include "sdkconfig.h"
 
 #define mcr_mqtt_version_1 1
 
@@ -46,8 +46,30 @@
 
 #define MQTT_READY_BIT BIT7
 
+typedef struct {
+  size_t len = 0;
+  std::string *data = nullptr;
+} mqttRingbufferEntry_t;
+
 typedef class mcrMQTT mcrMQTT_t;
 class mcrMQTT : public Task {
+public:
+  mcrMQTT(EventGroupHandle_t evg, int bit);
+  void announceStartup();
+  static char *clientId();
+  void incomingMsg(const char *json, const size_t len);
+  static mcrMQTT_t *instance();
+  void publish(Reading_t *reading);
+  void registerCmdQueue(cmdQueue_t &cmd_q);
+  void run(void *data);
+  void setNotReady();
+  void setReady();
+
+  // configuration info
+  const char *cmdFeed() { return _cmd_feed; }
+  const char *passwd() { return _passwd; }
+  const char *user() { return _user; }
+
 private:
   const char *_address = "jophiel.wisslanding.com:1883";
 
@@ -58,51 +80,21 @@ private:
   struct mg_connection *_connection = nullptr;
   time_t _lastLoop;
   uint16_t _msg_id = 0;
+  int _poll_delay = 1000;
 
-  const size_t _rb_size = (sizeof(size_t) + 512) * 20;
+  const size_t _rb_size = (sizeof(mqttRingbufferEntry_t) * 128);
   Ringbuffer *_rb_out = nullptr;
   Ringbuffer *_rb_in = nullptr;
-  mcrMQTTin *_mqtt_in = nullptr;
 
-  // const char *_user = CONFIG_MCR_MQTT_USER;
-  // const char *_pass = CONFIG_MCR_MQTT_PASSWD;
+  mcrMQTTin_t *_mqtt_in = nullptr;
+
+  const char *_user = "mqtt";
+  const char *_passwd = "mqtt";
   const char *_rpt_feed = "prod/mcr/f/report";
   const char *_cmd_feed = "prod/mcr/f/command";
 
-  // const int _msg_version = 1;
-
-public:
-  mcrMQTT(EventGroupHandle_t evg, int bit);
-  static mcrMQTT_t *instance();
-
-  void registerCmdQueue(cmdQueue_t &cmd_q);
-  void run(void *data);
-
-  void announceStartup();
-  void incomingMsg(const char *json, const size_t len);
-  void publish(Reading_t *reading);
-
-  void setReady();
-
-  static char *clientId();
-
-  // static void registerCmdCallback(cmdCallback_t cmdCallback);
-
-private:
   void outboundMsg();
-  void publish(char *json);
-
-  // callback invoked when a message arrives on any subscribed feed
-  // static void incomingMsg(char *topic, byte *payload, unsigned int length);
-
-  // command message helpers
-  // static remoteCommand_t parseCmd(JsonObject &root);
-  // static bool handleTimeSyncCmd(JsonObject &root);
-  // static bool handleSetSwitchCmd(JsonObject &root);
-
-  static void setDebug(bool mode);
-  static void debugOn();
-  static void debugOff();
+  void publish(std::string *json);
 };
 
 #endif // mcp_mqtt_h

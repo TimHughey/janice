@@ -41,7 +41,8 @@ private:
 
 public:
   // undefined reading
-  humidityReading(mcrDevID_t &id, time_t mtime, float celsius, float relhum);
+  humidityReading(const mcrDevID_t &id, time_t mtime, float celsius,
+                  float relhum);
 
 protected:
   void populateJSON(JsonObject &root);

@@ -42,7 +42,7 @@ private:
 public:
   // undefined reading
   // celsiusReading(){};
-  celsiusReading(mcrDevID_t &id, time_t mtime, float celsius);
+  celsiusReading(const mcrDevID_t &id, time_t mtime, float celsius);
 
 protected:
   virtual void populateJSON(JsonObject &root);

@@ -29,7 +29,8 @@
 #include "celsius.hpp"
 #include "id.hpp"
 
-celsiusReading::celsiusReading(mcrDevID_t &id, time_t mtime, float celsius)
+celsiusReading::celsiusReading(const mcrDevID_t &id, time_t mtime,
+                               float celsius)
     : Reading(id, mtime) {
   _celsius = celsius;
 };

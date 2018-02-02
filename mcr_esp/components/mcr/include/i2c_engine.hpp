@@ -22,19 +22,15 @@
 #define mcr_i2c_h
 
 #include <cstdlib>
-#include <cstring>
+#include <string>
 
 #include "sdkconfig.h"
 #include <FreeRTOS.h>
 #include <System.h>
 #include <Task.h>
-#include <WiFi.h>
-#include <WiFiEventHandler.h>
-#include <cJSON.h>
 #include <driver/i2c.h>
 #include <esp_log.h>
 #include <freertos/event_groups.h>
-#include <gpio.h>
 
 #include "addr.hpp"
 #include "engine.hpp"
@@ -107,12 +103,12 @@ private:
   // utility methods
   uint32_t crcSHT31(const uint8_t *data, uint32_t len);
   bool detectDevice(mcrDevAddr_t &addr);
-  bool detectDevicesOnBus(int bus);
+  int detectDevicesOnBus(int bus);
 
   bool detectMultiplexer();
   uint32_t maxBuses();
   bool useMultiplexer();
-  void selectBus(uint32_t bus);
+  bool selectBus(uint32_t bus);
   void printUnhandledDev(i2cDev_t *dev);
   void wakeAM2315(mcrDevAddr_t &addr);
 };

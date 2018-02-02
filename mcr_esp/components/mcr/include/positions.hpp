@@ -43,7 +43,7 @@ private:
 
 public:
   // undefined reading
-  positionsReading(mcrDevID_t &id, time_t mtime, uint32_t states,
+  positionsReading(const mcrDevID_t &id, time_t mtime, uint32_t states,
                    uint32_t pios);
   uint32_t state() { return _states; }
 

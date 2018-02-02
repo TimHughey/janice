@@ -22,7 +22,8 @@
 #define mcr_engine_h
 
 #include <cstdlib>
-#include <cstring>
+#include <map>
+#include <string>
 
 #include <FreeRTOS.h>
 #include <System.h>
@@ -70,6 +71,7 @@ typedef class mcrEngine mcrEngine_t;
 
 class mcrEngine {
 private:
+  std::map<mcrDevID, mcrDev *> _dev_map;
   mcrDev_t *_known_devs[MAX_DEVICES_PER_ENGINE] = {0x00};
   uint32_t _dev_count = 0;
   uint32_t _next_known_index = 0;
@@ -110,7 +112,7 @@ public:
   // justSeenDevice():
   //    will return true if the device was found
   //    and call justSeen() on the device if found
-  bool justSeenDevice(mcrDev_t &dev);
+  mcrDev_t *justSeenDevice(mcrDev_t &dev);
 
   // addDevice():
   //    will add a device to the known devices
@@ -123,7 +125,7 @@ public:
   mcrDev_t *getFirstKnownDevice();
   mcrDev_t *getNextKnownDevice();
   mcrDev_t *getDevice(mcrDevAddr_t &addr);
-  mcrDev_t *getDevice(mcrDevID_t &id);
+  mcrDev_t *getDevice(const mcrDevID_t &id);
   uint32_t numKnownDevices();
 
 protected:
@@ -157,6 +159,8 @@ protected:
   int64_t trackSwitchCmd(bool start = false);
   int64_t switchCmdUS();
   time_t lastSwitchCmdTimestamp();
+
+  void runtimeMetricsReport(const char *lTAG);
 };
 
 #endif // mcp_engine_h

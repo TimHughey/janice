@@ -43,7 +43,6 @@
 // static uint32_t cmd_callback_count = 0;
 // static cmdCallback_t cmd_callback[10] = {nullptr};
 static char tTAG[] = "mcrMQTTin";
-static bool debugMode = false;
 
 static mcrMQTTin *__singleton = nullptr;
 
@@ -63,37 +62,39 @@ void mcrMQTTin::registerCmdQueue(cmdQueue_t &cmd_q) {
 
 void mcrMQTTin::run(void *data) {
   size_t msg_len = 0;
-  size_t json_len = 0;
-  char *json = nullptr;
-  char *msg = nullptr;
-  // const size_t buff_len = 256;
-  // char buff[buff_len + 1] = {0x00};
+  std::string *json = nullptr;
+  void *msg = nullptr;
 
   ESP_LOGI(tTAG, "started, entering run loop");
 
   for (;;) {
     ESP_LOGD(tTAG, "waiting for ringbuffer data");
-    msg = (char *)_rb->receive(&msg_len, portMAX_DELAY);
+    msg = _rb->receive(&msg_len, portMAX_DELAY);
 
-    memcpy((char *)&json_len, msg, sizeof(size_t));
-    json = msg + sizeof(size_t);
+    if (msg_len != sizeof(json)) {
+      ESP_LOGW(tTAG, "ringbuffer msg size mistmatch (msg_len=%u)", msg_len);
+      continue;
+    }
 
-    ESP_LOGD(tTAG, "recv msg, payload(msg_len=%u,json_len=%u)", msg_len,
-             json_len);
+    // _rb->receive returns a pointer to the msg.  the msg itself is a pointer
+    // to a std::string (the actual json)
+    memcpy(&json, msg, sizeof(json));
 
-    mcrCmd_t *cmd = mcrCmd::fromJSON(json, json_len);
+    ESP_LOGD(tTAG, "recv msg, payload(json=%p,msg_len=%u)", (void *)json,
+             msg_len);
+
+    mcrCmd_t *cmd = mcrCmd::fromJSON(json);
+    delete json;
+
     _rb->returnItem(msg); // done with message, give it back to ringbuffer
 
     if (cmd) {
-      // bzero(buff, sizeof(buff));
-      // cmd->debug(buff, buff_len);
-      // ESP_LOGI(tTAG, "%s", buff);
-
       for (auto cmd_q : _cmd_queues) {
         if (cmd->matchPrefix(cmd_q.prefix)) {
-          // make a fresh copy of the cmd before pusing to queue
-          // this ensures there's no internally allocated memory
-          mcrCmd_t fresh_cmd(*cmd);
+          // make a fresh copy of the cmd before pusing to the queue to ensure:
+          //   a. each queue receives it's own copy
+          //   b. we're certain each cmd is in a clean state
+          mcrCmd_t *fresh_cmd = new mcrCmd(*cmd);
 
           if (xQueueSendToBack(cmd_q.q, (void *)&fresh_cmd, pdMS_TO_TICKS(1)) ==
               pdTRUE) {
@@ -102,13 +103,10 @@ void mcrMQTTin::run(void *data) {
             ESP_LOGW(tTAG, "failed to place cmd on queue %s", cmd_q.id);
         }
       }
+
+      delete cmd;
     }
-
-    // clean-up the parsed cmd and free the space ringbuffer
-    delete cmd;
   }
-}
 
-void mcrMQTTin::setDebug(bool mode) { debugMode = mode; }
-void mcrMQTTin::debugOn() { setDebug(true); }
-void mcrMQTTin::debugOff() { setDebug(false); }
+  // never returns
+}

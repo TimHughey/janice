@@ -62,8 +62,8 @@ mcrDS::mcrDS(mcrMQTT_t *mqtt, EventGroupHandle_t evg, int bit)
   _wait_bit = bit;
 
   esp_log_level_t log_level = ESP_LOG_WARN;
-  const char *log_tags[] = {disTAG,    conTAG,    repTAG,
-                            ds1820TAG, ds2406TAG, nullptr};
+  const char *log_tags[] = {disTAG,    conTAG,    repTAG,    cmdTAG,
+                            ds1820TAG, ds2406TAG, ds2408TAG, nullptr};
 
   for (int i = 0; log_tags[i] != nullptr; i++) {
     ESP_LOGI(mTAG, "%s logging at level=%d", log_tags[i], log_level);
@@ -102,9 +102,9 @@ void mcrDS::command(void *task_data) {
 
   for (;;) {
     BaseType_t queue_rc = pdFALSE;
-    mcrCmd_t *cmd = new mcrCmd();
+    mcrCmd_t *cmd = nullptr;
 
-    queue_rc = xQueueReceive(_cmd_q, cmd, portMAX_DELAY);
+    queue_rc = xQueueReceive(_cmd_q, &cmd, portMAX_DELAY);
 
     if (queue_rc != pdTRUE) {
       ESP_LOGW(cmdTAG, "queue receive failed rc=%d", queue_rc);
@@ -116,7 +116,7 @@ void mcrDS::command(void *task_data) {
     dsDev_t *dev = (dsDev_t *)getDeviceByCmd(*cmd);
 
     if (dev == nullptr) {
-      ESP_LOGD(cmdTAG, "device %s not available", (char *)cmd->dev_id());
+      ESP_LOGD(cmdTAG, "device %s not available", (const char *)cmd->dev_id());
     }
 
     if (dev) {
@@ -136,9 +136,11 @@ void mcrDS::command(void *task_data) {
         set_rc = setDS2408(*cmd, dev);
 
       if ((set_rc) && commandAck(*cmd)) {
-        ESP_LOGD(cmdTAG, "cmd and ack complete %s", (char *)cmd->dev_id());
+        ESP_LOGD(cmdTAG, "cmd and ack complete %s",
+                 (const char *)cmd->dev_id());
       } else {
-        ESP_LOGW(cmdTAG, "cmd and/or ack failed for %s", (char *)cmd->dev_id());
+        ESP_LOGW(cmdTAG, "cmd and/or ack failed for %s",
+                 (const char *)cmd->dev_id());
       }
 
       trackSwitchCmd(false);
@@ -415,7 +417,7 @@ bool mcrDS::readDevice(mcrCmd_t &cmd) {
   return readDevice(dev_id);
 }
 
-bool mcrDS::readDevice(mcrDevID_t &id) {
+bool mcrDS::readDevice(const mcrDevID_t &id) {
   return readDevice((dsDev_t *)getDevice(id));
 }
 
@@ -681,7 +683,7 @@ void mcrDS::run(void *data) {
   ds = owb_rmt_initialize(rmt_driver, W1_PIN, RMT_CHANNEL_0, RMT_CHANNEL_1);
 
   _bus_mutex = xSemaphoreCreateMutex();
-  _cmd_q = xQueueCreate(_max_queue_len, mcrCmd::size());
+  _cmd_q = xQueueCreate(_max_queue_len, sizeof(mcrCmd_t *));
   _ds_evg = xEventGroupCreate();
 
   // the command task will wait for the queue which is fed by MQTTin
@@ -734,6 +736,7 @@ void mcrDS::run(void *data) {
     // do stuff here
 
     vTaskDelayUntil(&(_last_wake.engine), _loop_frequency);
+    runtimeMetricsReport(mTAG);
   }
 }
 
@@ -1003,5 +1006,5 @@ void mcrDS::printInvalidDev(dsDev *dev) {
     return;
   }
 
-  ESP_LOGW(mTAG, "%s dev id=%s", __PRETTY_FUNCTION__, (char *)dev->id());
+  ESP_LOGW(mTAG, "%s dev id=%s", __PRETTY_FUNCTION__, (const char *)dev->id());
 }

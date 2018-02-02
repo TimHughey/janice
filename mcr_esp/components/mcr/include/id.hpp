@@ -22,6 +22,8 @@
 #define dev_id_hpp
 
 #include <string>
+#include <tuple>
+#include <utility>
 
 #include <FreeRTOS.h>
 #include <System.h>
@@ -32,41 +34,70 @@ typedef class mcrDevID mcrDevID_t;
 
 class mcrDevID {
 private:
-  static const uint32_t _max_len = 30;
-  char _id[_max_len + 1] = {0x00}; // +1 for null terminating byte
-
-  char *_debug_str = nullptr;
+  std::string _id;
 
 public:
-  static const int max_id_len = _max_len;
-
   mcrDevID(){};
-  mcrDevID(const char *id);
-  ~mcrDevID();
-
-  static uint32_t max_len();
+  mcrDevID(const mcrDevID &obj) { _id = obj._id; };
+  mcrDevID(const char *id) { _id = id; };
+  mcrDevID(const std::string &id) { _id = id; };
 
   // support type casting from mcrDevID_t to a plain ole char array
-  operator char *();
+  inline operator const char *() const { return _id.c_str(); };
+  inline operator const std::string() { return _id; }
+
+  mcrDevID &operator=(const mcrDevID &other) // copy assignment
+  {
+    if (this != &other) { // self-assignment check expected
+      _id = other._id;
+    }
+    return *this;
+  }
+
+  // mcrDevID &operator=(mcrDevID &&other) noexcept // move assignment
+  // {
+  //   // no-op on self-move-assignment (delete[]/size=0 also ok)
+  //   if (this != &other) {
+  //     _id = other._id;
+  //     other._id = std::string(); // leave moved-from in valid state
+  //   }
+  //   return *this;
+  // }
+
+  // copy/move constructor is called to construct arg
+  // mcrDevID &operator=(mcrDevID arg) noexcept {
+  //   std::string c = arg._id;
+  //   arg._id = _id;
+  //   _id = c;
+  //
+  //   return *this;
+  // } // destructor of arg is called to release the resources formerly held by
+  // *this
 
   // NOTE:  the == ooperator will compare the actual id and not the pointers
-  bool operator==(mcrDevID_t &rhs);
+  inline bool operator==(mcrDevID_t &rhs) { return (_id == rhs._id); };
 
-  // allow comparsions of a mcrDeviID to a plain ole char string array
-  bool operator==(char *rhs);
+  // allow comparsions of a mcrDevID to a plain ole char string array
+  bool operator==(char *rhs) {
+    std::string rhs_str(rhs);
+
+    return _id == rhs_str;
+  };
+
+  inline bool operator<(const mcrDevID_t &dev_id) const {
+    return (dev_id._id < _id);
+  }
 
   // copy constructor
   // mcrDevID_t &operator=(mcrDevID_t dev_id);
   // mcrDevID_t &operator=(const char *id);
 
-  bool valid();
+  bool valid() { return !(_id.empty()); }
 
-  const char *asString();
-  char *debug();
-  void debug(char *buff, size_t);
+  bool matchPrefix(const std::string &prefix);
 
-private:
-  void initAndCopy(const char *id);
+  const char *asString() { return _id.c_str(); }
+  const std::string debug();
 };
 
 #endif // mcrDev_h

@@ -21,8 +21,11 @@
 #ifndef mcrDev_h
 #define mcrDev_h
 
+#include <cstdlib>
+#include <ios>
 #include <sstream>
 #include <string>
+#include <tuple>
 
 #include <FreeRTOS.h>
 #include <System.h>
@@ -35,29 +38,6 @@
 
 typedef class mcrDev mcrDev_t;
 class mcrDev {
-private:
-  mcrDevID_t _id;     // unique identifier of this device
-  mcrDevAddr_t _addr; // address of this device
-
-protected:
-  static const uint32_t _addr_len = mcrDevAddr::max_addr_len;
-  static const uint32_t _id_len = mcrDevID::max_id_len;
-  static const uint32_t _desc_len = 15; // max length of desciption
-
-  char _desc[_desc_len + 1] = {0x00}; // desciption of the device
-  Reading_t *_reading = nullptr;
-
-  time_t _created_mtime = time(nullptr);
-  time_t _last_seen = 0; // mtime of last time this device was discovered
-
-  int64_t _read_start_us;
-  int64_t _read_us = 0;
-
-  int64_t _write_start_us;
-  int64_t _write_us = 0;
-
-  time_t _read_timestamp = 0;
-
 public:
   mcrDev() {} // all values are defaulted in definition of class(es)
 
@@ -69,7 +49,7 @@ public:
   // operators
   // mcrDev_t &operator=(mcrDev_t &dev);
   bool operator==(mcrDevID_t &rhs); // rely on the == operator from mcrDevID_t
-  // bool operator==(mcrDev_t *rhs);
+  bool operator==(mcrDev_t *rhs);
 
   // updaters
   void justSeen();
@@ -81,7 +61,7 @@ public:
   uint8_t firstAddressByte();
   mcrDevAddr_t &addr();
   uint8_t *addrBytes();
-  mcrDevID_t &id();
+  const mcrDevID_t &id() const { return _id; };
   const char *desc();
   Reading_t *reading();
   static uint32_t idMaxLen();
@@ -103,6 +83,29 @@ public:
   virtual const std::string debug();
   virtual const std::string to_string(mcrDev_t const &);
   // virtual void debug(char *buff, size_t len);
+
+private:
+  mcrDevID_t _id;     // unique identifier of this device
+  mcrDevAddr_t _addr; // address of this device
+
+protected:
+  static const uint32_t _addr_len = mcrDevAddr::max_addr_len;
+  static const uint32_t _id_len = 30;
+  static const uint32_t _desc_len = 15; // max length of desciption
+
+  char _desc[_desc_len + 1] = {0x00}; // desciption of the device
+  Reading_t *_reading = nullptr;
+
+  time_t _created_mtime = time(nullptr);
+  time_t _last_seen = 0; // mtime of last time this device was discovered
+
+  int64_t _read_start_us;
+  int64_t _read_us = 0;
+
+  int64_t _write_start_us;
+  int64_t _write_us = 0;
+
+  time_t _read_timestamp = 0;
 };
 
 #endif // mcrDev_h

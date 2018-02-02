@@ -122,7 +122,7 @@ private:
   void *_handle_cmd_task_data = nullptr;
 
   // delay times
-  const TickType_t _loop_frequency = pdMS_TO_TICKS(1000);
+  const TickType_t _loop_frequency = pdMS_TO_TICKS(30000);
   const TickType_t _convert_frequency = pdMS_TO_TICKS(7 * 1000);
   const TickType_t _discover_frequency = pdMS_TO_TICKS(30 * 1000);
   const TickType_t _temp_convert_wait = pdMS_TO_TICKS(5);
@@ -151,7 +151,7 @@ private:
 
   // accept a mcrCmd_t as input to reportDevice
   bool readDevice(mcrCmd_t &cmd);
-  bool readDevice(mcrDevID_t &id);
+  bool readDevice(const mcrDevID_t &id);
   bool readDevice(dsDev_t *dev);
 
   // publish a device

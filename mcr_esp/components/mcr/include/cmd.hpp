@@ -23,7 +23,7 @@
 
 #include <bitset>
 #include <cstdlib>
-#include <cstring>
+// #include <cstring>
 #include <sstream>
 #include <string>
 
@@ -65,11 +65,11 @@ private:
 public:
   mcrCmd() {}
 
-  mcrCmd(mcrDevID_t &id, cmd_bitset_t mask, cmd_bitset_t state,
+  mcrCmd(const mcrDevID_t &id, cmd_bitset_t mask, cmd_bitset_t state,
          mcrRefID_t &refid);
-  mcrCmd(mcrDevID_t &id, cmd_bitset_t mask, cmd_bitset_t state);
+  mcrCmd(const mcrDevID_t &id, cmd_bitset_t mask, cmd_bitset_t state);
 
-  ~mcrCmd();
+  // ~mcrCmd();
 
   mcrDevID_t &dev_id();
   cmd_bitset_t state();
@@ -83,7 +83,7 @@ public:
 
   static size_t size();
   static mcrCmd_t *createSetSwitch(JsonObject &root, int64_t parse_us);
-  static mcrCmd_t *fromJSON(char *payload, size_t length);
+  static mcrCmd_t *fromJSON(const std::string *json);
   static cmdType_t parseCmd(JsonObject &root);
 
   const std::string debug();

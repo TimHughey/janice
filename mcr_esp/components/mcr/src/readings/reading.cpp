@@ -18,8 +18,10 @@
     https://www.wisslanding.com
 */
 
-#include <cstdlib>
-#include <cstring>
+// #include <cstdlib>
+// #include <cstring>
+#include <sstream>
+#include <string>
 
 #include <ArduinoJson.h>
 #include <FreeRTOS.h>
@@ -35,7 +37,7 @@
 
 Reading::Reading(time_t mtime) { _mtime = mtime; }
 
-Reading::Reading(mcrDevID_t &id, time_t mtime) {
+Reading::Reading(const mcrDevID_t &id, time_t mtime) {
   _id = id;
   _mtime = mtime;
 }
@@ -71,26 +73,16 @@ void Reading::commonJSON(JsonObject &root) {
   }
 }
 
-char *Reading::json(char *buffer, size_t len) {
-  const size_t json_buff_size = 512;
-  if (_json) { // prevent memory leaks with repeated calls
-    delete _json;
-    _json = nullptr;
-  }
+std::string *Reading::json(char *buffer, size_t len) {
+  std::string *json_string = new std::string;
 
-  DynamicJsonBuffer json_buffer(json_buff_size);
+  DynamicJsonBuffer json_buffer(512);
   JsonObject &root = json_buffer.createObject();
 
   commonJSON(root);
   populateJSON(root);
 
-  if (buffer == nullptr) {
-    size_t actual_len = root.measureLength() + 1;
-    _json = new char[actual_len];
-    root.printTo(_json, actual_len);
-    return _json;
-  } else {
-    root.printTo(_json, len);
-    return buffer;
-  }
+  root.printTo(*json_string);
+
+  return json_string;
 }

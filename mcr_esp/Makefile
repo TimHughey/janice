@@ -6,4 +6,3 @@
 PROJECT_NAME := mcr_esp
 
 include $(IDF_PATH)/make/project.mk
-

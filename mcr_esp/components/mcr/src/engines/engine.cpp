@@ -19,12 +19,14 @@
 */
 
 #include <cstdlib>
-#include <cstring>
+#include <iomanip>
+#include <map>
+#include <sstream>
+#include <string>
 
 #include <FreeRTOS.h>
 #include <System.h>
 #include <Task.h>
-
 #include <esp_log.h>
 #include <freertos/event_groups.h>
 
@@ -66,7 +68,6 @@ uint32_t mcrEngine::numKnownDevices() {
 //     this method then it will start a new discovery.
 //  2. if a discovery cycle is in-progress this method will execute
 //     a single search
-
 bool mcrEngine::discover() {
   bool rc = true;
 
@@ -78,15 +79,6 @@ bool mcrEngine::report() {
 
   return rc;
 }
-
-// mcrEngine::temp_convert()
-// this method should be called often to ensure proper operator.
-//
-//  1. if enough millis have elapsed since the last temperature
-//     conversion then a new one will be started if mcrEngine is
-//     idle
-//  2. if a temperature conversion is in-progress this method will
-//     do a single check to determine if conversion is finished
 
 bool mcrEngine::convert() {
   bool rc = true;
@@ -139,23 +131,28 @@ bool mcrEngine::isDeviceKnown(mcrDevID_t &id) {
   return rc;
 }
 
-bool mcrEngine::justSeenDevice(mcrDev_t &dev) {
-  auto rc = false;
+mcrDev_t *mcrEngine::justSeenDevice(mcrDev_t &dev) {
+  mcrDev_t *found_dev = nullptr;
 
   if (LOG_LOCAL_LEVEL >= ESP_LOG_DEBUG) {
     ESP_LOGD(tTAG, "just saw: %s", dev.debug().c_str());
   }
 
-  for (uint32_t i = 0; ((i < maxDevices()) && (!rc)); i++) {
+  for (uint32_t i = 0; ((i < maxDevices()) && (found_dev == nullptr)); i++) {
     mcrDev_t *search_dev = _known_devs[i];
 
     if ((search_dev) && (search_dev->id() == dev.id())) {
       search_dev->justSeen();
-      rc = true;
+      found_dev = search_dev;
     }
   }
 
-  return rc;
+  auto search = _dev_map.find(dev.id());
+  if (search != _dev_map.end()) {
+    auto map_dev = search->second;
+  }
+
+  return found_dev;
 }
 
 bool mcrEngine::addDevice(mcrDev_t *dev) {
@@ -184,6 +181,10 @@ bool mcrEngine::addDevice(mcrDev_t *dev) {
   if (rc == false) {
     ESP_LOGW(tTAG, "attempt to exceed max devices!");
   }
+
+  // auto search = _dev_map.find(*dev);
+  // if (search != _dev_map.end()) {
+  // }
 
   return rc;
 }
@@ -237,7 +238,7 @@ mcrDev_t *mcrEngine::getDevice(mcrDevAddr_t &addr) {
   return found_dev;
 }
 
-mcrDev_t *mcrEngine::getDevice(mcrDevID_t &id) {
+mcrDev_t *mcrEngine::getDevice(const mcrDevID_t &id) {
   mcrDev_t *found_dev = nullptr;
 
   for (uint32_t i = 0; ((i < maxDevices()) && (found_dev == nullptr)); i++) {
@@ -252,9 +253,11 @@ mcrDev_t *mcrEngine::getDevice(mcrDevID_t &id) {
 int64_t mcrEngine::trackPhase(mcrEngineMetric_t &phase, bool start) {
   if (start) {
     phase.start_us = esp_timer_get_time();
-    phase.elapsed_us = 0;
   } else {
-    phase.elapsed_us = esp_timer_get_time() - phase.start_us;
+    time_t recent_us = esp_timer_get_time() - phase.start_us;
+    phase.elapsed_us = (phase.elapsed_us > 0)
+                           ? ((phase.elapsed_us + recent_us) / 2)
+                           : recent_us;
     phase.start_us = 0;
     phase.last_time = time(nullptr);
   }
@@ -287,4 +290,29 @@ int64_t mcrEngine::trackSwitchCmd(bool start) {
 int64_t mcrEngine::switchCmdUS() { return metrics.switch_cmd.elapsed_us; }
 time_t mcrEngine::lastSwitchCmdTimestamp() {
   return metrics.switch_cmd.last_time;
+}
+
+void mcrEngine::runtimeMetricsReport(const char *lTAG) {
+  typedef struct {
+    const char *tag;
+    mcrEngineMetric_t *metric;
+  } metricDef_t;
+
+  std::ostringstream rep_str;
+
+  metricDef_t m[] = {{"convert", &(metrics.convert)},
+                     {"discover", &(metrics.discover)},
+                     {"report", &(metrics.report)},
+                     {"switch_cmd", &(metrics.switch_cmd)}};
+
+  for (int i = 0; i < (sizeof(m) / sizeof(metricDef_t)); i++) {
+    if (m[i].metric->elapsed_us > 0) {
+      rep_str << m[i].tag << "=";
+      rep_str << std::fixed << std::setprecision(2)
+              << ((float)(m[i].metric->elapsed_us / 1000.0));
+      rep_str << "ms ";
+    }
+  }
+
+  ESP_LOGI(lTAG, "phase metrics: %s", rep_str.str().c_str());
 }

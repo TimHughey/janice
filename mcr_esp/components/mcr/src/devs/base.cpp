@@ -57,10 +57,8 @@ mcrDev::~mcrDev() {
 //  return *this;
 //}
 // rely on the == operator from mcrDevID_t
-bool mcrDev::operator==(mcrDevID_t &rhs) {
-  return std::tie(_id, _addr) == std::tie(_id, _addr);
-};
-// bool mcrDev::operator==(mcrDev_t *rhs) { return (_id == rhs->_id); }
+
+bool mcrDev::operator==(mcrDev_t *rhs) { return (_id == rhs->_id); }
 
 void mcrDev::justSeen() { _last_seen = time(nullptr); }
 
@@ -85,7 +83,6 @@ void mcrDev::setDesc(const char *desc) {
 uint8_t mcrDev::firstAddressByte() { return _addr.firstAddressByte(); };
 mcrDevAddr_t &mcrDev::addr() { return _addr; }
 uint8_t *mcrDev::addrBytes() { return (uint8_t *)_addr; }
-mcrDevID_t &mcrDev::id() { return _id; };
 const char *mcrDev::desc() { return _desc; };
 Reading_t *mcrDev::reading() { return _reading; }
 uint32_t mcrDev::idMaxLen() { return _id_len; };
@@ -117,7 +114,7 @@ int64_t mcrDev::writeUS() { return _write_us; }
 const std::string mcrDev::debug() {
   std::ostringstream debug_str;
 
-  debug_str << "mcrDev(" << _addr.debug() << " id=" << (char *)id()
+  debug_str << "mcrDev(" << _addr.debug() << " id=" << (const char *)id()
             << " desc=" << (char *)desc() << " rus=" << readUS()
             << " wus=" << writeUS() << " reading=" << (void *)_reading << ")";
 

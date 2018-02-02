@@ -22,7 +22,7 @@
 #define mcr_mqtt_in_h
 
 #include <cstdlib>
-#include <cstring>
+#include <string>
 #include <vector>
 
 #include <FreeRTOS.h>
@@ -50,6 +50,12 @@ typedef struct {
 
 typedef class mcrMQTTin mcrMQTTin_t;
 class mcrMQTTin : public Task {
+public:
+  mcrMQTTin(Ringbuffer *rb);
+
+  void registerCmdQueue(cmdQueue_t &cmd_q);
+  void run(void *data);
+
 private:
   Ringbuffer *_rb;
 
@@ -64,20 +70,7 @@ private:
   const char *_rpt_feed = "prod/mcr/f/report";
   // const char *_cmd_feed = "prod/mcr/f/command";
 
-  // const int _msg_version = 1;
-
-public:
-  mcrMQTTin(Ringbuffer *rb);
-
-  void registerCmdQueue(cmdQueue_t &cmd_q);
-  void run(void *data);
-
-private:
   void handleMsg(char *json);
-
-  static void setDebug(bool mode);
-  static void debugOn();
-  static void debugOff();
 };
 
 #endif // mqtt_in_h
