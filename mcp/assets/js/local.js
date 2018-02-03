@@ -204,6 +204,7 @@ function createSwitchesTable() {
           data: {
             name: newName,
           },
+          dataType: 'json',
           beforeSend(xhr) {
             // send the CSRF token included as a meta on the HTML page
             const token = jQuery("meta[name='csrf-token']").attr('content');
@@ -391,6 +392,7 @@ function createSensorsTable() {
           data: {
             name: newName,
           },
+          dateType: 'json',
           beforeSend(xhr) {
             // send the CSRF token included as a meta on the HTML page
             const token = jQuery("meta[name='csrf-token']").attr('content');
