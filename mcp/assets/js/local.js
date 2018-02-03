@@ -214,8 +214,8 @@ function createSwitchesTable() {
             console.log('error xhr:', xhr);
             displayStatus(`Error changing name of ${name}`);
           },
-          success(xhr, status) {
-            const response = xhr.responseJSON();
+          success(data, status, jqXHR) {
+            const response = jqXHR.responseJSON();
             displayStatus(`Switch name changed to ${response.name}`);
           },
           complete(xhr, status) {
@@ -292,11 +292,11 @@ function createSwitchesTable() {
             const token = jQuery("meta[name='csrf-token']").attr('content');
             xhr.setRequestHeader('X-CSRF-Token', token);
           },
-          error(xhr, status, error) {
-            console.log('error xhr:', xhr);
+          error(jqXHR, status, error) {
+            console.log('error xhr:', jqXHR);
             displayStatus(`Error toggling ${name}`);
           },
-          success(xhr, status) {
+          success(data, status, jqXHR) {
             displayStatus(`Toggled switch ${name}`);
           },
           complete(xhr, status) {
@@ -403,9 +403,8 @@ function createSensorsTable() {
             displayStatus(`Error changing name of ${name}`);
           },
           success(data, status, jqXHR) {
-            console.log(data, status, jqXHR);
-            // const response = xhr.responseJSON();
-            displayStatus('Sensor name changed to');
+            const response = jqXHR.responseJSON();
+            displayStatus(`Sensor name changed to ${response}`);
           },
           complete(xhr, status) {
             sensorTable.ajax.reload(null, false);
@@ -443,7 +442,11 @@ function createSensorsTable() {
             displayStatus(`Error deleting ${name}`);
           },
           success(xhr, status) {
-            displayStatus(`Deleted sensor ${name}`);
+            displayStatus(`
+                            Deleted sensor $ {
+                              name
+                            }
+                            `);
           },
           complete(xhr, status) {
             sensorTable.ajax.reload(null, false);
