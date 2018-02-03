@@ -37,7 +37,8 @@ defmodule Dutycycle.CycleTask do
       "[#{dc.name}] profile [#{profile}] idle_ms < 1, " <> "skipping idle phase"
     end)
 
-    State.set_idling(dc)
+    # will basically do nothing however consistently returns the same as other functions
+    :timer.sleep(idle_ms)
   end
 
   defp idle_phase(%Dutycycle{} = dc, %Profile{idle_ms: idle_ms}, _opts)
@@ -54,7 +55,8 @@ defmodule Dutycycle.CycleTask do
       "[#{dc.name}] profile [#{profile}] run_ms < 1, " <> "skipping run phase"
     end)
 
-    State.set_running(dc)
+    # will basically do nothing however consistently returns the same as other functions
+    :timer.sleep(run_ms)
   end
 
   defp run_phase(%Dutycycle{} = dc, %Profile{run_ms: run_ms}, _opts)
