@@ -216,7 +216,7 @@ function createSwitchesTable() {
           },
           success(data, status, jqXHR) {
             console.log(data, status, jqXHR);
-            displayStatus('Switch name changed');
+            displayStatus(`Switch name changed to ${data.name}`);
             // const response = jqXHR.responseJSON();
             // displayStatus(`Switch name changed to ${response.name}`);
           },
@@ -406,7 +406,7 @@ function createSensorsTable() {
           },
           success(data, status, jqXHR) {
             console.log(data, status, jqXHR);
-            displayStatus('Sensor name changed');
+            displayStatus(`Sensor name changed to ${data.name}`);
             // const response = jqXHR.responseJSON();
             // displayStatus(`Sensor name changed to ${response}`);
           },
