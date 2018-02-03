@@ -402,9 +402,10 @@ function createSensorsTable() {
             console.log('error xhr:', xhr);
             displayStatus(`Error changing name of ${name}`);
           },
-          success(xhr, status) {
-            const response = xhr.responseJSON();
-            displayStatus(`Sensor name changed to ${response.name}`);
+          success(data, status, jqXHR) {
+            console.log(data, status, jqXHR);
+            // const response = xhr.responseJSON();
+            displayStatus('Sensor name changed to');
           },
           complete(xhr, status) {
             sensorTable.ajax.reload(null, false);
