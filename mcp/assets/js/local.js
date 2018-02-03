@@ -215,8 +215,10 @@ function createSwitchesTable() {
             displayStatus(`Error changing name of ${name}`);
           },
           success(data, status, jqXHR) {
-            const response = jqXHR.responseJSON();
-            displayStatus(`Switch name changed to ${response.name}`);
+            console.log(data, status, jqXHR);
+            displayStatus('Switch name changed');
+            // const response = jqXHR.responseJSON();
+            // displayStatus(`Switch name changed to ${response.name}`);
           },
           complete(xhr, status) {
             switchTable.ajax.reload(null, false);
@@ -403,8 +405,10 @@ function createSensorsTable() {
             displayStatus(`Error changing name of ${name}`);
           },
           success(data, status, jqXHR) {
-            const response = jqXHR.responseJSON();
-            displayStatus(`Sensor name changed to ${response}`);
+            console.log(data, status, jqXHR);
+            displayStatus('Sensor name changed');
+            // const response = jqXHR.responseJSON();
+            // displayStatus(`Sensor name changed to ${response}`);
           },
           complete(xhr, status) {
             sensorTable.ajax.reload(null, false);
