@@ -3,8 +3,7 @@
 use Mix.Config
 
 # external app configuration
-config :distillery,
-  no_warn_missing: [:distillery]
+config :distillery, no_warn_missing: [:distillery]
 
 # Configures Elixir's Logger
 config :logger,
@@ -15,7 +14,7 @@ config :logger,
 # General application configuration
 config :mcp,
   ecto_repos: [Repo],
-  build_env: "#{Mix.env}",
+  build_env: "#{Mix.env()}",
   namespace: Web,
   generators: [context_app: false],
   # default settings for dev and test, must override in prod
@@ -27,23 +26,20 @@ config :mcp,
 
 # Configures the endpoint
 config :mcp, Web.Endpoint,
-  #url: [host: "localhost", path: "/mercurial"],
+  # url: [host: "localhost", path: "/mercurial"],
   url: [host: "localhost"],
   # good enough for development and test
   # real secret_key is set in prod.secrets.exs
   secret_key_base: "F+nBtFWds844L6U1OrfNhZcui+qPsPZYB6E5GM1H1skAdb14Jnmp14nLUKYNjmbH",
   render_errors: [view: Web.ErrorView, accepts: ~w(html json)],
-  pubsub: [name: Web.PubSub,
-           pool_size: 1,
-           adapter: Phoenix.PubSub.PG2]
+  pubsub: [name: Web.PubSub, pool_size: 1, adapter: Phoenix.PubSub.PG2]
 
 config :mcp, Dispatcher.InboundMessage,
   log_reading: false,
   temperature_msgs: {Sensor, :external_update},
   switch_msgs: {Switch, :external_update}
 
-config :ueberauth, Ueberauth,
-  base_path: "/mercurial/auth"
+config :ueberauth, Ueberauth, base_path: "/mercurial/auth"
 
 # configured here for reference, actual secrets set in prod.secret.exs
 config :ueberauth, Ueberauth.Strategy.Github.OAuth,
@@ -69,4 +65,4 @@ config :mcp, Web.ApiAuthAccessPipeline,
   module: Web.Guardian,
   error_handler: Web.ApiAuthErrorHandler
 
-import_config "#{Mix.env}.exs"
+import_config "#{Mix.env()}.exs"

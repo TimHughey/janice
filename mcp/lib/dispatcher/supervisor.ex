@@ -6,14 +6,13 @@ defmodule Dispatcher.Supervisor do
   import Application, only: [fetch_env: 2]
 
   def init(_args) do
-
-    Logger.info fn -> "init()" end
+    Logger.info(fn -> "init()" end)
 
     autostart =
-    case fetch_env(:mcp, :build_env) do
-      {:ok, "test"}  -> false
-      _anything_else -> true
-    end
+      case fetch_env(:mcp, :build_env) do
+        {:ok, "test"} -> false
+        _anything_else -> true
+      end
 
     children = [
       {Dispatcher.InboundMessage, %{autostart: autostart}}

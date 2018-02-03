@@ -6,10 +6,9 @@ defmodule Web.AuthErrorHandler do
   import Plug.Conn
   import Web.Router.Helpers
 
-  def auth_error(conn,
-                  {:invalid_token = type, :invalid_issuer = reason}, opts) do
-    Logger.info fn -> "type: #{inspect(type)} reason: #{inspect(reason)}" end
-    Logger.info fn -> "opts: #{inspect(opts)}" end
+  def auth_error(conn, {:invalid_token = type, :invalid_issuer = reason}, opts) do
+    Logger.info(fn -> "type: #{inspect(type)} reason: #{inspect(reason)}" end)
+    Logger.info(fn -> "opts: #{inspect(opts)}" end)
 
     conn
     |> configure_session(drop: true)
@@ -19,8 +18,8 @@ defmodule Web.AuthErrorHandler do
 
   def auth_error(conn, {type, reason}, opts) do
     # Logger.info fn -> inspect(conn) end
-    Logger.info fn -> "type: #{inspect(type)} reason: #{inspect(reason)}" end
-    Logger.info fn -> "opts: #{inspect(opts)}" end
+    Logger.info(fn -> "type: #{inspect(type)} reason: #{inspect(reason)}" end)
+    Logger.info(fn -> "opts: #{inspect(opts)}" end)
 
     # body = Poison.encode!(%{message: to_string(type)})
     # send_resp(conn, 401, body)

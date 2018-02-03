@@ -10,7 +10,8 @@ defmodule Web.SensorController do
 
     data =
       for s <- sensors do
-        %{type: "sensor",
+        %{
+          type: "sensor",
           id: s.id,
           name: s.name,
           device: s.device,
@@ -18,28 +19,25 @@ defmodule Web.SensorController do
           dev_latency: s.dev_latency,
           last_seen_secs: humanize_secs(s.last_seen_at),
           reading_secs: humanize_secs(s.reading_at),
-          celsius: s.temperature.tc}
+          celsius: s.temperature.tc
+        }
       end
 
-    resp = %{data: data,
-             items: Enum.count(data),
-             mtime: Timex.local |> Timex.to_unix}
+    resp = %{data: data, items: Enum.count(data), mtime: Timex.local() |> Timex.to_unix()}
 
     json(conn, resp)
   end
 
   def delete(conn, %{"id" => id}) do
-    Logger.info fn -> ~s(DELETE #{conn.request_path}) end
+    Logger.info(fn -> ~s(DELETE #{conn.request_path}) end)
 
     {rows, _} = Sensor.delete(String.to_integer(id))
 
     json(conn, %{rows: rows})
   end
 
-  def update(%{method: "PATCH"} = conn,
-    %{"id" => id, "name" => new_name} = _params) do
-
-    Logger.info fn -> ~s(#{conn.method} #{conn.request_path}) end
+  def update(%{method: "PATCH"} = conn, %{"id" => id, "name" => new_name} = _params) do
+    Logger.info(fn -> ~s(#{conn.method} #{conn.request_path}) end)
 
     Sensor.change_name(String.to_integer(id), new_name, "changed via web")
 
@@ -49,7 +47,7 @@ defmodule Web.SensorController do
   defp humanize_secs(nil), do: 0
 
   defp humanize_secs(%DateTime{} = dt) do
-    Timex.diff(Timex.now(), dt, :seconds) # |> humanize_secs
+    # |> humanize_secs
+    Timex.diff(Timex.now(), dt, :seconds)
   end
-
 end

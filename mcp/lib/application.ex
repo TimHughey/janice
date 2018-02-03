@@ -7,14 +7,13 @@ defmodule Mcp.Application do
   import Keyword, only: [has_key?: 2]
 
   def start(_type, args) do
-
-    Logger.info fn -> "start() args: #{inspect(args)}" end
+    Logger.info(fn -> "start() args: #{inspect(args)}" end)
 
     autostart =
-    case fetch_env(:mcp, :build_env) do
-      {:ok, "test"}  -> false
-      _anything_else -> true
-    end
+      case fetch_env(:mcp, :build_env) do
+        {:ok, "test"} -> false
+        _anything_else -> true
+      end
 
     initial = %{autostart: autostart}
 

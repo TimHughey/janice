@@ -28,12 +28,12 @@ defmodule Web do
 
   def view do
     quote do
-      use Phoenix.View, root: "lib/web/templates",
-                        namespace: Web
+      use Phoenix.View,
+        root: "lib/web/templates",
+        namespace: Web
 
       # Import convenience functions from controllers
-      import Phoenix.Controller, only: [get_flash: 2, view_module: 1,
-                                        get_csrf_token: 0]
+      import Phoenix.Controller, only: [get_flash: 2, view_module: 1, get_csrf_token: 0]
 
       # Use all HTML functionality (forms, tags, etc)
       use Phoenix.HTML
@@ -48,9 +48,9 @@ defmodule Web do
 
       def auth_provider(conn) do
         {provider, _} =
-          Application.get_env(:ueberauth, Ueberauth) |>
-          Keyword.get(:providers) |>
-          hd
+          Application.get_env(:ueberauth, Ueberauth)
+          |> Keyword.get(:providers)
+          |> hd
 
         "#{provider}"
       end

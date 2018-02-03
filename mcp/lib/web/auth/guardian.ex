@@ -3,14 +3,16 @@ defmodule Web.Guardian do
   """
   use Guardian, otp_app: :mcp
 
-    def subject_for_token(resource, _claims), do: {:ok, to_string(resource.id)}
-    def resource_from_claims(claims) do
-      find_me_a_resource(claims["sub"]) # {:ok, resource} or {:error, reason}
-    end
+  def subject_for_token(resource, _claims), do: {:ok, to_string(resource.id)}
 
-    defp find_me_a_resource(sub) do
-      {:ok, sub}
-    end
+  def resource_from_claims(claims) do
+    # {:ok, resource} or {:error, reason}
+    find_me_a_resource(claims["sub"])
+  end
+
+  defp find_me_a_resource(sub) do
+    {:ok, sub}
+  end
 
   # def subject_for_token(resource, _claims) do
   #   # You can use any value for the subject of your token but

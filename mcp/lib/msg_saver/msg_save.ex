@@ -14,11 +14,11 @@ defmodule MessageSave do
   import Repo, only: [delete_all: 1, one!: 1, insert!: 1]
 
   schema "message" do
-    field :direction, :string
-    field :payload, :string
-    field :dropped, :boolean
+    field(:direction, :string)
+    field(:payload, :string)
+    field(:dropped, :boolean)
 
-    timestamps usec: true
+    timestamps(usec: true)
   end
 
   def message_count do
@@ -41,7 +41,7 @@ defmodule MessageSave do
   @startup_msg {:startup}
   def init(s) when is_map(s) do
     if s.autostart, do: send_after(self(), @startup_msg, 0)
-    Logger.info fn -> "init()" end
+    Logger.info(fn -> "init()" end)
 
     {:ok, s}
   end
@@ -55,7 +55,7 @@ defmodule MessageSave do
   end
 
   def terminate(reason, _state) do
-    Logger.info fn -> "terminating with reason #{inspect(reason)}" end
+    Logger.info(fn -> "terminating with reason #{inspect(reason)}" end)
   end
 
   def handle_call({@runtime_opts_msg}, _from, s) do
@@ -72,25 +72,23 @@ defmodule MessageSave do
     {:noreply, s}
   end
 
-  def handle_cast({@save_msg, direction, payload, dropped},
-    %{opts: %{save: true}} = s) do
+  def handle_cast({@save_msg, direction, payload, dropped}, %{opts: %{save: true}} = s) do
+    %MessageSave{direction: Atom.to_string(direction), payload: payload, dropped: dropped}
+    |> insert!()
 
-    %MessageSave{direction: Atom.to_string(direction),
-                 payload: payload,
-                 dropped: dropped} |> insert!()
+    older_dt =
+      Timex.to_datetime(Timex.now(), "UTC")
+      |> Timex.shift(hours: s.opts.delete_older_than_hrs * -1)
 
-    older_dt = Timex.to_datetime(Timex.now(), "UTC") |>
-                Timex.shift(hours: (s.opts.delete_older_than_hrs * -1))
-
-    from(ms in MessageSave, where: ms.inserted_at < ^older_dt) |>
-      delete_all()
+    from(ms in MessageSave, where: ms.inserted_at < ^older_dt)
+    |> delete_all()
 
     {:noreply, s}
   end
 
   def handle_info(@startup_msg, s) do
     opts = Map.get(s, :opts)
-    Logger.info fn -> "startup(), opts: #{inspect(opts)}" end
+    Logger.info(fn -> "startup(), opts: #{inspect(opts)}" end)
 
     {:noreply, s}
   end

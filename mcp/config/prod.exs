@@ -6,39 +6,41 @@ config :logger,
   # level: debug,
   level: :info
 
-config :mcp,
-  feeds: [cmd: "prod/mcr/f/command", rpt: "prod/mcr/f/report"]
+config :mcp, feeds: [cmd: "prod/mcr/f/command", rpt: "prod/mcr/f/report"]
 
 config :mcp, MessageSave,
   save: true,
-  delete_older_than_hrs: (7 * 24)
+  delete_older_than_hrs: 7 * 24
 
 config :mcp, Command.Control,
-  timesync: [frequency: (60 * 1000), loops: 0, forever: true, log: false]
+  timesync: [frequency: 60 * 1000, loops: 0, forever: true, log: false]
 
 config :mcp, Dispatcher.InboundMessage,
-  periodic_log_first_ms: (60 * 60 * 1000),
-  periodic_log_ms: (120 * 60 * 1000)
+  periodic_log_first_ms: 60 * 60 * 1000,
+  periodic_log_ms: 120 * 60 * 1000
 
 config :mcp, Fact.Influx,
-  database:  "mcp_repo",
-  host:      "** set in prod.secret.exs",
-  auth:      [method: :basic,
-              username: "** set in prod.secret.exs",
-              password: "** set in prod.secret.exs"],
+  database: "mcp_repo",
+  host: "** set in prod.secret.exs",
+  auth: [
+    method: :basic,
+    username: "** set in prod.secret.exs",
+    password: "** set in prod.secret.exs"
+  ],
   http_opts: [insecure: true],
-  pool:      [max_overflow: 10, size: 5, timeout: 150_000, max_connections: 10],
-  port:      8086,
-  scheme:    "http",
-  writer:    Instream.Writer.Line,
-  periodic_log_first_ms: (1 * 60 * 1000),
-  periodic_log_ms: (15 * 60 * 1000)
+  pool: [max_overflow: 10, size: 5, timeout: 150_000, max_connections: 10],
+  port: 8086,
+  scheme: "http",
+  writer: Instream.Writer.Line,
+  periodic_log_first_ms: 1 * 60 * 1000,
+  periodic_log_ms: 15 * 60 * 1000
 
 config :mcp, Mcp.SoakTest,
-  startup_delay_ms: 0,  # don't start
-  periodic_log_first_ms: (30 * 60 * 1000),
-  periodic_log_ms: (60 * 60 * 1000),
-  flash_led_ms: (3 * 1000)
+  # don't start
+  startup_delay_ms: 0,
+  periodic_log_first_ms: 30 * 60 * 1000,
+  periodic_log_ms: 60 * 60 * 1000,
+  flash_led_ms: 3 * 1000
 
 config :mcp, Repo,
   adapter: Ecto.Adapters.Postgres,
@@ -48,32 +50,32 @@ config :mcp, Repo,
   hostname: "** set in prod.secret.exs",
   pool_size: 10
 
-config :mcp, Switch,
-  logCmdAck: false
+config :mcp, Switch, logCmdAck: false
 
 config :mcp, Janitor,
-  switch_cmds: [purge: true, interval_mins: 2,
-                older_than_hrs: (24 * 30), log: true],
+  switch_cmds: [purge: true, interval_mins: 2, older_than_hrs: 24 * 30, log: true],
   orphan_acks: [interval_mins: 1, older_than_mins: 1, log: true]
 
 config :mcp, Mcp.Chamber,
   autostart_wait_ms: 0,
   routine_check_ms: 1000
 
-config :mcp, Mixtank,
-  control_temp_secs: 27
+config :mcp, Mixtank, control_temp_secs: 27
 
-config :mcp, Dutycycle,
-  routine_check_ms: 1000
+config :mcp, Dutycycle, routine_check_ms: 1000
 
 config :mcp, Mqtt.Client,
-  broker: [client_id: "mercurial-prod",
-            clean_session: 1,
-            username: "** set in prod.secret.exs",
-            password: "** set in prod.secret.exs",
-            host: "** set in prod.secret.exs",
-            port: 1883, ssl: false],
-            feeds: [topics: ["prod/mcr/f/report"], qoses: [0]] # subscribe
+  broker: [
+    client_id: "mercurial-prod",
+    clean_session: 1,
+    username: "** set in prod.secret.exs",
+    password: "** set in prod.secret.exs",
+    host: "** set in prod.secret.exs",
+    port: 1883,
+    ssl: false
+  ],
+  # subscribe
+  feeds: [topics: ["prod/mcr/f/report"], qoses: [0]]
 
 config :mcp, Web.Endpoint,
   # http: [port: {:system, "PORT"}],
@@ -85,15 +87,20 @@ config :mcp, Web.Endpoint,
   server: true,
   # root: ".",
   version: Application.spec(:mcp, :vsn)
-  # secret_key_base: set in prod.secret.exs
+
+# secret_key_base: set in prod.secret.exs
 
 config :ueberauth, Ueberauth,
   providers: [
-    github: {Ueberauth.Strategy.Github,
-              [default_scope: "user,public_repo",
-               # set URI redirect mismatch errors since we are
-               # proxied behind nginx
-               send_redirect_uri: false]}]
+    github:
+      {Ueberauth.Strategy.Github,
+       [
+         default_scope: "user,public_repo",
+         # set URI redirect mismatch errors since we are
+         # proxied behind nginx
+         send_redirect_uri: false
+       ]}
+  ]
 
 # Tell phoenix to actually serve endpoints when run as a release
 config :phoenix, :serve_endpoints, true

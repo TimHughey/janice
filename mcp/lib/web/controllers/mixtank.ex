@@ -6,8 +6,8 @@ defmodule Web.MixtankController do
   use Web, :controller
 
   def update(%{method: "PATCH"} = conn, %{"id" => mixtank, "newprofile" => profile} = _params)
-  when is_binary(mixtank) do
-    Logger.info fn -> ~s(#{conn.method} #{conn.request_path}) end
+      when is_binary(mixtank) do
+    Logger.info(fn -> ~s(#{conn.method} #{conn.request_path}) end)
 
     Mixtank.Control.activate_profile(mixtank, profile)
     active_profile = Mixtank.active_profile(mixtank, :name)
@@ -16,18 +16,20 @@ defmodule Web.MixtankController do
   end
 
   def index(conn, _params) do
-    Logger.info fn -> ~s(INDEX #{conn.request_path}) end
+    Logger.info(fn -> ~s(INDEX #{conn.request_path}) end)
 
     all_mts = Mixtank.all()
 
-    mts = for mt <- all_mts do
-      profiles = for p <- mt.profiles do
-        p.name
+    mts =
+      for mt <- all_mts do
+        profiles =
+          for p <- mt.profiles do
+            p.name
+          end
+
+        %{mixtank: mt.name, profiles: profiles}
       end
 
-      %{mixtank: mt.name, profiles: profiles}
-    end
-
-    render conn, "all.json", %{all: mts}
+    render(conn, "all.json", %{all: mts})
   end
 end

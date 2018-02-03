@@ -7,5 +7,4 @@ defmodule Web.MixtankView do
   def render("all.json", %{all: list}) do
     %{all: list}
   end
-
 end
