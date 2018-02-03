@@ -71,7 +71,7 @@ typedef struct {
 #define MAX_DEV_NAME 20
 
 typedef class mcrI2c mcrI2c_t;
-class mcrI2c : public mcrEngine, public Task {
+class mcrI2c : public mcrEngine<i2cDev_t>, public Task {
 private:
   static const uint32_t _max_buses = 8;
   bool _use_multiplexer = false;

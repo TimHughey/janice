@@ -54,7 +54,7 @@ mcrCmd::mcrCmd(const mcrDevID_t &id, cmd_bitset_t mask, cmd_bitset_t state,
 
 // mcrCmd::~mcrCmd() {}
 
-mcrDevID_t &mcrCmd::dev_id() { return _dev_id; }
+const mcrDevID_t &mcrCmd::dev_id() const { return _dev_id; }
 
 cmd_bitset_t mcrCmd::state() { return _state; }
 

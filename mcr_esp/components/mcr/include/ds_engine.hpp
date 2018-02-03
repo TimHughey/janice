@@ -89,7 +89,7 @@ typedef struct {
 } dsEventBits_t;
 
 typedef class mcrDS mcrDS_t;
-class mcrDS : public mcrEngine, public Task {
+class mcrDS : public mcrEngine<dsDev_t>, public Task {
 
 public:
   mcrDS(mcrMQTT *mqtt, EventGroupHandle_t evg, int bit);
@@ -133,11 +133,6 @@ private:
   static void runCommand(void *data);
   static void runReport(void *data);
 
-  // dsDev_t *dsDevGetDevice(mcrDevID_t &id);
-  dsDev_t *getDeviceByCmd(mcrCmd_t &cmd);
-  dsDev_t *getDeviceByCmd(mcrCmd_t *cmd);
-  void setCmdAck(mcrCmd_t &cmd);
-
   // tasks
   void discover(void *data);
   void convert(void *data);
@@ -150,19 +145,14 @@ private:
   bool devicesPowered() { return _devices_powered; }
 
   // accept a mcrCmd_t as input to reportDevice
-  bool readDevice(mcrCmd_t &cmd);
-  bool readDevice(const mcrDevID_t &id);
+  // bool readDevice(mcrCmd_t &cmd);
+  // bool readDevice(const mcrDevID_t &id);
   bool readDevice(dsDev_t *dev);
 
-  // publish a device
-  bool publishDevice(mcrCmd_t &cmd);
-  bool publishDevice(mcrDevID_t &id);
-  bool publishDevice(dsDev_t *dev);
-
   // specific methods to read devices
-  bool readDS1820(dsDev *dev, celsiusReading_t **reading);
-  bool readDS2408(dsDev *dev, positionsReading_t **reading = nullptr);
-  bool readDS2406(dsDev *dev, positionsReading_t **reading);
+  bool readDS1820(dsDev_t *dev, celsiusReading_t **reading);
+  bool readDS2408(dsDev_t *dev, positionsReading_t **reading = nullptr);
+  bool readDS2406(dsDev_t *dev, positionsReading_t **reading);
 
   bool setDS2406(mcrCmd_t &cmd, dsDev_t *dev);
   bool setDS2408(mcrCmd_t &cmd, dsDev_t *dev);
@@ -174,7 +164,7 @@ private:
                           const uint8_t *inverted_crc, uint16_t crc = 0);
   static uint16_t crc16(const uint8_t *input, uint16_t len, uint16_t crc);
 
-  void printInvalidDev(dsDev *dev);
+  void printInvalidDev(dsDev_t *dev);
 };
 
 #endif // mcr_ds_h

@@ -27,6 +27,7 @@
 
 #include <FreeRTOS.h>
 #include <System.h>
+#include <esp_log.h>
 #include <sys/time.h>
 #include <time.h>
 
@@ -38,9 +39,21 @@ private:
 
 public:
   mcrDevID(){};
-  mcrDevID(const mcrDevID &obj) { _id = obj._id; };
-  mcrDevID(const char *id) { _id = id; };
-  mcrDevID(const std::string &id) { _id = id; };
+  mcrDevID(const mcrDevID &obj) {
+    ESP_LOGD("mcrDevID", "%s _id(%p) = obj(%p)._id(%p)%s", __PRETTY_FUNCTION__,
+             (void *)&_id, (void *)&obj, (void *)&(obj._id), obj._id.c_str());
+    _id = obj._id;
+  };
+  mcrDevID(const char *id) {
+    ESP_LOGD("mcrDevID", "%s _id(%p)=id(%p)%s", __PRETTY_FUNCTION__,
+             (void *)&_id, (void *)&id, id);
+    _id = id;
+  };
+  mcrDevID(const std::string &id) {
+    ESP_LOGD("mcrDevID", "%s _id(%p)=id(%p)%s", __PRETTY_FUNCTION__,
+             (void *)&_id, (void *)&id, id.c_str());
+    _id = id;
+  };
 
   // support type casting from mcrDevID_t to a plain ole char array
   inline operator const char *() const { return _id.c_str(); };
@@ -75,17 +88,41 @@ public:
   // *this
 
   // NOTE:  the == ooperator will compare the actual id and not the pointers
-  inline bool operator==(mcrDevID_t &rhs) { return (_id == rhs._id); };
+  inline bool operator==(const mcrDevID_t &rhs) const {
+    bool rc = _id == rhs._id;
 
-  // allow comparsions of a mcrDevID to a plain ole char string array
-  bool operator==(char *rhs) {
-    std::string rhs_str(rhs);
+    ESP_LOGD("mcrDevID", "%s %s == %s", ((rc) ? "TRUE" : "FALSE"), _id.c_str(),
+             rhs._id.c_str());
 
-    return _id == rhs_str;
+    return rc;
   };
 
+  // allow comparsions of a mcrDevID to a plain ole char string array
+  bool operator==(const char *rhs) const {
+    std::string rhs_str(rhs);
+    bool rc = _id == rhs_str;
+
+    ESP_LOGD("mcrDevID", "%s %s == %s", ((rc) ? "TRUE" : "FALSE"), _id.c_str(),
+             rhs_str.c_str());
+
+    return rc;
+  };
+
+  // bool operator==(const mcrDevID &rhs) {
+  //   bool rc = _id == rhs._id;
+  //
+  //   ESP_LOGI("mcrDevID", "rc=%d when comparing %s to %s", rc, _id.c_str(),
+  //            rhs._id.c_str());
+  //
+  //   return rc;
+  // }
+
   inline bool operator<(const mcrDevID_t &dev_id) const {
-    return (dev_id._id < _id);
+    bool rc = dev_id._id < _id;
+
+    ESP_LOGD("mcrDevID", "%s %s < %s", ((rc) ? "TRUE" : "FALSE"),
+             dev_id._id.c_str(), _id.c_str());
+    return rc;
   }
 
   // copy constructor

@@ -47,7 +47,7 @@
 #include "readings.hpp"
 #include "util.hpp"
 
-static const char baseTAG[] = "mcrI2c";
+static const char engTAG[] = "mcrI2c";
 static const char disTAG[] = "mcrI2c discover";
 static const char detTAG[] = "mrcI2c detectDev";
 static const char readAM2315TAG[] = "mcrI2c readAM2315";
@@ -56,16 +56,18 @@ static const char repTAG[] = "mrcI2c report";
 static const char selTAG[] = "mrcI2c selectBus";
 
 mcrI2c::mcrI2c(mcrMQTT_t *mqtt, EventGroupHandle_t evg, int bit)
-    : mcrEngine(mqtt), Task(baseTAG, 5 * 1024, 10) {
+    : Task(engTAG, 5 * 1024, 10) {
+  _mqtt = mqtt;
   _ev_group = evg;
   _wait_bit = bit;
+  _engTAG = engTAG;
 
   esp_log_level_t log_level = ESP_LOG_WARN;
   const char *log_tags[] = {disTAG,        detTAG,       repTAG, selTAG,
                             readAM2315TAG, readSHT31TAG, nullptr};
 
   for (int i = 0; log_tags[i] != nullptr; i++) {
-    ESP_LOGI(baseTAG, "%s logging at level=%d", log_tags[i], log_level);
+    ESP_LOGI(engTAG, "%s logging at level=%d", log_tags[i], log_level);
     esp_log_level_set(log_tags[i], log_level);
   }
 
@@ -149,7 +151,7 @@ bool mcrI2c::detectDevice(mcrDevAddr_t &addr) {
     break;
 
   default:
-    ESP_LOGD(baseTAG, "%s not found (esp_rc=0x%02x)", addr.debug().c_str(),
+    ESP_LOGD(engTAG, "%s not found (esp_rc=0x%02x)", addr.debug().c_str(),
              esp_rc);
   }
 
@@ -191,7 +193,7 @@ bool mcrI2c::detectMultiplexer() {
   mcrDevAddr_t multiplexer_dev(0x70);
 
   for (int i = 1; ((i <= 3) && (_use_multiplexer == false)); i++) {
-    ESP_LOGI(detTAG, "detecting TCA9548A multiplexer (attempt %d/%d)", i,
+    ESP_LOGD(detTAG, "detecting TCA9548A multiplexer (attempt %d/%d)", i,
              max_attempts);
 
     if (detectDevice(multiplexer_dev)) {
@@ -231,7 +233,7 @@ void mcrI2c::discover(void *task_data) {
 uint32_t mcrI2c::maxBuses() { return _max_buses; }
 
 void mcrI2c::printUnhandledDev(i2cDev_t *dev) {
-  ESP_LOGW(baseTAG, "unhandled dev 0x%02x desc: %s use_mplex: 0x%x bus: 0x%x",
+  ESP_LOGW(engTAG, "unhandled dev 0x%02x desc: %s use_mplex: 0x%x bus: 0x%x",
            dev->devAddr(), dev->desc(), dev->useMultiplexer(), dev->bus());
 }
 
@@ -250,9 +252,6 @@ bool mcrI2c::readAM2315(i2cDev_t *dev, humidityReading_t **reading, bool wake) {
       0x00, 0x00, // tempC high byte, low byte
       0x00, 0x00  // CRC high byte, low byte
   };
-
-  //*reading = nullptr;
-  // bzero(buff, sizeof(buff));
 
   dev->startRead();
 
@@ -462,14 +461,13 @@ bool mcrI2c::readSHT31(i2cDev_t *dev, humidityReading_t **reading) {
 }
 
 void mcrI2c::report(void *task_data) {
-  i2cDev_t *dev = nullptr;
 
   trackReport(true);
 
-  dev = (i2cDev_t *)getFirstKnownDevice();
-
-  while (dev) {
-    bool rc = false;
+  // while (next_dev != nullptr) {
+  for (auto it = knownDevices(); moreDevices(it); it++) {
+    auto rc = false;
+    i2cDev_t *dev = (i2cDev_t *)*it;
     humidityReading_t *humidity = nullptr;
 
     selectBus(dev->bus());
@@ -494,7 +492,6 @@ void mcrI2c::report(void *task_data) {
       publish(humidity);
     }
 
-    dev = (i2cDev_t *)getNextKnownDevice();
     delay(pdMS_TO_TICKS(200));
   }
 
@@ -503,12 +500,12 @@ void mcrI2c::report(void *task_data) {
 
 void mcrI2c::run(void *task_data) {
 
-  ESP_LOGI(baseTAG, "configuring and initializing I2c");
+  ESP_LOGI(engTAG, "configuring and initializing I2c");
 
-  ESP_LOGI(baseTAG, "waiting on event_group=%p for bits=0x%x",
-           (void *)_ev_group, _wait_bit);
+  ESP_LOGI(engTAG, "waiting on event_group=%p for bits=0x%x", (void *)_ev_group,
+           _wait_bit);
   xEventGroupWaitBits(_ev_group, _wait_bit, false, true, portMAX_DELAY);
-  ESP_LOGI(baseTAG, "event_group wait complete, proceeding to task loop");
+  ESP_LOGI(engTAG, "event_group wait complete, proceeding to task loop");
 
   _last_wake.engine = xTaskGetTickCount();
   delay(pdMS_TO_TICKS(5000));
@@ -525,7 +522,7 @@ void mcrI2c::run(void *task_data) {
       // do stuff here
 
       vTaskDelayUntil(&(_last_wake.engine), _loop_frequency);
-      runtimeMetricsReport(baseTAG);
+      runtimeMetricsReport(engTAG);
     }
   }
 }
@@ -540,7 +537,7 @@ bool mcrI2c::selectBus(uint32_t bus) {
   i2c_reset_rx_fifo(I2C_NUM_0);
 
   if (bus >= _max_buses) {
-    ESP_LOGW(baseTAG, "attempt to select bus %d >= %d, bus not changed", bus,
+    ESP_LOGW(engTAG, "attempt to select bus %d >= %d, bus not changed", bus,
              _max_buses);
   }
 

@@ -40,7 +40,7 @@
 // construct a new mcrDev with only an address
 mcrDev::mcrDev(mcrDevAddr_t &addr) { _addr = addr; }
 
-mcrDev::mcrDev(mcrDevID_t &id, mcrDevAddr_t &addr) {
+mcrDev::mcrDev(const mcrDevID_t &id, mcrDevAddr_t &addr) {
   _id = id; // copy id and addr objects
   _addr = addr;
 }
@@ -58,12 +58,14 @@ mcrDev::~mcrDev() {
 //}
 // rely on the == operator from mcrDevID_t
 
-bool mcrDev::operator==(mcrDev_t *rhs) { return (_id == rhs->_id); }
+bool mcrDev::operator==(mcrDev_t *rhs) const {
+  return (_id == (mcrDevID_t)rhs->_id);
+}
 
 void mcrDev::justSeen() { _last_seen = time(nullptr); }
 
 // void mcrDev::setID(char *id) { _id = id; }
-void mcrDev::setID(mcrDevID_t &new_id) { _id = new_id; }
+void mcrDev::setID(const mcrDevID_t &new_id) { _id = new_id; }
 
 // updaters
 void mcrDev::setReading(Reading_t *reading) {

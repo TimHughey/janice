@@ -68,10 +68,20 @@ public:
   mcrCmd(const mcrDevID_t &id, cmd_bitset_t mask, cmd_bitset_t state,
          mcrRefID_t &refid);
   mcrCmd(const mcrDevID_t &id, cmd_bitset_t mask, cmd_bitset_t state);
+  mcrCmd(const mcrCmd_t *cmd) {
+    ESP_LOGI("mcrCmd", "%s this(%p) --> cmd(%p)", __PRETTY_FUNCTION__,
+             (void *)this, (void *)cmd);
+
+    _type = cmd->_type;
+    _dev_id = cmd->_dev_id;
+    _mask = cmd->_mask;
+    _state = cmd->_state;
+    _refid = cmd->_refid;
+  }
 
   // ~mcrCmd();
 
-  mcrDevID_t &dev_id();
+  const mcrDevID_t &dev_id() const;
   cmd_bitset_t state();
   cmd_bitset_t mask();
   bool matchPrefix(char *prefix);

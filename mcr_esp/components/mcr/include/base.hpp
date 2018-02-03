@@ -42,19 +42,18 @@ public:
   mcrDev() {} // all values are defaulted in definition of class(es)
 
   mcrDev(mcrDevAddr_t &addr);
-  mcrDev(mcrDevID_t &id, mcrDevAddr_t &addr);
+  mcrDev(const mcrDevID_t &id, mcrDevAddr_t &addr);
   // mcrDev(const mcrDev_t &dev); // copy constructor
   virtual ~mcrDev(); // base class will handle deleteing the reading, if needed
 
   // operators
   // mcrDev_t &operator=(mcrDev_t &dev);
-  bool operator==(mcrDevID_t &rhs); // rely on the == operator from mcrDevID_t
-  bool operator==(mcrDev_t *rhs);
+  // bool operator==(mcrDevID_t &rhs) const;
+  bool operator==(mcrDev_t *rhs) const; // based entirely on mcrDevID
 
   // updaters
   void justSeen();
-  // void setID(char *id);
-  void setID(mcrDevID_t &new_id);
+  void setID(const mcrDevID_t &new_id);
   void setReading(Reading_t *reading);
   void setDesc(const char *desc);
 
@@ -87,13 +86,14 @@ public:
 private:
   mcrDevID_t _id;     // unique identifier of this device
   mcrDevAddr_t _addr; // address of this device
+  std::string _desc;
 
 protected:
   static const uint32_t _addr_len = mcrDevAddr::max_addr_len;
   static const uint32_t _id_len = 30;
   static const uint32_t _desc_len = 15; // max length of desciption
 
-  char _desc[_desc_len + 1] = {0x00}; // desciption of the device
+  // char _desc[_desc_len + 1] = {0x00}; // desciption of the device
   Reading_t *_reading = nullptr;
 
   time_t _created_mtime = time(nullptr);

@@ -29,8 +29,6 @@
 #include <sys/time.h>
 #include <time.h>
 
-// #include <OneWire.h>
-
 #include "addr.hpp"
 #include "base.hpp"
 #include "ds_dev.hpp"
@@ -57,7 +55,7 @@ dsDev::dsDev(mcrDevAddr_t &addr, bool power) : mcrDev(addr) {
           addr[1], addr[2], addr[3],  // byte 1-3: serial number
           addr[4], addr[5], addr[6]); // byte 4-6: serial number
 
-  mcrDevID_t dev_id = mcrDevID(buff);
+  const mcrDevID_t dev_id = mcrDevID(buff);
   setID(dev_id);
 };
 
@@ -108,7 +106,6 @@ const char *dsDev::familyDesc(uint8_t family) {
   case 0x10:
   case 0x22:
   case 0x28:
-    // return (const char *)"DS18x20";
     return (const char *)"ds1820";
     break;
 
