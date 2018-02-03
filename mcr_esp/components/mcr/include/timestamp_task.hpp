@@ -24,8 +24,16 @@ public:
   void run(void *data);
 
 private:
+  uint32_t vref_voltage();
+
+private:
   EventGroupHandle_t ev_group;
   int wait_bit;
+
+  size_t _firstHeap = 0;
+  size_t _availHeap = 0;
+  size_t _minHeap = 520 * 1024;
+  size_t _maxHeap = 0;
 
   TickType_t _last_wake;
   const TickType_t _loop_frequency = pdMS_TO_TICKS(1 * 60 * 1000);

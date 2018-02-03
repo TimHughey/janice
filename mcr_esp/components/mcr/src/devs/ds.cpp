@@ -43,7 +43,7 @@ dsDev::dsDev(mcrDevAddr_t &addr, bool power) : mcrDev(addr) {
   // byte   7: crc
   _power = power;
 
-  setDesc(familyDesc(family()));
+  setDescription(familyDescription());
 
   //                 00000000001111111
   //       byte num: 01234567890123456
@@ -100,31 +100,38 @@ uint8_t *dsDev::parseId(char *name) {
   return addr;
 }
 
-const char *dsDev::familyDesc() { return familyDesc(family()); }
-const char *dsDev::familyDesc(uint8_t family) {
+const std::string &dsDev::familyDescription() {
+  return familyDescription(family());
+}
+
+const std::string &dsDev::familyDescription(uint8_t family) {
+  static std::string desc;
+
   switch (family) {
   case 0x10:
   case 0x22:
   case 0x28:
-    return (const char *)"ds1820";
+    desc = std::string("ds1820");
     break;
 
   case 0x29:
-    return (const char *)"ds2408";
+    desc = std::string("ds2408");
     break;
 
   case 0x12:
-    return (const char *)"ds2406";
+    desc = std::string("ds2406");
     break;
 
   default:
-    return (const char *)"dsUNDEF";
+    desc = std::string("dsUNDEF");
     break;
   }
+
+  return desc;
 };
 
 void dsDev::logPresenceFailed() {
-  ESP_LOGI("dsDev", "%s presence failure", familyDesc());
+  ESP_LOGI("dsDev", "%s presence failure", familyDescription().c_str());
 }
 
 // static member function for validating an address (ROM) is validAddress
@@ -146,7 +153,8 @@ bool dsDev::validAddress(mcrDevAddr_t &addr) {
 const std::string dsDev::debug() {
   std::ostringstream debug_str;
 
-  debug_str << "dsDev(family=" << familyDesc() << " " << mcrDev::debug() << ")";
+  debug_str << "dsDev(family=" << familyDescription().c_str() << " "
+            << mcrDev::debug() << ")";
 
   return debug_str.str();
 }

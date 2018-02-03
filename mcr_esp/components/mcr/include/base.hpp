@@ -44,28 +44,34 @@ public:
   mcrDev(mcrDevAddr_t &addr);
   mcrDev(const mcrDevID_t &id, mcrDevAddr_t &addr);
   // mcrDev(const mcrDev_t &dev); // copy constructor
-  virtual ~mcrDev(); // base class will handle deleteing the reading, if needed
+  virtual ~mcrDev(); // base class will handle deleting the reading, if needed
 
   // operators
   // mcrDev_t &operator=(mcrDev_t &dev);
   // bool operator==(mcrDevID_t &rhs) const;
   bool operator==(mcrDev_t *rhs) const; // based entirely on mcrDevID
 
+  static uint32_t idMaxLen();
+  bool isValid();
+  bool isNotValid();
+
   // updaters
   void justSeen();
-  void setID(const mcrDevID_t &new_id);
-  void setReading(Reading_t *reading);
-  void setDesc(const char *desc);
 
   uint8_t firstAddressByte();
   mcrDevAddr_t &addr();
   uint8_t *addrBytes();
+
+  void setID(const mcrDevID_t &new_id);
   const mcrDevID_t &id() const { return _id; };
-  const char *desc();
+
+  // description of device
+  void setDescription(const std::string &desc) { _desc = desc; };
+  void setDescription(const char *desc) { _desc = desc; };
+  const std::string &description() const { return _desc; };
+
+  void setReading(Reading_t *reading);
   Reading_t *reading();
-  static uint32_t idMaxLen();
-  bool isValid();
-  bool isNotValid();
 
   // metrics functions
   void startRead();

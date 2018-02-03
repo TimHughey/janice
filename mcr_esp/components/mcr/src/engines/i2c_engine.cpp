@@ -48,8 +48,10 @@
 #include "util.hpp"
 
 static const char engTAG[] = "mcrI2c";
+static const char conTAG[] = "mcrI2c convert";
 static const char disTAG[] = "mcrI2c discover";
-static const char detTAG[] = "mrcI2c detectDev";
+static const char detTAG[] = "mcrI2c detectDev";
+static const char cmdTAG[] = "mcr12c convert";
 static const char readAM2315TAG[] = "mcrI2c readAM2315";
 static const char readSHT31TAG[] = "mcrI2c readSHT31";
 static const char repTAG[] = "mrcI2c report";
@@ -60,7 +62,12 @@ mcrI2c::mcrI2c(mcrMQTT_t *mqtt, EventGroupHandle_t evg, int bit)
   _mqtt = mqtt;
   _ev_group = evg;
   _wait_bit = bit;
+
   _engTAG = engTAG;
+  _conTAG = conTAG;
+  _cmdTAG = cmdTAG;
+  _disTAG = disTAG;
+  _repTAG = repTAG;
 
   esp_log_level_t log_level = ESP_LOG_WARN;
   const char *log_tags[] = {disTAG,        detTAG,       repTAG, selTAG,
@@ -233,8 +240,7 @@ void mcrI2c::discover(void *task_data) {
 uint32_t mcrI2c::maxBuses() { return _max_buses; }
 
 void mcrI2c::printUnhandledDev(i2cDev_t *dev) {
-  ESP_LOGW(engTAG, "unhandled dev 0x%02x desc: %s use_mplex: 0x%x bus: 0x%x",
-           dev->devAddr(), dev->desc(), dev->useMultiplexer(), dev->bus());
+  ESP_LOGW(engTAG, "unhandled dev %s", dev->debug().c_str());
 }
 
 bool mcrI2c::useMultiplexer() { return _use_multiplexer; }

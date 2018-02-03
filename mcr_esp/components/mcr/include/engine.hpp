@@ -1,22 +1,22 @@
 /*
-    engine.hpp - Master Control Remote Dallas Semiconductor
-    Copyright (C) 2017  Tim Hughey
+     engine.hpp - Master Control Remote Dallas Semiconductor
+     Copyright (C) 2017  Tim Hughey
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+     This program is free software: you can redistribute it and/or modify
+     it under the terms of the GNU General Public License as published by
+     the Free Software Foundation, either version 3 of the License, or
+     (at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+     This program is distributed in the hope that it will be useful,
+     but WITHOUT ANY WARRANTY; without even the implied warranty of
+     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+     GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+     You should have received a copy of the GNU General Public License
+     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-    https://www.wisslanding.com
-*/
+     https://www.wisslanding.com
+ */
 
 #ifndef mcr_engine_h
 #define mcr_engine_h
@@ -69,10 +69,10 @@ typedef struct mcrEngineMetrics {
   mcrEngineMetric_t switch_cmdack;
 } mcrEngineMetrics_t;
 
-template <class T> class mcrEngine {
+template <class DEV> class mcrEngine {
 
 private:
-  std::vector<T *> _devices;
+  std::vector<DEV *> _devices;
   uint32_t _dev_count = 0;
   uint32_t _next_known_index = 0;
 
@@ -98,7 +98,7 @@ private:
   time_t _last_convert_timestamp = 0;
 
 public:
-  // mcrEngine(mcrMQTT *mqtt);
+  mcrEngine(){}; // nothing to see here
 
   static uint32_t maxDevices() { return MAX_DEVICES_PER_ENGINE; };
 
@@ -108,8 +108,8 @@ public:
   // justSeenDevice():
   //    will return true if the device was found
   //    and call justSeen() on the device if found
-  T *justSeenDevice(T &dev) {
-    T *found_dev = findDevice(dev.id());
+  DEV *justSeenDevice(DEV &dev) {
+    DEV *found_dev = findDevice(dev.id());
 
     if (LOG_LOCAL_LEVEL >= ESP_LOG_DEBUG) {
       ESP_LOGD(_engTAG, "just saw: %s", dev.debug().c_str());
@@ -122,9 +122,9 @@ public:
     return found_dev;
   };
 
-  bool addDevice(T *dev) {
+  bool addDevice(DEV *dev) {
     auto rc = false;
-    T *found = nullptr;
+    DEV *found = nullptr;
 
     if (LOG_LOCAL_LEVEL >= ESP_LOG_DEBUG) {
       ESP_LOGD(_engTAG, "adding: %s", dev->debug().c_str());
@@ -143,8 +143,8 @@ public:
     return (found == nullptr) ? true : false;
   };
 
-  T *findDevice(const mcrDevID_t &dev) {
-    T *found = nullptr;
+  DEV *findDevice(const mcrDevID_t &dev) {
+    DEV *found = nullptr;
 
     for (auto search : _devices) {
       if (search->id() == dev) {
@@ -156,14 +156,14 @@ public:
     return found;
   }
 
-  auto knownDevices() -> typename std::vector<T *>::iterator {
+  auto knownDevices() -> typename std::vector<DEV *>::iterator {
     return _devices.begin();
   }
-  bool endOfDevices(typename std::vector<T *>::iterator it) {
+  bool endOfDevices(typename std::vector<DEV *>::iterator it) {
     return it == _devices.end();
   };
 
-  bool moreDevices(typename std::vector<T *>::iterator it) {
+  bool moreDevices(typename std::vector<DEV *>::iterator it) {
     return it != _devices.end();
   };
 
@@ -176,8 +176,12 @@ public:
   };
 
 protected:
-  mcrMQTT *_mqtt = nullptr;
+  mcrMQTT_t *_mqtt = nullptr;
   const char *_engTAG;
+  const char *_conTAG;
+  const char *_cmdTAG;
+  const char *_disTAG;
+  const char *_repTAG;
 
   // virtual bool discover();
   // virtual bool convert();
@@ -186,19 +190,19 @@ protected:
   // virtual bool cmd();
   // virtual bool cmdAck();
 
-  T *getDeviceByCmd(mcrCmd_t &cmd) {
-    T *dev = findDevice(cmd.dev_id());
+  DEV *getDeviceByCmd(mcrCmd_t &cmd) {
+    DEV *dev = findDevice(cmd.dev_id());
     return dev;
   };
 
-  T *getDeviceByCmd(mcrCmd_t *cmd) {
-    T *dev = findDevice(cmd->dev_id());
+  DEV *getDeviceByCmd(mcrCmd_t *cmd) {
+    DEV *dev = findDevice(cmd->dev_id());
     return dev;
   };
 
   bool publish(mcrCmd_t &cmd) { return publish(cmd.dev_id()); };
   bool publish(const mcrDevID_t &dev_id) {
-    T *search = findDevice(dev_id);
+    DEV *search = findDevice(dev_id);
 
     if (search != nullptr) {
       return publish(search);
@@ -207,7 +211,7 @@ protected:
     return false;
   };
 
-  bool publish(T *dev) {
+  bool publish(DEV *dev) {
     bool rc = true;
 
     if (dev != nullptr) {
@@ -237,10 +241,10 @@ protected:
     return readDevice(dev_id);
   };
 
-  // virtual bool readDevice(T *);
+  // virtual bool readDevice(DEV *);
 
   bool readDevice(const mcrDevID_t &id) {
-    T *dev = findDevice(id);
+    DEV *dev = findDevice(id);
 
     if (dev != nullptr) {
       readDevice(dev);
@@ -250,7 +254,7 @@ protected:
   }
 
   void setCmdAck(mcrCmd_t &cmd) {
-    T *dev = findDevice(cmd.dev_id());
+    DEV *dev = findDevice(cmd.dev_id());
 
     if (dev != nullptr) {
       dev->setReadingCmdAck(cmd.latency(), cmd.refID());
@@ -259,9 +263,10 @@ protected:
 
   // misc metrics tracking
 
-  int64_t trackPhase(mcrEngineMetric_t &phase, bool start) {
+  int64_t trackPhase(const char *lTAG, mcrEngineMetric_t &phase, bool start) {
     if (start) {
       phase.start_us = esp_timer_get_time();
+      ESP_LOGI(lTAG, "phase started");
     } else {
       time_t recent_us = esp_timer_get_time() - phase.start_us;
       phase.elapsed_us = (phase.elapsed_us > 0)
@@ -269,25 +274,26 @@ protected:
                              : recent_us;
       phase.start_us = 0;
       phase.last_time = time(nullptr);
+      ESP_LOGI(lTAG, "phase ended, took %lldms", phase.elapsed_us / 1000);
     }
 
     return phase.elapsed_us;
   };
 
   int64_t trackConvert(bool start = false) {
-    return trackPhase(metrics.convert, start);
+    return trackPhase(_conTAG, metrics.convert, start);
   };
 
   int64_t trackDiscover(bool start = false) {
-    return trackPhase(metrics.discover, start);
+    return trackPhase(_disTAG, metrics.discover, start);
   };
 
   int64_t trackReport(bool start = false) {
-    return trackPhase(metrics.report, start);
+    return trackPhase(_repTAG, metrics.report, start);
   };
 
   int64_t trackSwitchCmd(bool start = false) {
-    return trackPhase(metrics.switch_cmd, start);
+    return trackPhase(_cmdTAG, metrics.switch_cmd, start);
   };
 
   int64_t convertUS() { return metrics.convert.elapsed_us; };

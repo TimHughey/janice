@@ -40,8 +40,8 @@ private:
 
   bool _power = false; // is the device powered?
 
-  static const char *familyDesc(uint8_t family);
-  const char *familyDesc();
+  const std::string &familyDescription(uint8_t family);
+  const std::string &familyDescription();
 
 public:
   dsDev();

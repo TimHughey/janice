@@ -77,15 +77,9 @@ void mcrDev::setReading(Reading_t *reading) {
   _reading = reading;
 };
 
-void mcrDev::setDesc(const char *desc) {
-  _desc[0] = 0x00;
-  strncat(_desc, desc, _desc_len);
-}
-
 uint8_t mcrDev::firstAddressByte() { return _addr.firstAddressByte(); };
 mcrDevAddr_t &mcrDev::addr() { return _addr; }
 uint8_t *mcrDev::addrBytes() { return (uint8_t *)_addr; }
-const char *mcrDev::desc() { return _desc; };
 Reading_t *mcrDev::reading() { return _reading; }
 uint32_t mcrDev::idMaxLen() { return _id_len; };
 bool mcrDev::isValid() { return firstAddressByte() != 0x00 ? true : false; };
@@ -117,7 +111,7 @@ const std::string mcrDev::debug() {
   std::ostringstream debug_str;
 
   debug_str << "mcrDev(" << _addr.debug() << " id=" << (const char *)id()
-            << " desc=" << (char *)desc() << " rus=" << readUS()
+            << " desc=" << description().c_str() << " rus=" << readUS()
             << " wus=" << writeUS() << " reading=" << (void *)_reading << ")";
 
   return debug_str.str();

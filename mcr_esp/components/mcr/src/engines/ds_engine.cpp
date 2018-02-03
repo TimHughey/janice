@@ -61,7 +61,12 @@ mcrDS::mcrDS(mcrMQTT_t *mqtt, EventGroupHandle_t evg, int bit)
   _mqtt = mqtt;
   _ev_group = evg;
   _wait_bit = bit;
+
   _engTAG = engTAG;
+  _conTAG = conTAG;
+  _cmdTAG = cmdTAG;
+  _disTAG = disTAG;
+  _repTAG = repTAG;
 
   esp_log_level_t log_level = ESP_LOG_WARN;
   const char *log_tags[] = {disTAG,    conTAG,    repTAG,    cmdTAG,
@@ -120,7 +125,6 @@ void mcrDS::command(void *task_data) {
     if ((dev != nullptr) && dev->isValid()) {
       bool set_rc = false;
 
-      ESP_LOGI(cmdTAG, "phase started");
       trackSwitchCmd(true);
 
       ESP_LOGD(cmdTAG, "attempting to aquire bux mutex...");
@@ -145,7 +149,6 @@ void mcrDS::command(void *task_data) {
       xSemaphoreGive(_bus_mutex);
 
       ESP_LOGD(cmdTAG, "released bus mutex");
-      ESP_LOGI(cmdTAG, "phase took %lldms", switchCmdUS() / 1000);
     } else {
       ESP_LOGD(cmdTAG, "device %s not available", (const char *)cmd->dev_id());
     }
@@ -197,13 +200,15 @@ void mcrDS::convert(void *task_data) {
     // start by clearing the bit to signal there isn't a temperature available
     xEventGroupClearBits(_ds_evg, _event_bits.temp_available);
 
+    trackConvert(true);
+
     if (!devicesPowered() && !tempDevicesPresent()) {
       ESP_LOGW(conTAG, "devices not powered or no temperature devices present");
+      trackConvert(false);
       vTaskDelayUntil(&(_last_wake.convert), _convert_frequency);
       continue;
     }
 
-    ESP_LOGI(conTAG, "phase started");
     xSemaphoreTake(_bus_mutex, portMAX_DELAY);
 
     owb_s = owb_reset(ds, &present);
@@ -214,8 +219,6 @@ void mcrDS::convert(void *task_data) {
       vTaskDelayUntil(&(_last_wake.convert), _convert_frequency);
       continue;
     }
-
-    trackConvert(true);
 
     owb_s = owb_reset(ds, &present);
     owb_s = owb_write_bytes(ds, temp_convert_cmd, sizeof(temp_convert_cmd));
@@ -240,8 +243,6 @@ void mcrDS::convert(void *task_data) {
       temp_convert_done = true;
     }
 
-    trackConvert(false);
-
     xSemaphoreGive(_bus_mutex);
 
     // signal to other tasks that temperatures are now available
@@ -249,7 +250,7 @@ void mcrDS::convert(void *task_data) {
       xEventGroupSetBits(_ds_evg, _event_bits.temp_available);
     }
 
-    ESP_LOGI(conTAG, "phase took %lldms", convertUS() / 1000);
+    trackConvert(false);
     vTaskDelayUntil(&(_last_wake.convert), _convert_frequency);
   }
 }
@@ -277,7 +278,7 @@ void mcrDS::discover(void *task_data) {
     OneWireBus_SearchState search_state;
     bzero(&search_state, sizeof(OneWireBus_SearchState));
 
-    ESP_LOGI(disTAG, "phase started");
+    trackDiscover(true);
 
     xSemaphoreTake(_bus_mutex, portMAX_DELAY);
 
@@ -286,17 +287,17 @@ void mcrDS::discover(void *task_data) {
     if (!present) {
       ESP_LOGW(disTAG, "no devices present");
       xSemaphoreGive(_bus_mutex);
+      trackDiscover(false);
       vTaskDelayUntil(&(_last_wake.discover), _discover_frequency);
       continue;
     }
-
-    trackDiscover(true);
 
     owb_s = owb_search_first(ds, &search_state, &found);
 
     if (owb_s != OWB_STATUS_OK) {
       ESP_LOGW(disTAG, "search first failed owb_s=%d", owb_s);
       xSemaphoreGive(_bus_mutex);
+      trackDiscover(false);
       vTaskDelayUntil(&(_last_wake.discover), _discover_frequency);
       continue;
     }
@@ -330,8 +331,6 @@ void mcrDS::discover(void *task_data) {
 
     _devices_powered = checkDevicesPowered();
 
-    trackDiscover(false);
-
     xSemaphoreGive(_bus_mutex);
 
     if (device_found) {
@@ -339,7 +338,7 @@ void mcrDS::discover(void *task_data) {
       xEventGroupSetBits(_ds_evg, _event_bits.devices_available);
     }
 
-    ESP_LOGI(disTAG, "phase took %lldms", discoverUS() / 1000);
+    trackDiscover(false);
     vTaskDelayUntil(&(_last_wake.discover), _discover_frequency);
   }
 }
@@ -364,10 +363,8 @@ void mcrDS::report(void *task_data) {
                         pdTRUE, // wait for all bits, not really needed here
                         portMAX_DELAY);
 
-    ESP_LOGI(repTAG, "phase started");
-    ESP_LOGD(repTAG, "will attempt to report %d devices", numKnownDevices());
-
     trackReport(true);
+    ESP_LOGD(repTAG, "will attempt to report %d devices", numKnownDevices());
 
     // while (next_dev != nullptr) {
     for (auto it = knownDevices(); moreDevices(it); it++) {
@@ -391,8 +388,6 @@ void mcrDS::report(void *task_data) {
     }
 
     trackReport(false);
-
-    ESP_LOGI(repTAG, "phase took %lldms", reportUS() / 1000);
   }
 }
 
