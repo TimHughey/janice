@@ -55,12 +55,10 @@ defmodule SwitchCmd do
         {:not_found, refid}
 
       cmd ->
-        sent_at = Timex.to_erl(cmd.sent_at) |> Timex.Duration.from_erl()
-        recv_at = Timex.to_erl(recv_dt) |> Timex.Duration.from_erl()
 
-        rt_latency = Timex.Duration.diff(recv_at, sent_at, :microseconds)
+        # rt_latency = Timex.to_gregorian_microseconds(recv_dt) - Timex.to_gregorian_microseconds(cmd.sent_at) 
 
-        # rt_latency = Timex.diff(recv_dt, cmd.sent_at, :microseconds)
+        rt_latency = Timex.diff(recv_dt, cmd.sent_at, :microseconds)
 
         Logger.info(fn ->
           "state name [#{cmd.name}] acking refid [#{refid}] rt_latency=#{rt_latency / 1000.0}ms"
