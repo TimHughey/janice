@@ -75,8 +75,9 @@ void Reading::commonJSON(JsonObject &root) {
 
 std::string *Reading::json(char *buffer, size_t len) {
   std::string *json_string = new std::string;
+  json_string->reserve(2048);
 
-  DynamicJsonBuffer json_buffer(512);
+  DynamicJsonBuffer json_buffer(2048);
   JsonObject &root = json_buffer.createObject();
 
   commonJSON(root);

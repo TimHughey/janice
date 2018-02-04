@@ -28,7 +28,6 @@
 #include <FreeRTOS.h>
 #include <System.h>
 #include <Task.h>
-#include <cJSON.h>
 #include <esp_log.h>
 #include <esp_timer.h>
 #include <freertos/event_groups.h>
@@ -128,8 +127,15 @@ void mcrDS::command(void *task_data) {
       trackSwitchCmd(true);
 
       ESP_LOGD(cmdTAG, "attempting to aquire bux mutex...");
+      int64_t bus_wait_start = esp_timer_get_time();
       xSemaphoreTake(_bus_mutex, portMAX_DELAY);
-      ESP_LOGD(cmdTAG, "acquired bus mutex");
+      int64_t bus_wait_us = esp_timer_get_time() - bus_wait_start;
+
+      if (bus_wait_us < 500) {
+        ESP_LOGD(cmdTAG, "acquired bus mutex");
+      } else {
+        ESP_LOGW(cmdTAG, "acquire bus mutex took %lldus", bus_wait_us);
+      }
 
       if (dev->isDS2406())
         set_rc = setDS2406(*cmd, dev);
@@ -691,10 +697,9 @@ void mcrDS::run(void *data) {
   cmdQueue_t cmd_q = {"mcrDS", "ds", _cmd_q};
   _mqtt->registerCmdQueue(cmd_q);
 
-  ESP_LOGI(engTAG, "waiting on event_group=%p for bits=0x%x", (void *)_ev_group,
-           _wait_bit);
+  ESP_LOGI(engTAG, "waiting on %p for bits=0x%x", (void *)_ev_group, _wait_bit);
   xEventGroupWaitBits(_ev_group, _wait_bit, false, true, portMAX_DELAY);
-  ESP_LOGI(engTAG, "event_group wait complete, proceeding to task loop");
+  ESP_LOGI(engTAG, "bits set, proceeding to task loop");
 
   _last_wake.engine = xTaskGetTickCount();
 
@@ -912,7 +917,7 @@ bool mcrDS::setDS2408(mcrCmd_t &cmd, dsDev_t *dev) {
   if ((check[0] == 0xaa) || (dev_state == (new_state & 0xff))) {
     cmd_bitset_t b0 = check[0];
     cmd_bitset_t b1 = check[1];
-    ESP_LOGI(setds2408TAG, "CONFIRMED check[0]=0b%s check[1]=0b%s for %s",
+    ESP_LOGD(setds2408TAG, "CONFIRMED check[0]=0b%s check[1]=0b%s for %s",
              b0.to_string().c_str(), b1.to_string().c_str(),
              dev->debug().c_str());
     rc = true;

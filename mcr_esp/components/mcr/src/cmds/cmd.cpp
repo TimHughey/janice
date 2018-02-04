@@ -68,7 +68,11 @@ bool mcrCmd::matchPrefix(char *prefix) {
   return false;
 }
 
-time_t mcrCmd::latency() { return _latency; }
+time_t mcrCmd::latency() {
+  int64_t latency = esp_timer_get_time() - _latency;
+  ESP_LOGI("mcrCmd", "latency=%llums", (latency / 1000));
+  return latency;
+}
 
 mcrRefID_t &mcrCmd::refID() { return _refid; }
 

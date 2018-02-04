@@ -30,6 +30,7 @@
 #include <ArduinoJson.h>
 #include <FreeRTOS.h>
 #include <System.h>
+#include <esp_timer.h>
 #include <sys/time.h>
 #include <time.h>
 
@@ -54,7 +55,7 @@ private:
   mcrDevID_t _dev_id;
   cmd_bitset_t _state;
   cmd_bitset_t _mask;
-  time_t _latency = 0;
+  int64_t _latency = esp_timer_get_time();
   time_t _mtime = time(nullptr);
   mcrRefID_t _refid; // example: 2d931510-d99f-494a-8c67-87feb05e1594
   bool _ack = false;

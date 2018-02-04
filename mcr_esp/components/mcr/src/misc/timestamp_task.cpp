@@ -18,6 +18,8 @@
 #include <esp_log.h>
 #include <freertos/event_groups.h>
 
+#include "mqtt.hpp"
+#include "ramutil.hpp"
 #include "timestamp_task.hpp"
 #include "util.hpp"
 
@@ -76,6 +78,11 @@ void mcrTimestampTask::run(void *data) {
 
       delete buff;
     }
+
+    mcrMQTT_t *mqtt = mcrMQTT::instance();
+    ramUtilReading_t *reading = new ramUtilReading(curr_heap);
+    mqtt->publish(reading);
+    delete reading;
 
     vTaskDelayUntil(&_last_wake, _loop_frequency);
   }

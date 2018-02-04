@@ -98,7 +98,7 @@ void mcrMQTTin::run(void *data) {
 
           if (xQueueSendToBack(cmd_q.q, (void *)&fresh_cmd, pdMS_TO_TICKS(1)) ==
               pdTRUE) {
-            ESP_LOGI(tTAG, "added cmd to queue %s", cmd_q.id);
+            ESP_LOGD(tTAG, "added cmd to queue %s", cmd_q.id);
           } else
             ESP_LOGW(tTAG, "failed to place cmd on queue %s", cmd_q.id);
         }

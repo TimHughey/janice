@@ -35,7 +35,7 @@ typedef class ramUtilReading ramUtilReading_t;
 
 class ramUtilReading : public Reading {
 private:
-  const uint32_t _max_ram = 32 * 1024;
+  const uint32_t _max_ram = 520 * 1024;
   // actual reading data
   uint32_t _free_ram = 0;
 
