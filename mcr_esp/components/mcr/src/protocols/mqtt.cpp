@@ -42,6 +42,7 @@
 // static uint32_t cmd_callback_count = 0;
 // static cmdCallback_t cmd_callback[10] = {nullptr};
 static char tTAG[] = "mcrMQTT";
+static char outboundTAG[] = "mcrMQTT outboundMsg";
 
 static mcrMQTT *__singleton = nullptr;
 
@@ -104,12 +105,15 @@ void mcrMQTT::outboundMsg() {
   size_t len = 0;
   mqttRingbufferEntry_t *entry = nullptr;
 
-  entry = (mqttRingbufferEntry_t *)_rb_out->receive(&len, 0);
+  entry = (mqttRingbufferEntry_t *)_rb_out->receive(&len, _outbound_msg_wait);
 
   while (entry) {
+    int64_t start_us = esp_timer_get_time();
+
     if (len != sizeof(mqttRingbufferEntry_t)) {
       ESP_LOGW(tTAG, "skipping ringbuffer entry of wrong length=%u", len);
       _rb_out->returnItem(entry);
+      break;
     }
 
     const std::string *json = entry->data;
@@ -122,6 +126,13 @@ void mcrMQTT::outboundMsg() {
 
     delete json;
     _rb_out->returnItem(entry);
+
+    int64_t publish_us = esp_timer_get_time() - start_us;
+    if (publish_us > 1000) {
+      ESP_LOGW(outboundTAG, "publish msg took %lluus", publish_us);
+    } else {
+      ESP_LOGD(outboundTAG, "publish msg took %lluus", publish_us);
+    }
 
     entry = (mqttRingbufferEntry_t *)_rb_out->receive(&len, 0);
   }
@@ -176,7 +187,9 @@ void mcrMQTT::run(void *data) {
   }
 
   for (;;) {
-    mg_mgr_poll(&_mgr, _poll_delay);
+    // we wait here AND we wait in outboundMsg -- this alternates between
+    // prioritizing inbound and outbound messages
+    mg_mgr_poll(&_mgr, _poll_wait);
 
     // only try to send outbound messages if mqtt is ready
     EventBits_t check = xEventGroupWaitBits(_ev_group, MQTT_READY_BIT,

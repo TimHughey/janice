@@ -80,7 +80,8 @@ private:
   struct mg_connection *_connection = nullptr;
   time_t _lastLoop;
   uint16_t _msg_id = 0;
-  int _poll_delay = 1000;
+  int _poll_wait = 1;
+  int _outbound_msg_wait = 1;
 
   const size_t _rb_size = (sizeof(mqttRingbufferEntry_t) * 128);
   Ringbuffer *_rb_out = nullptr;
