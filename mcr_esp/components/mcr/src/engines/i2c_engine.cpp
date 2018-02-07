@@ -1,42 +1,39 @@
 /*
-     mcpr_i2c.cpp - Master Control Remote I2C
-     Copyright (C) 2017  Tim Hughey
+      mcpr_i2c.cpp - Master Control Remote I2C
+      Copyright (C) 2017  Tim Hughey
 
-     This program is free software: you can redistribute it and/or modify
-     it under the terms of the GNU General Public License as published by
-     the Free Software Foundation, either version 3 of the License, or
-     (at your option) any later version.
+      This program is free software: you can redistribute it and/or modify
+      it under the terms of the GNU General Public License as published by
+      the Free Software Foundation, either version 3 of the License, or
+      (at your option) any later version.
 
-     This program is distributed in the hope that it will be useful,
-     but WITHOUT ANY WARRANTY; without even the implied warranty of
-     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-     GNU General Public License for more details.
+      This program is distributed in the hope that it will be useful,
+      but WITHOUT ANY WARRANTY; without even the implied warranty of
+      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+      GNU General Public License for more details.
 
-     You should have received a copy of the GNU General Public License
-     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+      You should have received a copy of the GNU General Public License
+      along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-     AM2315 code was based on Matt Heitzenroder's Arduino library
-     with portions of his code inspired by Joehrg Ehrsam's am2315-python-api
-     code (http://code.google.com/p/am2315-python-api/) and
-     Sopwith's library (http://sopwith.ismellsmoke.net/?p=104).
+      AM2315 code was based on Matt Heitzenroder's Arduino library
+      with portions of his code inspired by Joehrg Ehrsam's am2315-python-api
+      code (http://code.google.com/p/am2315-python-api/) and
+      Sopwith's library (http://sopwith.ismellsmoke.net/?p=104).
 
-     https://www.wisslanding.com
- */
+      https://www.wisslanding.com
+  */
 
 // #define VERBOSE 1
 
 #include <cstdlib>
 #include <string>
 
-#include <FreeRTOS.h>
-#include <System.h>
-#include <Task.h>
-#include <sdkconfig.h>
-// #include <WiFi.h>
-// #include <WiFiEventHandler.h>
 #include <driver/i2c.h>
 #include <esp_log.h>
+#include <freertos/FreeRTOS.h>
 #include <freertos/event_groups.h>
+#include <freertos/task.h>
+#include <sdkconfig.h>
 
 #include "addr.hpp"
 #include "engine.hpp"
@@ -47,36 +44,18 @@
 #include "readings.hpp"
 #include "util.hpp"
 
-static const char engTAG[] = "mcrI2c";
-static const char conTAG[] = "mcrI2c convert";
-static const char disTAG[] = "mcrI2c discover";
-static const char detTAG[] = "mcrI2c detectDev";
-static const char cmdTAG[] = "mcr12c convert";
-static const char readAM2315TAG[] = "mcrI2c readAM2315";
-static const char readSHT31TAG[] = "mcrI2c readSHT31";
-static const char repTAG[] = "mrcI2c report";
-static const char selTAG[] = "mrcI2c selectBus";
+mcrI2c::mcrI2c(mcrMQTT_t *mqtt, EventGroupHandle_t evg, int bit) {
+  setTags(localTags());
+  setLoggingLevel(ESP_LOG_WARN);
+  // setLoggingLevel(tagEngine(), ESP_LOG_INFO);
 
-mcrI2c::mcrI2c(mcrMQTT_t *mqtt, EventGroupHandle_t evg, int bit)
-    : Task(engTAG, 5 * 1024, 10) {
+  _engine_task_name = tagEngine();
+  _engine_stack_size = 5 * 1024;
+  _engine_priority = 14;
+
   _mqtt = mqtt;
   _ev_group = evg;
   _wait_bit = bit;
-
-  _engTAG = engTAG;
-  _conTAG = conTAG;
-  _cmdTAG = cmdTAG;
-  _disTAG = disTAG;
-  _repTAG = repTAG;
-
-  esp_log_level_t log_level = ESP_LOG_WARN;
-  const char *log_tags[] = {disTAG,        detTAG,       repTAG, selTAG,
-                            readAM2315TAG, readSHT31TAG, nullptr};
-
-  for (int i = 0; log_tags[i] != nullptr; i++) {
-    ESP_LOGI(engTAG, "%s logging at level=%d", log_tags[i], log_level);
-    esp_log_level_set(log_tags[i], log_level);
-  }
 
   // TODO: do we need to assign a GPIO to power up the i2c devices?
   // power up the i2c devices
@@ -84,17 +63,19 @@ mcrI2c::mcrI2c(mcrMQTT_t *mqtt, EventGroupHandle_t evg, int bit)
   // digitalWrite(I2C_PWR_PIN, HIGH);
 }
 
-uint32_t mcrI2c::crcSHT31(const uint8_t *data, uint32_t len) {
+bool mcrI2c::crcSHT31(const uint8_t *data) {
   uint8_t crc = 0xFF;
 
-  for (uint32_t j = len; j; --j) {
+  for (uint32_t j = 2; j; --j) {
     crc ^= *data++;
 
     for (uint32_t i = 8; i; --i) {
       crc = (crc & 0x80) ? (crc << 1) ^ 0x31 : (crc << 1);
     }
   }
-  return crc;
+
+  // data was ++ in the above loop so it is already pointing at the crc
+  return (crc == *data);
 }
 
 bool mcrI2c::detectDevice(mcrDevAddr_t &addr) {
@@ -104,7 +85,7 @@ bool mcrI2c::detectDevice(mcrDevAddr_t &addr) {
   uint8_t sht31_cmd_data[] = {0x30, // soft-reset
                               0xa2};
 
-  ESP_LOGD(detTAG, "looking for %s", addr.debug().c_str());
+  ESP_LOGD(tagDetectDev(), "looking for %s", addr.debug().c_str());
 
   // handle special cases where certain i2c devices
   // need additional cmds before releasing the bus
@@ -158,7 +139,7 @@ bool mcrI2c::detectDevice(mcrDevAddr_t &addr) {
     break;
 
   default:
-    ESP_LOGD(engTAG, "%s not found (esp_rc=0x%02x)", addr.debug().c_str(),
+    ESP_LOGD(tagEngine(), "%s not found (esp_rc=0x%02x)", addr.debug().c_str(),
              esp_rc);
   }
 
@@ -178,11 +159,12 @@ int mcrI2c::detectDevicesOnBus(int bus) {
         i2cDev_t dev(search_addr, useMultiplexer(), bus);
 
         if (i2cDev_t *found = (i2cDev_t *)justSeenDevice(dev)) {
-          ESP_LOGD(disTAG, "previously seen %s", found->debug().c_str());
+          ESP_LOGD(tagDiscover(), "previously seen %s", found->debug().c_str());
         } else { // device was not known, must add
           i2cDev_t *new_dev = new i2cDev(dev);
 
-          ESP_LOGI(disTAG, "new (%p) %s", (void *)&dev, dev.debug().c_str());
+          ESP_LOGI(tagDiscover(), "new (%p) %s", (void *)&dev,
+                   dev.debug().c_str());
           addDevice(new_dev);
         }
       }
@@ -200,16 +182,16 @@ bool mcrI2c::detectMultiplexer() {
   mcrDevAddr_t multiplexer_dev(0x70);
 
   for (int i = 1; ((i <= 3) && (_use_multiplexer == false)); i++) {
-    ESP_LOGD(detTAG, "detecting TCA9548A multiplexer (attempt %d/%d)", i,
-             max_attempts);
+    ESP_LOGD(tagDetectDev(), "detecting TCA9548A multiplexer (attempt %d/%d)",
+             i, max_attempts);
 
     if (detectDevice(multiplexer_dev)) {
-      ESP_LOGD(detTAG, "found TCA9548A multiplexer");
+      ESP_LOGD(tagDetectDev(), "found TCA9548A multiplexer");
       _use_multiplexer = true;
     }
   }
 
-  ESP_LOGI(detTAG, "%s use multiplexer",
+  ESP_LOGI(tagDetectDev(), "%s use multiplexer",
            ((_use_multiplexer) ? "will" : "will not"));
 
   return _use_multiplexer;
@@ -220,17 +202,18 @@ void mcrI2c::discover(void *task_data) {
   detectMultiplexer();
 
   if (useMultiplexer()) {
-    for (int bus = 0; (useMultiplexer() && (bus < maxBuses())); bus++) {
-      ESP_LOGD(detTAG, "scanning bus 0x%02x", bus);
+    for (uint32_t bus = 0; (useMultiplexer() && (bus < maxBuses())); bus++) {
+      ESP_LOGD(tagDetectDev(), "scanning bus 0x%02x", bus);
       int found = detectDevicesOnBus(bus);
       if (found > 0) {
-        ESP_LOGI(disTAG, "found 0x%02x devices on bus=0x%02x", found, bus);
+        ESP_LOGI(tagDiscover(), "found 0x%02x devices on bus=0x%02x", found,
+                 bus);
       }
     }
   } else { // multiplexer not available, just search bus 0
     int found = detectDevicesOnBus(0x00);
     if (found > 0) {
-      ESP_LOGI(disTAG, "found 0x%02x devices on single bus", found);
+      ESP_LOGI(tagDiscover(), "found 0x%02x devices on single bus", found);
     }
   }
 
@@ -240,13 +223,12 @@ void mcrI2c::discover(void *task_data) {
 uint32_t mcrI2c::maxBuses() { return _max_buses; }
 
 void mcrI2c::printUnhandledDev(i2cDev_t *dev) {
-  ESP_LOGW(engTAG, "unhandled dev %s", dev->debug().c_str());
+  ESP_LOGW(tagEngine(), "unhandled dev %s", dev->debug().c_str());
 }
 
 bool mcrI2c::useMultiplexer() { return _use_multiplexer; }
 
 bool mcrI2c::readAM2315(i2cDev_t *dev, humidityReading_t **reading, bool wake) {
-  static uint32_t error_count = 0;
   auto rc = false;
   i2c_cmd_handle_t cmd = nullptr;
   esp_err_t esp_rc;
@@ -279,20 +261,21 @@ bool mcrI2c::readAM2315(i2cDev_t *dev, humidityReading_t **reading, bool wake) {
   i2c_cmd_link_delete(cmd);
 
   if (esp_rc != ESP_OK) {
-    ESP_LOGW(readAM2315TAG, "write failed (cmd) to %s esp_rc=0x%02x",
+    ESP_LOGW(tagReadAM2315(), "write failed (cmd) to %s esp_rc=0x%02x",
              dev->debug().c_str(), esp_rc);
     dev->stopRead();
+    dev->writeFailure();
     return rc;
   }
 
-  delay(pdMS_TO_TICKS(100));
+  delay(100);
 
   // get the device data
   cmd = i2c_cmd_link_create();
   i2c_master_start(cmd);
   i2c_master_write_byte(cmd, (dev->devAddr() << 1) | I2C_MASTER_READ,
                         ACK_CHECK_EN);
-  for (int i = 0; i < sizeof(buff); i++) {
+  for (uint32_t i = 0; i < sizeof(buff); i++) {
     i2c_ack_type_t byte_ack =
         (i == (sizeof(buff) - 1)) ? (i2c_ack_type_t)0x01 : (i2c_ack_type_t)0x00;
     i2c_master_read_byte(cmd, &buff[i], byte_ack);
@@ -303,12 +286,14 @@ bool mcrI2c::readAM2315(i2cDev_t *dev, humidityReading_t **reading, bool wake) {
   i2c_cmd_link_delete(cmd);
 
   if (esp_rc != ESP_OK) {
-    ESP_LOGW(readAM2315TAG, "read failed for %s esp_rc=0x%02x",
+    ESP_LOGW(tagReadAM2315(), "read failed for %s esp_rc=0x%02x",
              dev->debug().c_str(), esp_rc);
     dev->stopRead();
+    dev->readFailure();
     return rc;
+
   } else {
-    ESP_LOGI(readAM2315TAG, "read of %s successful", dev->debug().c_str());
+    ESP_LOGI(tagReadAM2315(), "read of %s successful", dev->debug().c_str());
   }
 
   dev->stopRead();
@@ -331,34 +316,23 @@ bool mcrI2c::readAM2315(i2cDev_t *dev, humidityReading_t **reading, bool wake) {
   }
 
   if (crc == crc_calc) {
-    float rh = buff[2];
-    rh *= 256;
-    rh += buff[3];
-    rh /= 10;
-
-    float tc = buff[4] & 0x7F;
-    tc *= 256;
-    tc += buff[5];
-    tc /= 10;
-
-    if (buff[4] >> 7)
-      tc = -tc;
+    float rh = (buff[2] * 256) / 10;
+    float tc =
+        ((((buff[4] & 0x7F) * 256) + buff[5]) / 10) * ((buff[4] >> 7) ? -1 : 1);
 
     // if (reading != nullptr) {
     *reading = new humidityReading(dev->id(), dev->readTimestamp(), tc, rh);
     // }
 
-    error_count = 0;
     rc = true;
   } else { // crc did not match
-    ESP_LOGW(readAM2315TAG, "crc mismatch for %s", dev->debug().c_str())
-    error_count += 1;
+    ESP_LOGW(tagReadAM2315(), "crc mismatch for %s", dev->debug().c_str())
+    dev->crcMismatch();
   }
   return rc;
 }
 
 bool mcrI2c::readSHT31(i2cDev_t *dev, humidityReading_t **reading) {
-  static uint32_t error_count = 0;
   auto rc = false;
   i2c_cmd_handle_t cmd = nullptr;
   esp_err_t esp_rc;
@@ -385,26 +359,28 @@ bool mcrI2c::readSHT31(i2cDev_t *dev, humidityReading_t **reading) {
   i2c_cmd_link_delete(cmd);
 
   if (esp_rc != ESP_OK) {
-    ESP_LOGW(readSHT31TAG, "write failed (cmd) to %s esp_rc=0x%02x",
+    ESP_LOGW(tagReadSHT31(), "write failed (cmd) to %s esp_rc=0x%02x",
              dev->debug().c_str(), esp_rc);
+    dev->stopRead();
+    dev->writeFailure();
     return rc;
   }
 
   TickType_t last_wake;
-  ESP_LOGD(readSHT31TAG, "delaying %ums for measurement", convert_ms);
+  ESP_LOGD(tagReadSHT31(), "delaying %ums for measurement", convert_ms);
   last_wake = xTaskGetTickCount();
   int64_t start_delay = esp_timer_get_time();
   vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(convert_ms));
   int64_t end_delay = esp_timer_get_time();
 
-  ESP_LOGD(readSHT31TAG, "actual delay was %0.3fms",
+  ESP_LOGD(tagReadSHT31(), "actual delay was %0.3fms",
            (float)(end_delay - start_delay) / 1000.0);
 
   cmd = i2c_cmd_link_create();
   i2c_master_start(cmd);
   i2c_master_write_byte(cmd, (dev->devAddr() << 1) | I2C_MASTER_READ,
                         ACK_CHECK_EN);
-  for (int i = 0; i < sizeof(buff); i++) {
+  for (uint32_t i = 0; i < sizeof(buff); i++) {
     i2c_ack_type_t byte_ack =
         (i == (sizeof(buff) - 1)) ? (i2c_ack_type_t)0x01 : (i2c_ack_type_t)0x00;
     i2c_master_read_byte(cmd, &buff[i], byte_ack);
@@ -418,49 +394,33 @@ bool mcrI2c::readSHT31(i2cDev_t *dev, humidityReading_t **reading) {
   dev->stopRead();
 
   if (esp_rc != ESP_OK) {
-    ESP_LOGW(readSHT31TAG, "read failed for %s esp_rc=%d", dev->debug().c_str(),
-             esp_rc);
+    ESP_LOGW(tagReadSHT31(), "read failed for %s esp_rc=%d",
+             dev->debug().c_str(), esp_rc);
+
     if (convert_ms < 100) {
       convert_ms += 3;
-      ESP_LOGD(readSHT31TAG, "calibrating measurement delay to %ums",
+      ESP_LOGD(tagReadSHT31(), "calibrating measurement delay to %ums",
                convert_ms);
-    } else {
-      ESP_LOGI(readSHT31TAG, "read successful for %s", dev->debug().c_str());
     }
+
+    dev->readFailure();
     return rc;
   }
 
-  uint8_t crc_temp = crcSHT31(buff, 2);
-  uint8_t crc_relh = crcSHT31(buff + 3, 2);
+  if (crcSHT31(buff) && crcSHT31(&(buff[3]))) {
+    // conversion from SHT31 datasheet
+    uint16_t stc = (buff[0] << 8) | buff[1];
+    uint16_t srh = (buff[3] << 8) | buff[4];
 
-  if ((crc_temp == buff[2]) && (crc_relh == buff[5])) {
-    // conversion pulled from SHT31 datasheet
-    uint16_t stc = buff[0];
-    stc <<= 8;
-    stc |= buff[1];
-
-    uint16_t srh = buff[3];
-    srh <<= 8;
-    srh |= buff[4];
-
-    double raw_tc = stc;
-    raw_tc *= 175;
-    raw_tc /= 0xFFFF;
-    raw_tc = -45 + raw_tc;
-    float tc = raw_tc;
-
-    double raw_rh = srh;
-    raw_rh *= 100;
-    raw_rh /= 0xFFFF;
-    float rh = raw_rh;
+    float tc = (float)((stc * 175) / 0xffff) - 45;
+    float rh = (float)((srh * 100) / 0xffff);
 
     *reading = new humidityReading(dev->id(), dev->readTimestamp(), tc, rh);
 
-    error_count = 0;
     rc = true;
   } else { // crc did not match
-    ESP_LOGW(readSHT31TAG, "crc mismatch for %s", dev->debug().c_str())
-    error_count += 1;
+    ESP_LOGW(tagReadSHT31(), "crc mismatch for %s", dev->debug().c_str())
+    dev->crcMismatch();
   }
 
   return rc;
@@ -498,7 +458,7 @@ void mcrI2c::report(void *task_data) {
       publish(humidity);
     }
 
-    delay(pdMS_TO_TICKS(200));
+    // delay(pdMS_TO_TICKS(500));
   }
 
   trackReport(false);
@@ -506,18 +466,34 @@ void mcrI2c::report(void *task_data) {
 
 void mcrI2c::run(void *task_data) {
 
-  ESP_LOGI(engTAG, "configuring and initializing I2c");
+  ESP_LOGI(tagEngine(), "configuring and initializing I2c");
 
-  ESP_LOGI(engTAG, "waiting on event_group=%p for bits=0x%x", (void *)_ev_group,
-           _wait_bit);
+  ESP_LOGI(tagEngine(), "installing i2c driver...");
+  i2c_config_t _conf;
+  bzero(&_conf, sizeof(_conf));
+  _conf.mode = I2C_MODE_MASTER;
+  _conf.sda_io_num = (gpio_num_t)23;
+  _conf.scl_io_num = (gpio_num_t)22;
+  _conf.sda_pullup_en = GPIO_PULLUP_ENABLE;
+  _conf.scl_pullup_en = GPIO_PULLUP_ENABLE;
+  _conf.master.clk_speed = 100000;
+
+  ESP_ERROR_CHECK(i2c_param_config(I2C_NUM_0, &_conf));
+  ESP_ERROR_CHECK(i2c_driver_install(I2C_NUM_0, _conf.mode, 0, 0, 0));
+  // vTaskDelay(pdMS_TO_TICKS(200));
+
+  ESP_LOGI(tagEngine(), "i2c driver installed");
+
+  ESP_LOGI(tagEngine(), "waiting on event_group=%p for bits=0x%x",
+           (void *)_ev_group, _wait_bit);
   xEventGroupWaitBits(_ev_group, _wait_bit, false, true, portMAX_DELAY);
-  ESP_LOGI(engTAG, "event_group wait complete, proceeding to task loop");
+  ESP_LOGI(tagEngine(), "event_group wait complete, proceeding to task loop");
 
+  delay(3000);
   _last_wake.engine = xTaskGetTickCount();
-  delay(pdMS_TO_TICKS(5000));
   for (;;) {
     discover(nullptr);
-    delay(pdMS_TO_TICKS(5000));
+    // delay(pdMS_TO_TICKS(5000));
 
     for (int i = 0; i < 10; i++) {
       report(nullptr);
@@ -526,9 +502,8 @@ void mcrI2c::run(void *task_data) {
       // xEventGroupSetBits(_ds_evg, _event_bits.engine_running);
 
       // do stuff here
-
       vTaskDelayUntil(&(_last_wake.engine), _loop_frequency);
-      runtimeMetricsReport(engTAG);
+      runtimeMetricsReport();
     }
   }
 }
@@ -539,12 +514,14 @@ bool mcrI2c::selectBus(uint32_t bus) {
   mcrDevAddr_t multiplexer_dev(0x70);
   esp_err_t esp_rc = ESP_FAIL;
 
+  _bus_selects++;
+
   i2c_reset_tx_fifo(I2C_NUM_0);
   i2c_reset_rx_fifo(I2C_NUM_0);
 
   if (bus >= _max_buses) {
-    ESP_LOGW(engTAG, "attempt to select bus %d >= %d, bus not changed", bus,
-             _max_buses);
+    ESP_LOGW(tagEngine(), "attempt to select bus %d >= %d, bus not changed",
+             bus, _max_buses);
   }
 
   if (useMultiplexer() && (bus < _max_buses)) {
@@ -557,17 +534,18 @@ bool mcrI2c::selectBus(uint32_t bus) {
                           ACK_CHECK_EN); // 0x00 selects no bus
     i2c_master_stop(cmd);
 
-    esp_rc = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(1000));
+    esp_rc = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(10000));
     i2c_cmd_link_delete(cmd);
 
     if (esp_rc != ESP_OK) {
-      ESP_LOGW(selTAG, "unable to select bus %d esp_rc=0x%02x", bus, esp_rc);
+      _bus_select_errors++;
+      ESP_LOGW(tagSelectBus(),
+               "unable to select bus %d (selects=%u errors=%u) esp_rc=0x%02x",
+               bus, _bus_selects, _bus_select_errors, esp_rc);
+
       rc = false;
     }
   }
-
-  // slow down the rate of individual cmds to the i2c
-  delay(pdMS_TO_TICKS(100));
 
   return rc;
 }
@@ -585,5 +563,5 @@ void mcrI2c::wakeAM2315(mcrDevAddr_t &addr) {
   i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(1000));
   i2c_cmd_link_delete(cmd);
 
-  delay(pdMS_TO_TICKS(100));
+  delay(100);
 }

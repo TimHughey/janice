@@ -1,37 +1,39 @@
 /*
-       mcpr_ds.cpp - Master Control Remote Dallas Semiconductor
-       Copyright (C) 2017  Tim Hughey
+         mcpr_ds.cpp - Master Control Remote Dallas Semiconductor
+         Copyright (C) 2017  Tim Hughey
 
-       This program is free software: you can redistribute it and/or modify
-       it under the terms of the GNU General Public License as published by
-       the Free Software Foundation, either version 3 of the License, or
-       (at your option) any later version.
+         This program is free software: you can redistribute it and/or modify
+         it under the terms of the GNU General Public License as published by
+         the Free Software Foundation, either version 3 of the License, or
+         (at your option) any later version.
 
-       This program is distributed in the hope that it will be useful,
-       but WITHOUT ANY WARRANTY; without even the implied warranty of
-       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-       GNU General Public License for more details.
+         This program is distributed in the hope that it will be useful,
+         but WITHOUT ANY WARRANTY; without even the implied warranty of
+         MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+         GNU General Public License for more details.
 
-       You should have received a copy of the GNU General Public License
-       along with this program.  If not, see <http://www.gnu.org/licenses/>.
+         You should have received a copy of the GNU General Public License
+         along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-       https://www.wisslanding.com
-   */
+         https://www.wisslanding.com
+     */
 
 // #define VERBOSE 1
 
 #include <bitset>
 #include <cstdlib>
 #include <cstring>
+#include <map>
 #include <string>
+#include <vector>
 
-#include <FreeRTOS.h>
-#include <System.h>
-#include <Task.h>
 #include <esp_log.h>
 #include <esp_timer.h>
+#include <freertos/FreeRTOS.h>
 #include <freertos/event_groups.h>
 #include <freertos/queue.h>
+#include <freertos/task.h>
+#include <sdkconfig.h>
 
 #include "base.hpp"
 #include "cmd.hpp"
@@ -44,37 +46,21 @@
 #include "owb_gpio.h"
 #include "util.hpp"
 
-static const char engTAG[] = "mcrDS";
-static const char disTAG[] = "mcrDS discover";
-static const char conTAG[] = "mcrDS convert";
-static const char repTAG[] = "mcrDS report";
-static const char cmdTAG[] = "mcrDS cmd";
-static const char ds1820TAG[] = "mcrDS readDS1820";
-static const char ds2406TAG[] = "mcrDS readDS2406";
-static const char ds2408TAG[] = "mcrDS readDS2408";
-static const char setds2406TAG[] = "mcrDS setDS2406";
-static const char setds2408TAG[] = "mcrDS setDS2408";
+mcrDS::mcrDS(mcrMQTT_t *mqtt, EventGroupHandle_t evg, int bit) {
+  setTags(localTags());
+  // setLoggingLevel(ESP_LOG_INFO);
+  // setLoggingLevel(tagConvert(), ESP_LOG_INFO);
+  // setLoggingLevel(tagReport(), ESP_LOG_INFO);
+  // setLoggingLevel(tagDiscover(), ESP_LOG_INFO);
 
-mcrDS::mcrDS(mcrMQTT_t *mqtt, EventGroupHandle_t evg, int bit)
-    : Task(engTAG, 3 * 1024, 14) {
+  // task setup
+  _engine_task_name = tagEngine();
+  _engine_stack_size = 3 * 1024;
+  _engine_priority = 14;
+
   _mqtt = mqtt;
   _ev_group = evg;
   _wait_bit = bit;
-
-  _engTAG = engTAG;
-  _conTAG = conTAG;
-  _cmdTAG = cmdTAG;
-  _disTAG = disTAG;
-  _repTAG = repTAG;
-
-  esp_log_level_t log_level = ESP_LOG_WARN;
-  const char *log_tags[] = {disTAG,    conTAG,    repTAG,    cmdTAG,
-                            ds1820TAG, ds2406TAG, ds2408TAG, nullptr};
-
-  for (int i = 0; log_tags[i] != nullptr; i++) {
-    ESP_LOGI(engTAG, "%s logging at level=%d", log_tags[i], log_level);
-    esp_log_level_set(log_tags[i], log_level);
-  }
 }
 
 bool mcrDS::checkDevicesPowered() {
@@ -90,11 +76,11 @@ bool mcrDS::checkDevicesPowered() {
   owb_s = owb_read_byte(ds, &pwr);
 
   if ((owb_s == OWB_STATUS_OK) && pwr) {
-    ESP_LOGI(disTAG, "all devices are powered");
+    ESP_LOGI(tagDiscover(), "all devices are powered");
     rc = true;
   } else {
-    ESP_LOGW(disTAG, "at least one device is not powered (or err owb_s=%d)",
-             owb_s);
+    ESP_LOGW(tagDiscover(),
+             "at least one device is not powered (or err owb_s=%d)", owb_s);
   }
 
   // reest the bus since this can be used in the middle of other actions
@@ -113,11 +99,11 @@ void mcrDS::command(void *task_data) {
     queue_rc = xQueueReceive(_cmd_q, &cmd, portMAX_DELAY);
 
     if (queue_rc != pdTRUE) {
-      ESP_LOGW(cmdTAG, "queue receive failed rc=%d", queue_rc);
+      ESP_LOGW(tagCommand(), "queue receive failed rc=%d", queue_rc);
       continue;
     }
 
-    ESP_LOGD(cmdTAG, "processing %s", cmd->debug().c_str());
+    ESP_LOGD(tagCommand(), "processing %s", cmd->debug().c_str());
 
     dsDev_t *dev = findDevice(cmd->dev_id());
 
@@ -126,15 +112,15 @@ void mcrDS::command(void *task_data) {
 
       trackSwitchCmd(true);
 
-      ESP_LOGD(cmdTAG, "attempting to aquire bux mutex...");
+      ESP_LOGD(tagCommand(), "attempting to aquire bux mutex...");
       int64_t bus_wait_start = esp_timer_get_time();
       xSemaphoreTake(_bus_mutex, portMAX_DELAY);
       int64_t bus_wait_us = esp_timer_get_time() - bus_wait_start;
 
       if (bus_wait_us < 500) {
-        ESP_LOGD(cmdTAG, "acquired bus mutex");
+        ESP_LOGD(tagCommand(), "acquired bus mutex");
       } else {
-        ESP_LOGW(cmdTAG, "acquire bus mutex took %lldus", bus_wait_us);
+        ESP_LOGW(tagCommand(), "acquire bus mutex took %lldus", bus_wait_us);
       }
 
       if (dev->isDS2406())
@@ -144,19 +130,20 @@ void mcrDS::command(void *task_data) {
         set_rc = setDS2408(*cmd, dev);
 
       if ((set_rc) && commandAck(*cmd)) {
-        ESP_LOGD(cmdTAG, "cmd and ack complete %s",
+        ESP_LOGD(tagCommand(), "cmd and ack complete %s",
                  (const char *)cmd->dev_id());
       } else {
-        ESP_LOGW(cmdTAG, "cmd and/or ack failed for %s",
+        ESP_LOGW(tagCommand(), "cmd and/or ack failed for %s",
                  (const char *)cmd->dev_id());
       }
 
       trackSwitchCmd(false);
       xSemaphoreGive(_bus_mutex);
 
-      ESP_LOGD(cmdTAG, "released bus mutex");
+      ESP_LOGD(tagCommand(), "released bus mutex");
     } else {
-      ESP_LOGD(cmdTAG, "device %s not available", (const char *)cmd->dev_id());
+      ESP_LOGD(tagCommand(), "device %s not available",
+               (const char *)cmd->dev_id());
     }
 
     delete cmd;
@@ -172,11 +159,11 @@ bool mcrDS::commandAck(mcrCmd_t &cmd) {
 
     if (rc == true) {
       setCmdAck(cmd);
-      ESP_LOGD(cmdTAG, "completed cmd: %s", cmd.debug().c_str());
+      ESP_LOGD(tagCommand(), "completed cmd: %s", cmd.debug().c_str());
       publish(cmd);
     }
   } else {
-    ESP_LOGW(cmdTAG, "unable to find device for cmd ack %s",
+    ESP_LOGW(tagCommand(), "unable to find device for cmd ack %s",
              cmd.debug().c_str());
   }
 
@@ -193,14 +180,18 @@ void mcrDS::convert(void *task_data) {
 
   // ensure the temp available bit is cleared at task startup
   xEventGroupClearBits(_ds_evg, _event_bits.temp_available);
-  _last_wake.convert = xTaskGetTickCount(); // init last wake time
 
   for (;;) {
     // wait here for the signal there are devices available
-    xEventGroupWaitBits(_ds_evg, _event_bits.devices_available,
-                        pdFALSE, // don't clear the bit after waiting
-                        pdTRUE,  // wait for all bits, not really needed here
-                        portMAX_DELAY);
+    xEventGroupWaitBits(
+        _ds_evg,
+        (_event_bits.devices_available | _event_bits.temp_sensors_available),
+        pdFALSE, // don't clear the bit after waiting
+        pdTRUE,  // wait for all bits, not really needed here
+        portMAX_DELAY);
+
+    // the last wake is actually once the event group wait is satisified
+    _convertTask.lastWake = xTaskGetTickCount();
 
     // use event bits to signal when there are temperatures available
     // start by clearing the bit to signal there isn't a temperature available
@@ -209,9 +200,10 @@ void mcrDS::convert(void *task_data) {
     trackConvert(true);
 
     if (!devicesPowered() && !tempDevicesPresent()) {
-      ESP_LOGW(conTAG, "devices not powered or no temperature devices present");
+      ESP_LOGW(tagConvert(),
+               "devices not powered or no temperature devices present");
       trackConvert(false);
-      vTaskDelayUntil(&(_last_wake.convert), _convert_frequency);
+      vTaskDelayUntil(&(_convertTask.lastWake), _convert_frequency);
       continue;
     }
 
@@ -220,9 +212,9 @@ void mcrDS::convert(void *task_data) {
     owb_s = owb_reset(ds, &present);
 
     if (!present) {
-      ESP_LOGW(conTAG, "no devices present");
+      ESP_LOGW(tagConvert(), "no devices present");
       xSemaphoreGive(_bus_mutex);
-      vTaskDelayUntil(&(_last_wake.convert), _convert_frequency);
+      vTaskDelayUntil(&(_convertTask.lastWake), _convert_frequency);
       continue;
     }
 
@@ -233,15 +225,15 @@ void mcrDS::convert(void *task_data) {
     // we cheat a bit here and only check the owb status of the read
     if ((owb_s != OWB_STATUS_OK) || (data != 0x00)) {
       trackConvert(false);
-      ESP_LOGW(conTAG, "owb error owb_s=%d data=0x%x", owb_s, data);
+      ESP_LOGW(tagConvert(), "cmd failed owb_s=%d data=0x%x", owb_s, data);
       xSemaphoreGive(_bus_mutex);
-      vTaskDelayUntil(&(_last_wake.convert), _convert_frequency);
+      vTaskDelayUntil(&(_convertTask.lastWake), _convert_frequency);
       continue;
     }
 
-    ESP_LOGD(conTAG, "in-progress");
+    ESP_LOGD(tagConvert(), "in-progress");
 
-    delay(pdMS_TO_TICKS(450)); // will take at least this long
+    delay(450); // will take at least this long
 
     while ((owb_s == 0) && (data == 0x00)) {
       delay(_temp_convert_wait);
@@ -257,7 +249,7 @@ void mcrDS::convert(void *task_data) {
     }
 
     trackConvert(false);
-    vTaskDelayUntil(&(_last_wake.convert), _convert_frequency);
+    vTaskDelayUntil(&(_convertTask.lastWake), _convert_frequency);
   }
 }
 
@@ -270,18 +262,15 @@ void mcrDS::discover(void *task_data) {
   // ensure the devices available bit is cleared on task startup
   xEventGroupClearBits(_ds_evg, _event_bits.devices_available);
 
-  _last_wake.discover = xTaskGetTickCount();
-
-  // there is no reason to wait for anything before doing the first
-  // discover -- let's take advantage of other startup items to get this
-  // out of the way
-
   for (;;) {
     owb_status owb_s;
     bool present = false;
     bool found = false;
     auto device_found = false;
+    auto temp_devices = false;
     OneWireBus_SearchState search_state;
+
+    _discoverTask.lastWake = xTaskGetTickCount();
     bzero(&search_state, sizeof(OneWireBus_SearchState));
 
     trackDiscover(true);
@@ -291,20 +280,20 @@ void mcrDS::discover(void *task_data) {
     owb_s = owb_reset(ds, &present);
 
     if (!present) {
-      ESP_LOGW(disTAG, "no devices present");
+      ESP_LOGW(tagDiscover(), "no devices present");
       xSemaphoreGive(_bus_mutex);
       trackDiscover(false);
-      vTaskDelayUntil(&(_last_wake.discover), _discover_frequency);
+      vTaskDelayUntil(&(_discoverTask.lastWake), _discover_frequency);
       continue;
     }
 
     owb_s = owb_search_first(ds, &search_state, &found);
 
     if (owb_s != OWB_STATUS_OK) {
-      ESP_LOGW(disTAG, "search first failed owb_s=%d", owb_s);
+      ESP_LOGW(tagDiscover(), "search first failed owb_s=%d", owb_s);
       xSemaphoreGive(_bus_mutex);
       trackDiscover(false);
-      vTaskDelayUntil(&(_last_wake.discover), _discover_frequency);
+      vTaskDelayUntil(&(_discoverTask.lastWake), _discover_frequency);
       continue;
     }
 
@@ -315,17 +304,22 @@ void mcrDS::discover(void *task_data) {
       dsDev_t dev(found_addr, true);
 
       if (justSeenDevice(dev)) {
-        ESP_LOGD(disTAG, "previously seen %s", dev.debug().c_str());
+        ESP_LOGD(tagDiscover(), "previously seen %s", dev.debug().c_str());
       } else {
         dsDev_t *new_dev = new dsDev(dev);
-        ESP_LOGI(disTAG, "new (%p) %s", (void *)new_dev, dev.debug().c_str());
+        ESP_LOGI(tagDiscover(), "new (%p) %s", (void *)new_dev,
+                 dev.debug().c_str());
         addDevice(new_dev);
+      }
+
+      if (dev.hasTemperature()) {
+        temp_devices = true;
       }
 
       owb_s = owb_search_next(ds, &search_state, &found);
 
       if (owb_s != OWB_STATUS_OK) {
-        ESP_LOGW(disTAG, "search next failed owb_s=%d", owb_s);
+        ESP_LOGW(tagDiscover(), "search next failed owb_s=%d", owb_s);
       }
     }
 
@@ -338,62 +332,83 @@ void mcrDS::discover(void *task_data) {
     _devices_powered = checkDevicesPowered();
 
     xSemaphoreGive(_bus_mutex);
+    trackDiscover(false);
+
+    if (temp_devices) {
+      xEventGroupSetBits(_ds_evg, _event_bits.temp_sensors_available);
+    } else {
+      xEventGroupClearBits(_ds_evg, _event_bits.temp_sensors_available);
+    }
+
+    // must set before setting devices_available
+    _temp_devices_present = temp_devices;
 
     if (device_found) {
       // signal other tasks that there are, in fact, devices available
       xEventGroupSetBits(_ds_evg, _event_bits.devices_available);
     }
 
-    trackDiscover(false);
-    vTaskDelayUntil(&(_last_wake.discover), _discover_frequency);
+    vTaskDelayUntil(&(_discoverTask.lastWake), _discover_frequency);
   }
 }
 
 void mcrDS::report(void *task_data) {
-  bool rc = true;
 
   for (;;) {
     // let's wait here for the engine running bit
     // important to ensure we don't start reporting before the rest of the
     // system is fully available (e.g. wifi, mqtt)
-    xEventGroupWaitBits(_ds_evg, _event_bits.engine_running,
+    xEventGroupWaitBits(_ds_evg, _event_bits.devices_available,
                         pdFALSE, // don't clear the bit
                         pdTRUE,  // wait for all bits, not really needed here
                         portMAX_DELAY);
 
-    // let's wait here for the temperature available bit
-    // once we see it then clear it to ensure we don't run again until
-    // it's available again
-    xEventGroupWaitBits(_ds_evg, _event_bits.temp_available,
-                        pdTRUE, // clear the bit after waiting
-                        pdTRUE, // wait for all bits, not really needed here
-                        portMAX_DELAY);
+    // there are two cases of when report should run:
+    //  a. wait for a temperature if there are temperature devices
+    //  b. wait a preset duration
+
+    // case a:  wait for temperature to be available
+    if (_temp_devices_present) {
+      // let's wait here for the temperature available bit
+      // once we see it then clear it to ensure we don't run again until
+      // it's available again
+      ESP_LOGI(tagReport(), "waiting for temperature to be available");
+      xEventGroupWaitBits(_ds_evg, _event_bits.temp_available,
+                          pdTRUE, // clear the bit after waiting
+                          pdTRUE, // wait for all bits, not really needed here
+                          _report_frequency);
+    }
+
+    // last wake is actually after the event group has been satisified
+    _reportTask.lastWake = xTaskGetTickCount();
 
     trackReport(true);
-    ESP_LOGD(repTAG, "will attempt to report %d devices", numKnownDevices());
+    ESP_LOGI(tagReport(), "will attempt to report %d devices",
+             numKnownDevices());
 
-    // while (next_dev != nullptr) {
-    for (auto it = knownDevices(); moreDevices(it); it++) {
-      dsDev_t *dev = (dsDev_t *)*it;
-
-      ESP_LOGD(repTAG, "reading device %s", dev->debug().c_str());
+    for_each(beginDevices(), endDevices(), [this](dsDev_t *dev) {
+      ESP_LOGI(tagReport(), "reading device %s", dev->debug().c_str());
 
       xSemaphoreTake(_bus_mutex, portMAX_DELAY);
-      rc = readDevice(dev);
+      auto rc = readDevice(dev);
 
       if (rc) {
-        ESP_LOGD(repTAG, "publishing reading for %s", dev->debug().c_str());
+        ESP_LOGI(tagReport(), "publishing reading for %s",
+                 dev->debug().c_str());
         publish(dev);
       }
 
       xSemaphoreGive(_bus_mutex);
-
-      // if (LOG_LOCAL_LEVEL >= ESP_LOG_DEBUG) {
-      //   ESP_LOGD(repTAG, "%s", dev.debug());
-      // }
-    }
+    });
 
     trackReport(false);
+
+    // case b:  wait a present duration (no temp devices)
+    if (!_temp_devices_present) {
+      ESP_LOGI(tagReport(), "no temperature devices, sleeping for %u ticks",
+               _report_frequency);
+      vTaskDelayUntil(&(_reportTask.lastWake), _report_frequency);
+    }
   }
 }
 
@@ -431,7 +446,7 @@ bool mcrDS::readDevice(dsDev_t *dev) {
     break;
 
   default:
-    ESP_LOGW(engTAG, "unknown family %d", dev->family());
+    ESP_LOGW(tagEngine(), "unknown family %d", dev->family());
   }
 
   return rc;
@@ -448,7 +463,7 @@ bool mcrDS::readDS1820(dsDev_t *dev, celsiusReading_t **reading) {
   owb_s = owb_reset(ds, &present);
 
   if (owb_s != OWB_STATUS_OK) {
-    ESP_LOGW(ds1820TAG, "no devices present");
+    ESP_LOGW(tagReadDS1820(), "no devices present");
     return rc;
   }
 
@@ -470,7 +485,7 @@ bool mcrDS::readDS1820(dsDev_t *dev, celsiusReading_t **reading) {
   owb_s = owb_write_bytes(ds, cmd, sizeof(cmd));
 
   if (owb_s != OWB_STATUS_OK) {
-    ESP_LOGW(ds1820TAG, "failed to send read scratchpad owb_s=%d", owb_s);
+    ESP_LOGW(tagReadDS1820(), "failed to send read scratchpad owb_s=%d", owb_s);
     return rc;
   }
 
@@ -478,7 +493,7 @@ bool mcrDS::readDS1820(dsDev_t *dev, celsiusReading_t **reading) {
   owb_reset(ds, &present);
 
   if (owb_s != OWB_STATUS_OK) {
-    ESP_LOGW(ds1820TAG, "failed to read scratchpad owb_s=%d", owb_s);
+    ESP_LOGW(tagReadDS1820(), "failed to read scratchpad owb_s=%d", owb_s);
     return rc;
   }
 
@@ -520,7 +535,7 @@ bool mcrDS::readDS2406(dsDev_t *dev, positionsReading_t **reading) {
   owb_s = owb_reset(ds, &present);
 
   if (owb_s != OWB_STATUS_OK) {
-    ESP_LOGW(ds2406TAG, "no devices present");
+    ESP_LOGW(tagReadDS2406(), "no devices present");
     return rc;
   }
 
@@ -542,7 +557,7 @@ bool mcrDS::readDS2406(dsDev_t *dev, positionsReading_t **reading) {
 
   if (owb_s != OWB_STATUS_OK) {
     dev->stopRead();
-    ESP_LOGW(ds2406TAG, "failed to send read cmd owb_s=%d", owb_s);
+    ESP_LOGW(tagReadDS2406(), "failed to send read cmd owb_s=%d", owb_s);
     return rc;
   }
 
@@ -552,7 +567,7 @@ bool mcrDS::readDS2406(dsDev_t *dev, positionsReading_t **reading) {
   dev->stopRead();
 
   if (owb_s != OWB_STATUS_OK) {
-    ESP_LOGW(ds2406TAG, "failed to read cmd results owb_s=%d", owb_s);
+    ESP_LOGW(tagReadDS2406(), "failed to read cmd results owb_s=%d", owb_s);
     return rc;
   }
 
@@ -584,7 +599,7 @@ bool mcrDS::readDS2408(dsDev_t *dev, positionsReading_t **reading) {
   owb_s = owb_reset(ds, &present);
 
   if (owb_s != OWB_STATUS_OK) {
-    ESP_LOGW(ds2408TAG, "no devices present");
+    ESP_LOGW(tagReadDS2408(), "no devices present");
     return rc;
   }
   // byte data[12]
@@ -610,7 +625,7 @@ bool mcrDS::readDS2408(dsDev_t *dev, positionsReading_t **reading) {
 
   if (owb_s != OWB_STATUS_OK) {
     dev->stopRead();
-    ESP_LOGW(ds2408TAG, "failed to send read cmd owb_s=%d", owb_s);
+    ESP_LOGW(tagReadDS2408(), "failed to send read cmd owb_s=%d", owb_s);
     return rc;
   }
 
@@ -619,13 +634,14 @@ bool mcrDS::readDS2408(dsDev_t *dev, positionsReading_t **reading) {
   owb_s = owb_read_bytes(ds, (dev_cmd + 10), 34);
   dev->stopRead();
 
-  ESP_LOGD(ds2408TAG, "dev_cmd after read start of buffer dump");
-  ESP_LOG_BUFFER_HEX_LEVEL(ds2408TAG, dev_cmd, sizeof(dev_cmd), ESP_LOG_DEBUG);
-  ESP_LOGD(ds2408TAG, "dev_cmd after read end of buffer dump");
+  ESP_LOGD(tagReadDS2408(), "dev_cmd after read start of buffer dump");
+  ESP_LOG_BUFFER_HEX_LEVEL(tagReadDS2408(), dev_cmd, sizeof(dev_cmd),
+                           ESP_LOG_DEBUG);
+  ESP_LOGD(tagReadDS2408(), "dev_cmd after read end of buffer dump");
 
   if (owb_s != OWB_STATUS_OK) {
 
-    ESP_LOGW(ds2408TAG, "failed to read cmd results owb_s=%d", owb_s);
+    ESP_LOGW(tagReadDS2408(), "failed to read cmd results owb_s=%d", owb_s);
     return rc;
   }
 
@@ -637,7 +653,7 @@ bool mcrDS::readDS2408(dsDev_t *dev, positionsReading_t **reading) {
       check_crc16((dev_cmd + 9), 33, &(dev_cmd[sizeof(dev_cmd) - 2]));
 
   if (!crc16) {
-    ESP_LOGW(ds2408TAG, "crc FAILED (0x%02x) for %s", crc16,
+    ESP_LOGW(tagReadDS2408(), "crc FAILED (0x%02x) for %s", crc16,
              dev->debug().c_str());
     return rc;
   }
@@ -666,45 +682,46 @@ void mcrDS::run(void *data) {
   _ds_evg = xEventGroupCreate();
 
   // the command task will wait for the queue which is fed by MQTTin
-  xTaskCreate(&runCommand, "mcrDScmd", (3 * 1024), this, _task_pri.cmd,
-              &(_tasks.cmd));
+  xTaskCreate(&runCommand, "mcrDScmd", (4 * 1024), this, _cmdTask.priority,
+              &(_cmdTask.handle));
 
   // the convert task will wait for the devices available bit
-  xTaskCreate(&runConvert, "mcrDScon", (3 * 1024), this, _task_pri.convert,
-              &(_tasks.convert));
+  xTaskCreate(&runConvert, "mcrDScon", (4 * 1024), this, _convertTask.priority,
+              &(_convertTask.handle));
 
   // the discover task will immediate start, no reason to wait
-  xTaskCreate(&runDiscover, "mcrDSdis", (3 * 1024), this, _task_pri.discover,
-              &(_tasks.discover));
+  xTaskCreate(&runDiscover, "mcrDSdis", (4 * 1024), this,
+              _discoverTask.priority, &(_discoverTask.handle));
 
   // the report task will wait for the temperature available bit
   // FIXME: this should be smarter and discern the difference between
   //        temperature devices and switch devices
   //        ** until this is done there will never be a report if temperature
   //        devices are not on the bus **
-  xTaskCreate(&runReport, "mcrDSrep", (4 * 1024), this, _task_pri.report,
-              &(_tasks.report));
+  xTaskCreate(&runReport, "mcrDSrep", (4 * 1024), this, _reportTask.priority,
+              &(_reportTask.handle));
 
   owb_use_crc(ds, true);
 
-  ESP_LOGI(engTAG,
+  ESP_LOGI(tagEngine(),
            "created ow_rmt=%p bus_mutex=%p cmd_q=%p ds_evg=%p cmd_task=%p "
            "convert_task=%p discover_task=%p report_task=%p",
            ds, (void *)_bus_mutex, (void *)_cmd_q, (void *)_ds_evg,
-           (void *)_tasks.cmd, (void *)_tasks.convert, (void *)_tasks.discover,
-           (void *)_tasks.report);
+           (void *)_cmdTask.handle, (void *)_convertTask.handle,
+           (void *)_discoverTask.handle, (void *)_reportTask.handle);
 
   cmdQueue_t cmd_q = {"mcrDS", "ds", _cmd_q};
   _mqtt->registerCmdQueue(cmd_q);
 
-  ESP_LOGI(engTAG, "waiting on %p for bits=0x%x", (void *)_ev_group, _wait_bit);
+  ESP_LOGI(tagEngine(), "waiting on %p for bits=0x%x", (void *)_ev_group,
+           _wait_bit);
   xEventGroupWaitBits(_ev_group, _wait_bit, false, true, portMAX_DELAY);
-  ESP_LOGI(engTAG, "bits set, proceeding to task loop");
+  ESP_LOGI(tagEngine(), "bits set, proceeding to task loop");
 
-  _last_wake.engine = xTaskGetTickCount();
+  _engineTask.lastWake = xTaskGetTickCount();
 
   // adjust the engine task priority as we enter into the main run loop
-  vTaskPrioritySet(nullptr, _task_pri.engine);
+  vTaskPrioritySet(nullptr, _engineTask.priority);
 
   for (;;) {
     // signal to other tasks the dsEngine task is in it's run loop
@@ -712,34 +729,33 @@ void mcrDS::run(void *data) {
     xEventGroupSetBits(_ds_evg, _event_bits.engine_running);
 
     // do stuff here
-
-    vTaskDelayUntil(&(_last_wake.engine), _loop_frequency);
-    runtimeMetricsReport(engTAG);
+    vTaskDelayUntil(&(_engineTask.lastWake), _loop_frequency);
+    runtimeMetricsReport();
   }
 }
 
 void mcrDS::runCommand(void *task_data) {
   mcrDS *instance = (mcrDS *)task_data;
   instance->command(instance->_handle_cmd_task_data);
-  ::vTaskDelete(instance->_tasks.cmd);
+  ::vTaskDelete(instance->_cmdTask.handle);
 }
 
 void mcrDS::runConvert(void *task_data) {
   mcrDS *instance = (mcrDS *)task_data;
-  instance->convert(instance->_task_data.convert);
-  ::vTaskDelete(instance->_tasks.convert);
+  instance->convert(instance->_convertTask.data);
+  ::vTaskDelete(instance->_convertTask.handle);
 }
 
 void mcrDS::runDiscover(void *task_data) {
   mcrDS *instance = (mcrDS *)task_data;
-  instance->discover(instance->_task_data.discover);
-  ::vTaskDelete(instance->_tasks.discover);
+  instance->discover(instance->_discoverTask.data);
+  ::vTaskDelete(instance->_discoverTask.handle);
 }
 
 void mcrDS::runReport(void *task_data) {
   mcrDS *instance = (mcrDS *)task_data;
-  instance->report(instance->_task_data.report);
-  ::vTaskDelete(instance->_tasks.report);
+  instance->report(instance->_reportTask.data);
+  ::vTaskDelete(instance->_reportTask.handle);
 }
 
 bool mcrDS::setDS2406(mcrCmd_t &cmd, dsDev_t *dev) {
@@ -750,7 +766,7 @@ bool mcrDS::setDS2406(mcrCmd_t &cmd, dsDev_t *dev) {
   owb_s = owb_reset(ds, &present);
 
   if (owb_s != OWB_STATUS_OK) {
-    ESP_LOGW(setds2406TAG, "no devices present");
+    ESP_LOGW(tagSetDS2406(), "no devices present");
     return rc;
   }
 
@@ -785,7 +801,7 @@ bool mcrDS::setDS2406(mcrCmd_t &cmd, dsDev_t *dev) {
 
   if (owb_s != OWB_STATUS_OK) {
     dev->stopWrite();
-    ESP_LOGW(setds2406TAG, "failed to send read cmd owb_s=%d", owb_s);
+    ESP_LOGW(tagSetDS2406(), "failed to send read cmd owb_s=%d", owb_s);
     return rc;
   }
 
@@ -795,7 +811,7 @@ bool mcrDS::setDS2406(mcrCmd_t &cmd, dsDev_t *dev) {
 
   if (owb_s != OWB_STATUS_OK) {
     dev->stopWrite();
-    ESP_LOGW(setds2406TAG, "failed to read cmd results owb_s=%d", owb_s);
+    ESP_LOGW(tagSetDS2406(), "failed to read cmd results owb_s=%d", owb_s);
     return rc;
   }
 
@@ -808,7 +824,7 @@ bool mcrDS::setDS2406(mcrCmd_t &cmd, dsDev_t *dev) {
         owb_write_byte(ds, 0xff); // writing 0xFF will copy scratchpad to status
 
     if (owb_s != OWB_STATUS_OK) {
-      ESP_LOGW(setds2406TAG, "failed to copy scratchpad to status owb_s=%d",
+      ESP_LOGW(tagSetDS2406(), "failed to copy scratchpad to status owb_s=%d",
                owb_s);
       return rc;
     }
@@ -816,7 +832,7 @@ bool mcrDS::setDS2406(mcrCmd_t &cmd, dsDev_t *dev) {
     owb_s = owb_reset(ds, &present);
     rc = true;
   } else {
-    ESP_LOGW(setds2406TAG, "crc16 failure");
+    ESP_LOGW(tagSetDS2406(), "crc16 failure");
   }
 
   return rc;
@@ -830,7 +846,7 @@ bool mcrDS::setDS2408(mcrCmd_t &cmd, dsDev_t *dev) {
   owb_s = owb_reset(ds, &present);
 
   if (owb_s != OWB_STATUS_OK) {
-    ESP_LOGW(setds2408TAG, "no devices present");
+    ESP_LOGW(tagSetDS2408(), "no devices present");
     return rc;
   }
 
@@ -838,7 +854,7 @@ bool mcrDS::setDS2408(mcrCmd_t &cmd, dsDev_t *dev) {
   // important because setting the new state relies, in part, on the existing
   // state for the pios not changing
   if (readDevice(dev) == false) {
-    ESP_LOGW(setds2408TAG, "read before set failed for %s",
+    ESP_LOGW(tagSetDS2408(), "read before set failed for %s",
              dev->debug().c_str());
     return rc;
   }
@@ -866,7 +882,7 @@ bool mcrDS::setDS2408(mcrCmd_t &cmd, dsDev_t *dev) {
   owb_s = owb_reset(ds, &present);
 
   if (owb_s != OWB_STATUS_OK) {
-    ESP_LOGW(setds2408TAG, "no devices present");
+    ESP_LOGW(tagSetDS2408(), "no devices present");
     return rc;
   }
 
@@ -888,7 +904,7 @@ bool mcrDS::setDS2408(mcrCmd_t &cmd, dsDev_t *dev) {
   owb_s = owb_write_bytes(ds, dev_cmd, sizeof(dev_cmd));
 
   if (owb_s != OWB_STATUS_OK) {
-    ESP_LOGW(setds2408TAG, "device cmd failed for %s owb_s=%d",
+    ESP_LOGW(tagSetDS2408(), "device cmd failed for %s owb_s=%d",
              dev->debug().c_str(), owb_s);
     dev->stopWrite();
     return rc;
@@ -898,7 +914,7 @@ bool mcrDS::setDS2408(mcrCmd_t &cmd, dsDev_t *dev) {
   owb_s = owb_read_bytes(ds, check, sizeof(check));
 
   if (owb_s != OWB_STATUS_OK) {
-    ESP_LOGW(setds2408TAG, "read of check bytes failed for %s owb_s=%d",
+    ESP_LOGW(tagSetDS2408(), "read of check bytes failed for %s owb_s=%d",
              dev->debug().c_str(), owb_s);
     dev->stopWrite();
     return rc;
@@ -917,12 +933,12 @@ bool mcrDS::setDS2408(mcrCmd_t &cmd, dsDev_t *dev) {
   if ((check[0] == 0xaa) || (dev_state == (new_state & 0xff))) {
     cmd_bitset_t b0 = check[0];
     cmd_bitset_t b1 = check[1];
-    ESP_LOGD(setds2408TAG, "CONFIRMED check[0]=0b%s check[1]=0b%s for %s",
+    ESP_LOGD(tagSetDS2408(), "CONFIRMED check[0]=0b%s check[1]=0b%s for %s",
              b0.to_string().c_str(), b1.to_string().c_str(),
              dev->debug().c_str());
     rc = true;
   } else {
-    ESP_LOGW(setds2408TAG, "FAILED check[0]=0x%x check[1]=0x%x for %s",
+    ESP_LOGW(tagSetDS2408(), "FAILED check[0]=0x%x check[1]=0x%x for %s",
              check[0], check[1], dev->debug().c_str());
   }
 
@@ -960,10 +976,10 @@ uint16_t mcrDS::crc16(const uint8_t *input, uint16_t len, uint16_t crc) {
 
 void mcrDS::printInvalidDev(dsDev_t *dev) {
   if (dev == nullptr) {
-    ESP_LOGW(engTAG, "%s dev == nullptr", __PRETTY_FUNCTION__);
+    ESP_LOGW(tagEngine(), "%s dev == nullptr", __PRETTY_FUNCTION__);
     return;
   }
 
-  ESP_LOGW(engTAG, "%s dev id=%s", __PRETTY_FUNCTION__,
+  ESP_LOGW(tagEngine(), "%s dev id=%s", __PRETTY_FUNCTION__,
            (const char *)dev->id());
 }

@@ -4,30 +4,44 @@
 
 #include <string>
 
-#include <FreeRTOS.h>
-#include <System.h>
-#include <Task.h>
-#include <WiFi.h>
-#include <WiFiEventHandler.h>
-
 #include <esp_log.h>
+#include <freertos/FreeRTOS.h>
 #include <freertos/event_groups.h>
+#include <freertos/task.h>
+#include <sdkconfig.h>
 
-#include "Task.h"
-#include "sdkconfig.h"
-
-class mcrTimestampTask : public Task {
+class mcrTimestampTask {
 public:
   mcrTimestampTask(EventGroupHandle_t evg, int bit);
   ~mcrTimestampTask();
 
   void run(void *data);
+  void start(void *task_data = nullptr) {
+    if (_engine_task != nullptr) {
+      ESP_LOGW(_engTAG, "there may already be a task running %p",
+               (void *)_engine_task);
+    }
+
+    // this (object) is passed as the data to the task creation and is
+    // used by the static runEngine method to call the implemented run
+    // method
+    ::xTaskCreate(&runEngine, _engine_task_name.c_str(), _engine_stack_size,
+                  this, _engine_priority, &_engine_task);
+  }
 
 private:
   uint32_t vref_voltage();
 
 private:
   EventGroupHandle_t ev_group;
+
+  const char *_engTAG = nullptr;
+  xTaskHandle _engine_task;
+  void *_engine_task_data;
+  std::string _engine_task_name;
+  uint16_t _engine_stack_size = 4 * 1024;
+  uint16_t _engine_priority = 0;
+
   int wait_bit;
 
   size_t _firstHeap = 0;
@@ -38,6 +52,23 @@ private:
   TickType_t _last_wake;
   const TickType_t _loop_frequency = pdMS_TO_TICKS(1 * 60 * 1000);
   bool _task_report = false;
+
+  // Task implementation
+  void delay(int ms) { ::vTaskDelay(pdMS_TO_TICKS(ms)); }
+  static void runEngine(void *task_instance) {
+    mcrTimestampTask *task = (mcrTimestampTask *)task_instance;
+    task->run(task->_engine_task_data);
+  }
+
+  void stop() {
+    if (_engine_task == nullptr) {
+      return;
+    }
+
+    xTaskHandle temp = _engine_task;
+    _engine_task = nullptr;
+    ::vTaskDelete(temp);
+  }
 };
 
 #endif /* _MCR_TIMESTAMP_TASK_H_ */

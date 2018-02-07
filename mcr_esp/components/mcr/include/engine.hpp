@@ -21,18 +21,19 @@
 #ifndef mcr_engine_h
 #define mcr_engine_h
 
+#include <algorithm>
 #include <cstdlib>
 #include <iomanip>
+#include <map>
 #include <sstream>
 #include <string>
 #include <vector>
 
-#include <FreeRTOS.h>
-#include <System.h>
-#include <Task.h>
-
 #include <esp_log.h>
+#include <freertos/FreeRTOS.h>
 #include <freertos/event_groups.h>
+#include <freertos/task.h>
+#include <sdkconfig.h>
 
 #include "base.hpp"
 #include "cmd.hpp"
@@ -55,6 +56,9 @@
 #define MAX_DEVICES_PER_ENGINE 30
 #endif
 
+typedef std::map<std::string, std::string> mcrEngineTagMap_t;
+typedef std::pair<std::string, std::string> mcrEngineTagItem_t;
+
 typedef struct mcrEngineMetric {
   int64_t start_us = 0;
   int64_t elapsed_us = 0;
@@ -76,31 +80,53 @@ private:
   uint32_t _dev_count = 0;
   uint32_t _next_known_index = 0;
 
-  // Engine runtime controls
-  uint32_t _loop_timeslice_ms = 5;
-  uint32_t _discover_interval_ms = 30000;
-  uint32_t _convert_interval_ms = 9000;
-  uint32_t _report_interval_ms = 11000;
-  uint32_t _stats_inverval_ms = 20000;
-
-  uint32_t _discover_timeout_ms = 10000;
-  uint32_t _convert_timeout_ms = 3000;
-  uint32_t _report_timeout_ms = 10000;
+  xTaskHandle _engine_task = nullptr;
 
   mcrEngineMetrics_t metrics;
 
-  // Engine runtime tracking by state
-  uint32_t _last_convert_ms = 0;
-  uint32_t _last_report_ms = 0;
-  uint32_t _last_cmd_ms = 0;
-  uint32_t _last_ackcmd_ms = 0;
-  uint32_t _last_stats_ms = 0;
-  time_t _last_convert_timestamp = 0;
+  // Task implementation
+  static void runEngine(void *task_instance) {
+    mcrEngine *task = (mcrEngine *)task_instance;
+    task->run(task->_engine_task_data);
+  }
 
 public:
   mcrEngine(){}; // nothing to see here
+  virtual ~mcrEngine(){};
+
+  // task methods
+  void delay(int ms) { ::vTaskDelay(pdMS_TO_TICKS(ms)); }
+
+  virtual void run(void *data) = 0;
+
+  void start(void *task_data = nullptr) {
+    if (_engine_task != nullptr) {
+      ESP_LOGW(tagEngine(), "there may already be a task running %p",
+               (void *)_engine_task);
+    }
+
+    // this (object) is passed as the data to the task creation and is
+    // used by the static runEngine method to call the implemented run
+    // method
+    ::xTaskCreate(&runEngine, _engine_task_name.c_str(), _engine_stack_size,
+                  this, _engine_priority, &_engine_task);
+  }
+
+  void stop() {
+    if (_engine_task == nullptr) {
+      return;
+    }
+
+    xTaskHandle temp = _engine_task;
+    _engine_task = nullptr;
+    ::vTaskDelete(temp);
+  }
 
   static uint32_t maxDevices() { return MAX_DEVICES_PER_ENGINE; };
+
+  bool any_of_devices(bool (*func)(const DEV &)) {
+    return std::any_of(_devices.cbegin(), _devices.cend(), func);
+  }
 
   // functions for handling known devices
   // mcrDev_t *findDevice(mcrDev_t &dev);
@@ -112,7 +138,7 @@ public:
     DEV *found_dev = findDevice(dev.id());
 
     if (LOG_LOCAL_LEVEL >= ESP_LOG_DEBUG) {
-      ESP_LOGD(_engTAG, "just saw: %s", dev.debug().c_str());
+      ESP_LOGD(tagEngine(), "just saw: %s", dev.debug().c_str());
     }
 
     if (found_dev != nullptr) {
@@ -127,33 +153,44 @@ public:
     DEV *found = nullptr;
 
     if (LOG_LOCAL_LEVEL >= ESP_LOG_DEBUG) {
-      ESP_LOGD(_engTAG, "adding: %s", dev->debug().c_str());
+      ESP_LOGD(tagEngine(), "adding: %s", dev->debug().c_str());
     }
 
     if (numKnownDevices() > maxDevices()) {
-      ESP_LOGW(_engTAG, "attempt to exceed max devices!");
+      ESP_LOGW(tagEngine(), "attempt to exceed max devices!");
       return rc;
     }
 
     if ((found = findDevice(dev->id())) == nullptr) {
       _devices.push_back(dev);
-      ESP_LOGI(_engTAG, "added (%p) %s", (void *)dev, dev->debug().c_str());
+      ESP_LOGI(tagEngine(), "added (%p) %s", (void *)dev, dev->debug().c_str());
     }
 
     return (found == nullptr) ? true : false;
   };
 
   DEV *findDevice(const mcrDevID_t &dev) {
-    DEV *found = nullptr;
+    // DEV *search = nullptr;
 
-    for (auto search : _devices) {
-      if (search->id() == dev) {
-        found = search;
-        break;
-      }
+    // my first lambda in C++, wow this languge has really evolved
+    // since I used it 15+ years ago
+    auto found =
+        std::find_if(_devices.begin(), _devices.end(),
+                     [dev](DEV *search) { return search->id() == dev; });
+
+    if (found != _devices.end()) {
+      return *found;
     }
 
-    return found;
+    return nullptr;
+  }
+
+  auto beginDevices() -> typename std::vector<DEV *>::iterator {
+    return _devices.begin();
+  }
+
+  auto endDevices() -> typename std::vector<DEV *>::iterator {
+    return _devices.end();
   }
 
   auto knownDevices() -> typename std::vector<DEV *>::iterator {
@@ -176,12 +213,13 @@ public:
   };
 
 protected:
+  void *_engine_task_data;
+  std::string _engine_task_name;
+  uint16_t _engine_stack_size = 10000;
+  uint16_t _engine_priority = 5;
+
   mcrMQTT_t *_mqtt = nullptr;
-  const char *_engTAG;
-  const char *_conTAG;
-  const char *_cmdTAG;
-  const char *_disTAG;
-  const char *_repTAG;
+  mcrEngineTagMap_t _tags;
 
   // virtual bool discover();
   // virtual bool convert();
@@ -259,7 +297,75 @@ protected:
     if (dev != nullptr) {
       dev->setReadingCmdAck(cmd.latency(), cmd.refID());
     }
-  };
+  }
+
+  void setLoggingLevel(const char *tag, esp_log_level_t level) {
+    esp_log_level_set(tag, level);
+  }
+
+  void setLoggingLevel(esp_log_level_t level) {
+    for_each(_tags.begin(), _tags.end(),
+             [this, level](std::pair<std::string, std::string> item) {
+               ESP_LOGI(_tags["engine"].c_str(),
+                        "key=%s tag=%s logging at level=%d", item.first.c_str(),
+                        item.second.c_str(), level);
+               esp_log_level_set(item.second.c_str(), level);
+             });
+  }
+  void setTags(mcrEngineTagMap_t &map) {
+    std::string phase_tag = map["engine"] + " phase";
+
+    _tags = map;
+    _tags["phase"] = phase_tag;
+  }
+
+  const char *tagCommand() {
+    static const char *tag = nullptr;
+    if (tag == nullptr) {
+      tag = _tags["command"].c_str();
+    }
+    return tag;
+  }
+
+  const char *tagConvert() {
+    static const char *tag = nullptr;
+    if (tag == nullptr) {
+      tag = _tags["convert"].c_str();
+    }
+    return tag;
+  }
+
+  const char *tagDiscover() {
+    static const char *tag = nullptr;
+    if (tag == nullptr) {
+      tag = _tags["discover"].c_str();
+    }
+    return tag;
+  }
+
+  const char *tagEngine() {
+    static const char *tag = nullptr;
+    if (tag == nullptr) {
+      tag = _tags["engine"].c_str();
+    }
+    return tag;
+  }
+
+  const char *tagPhase() {
+    static const char *tag = nullptr;
+    if (tag == nullptr) {
+      tag = _tags["phase"].c_str();
+    }
+    return tag;
+  }
+
+  const char *tagReport() {
+    static const char *tag = nullptr;
+    if (tag == nullptr) {
+      tag = _tags["report"].c_str();
+    }
+    return tag;
+  }
 
   // misc metrics tracking
 
@@ -281,19 +387,19 @@ protected:
   };
 
   int64_t trackConvert(bool start = false) {
-    return trackPhase(_conTAG, metrics.convert, start);
+    return trackPhase(tagConvert(), metrics.convert, start);
   };
 
   int64_t trackDiscover(bool start = false) {
-    return trackPhase(_disTAG, metrics.discover, start);
+    return trackPhase(tagDiscover(), metrics.discover, start);
   };
 
   int64_t trackReport(bool start = false) {
-    return trackPhase(_repTAG, metrics.report, start);
+    return trackPhase(tagReport(), metrics.report, start);
   };
 
   int64_t trackSwitchCmd(bool start = false) {
-    return trackPhase(_cmdTAG, metrics.switch_cmd, start);
+    return trackPhase(tagCommand(), metrics.switch_cmd, start);
   };
 
   int64_t convertUS() { return metrics.convert.elapsed_us; };
@@ -306,7 +412,7 @@ protected:
   time_t lastReportTimestamp() { return metrics.report.last_time; };
   time_t lastSwitchCmdTimestamp() { return metrics.switch_cmd.last_time; };
 
-  void runtimeMetricsReport(const char *lTAG) {
+  void runtimeMetricsReport() {
     typedef struct {
       const char *tag;
       mcrEngineMetric_t *metric;
@@ -328,7 +434,7 @@ protected:
       }
     }
 
-    ESP_LOGI(lTAG, "phase metrics: %s", rep_str.str().c_str());
+    ESP_LOGI(tagPhase(), "metrics: %s", rep_str.str().c_str());
   };
 };
 

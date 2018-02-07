@@ -44,6 +44,10 @@ extern "C" {
 void app_main(void);
 }
 
+// local prototypes to solve linter errors
+int setenv(const char *, const char *, int);
+void tzset(void);
+
 static const char *TAG = "mcr_esp";
 
 static WiFi wifi;
@@ -91,21 +95,22 @@ static void initialise_wifi(void);
 void app_main() {
   ESP_LOGI(TAG, "%s entered", __PRETTY_FUNCTION__);
 
-  ESP_LOGI(TAG, "installing i2c driver...");
-  i2c_config_t _conf;
-  bzero(&_conf, sizeof(_conf));
-  _conf.mode = I2C_MODE_MASTER;
-  _conf.sda_io_num = (gpio_num_t)23;
-  _conf.scl_io_num = (gpio_num_t)22;
-  _conf.sda_pullup_en = GPIO_PULLUP_ENABLE;
-  _conf.scl_pullup_en = GPIO_PULLUP_ENABLE;
-  _conf.master.clk_speed = 100000;
-
-  ESP_ERROR_CHECK(i2c_param_config(I2C_NUM_0, &_conf));
-  ESP_ERROR_CHECK(i2c_driver_install(I2C_NUM_0, _conf.mode, 0, 0, 0));
-  vTaskDelay(pdMS_TO_TICKS(200));
-
-  ESP_LOGI(TAG, "i2c driver installed");
+  // NOTE: moved to mcrI2c class
+  // ESP_LOGI(TAG, "installing i2c driver...");
+  // i2c_config_t _conf;
+  // bzero(&_conf, sizeof(_conf));
+  // _conf.mode = I2C_MODE_MASTER;
+  // _conf.sda_io_num = (gpio_num_t)23;
+  // _conf.scl_io_num = (gpio_num_t)22;
+  // _conf.sda_pullup_en = GPIO_PULLUP_ENABLE;
+  // _conf.scl_pullup_en = GPIO_PULLUP_ENABLE;
+  // _conf.master.clk_speed = 100000;
+  //
+  // ESP_ERROR_CHECK(i2c_param_config(I2C_NUM_0, &_conf));
+  // ESP_ERROR_CHECK(i2c_driver_install(I2C_NUM_0, _conf.mode, 0, 0, 0));
+  // vTaskDelay(pdMS_TO_TICKS(200));
+  //
+  // ESP_LOGI(TAG, "i2c driver installed");
 
   wifi_event_group = xEventGroupCreate();
 
@@ -139,6 +144,7 @@ void app_main() {
   char strftime_buf[64];
 
   // Set timezone to UTC
+
   setenv("TZ", "UTC+0", 1);
   tzset();
   localtime_r(&now, &timeinfo);
@@ -166,7 +172,7 @@ static void obtain_time(void) {
   while (timeinfo.tm_year < (2016 - 1900) && ++retry < retry_count) {
     ESP_LOGI(TAG, "Waiting for system time to be set... (%d/%d)", retry,
              retry_count);
-    vTaskDelay(2000 / portTICK_PERIOD_MS);
+    vTaskDelay(pdMS_TO_TICKS(2000));
     time(&now);
     localtime_r(&now, &timeinfo);
   }

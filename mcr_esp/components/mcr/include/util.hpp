@@ -28,17 +28,6 @@
 #include <sys/time.h>
 #include <time.h>
 
-#ifndef log
-#define log mcrUtil::printLog
-#define logAsBinary mcrUtil::printLogAsBinary
-#define logAsHex mcrUtil::printLogAsHex
-#define logAsHexRaw mcrUtil::printLogAsHexRaw
-#define logDateTime mcrUtil::printDateTime
-#define logElapsed mcrUtil::printElapsed
-#define logElapsedMicros mcrUtil::printElapsedMicros
-#define logContinued mcrUtil::printLogContinued
-#endif
-
 class mcrUtil {
 public:
   static char *macAddress();

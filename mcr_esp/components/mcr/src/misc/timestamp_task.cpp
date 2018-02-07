@@ -11,12 +11,11 @@
 #include "esp_adc_cal.h"
 #include "esp_system.h"
 #include <FreeRTOS.h>
-#include <System.h>
-#include <Task.h>
-#include <WiFi.h>
-#include <WiFiEventHandler.h>
 #include <esp_log.h>
+#include <freertos/FreeRTOS.h>
 #include <freertos/event_groups.h>
+#include <freertos/task.h>
+#include <sdkconfig.h>
 
 #include "mqtt.hpp"
 #include "ramutil.hpp"
@@ -28,13 +27,14 @@
 
 static char tTAG[] = "mcrTimestamp";
 
-mcrTimestampTask::mcrTimestampTask(EventGroupHandle_t evg, int bit)
-    : Task(tTAG, 4 * 1024, 0) {
+mcrTimestampTask::mcrTimestampTask(EventGroupHandle_t evg, int bit) {
   ev_group = evg;
   wait_bit = bit;
+  _engTAG = tTAG;
+  _engine_task_name = tTAG;
 
-  _firstHeap = System::getFreeHeapSize();
-  _availHeap = System::getFreeHeapSize();
+  _firstHeap = heap_caps_get_free_size(MALLOC_CAP_8BIT);
+  _availHeap = heap_caps_get_free_size(MALLOC_CAP_8BIT);
 }
 
 mcrTimestampTask::~mcrTimestampTask() {}
@@ -46,14 +46,14 @@ void mcrTimestampTask::run(void *data) {
   xEventGroupWaitBits(ev_group, wait_bit, false, true, portMAX_DELAY);
   ESP_LOGD(tTAG, "bits set, entering task loop");
 
-  _last_wake = xTaskGetTickCount();
-
   for (;;) {
     int delta;
     size_t curr_heap = 0;
     // uint32_t voltage = 0;
 
-    curr_heap = System::getFreeHeapSize();
+    _last_wake = xTaskGetTickCount();
+
+    curr_heap = heap_caps_get_free_size(MALLOC_CAP_8BIT);
     delta = curr_heap - _availHeap;
     _availHeap = curr_heap;
     _minHeap = std::min(curr_heap, _minHeap);

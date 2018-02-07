@@ -107,12 +107,41 @@ time_t mcrDev::stopWrite() {
 }
 int64_t mcrDev::writeUS() { return _write_us; }
 
+void mcrDev::crcMismatch() { _crc_mismatches++; }
+void mcrDev::readFailure() { _read_errors++; }
+void mcrDev::writeFailure() { _write_errors++; }
+
 const std::string mcrDev::debug() {
   std::ostringstream debug_str;
 
   debug_str << "mcrDev(" << _addr.debug() << " id=" << (const char *)id()
-            << " desc=" << description().c_str() << " rus=" << readUS()
-            << " wus=" << writeUS() << " reading=" << (void *)_reading << ")";
+            << " desc=" << description().c_str();
+
+  if (readUS() > 0) {
+    debug_str << " rus=" << readUS();
+  }
+
+  if (writeUS() > 0) {
+    debug_str << " wus=" << writeUS();
+  }
+
+  if (_reading == nullptr) {
+    debug_str << " reading=NULLPTR";
+  }
+
+  if (_crc_mismatches > 0) {
+    debug_str << " crc_mismatches=" << _crc_mismatches;
+  }
+
+  if (_read_errors > 0) {
+    debug_str << " read_errors=" << _read_errors;
+  }
+
+  if (_write_errors > 0) {
+    debug_str << " write_errors=" << _write_errors;
+  }
+
+  debug_str << ")";
 
   return debug_str.str();
 }

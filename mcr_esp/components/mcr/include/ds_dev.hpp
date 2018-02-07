@@ -55,6 +55,8 @@ public:
   void setReadingCmdAck(time_t latency, mcrRefID_t &refid);
   Reading_t *reading();
 
+  bool hasTemperature();
+  bool isDS1820();
   bool isDS2406();
   bool isDS2408();
 

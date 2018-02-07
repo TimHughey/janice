@@ -22,16 +22,16 @@
 #define mcr_ds_engine_h
 
 #include <cstdlib>
-#include <cstring>
-
-#include <FreeRTOS.h>
-#include <System.h>
-#include <Task.h>
+#include <map>
+#include <string>
 
 #include <driver/gpio.h>
 #include <esp_log.h>
+#include <freertos/FreeRTOS.h>
 #include <freertos/event_groups.h>
 #include <freertos/queue.h>
+#include <freertos/task.h>
+#include <sdkconfig.h>
 
 #include "base.hpp"
 #include "cmd.hpp"
@@ -53,43 +53,23 @@
 #define W1_PIN 14
 
 typedef struct {
-  TickType_t engine;
-  TickType_t convert;
-  TickType_t discover;
-  TickType_t report;
-} dsLastWakeTime_t;
-
-typedef struct {
-  void *cmd;
-  void *convert;
-  void *discover;
-  void *report;
-} dsTaskData_t;
-
-typedef struct {
-  TaskHandle_t cmd;
-  TaskHandle_t convert;
-  TaskHandle_t discover;
-  TaskHandle_t report;
-} dsTasks_t;
-
-typedef struct {
-  UBaseType_t engine;
-  UBaseType_t cmd;
-  UBaseType_t convert;
-  UBaseType_t discover;
-  UBaseType_t report;
-} dsTaskPriority_t;
+  TaskHandle_t handle;
+  void *data;
+  TickType_t lastWake;
+  UBaseType_t priority;
+  UBaseType_t stackSize;
+} dsTask_t;
 
 typedef struct {
   EventBits_t need_bus;
   EventBits_t engine_running;
   EventBits_t devices_available;
   EventBits_t temp_available;
+  EventBits_t temp_sensors_available;
 } dsEventBits_t;
 
 typedef class mcrDS mcrDS_t;
-class mcrDS : public mcrEngine<dsDev_t>, public Task {
+class mcrDS : public mcrEngine<dsDev_t> {
 
 public:
   mcrDS(mcrMQTT *mqtt, EventGroupHandle_t evg, int bit);
@@ -103,17 +83,40 @@ private:
   dsEventBits_t _event_bits = {.need_bus = BIT0,
                                .engine_running = BIT1,
                                .devices_available = BIT2,
-                               .temp_available = BIT3};
+                               .temp_available = BIT3,
+                               .temp_sensors_available = BIT4};
 
   SemaphoreHandle_t _bus_mutex = nullptr;
   const int _max_queue_len = 30;
   QueueHandle_t _cmd_q = nullptr;
-  dsLastWakeTime_t _last_wake;
+  dsTask_t _engineTask = {.handle = nullptr,
+                          .data = nullptr,
+                          .lastWake = 0,
+                          .priority = 1,
+                          .stackSize = (2 * 1024)};
 
-  dsTaskPriority_t _task_pri = {
-      .engine = 1, .cmd = 14, .convert = 13, .discover = 12, .report = 13};
-  dsTaskData_t _task_data;
-  dsTasks_t _tasks;
+  dsTask_t _cmdTask = {.handle = nullptr,
+                       .data = nullptr,
+                       .lastWake = 0,
+                       .priority = 14,
+                       .stackSize = (3 * 1024)};
+  dsTask_t _convertTask = {.handle = nullptr,
+                           .data = nullptr,
+                           .lastWake = 0,
+                           .priority = 13,
+                           .stackSize = (3 * 1024)};
+
+  dsTask_t _discoverTask = {.handle = nullptr,
+                            .data = nullptr,
+                            .lastWake = 0,
+                            .priority = 12,
+                            .stackSize = (4 * 1024)};
+
+  dsTask_t _reportTask = {.handle = nullptr,
+                          .data = nullptr,
+                          .lastWake = 0,
+                          .priority = 13,
+                          .stackSize = (3 * 1024)};
 
   bool _devices_powered = true;
   bool _temp_devices_present = true;
@@ -125,6 +128,7 @@ private:
   const TickType_t _loop_frequency = pdMS_TO_TICKS(30000);
   const TickType_t _convert_frequency = pdMS_TO_TICKS(7 * 1000);
   const TickType_t _discover_frequency = pdMS_TO_TICKS(30 * 1000);
+  const TickType_t _report_frequency = pdMS_TO_TICKS(7 * 1000);
   const TickType_t _temp_convert_wait = pdMS_TO_TICKS(5);
 
   // static entry point to tasks
@@ -165,6 +169,63 @@ private:
   static uint16_t crc16(const uint8_t *input, uint16_t len, uint16_t crc);
 
   void printInvalidDev(dsDev_t *dev);
+
+  mcrEngineTagMap_t &localTags() {
+    static std::map<std::string, std::string> tag_map = {
+        {"engine", "mcrDS"},
+        {"discover", "mcrDS discover"},
+        {"convert", "mcrDS convert"},
+        {"report", "mcrDS report"},
+        {"cmd", "mcrDS command"},
+        {"readDS1820", "mcrDS readDS1820"},
+        {"readDS2406", "mcrDS readDS2406"},
+        {"readDS2408", "mcrDS readDS2408"},
+        {"setDS2406", "mcrDS setDS2406"},
+        {"setDS2408", "mcrDS setDS2408"}};
+
+    ESP_LOGI(tag_map["engine"].c_str(), "tag_map sizeof=%u", sizeof(tag_map));
+    return tag_map;
+  }
+
+  const char *tagReadDS1820() {
+    static const char *tag = nullptr;
+    if (tag == nullptr) {
+      tag = _tags["readDS1820"].c_str();
+    }
+    return tag;
+  }
+
+  const char *tagReadDS2406() {
+    static const char *tag = nullptr;
+    if (tag == nullptr) {
+      tag = _tags["readDS2406"].c_str();
+    }
+    return tag;
+  }
+
+  const char *tagReadDS2408() {
+    static const char *tag = nullptr;
+    if (tag == nullptr) {
+      tag = _tags["readDS2408"].c_str();
+    }
+    return tag;
+  }
+
+  const char *tagSetDS2406() {
+    static const char *tag = nullptr;
+    if (tag == nullptr) {
+      tag = _tags["setDS2406"].c_str();
+    }
+    return tag;
+  }
+
+  const char *tagSetDS2408() {
+    static const char *tag = nullptr;
+    if (tag == nullptr) {
+      tag = _tags["setDS2408"].c_str();
+    }
+    return tag;
+  }
 };
 
 #endif // mcr_ds_h

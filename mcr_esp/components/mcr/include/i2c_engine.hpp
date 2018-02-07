@@ -24,13 +24,12 @@
 #include <cstdlib>
 #include <string>
 
-#include "sdkconfig.h"
-#include <FreeRTOS.h>
-#include <System.h>
-#include <Task.h>
 #include <driver/i2c.h>
 #include <esp_log.h>
+#include <freertos/FreeRTOS.h>
 #include <freertos/event_groups.h>
+#include <freertos/task.h>
+#include <sdkconfig.h>
 
 #include "addr.hpp"
 #include "engine.hpp"
@@ -71,15 +70,17 @@ typedef struct {
 #define MAX_DEV_NAME 20
 
 typedef class mcrI2c mcrI2c_t;
-class mcrI2c : public mcrEngine<i2cDev_t>, public Task {
+class mcrI2c : public mcrEngine<i2cDev_t> {
 private:
+  const TickType_t _loop_frequency = pdMS_TO_TICKS(7000);
   static const uint32_t _max_buses = 8;
   bool _use_multiplexer = false;
   EventGroupHandle_t _ev_group;
   int _wait_bit;
   i2cLastWakeTime_t _last_wake;
 
-  const TickType_t _loop_frequency = pdMS_TO_TICKS(10000);
+  uint32_t _bus_selects = 0;
+  uint32_t _bus_select_errors = 0;
 
 public:
   mcrI2c(mcrMQTT *mqtt, EventGroupHandle_t evg, int bit);
@@ -101,7 +102,7 @@ private:
   bool readSHT31(i2cDev_t *dev, humidityReading_t **reading);
 
   // utility methods
-  uint32_t crcSHT31(const uint8_t *data, uint32_t len);
+  bool crcSHT31(const uint8_t *data);
   bool detectDevice(mcrDevAddr_t &addr);
   int detectDevicesOnBus(int bus);
 
@@ -111,6 +112,54 @@ private:
   bool selectBus(uint32_t bus);
   void printUnhandledDev(i2cDev_t *dev);
   void wakeAM2315(mcrDevAddr_t &addr);
+
+  mcrEngineTagMap_t &localTags() {
+    static std::map<std::string, std::string> tag_map = {
+        {"engine", "mcrI2c"},
+        {"discover", "mcrI2c discover"},
+        {"convert", "mcrI2c convert"},
+        {"report", "mcrI2c report"},
+        {"cmd", "mcrI2c command"},
+        {"detect", "mcrI2c detectDev"},
+        {"readAM2315", "mcrI2c readAM2315"},
+        {"readSHT31", "mcrI2c readSHT31"},
+        {"selectbus", "mcrI2c selectBus"}};
+
+    ESP_LOGI(tag_map["engine"].c_str(), "tag_map sizeof=%u", sizeof(tag_map));
+    return tag_map;
+  }
+
+  const char *tagSelectBus() {
+    static const char *tag = nullptr;
+    if (tag == nullptr) {
+      tag = _tags["selectbus"].c_str();
+    }
+    return tag;
+  }
+
+  const char *tagDetectDev() {
+    static const char *tag = nullptr;
+    if (tag == nullptr) {
+      tag = _tags["detect"].c_str();
+    }
+    return tag;
+  }
+
+  const char *tagReadAM2315() {
+    static const char *tag = nullptr;
+    if (tag == nullptr) {
+      tag = _tags["readAM2315"].c_str();
+    }
+    return tag;
+  }
+
+  const char *tagReadSHT31() {
+    static const char *tag = nullptr;
+    if (tag == nullptr) {
+      tag = _tags["readSHT31"].c_str();
+    }
+    return tag;
+  }
 };
 
 #endif // mcr_i2c_h

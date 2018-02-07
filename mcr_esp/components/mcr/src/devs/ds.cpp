@@ -69,8 +69,24 @@ void dsDev::copyAddrToCmd(uint8_t *cmd) {
 bool dsDev::isPowered() { return _power; };
 Reading_t *dsDev::reading() { return _reading; };
 
+bool dsDev::isDS1820() {
+  auto rc = false;
+
+  switch (family()) {
+  case 0x10:
+  case 0x22:
+  case 0x28:
+    rc = true;
+    break;
+  default:
+    rc = false;
+  }
+
+  return rc;
+}
 bool dsDev::isDS2406() { return (family() == _family_DS2406) ? true : false; };
 bool dsDev::isDS2408() { return (family() == _family_DS2408) ? true : false; };
+bool dsDev::hasTemperature() { return isDS1820(); }
 
 void dsDev::setReadingCmdAck(time_t latency, mcrRefID_t &refid) {
   if (_reading != nullptr) {

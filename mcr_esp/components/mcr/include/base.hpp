@@ -75,15 +75,23 @@ public:
 
   // metrics functions
   void startRead();
+  void startWrite();
+
   time_t stopRead();
+  time_t stopWrite();
   int64_t readUS();
+  int64_t writeUS();
   time_t readTimestamp();
   time_t timeCreated();
   time_t secondsSinceLastSeen();
 
-  void startWrite();
-  time_t stopWrite();
-  int64_t writeUS();
+  void crcMismatch();
+  void readFailure();
+  void writeFailure();
+
+  // int crcMismatchCount();
+  // int readErrorCount();
+  // int writeErrorCount();
 
   virtual const std::string debug();
   virtual const std::string to_string(mcrDev_t const &);
@@ -112,6 +120,10 @@ protected:
   int64_t _write_us = 0;
 
   time_t _read_timestamp = 0;
+
+  int _crc_mismatches = 0;
+  int _read_errors = 0;
+  int _write_errors = 0;
 };
 
 #endif // mcrDev_h
