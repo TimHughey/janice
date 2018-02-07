@@ -48,7 +48,7 @@
 
 mcrDS::mcrDS(mcrMQTT_t *mqtt, EventGroupHandle_t evg, int bit) {
   setTags(localTags());
-  // setLoggingLevel(ESP_LOG_INFO);
+  setLoggingLevel(ESP_LOG_WARN);
   // setLoggingLevel(tagConvert(), ESP_LOG_INFO);
   // setLoggingLevel(tagReport(), ESP_LOG_INFO);
   // setLoggingLevel(tagDiscover(), ESP_LOG_INFO);
@@ -242,13 +242,13 @@ void mcrDS::convert(void *task_data) {
     }
 
     xSemaphoreGive(_bus_mutex);
+    trackConvert(false);
 
     // signal to other tasks that temperatures are now available
     if (temp_convert_done) {
       xEventGroupSetBits(_ds_evg, _event_bits.temp_available);
     }
 
-    trackConvert(false);
     vTaskDelayUntil(&(_convertTask.lastWake), _convert_frequency);
   }
 }
