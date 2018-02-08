@@ -27,7 +27,7 @@
 #include <esp_log.h>
 #include <esp_timer.h>
 #include <external/ArduinoJson.h>
-#include <freertos/freertos.h>
+#include <freertos/FreeRTOS.h>
 #include <sys/time.h>
 #include <time.h>
 

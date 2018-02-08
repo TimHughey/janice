@@ -23,7 +23,7 @@
 
 #include <string>
 
-#include <external/ArduinoJSON.h>
+#include <external/ArduinoJson.h>
 #include <sys/time.h>
 #include <time.h>
 
