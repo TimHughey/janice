@@ -24,14 +24,12 @@
 #include <string>
 #include <tuple>
 
-#include <FreeRTOS.h>
-#include <System.h>
 #include <sys/time.h>
 #include <time.h>
 
-#include "addr.hpp"
-#include "id.hpp"
-#include "util.hpp"
+#include "devs/addr.hpp"
+#include "devs/id.hpp"
+#include "misc/util.hpp"
 
 bool mcrDevID::matchPrefix(const std::string &prefix) {
   return ((_id.substr(0, prefix.length())) == prefix);

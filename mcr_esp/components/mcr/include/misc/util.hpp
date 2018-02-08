@@ -28,6 +28,8 @@
 #include <sys/time.h>
 #include <time.h>
 
+#include "misc/mcr_types.hpp"
+
 class mcrUtil {
 public:
   static char *macAddress();

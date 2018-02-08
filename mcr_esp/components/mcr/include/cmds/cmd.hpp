@@ -23,20 +23,18 @@
 
 #include <bitset>
 #include <cstdlib>
-// #include <cstring>
 #include <sstream>
 #include <string>
 
-#include <ArduinoJson.h>
-#include <FreeRTOS.h>
-#include <System.h>
 #include <esp_timer.h>
+#include <external/ArduinoJson.h>
+#include <freertos/freertos.h>
 #include <sys/time.h>
 #include <time.h>
 
-#include "base.hpp"
-#include "refid.hpp"
-#include "util.hpp"
+#include "cmds/refid.hpp"
+#include "devs/base.hpp"
+#include "misc/util.hpp"
 
 typedef class mcrCmd mcrCmd_t;
 typedef std::bitset<8> cmd_bitset_t;

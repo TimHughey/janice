@@ -24,9 +24,7 @@
 #include <sstream>
 #include <string>
 
-#include "base.hpp"
-#include "readings.hpp"
-#include "util.hpp"
+#include "devs/base.hpp"
 
 typedef class i2cDev i2cDev_t;
 

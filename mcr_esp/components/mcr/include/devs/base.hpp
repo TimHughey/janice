@@ -27,14 +27,14 @@
 #include <string>
 #include <tuple>
 
-#include <FreeRTOS.h>
-#include <System.h>
+#include <freertos/freertos.h>
 #include <sys/time.h>
 #include <time.h>
 
-#include "addr.hpp"
-#include "id.hpp"
-#include "readings.hpp"
+#include "devs/addr.hpp"
+#include "devs/id.hpp"
+#include "misc/util.hpp"
+#include "readings/readings.hpp"
 
 typedef class mcrDev mcrDev_t;
 class mcrDev {

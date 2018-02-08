@@ -23,17 +23,15 @@
 #include <sstream>
 #include <string>
 
-#include <ArduinoJson.h>
-#include <FreeRTOS.h>
-#include <System.h>
 #include <esp_log.h>
+#include <external/ArduinoJson.h>
+#include <freertos/FreeRTOS.h>
 #include <sys/time.h>
 #include <time.h>
 
-#include "id.hpp"
-#include "reading.hpp"
-#include "refid.hpp"
-#include "util.hpp"
+//#include "id.hpp"
+#include "cmds/refid.hpp"
+#include "readings/reading.hpp"
 
 Reading::Reading(time_t mtime) { _mtime = mtime; }
 

@@ -23,15 +23,15 @@
 
 #include <string>
 
-#include <ArduinoJson.h>
-#include <FreeRTOS.h>
-#include <System.h>
+#include <external/ArduinoJson.h>
+#include <freertos/freertos.h>
 #include <sys/time.h>
 #include <time.h>
 
-#include "id.hpp"
-#include "refid.hpp"
-#include "version.hpp"
+#include "cmds/refid.hpp"
+#include "devs/id.hpp"
+#include "misc/util.hpp"
+#include "misc/version.hpp"
 
 typedef class Reading Reading_t;
 class Reading {

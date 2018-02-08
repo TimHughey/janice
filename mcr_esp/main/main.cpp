@@ -29,16 +29,12 @@
 #include "apps/sntp/sntp.h"
 #include "lwip/err.h"
 
-#include "cmd.hpp"
-#include "dev_task.hpp"
-#include "ds_engine.hpp"
-#include "i2c_engine.hpp"
-#include "id.hpp"
-#include "mqtt.hpp"
-#include "positions.hpp"
-#include "readings.hpp"
-#include "timestamp_task.hpp"
-#include "util.hpp"
+#include "engines/ds_engine.hpp"
+#include "engines/i2c_engine.hpp"
+#include "misc/dev_task.hpp"
+#include "misc/timestamp_task.hpp"
+#include "misc/util.hpp"
+#include "protocols/mqtt.hpp"
 
 extern "C" {
 void app_main(void);

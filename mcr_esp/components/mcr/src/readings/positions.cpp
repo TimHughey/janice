@@ -20,16 +20,11 @@
 
 #include <string>
 
-#include <FreeRTOS.h>
-#include <System.h>
 #include <sys/time.h>
 #include <time.h>
 
-#include "cJSON.h"
-#include "id.hpp"
-#include "positions.hpp"
-#include "reading.hpp"
-#include "util.hpp"
+#include "devs/id.hpp"
+#include "readings/positions.hpp"
 
 positionsReading::positionsReading(const mcrDevID_t &id, time_t mtime,
                                    uint32_t states, uint32_t pios)

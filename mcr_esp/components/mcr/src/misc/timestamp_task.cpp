@@ -17,10 +17,10 @@
 #include <freertos/task.h>
 #include <sdkconfig.h>
 
-#include "mqtt.hpp"
-#include "ramutil.hpp"
-#include "timestamp_task.hpp"
-#include "util.hpp"
+#include "misc/timestamp_task.hpp"
+#include "misc/util.hpp"
+#include "protocols/mqtt.hpp"
+#include "readings/readings.hpp"
 
 #define V_REF 1100
 #define ADC1_TEST_CHANNEL (ADC1_CHANNEL_6) // GPIO 34

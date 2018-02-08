@@ -35,11 +35,10 @@
 #include <freertos/task.h>
 #include <sdkconfig.h>
 
-#include "base.hpp"
-#include "cmd.hpp"
-#include "mcr_types.hpp"
-#include "mqtt.hpp"
-#include "util.hpp"
+#include "cmds/cmd.hpp"
+#include "devs/base.hpp"
+#include "misc/util.hpp"
+#include "protocols/mqtt.hpp"
 
 #define mcr_engine_version_1 1
 

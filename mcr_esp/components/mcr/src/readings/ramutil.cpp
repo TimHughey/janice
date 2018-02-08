@@ -19,16 +19,11 @@
 */
 #include <string>
 
-#include <ArduinoJson.h>
-#include <FreeRTOS.h>
-#include <System.h>
+#include <external/ArduinoJson.h>
 #include <sys/time.h>
 #include <time.h>
 
-#include "base.hpp"
-#include "ramutil.hpp"
-#include "reading.hpp"
-#include "util.hpp"
+#include "readings/ramutil.hpp"
 
 ramUtilReading::ramUtilReading(uint32_t free_ram, time_t mtime)
     : Reading(mtime) {

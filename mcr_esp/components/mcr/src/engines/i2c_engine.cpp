@@ -35,14 +35,14 @@
 #include <freertos/task.h>
 #include <sdkconfig.h>
 
-#include "addr.hpp"
-#include "engine.hpp"
-#include "i2c_dev.hpp"
-#include "i2c_engine.hpp"
-#include "id.hpp"
-#include "mqtt.hpp"
-#include "readings.hpp"
-#include "util.hpp"
+#include "devs/addr.hpp"
+#include "devs/i2c_dev.hpp"
+#include "devs/id.hpp"
+#include "engines/engine.hpp"
+#include "engines/i2c_engine.hpp"
+#include "misc/util.hpp"
+#include "protocols/mqtt.hpp"
+#include "readings/readings.hpp"
 
 mcrI2c::mcrI2c(mcrMQTT_t *mqtt, EventGroupHandle_t evg, int bit) {
   setTags(localTags());

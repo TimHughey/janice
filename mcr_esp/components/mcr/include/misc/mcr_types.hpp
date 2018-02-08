@@ -1,5 +1,5 @@
 /*
-    celsius.hpp - Master Control Remote Celsius Reading
+    engine.hpp - Master Control Remote Dallas Semiconductor
     Copyright (C) 2017  Tim Hughey
 
     This program is free software: you can redistribute it and/or modify
@@ -18,29 +18,7 @@
     https://www.wisslanding.com
 */
 
-#ifndef startup_reading_hpp
-#define startup_reading_hpp
+#ifndef mcr_type_hpp
+#define mcr_type_hpp
 
-#include <string>
-
-#include <ArduinoJson.h>
-#include <FreeRTOS.h>
-#include <System.h>
-#include <sys/time.h>
-#include <time.h>
-
-#include "id.hpp"
-#include "reading.hpp"
-
-typedef class startupReading startupReading_t;
-
-class startupReading : public Reading {
-private:
-public:
-  startupReading(time_t mtime);
-
-protected:
-  virtual void populateJSON(JsonObject &root);
-};
-
-#endif // startup_reading_hpp
+#endif // mcr_type_h

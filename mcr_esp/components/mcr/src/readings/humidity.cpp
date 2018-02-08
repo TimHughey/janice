@@ -20,15 +20,13 @@
 
 #include <string>
 
-#include <ArduinoJson.h>
-#include <FreeRTOS.h>
-#include <System.h>
+#include <external/ArduinoJson.h>
 #include <sys/time.h>
 #include <time.h>
 
-#include "celsius.hpp"
-#include "humidity.hpp"
-#include "id.hpp"
+#include "devs/id.hpp"
+#include "readings/celsius.hpp"
+#include "readings/humidity.hpp"
 
 humidityReading::humidityReading(const mcrDevID_t &id, time_t mtime,
                                  float celsius, float relhum)

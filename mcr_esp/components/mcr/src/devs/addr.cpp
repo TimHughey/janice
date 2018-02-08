@@ -21,13 +21,11 @@
 #include <cstring>
 #include <iomanip>
 
-#include <FreeRTOS.h>
-#include <System.h>
 #include <sys/time.h>
 #include <time.h>
 
-#include "addr.hpp"
-#include "util.hpp"
+#include "devs/addr.hpp"
+#include "misc/util.hpp"
 
 // construct a very simple device address of only one uint8_t
 mcrDevAddr::mcrDevAddr(uint8_t addr) { _addr[0] = addr, _len = 1; }

@@ -33,15 +33,13 @@
 #include <freertos/task.h>
 #include <sdkconfig.h>
 
-#include "base.hpp"
-#include "cmd.hpp"
-#include "ds_dev.hpp"
-#include "engine.hpp"
-#include "mcr_types.hpp"
-#include "mqtt.hpp"
-#include "owb.h"
-#include "owb_rmt.h"
-#include "util.hpp"
+#include "cmds/cmd.hpp"
+#include "devs/ds_dev.hpp"
+#include "drivers/owb.h"
+#include "drivers/owb_rmt.h"
+#include "engines/engine.hpp"
+#include "misc/util.hpp"
+#include "protocols/mqtt.hpp"
 
 #define mcr_ds_version_1 1
 
@@ -176,7 +174,7 @@ private:
         {"discover", "mcrDS discover"},
         {"convert", "mcrDS convert"},
         {"report", "mcrDS report"},
-        {"cmd", "mcrDS command"},
+        {"command", "mcrDS command"},
         {"readDS1820", "mcrDS readDS1820"},
         {"readDS2406", "mcrDS readDS2406"},
         {"readDS2408", "mcrDS readDS2408"},

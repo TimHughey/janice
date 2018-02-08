@@ -8,7 +8,7 @@
 
 git_rev := $(shell git rev-parse --short HEAD)
 
-COMPONENT_ADD_INCLUDEDIRS := . include ../components
+COMPONENT_ADD_INCLUDEDIRS := . include include/external ../components
 COMPONENT_SRCDIRS := . src/cmds src/devs src/misc src/drivers src/readings src/protocols src/libs src/engines
 
 CPPFLAGS += -DMG_LOCALS -DARDUINOJSON_ENABLE_STD_STREAM -DGIT_REV=$(git_rev)

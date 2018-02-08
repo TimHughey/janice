@@ -23,16 +23,14 @@
 #include <sstream>
 #include <string>
 
-#include <FreeRTOS.h>
-#include <System.h>
 #include <esp_log.h>
+#include <freertos/FreeRTOS.h>
 #include <sys/time.h>
 #include <time.h>
 
-#include "base.hpp"
-#include "i2c_dev.hpp"
-#include "readings.hpp"
-#include "util.hpp"
+#include "devs/base.hpp"
+#include "devs/i2c_dev.hpp"
+#include "misc/util.hpp"
 
 const char *i2cDev::i2cDevDesc(uint8_t addr) {
   switch (addr) {

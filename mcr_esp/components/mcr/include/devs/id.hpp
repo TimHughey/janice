@@ -25,9 +25,8 @@
 #include <tuple>
 #include <utility>
 
-#include <FreeRTOS.h>
-#include <System.h>
 #include <esp_log.h>
+#include <freertos/FreeRTOS.h>
 #include <sys/time.h>
 #include <time.h>
 

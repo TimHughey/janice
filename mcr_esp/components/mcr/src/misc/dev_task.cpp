@@ -16,11 +16,10 @@
 
 #include <freertos/event_groups.h>
 
-#include "celsius.hpp"
-#include "cmd.hpp"
-#include "dev_task.hpp"
-#include "id.hpp"
-#include "positions.hpp"
+#include "cmds/cmd.hpp"
+#include "devs/id.hpp"
+#include "misc/dev_task.hpp"
+#include "readings/readings.hpp"
 
 static char tTAG[] = "mcrDevTask";
 

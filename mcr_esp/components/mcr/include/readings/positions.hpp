@@ -23,14 +23,13 @@
 
 #include <string>
 
-#include <ArduinoJson.h>
-#include <FreeRTOS.h>
-#include <System.h>
+#include <external/ArduinoJson.h>
+#include <freertos/freertos.h>
 #include <sys/time.h>
 #include <time.h>
 
-#include "id.hpp"
-#include "reading.hpp"
+#include "devs/id.hpp"
+#include "readings/reading.hpp"
 
 typedef class positionsReading positionsReading_t;
 

@@ -33,9 +33,9 @@
 #include <freertos/event_groups.h>
 #include <sdkconfig.h>
 
-#include "mongoose.h"
-#include "mqtt_in.hpp"
-#include "readings.hpp"
+#include "external/mongoose.h"
+#include "protocols/mqtt_in.hpp"
+#include "readings/readings.hpp"
 
 #define mcr_mqtt_version_1 1
 

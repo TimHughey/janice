@@ -24,17 +24,16 @@
 #include <sstream>
 #include <string>
 
-#include <ArduinoJson.h>
-#include <FreeRTOS.h>
-#include <System.h>
 #include <esp_log.h>
 #include <esp_timer.h>
+#include <external/ArduinoJson.h>
+#include <freertos/freertos.h>
 #include <sys/time.h>
 #include <time.h>
 
-#include "base.hpp"
-#include "cmd.hpp"
-#include "util.hpp"
+#include "cmds/cmd.hpp"
+#include "devs/base.hpp"
+#include "misc/util.hpp"
 
 mcrCmd::mcrCmd(const mcrDevID_t &id, cmd_bitset_t mask, cmd_bitset_t state) {
   _type = cmdSET_SWITCH;

@@ -23,18 +23,17 @@
 #include <sstream>
 #include <string>
 
-#include <FreeRTOS.h>
-#include <System.h>
 #include <esp_log.h>
+#include <freertos/FreeRTOS.h>
 #include <sys/time.h>
 #include <time.h>
 
-#include "addr.hpp"
-#include "base.hpp"
-#include "ds_dev.hpp"
-#include "owb.h"
-#include "refid.hpp"
-#include "util.hpp"
+#include "cmds/refid.hpp"
+#include "devs/addr.hpp"
+#include "devs/base.hpp"
+#include "devs/ds_dev.hpp"
+#include "drivers/owb.h"
+#include "misc/util.hpp"
 
 dsDev::dsDev(mcrDevAddr_t &addr, bool power) : mcrDev(addr) {
   char buff[_id_len] = {0x00};

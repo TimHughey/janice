@@ -35,16 +35,15 @@
 #include <freertos/task.h>
 #include <sdkconfig.h>
 
-#include "base.hpp"
-#include "cmd.hpp"
-#include "ds_dev.hpp"
-#include "ds_engine.hpp"
-#include "engine.hpp"
-#include "mcr_types.hpp"
-#include "mqtt.hpp"
-#include "owb.h"
-#include "owb_gpio.h"
-#include "util.hpp"
+#include "cmds/cmd.hpp"
+#include "devs/base.hpp"
+#include "devs/ds_dev.hpp"
+#include "drivers/owb.h"
+#include "drivers/owb_gpio.h"
+#include "engines/ds_engine.hpp"
+#include "engines/engine.hpp"
+#include "misc/util.hpp"
+#include "protocols/mqtt.hpp"
 
 mcrDS::mcrDS(mcrMQTT_t *mqtt, EventGroupHandle_t evg, int bit) {
   setTags(localTags());

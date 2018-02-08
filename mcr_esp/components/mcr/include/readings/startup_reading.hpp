@@ -1,5 +1,5 @@
 /*
-    engine.cpp - Master Control Remote Engine
+    celsius.hpp - Master Control Remote Celsius Reading
     Copyright (C) 2017  Tim Hughey
 
     This program is free software: you can redistribute it and/or modify
@@ -18,21 +18,28 @@
     https://www.wisslanding.com
 */
 
-#include <cstdlib>
+#ifndef startup_reading_hpp
+#define startup_reading_hpp
 
-#include <map>
+#include <string>
 
-#include <FreeRTOS.h>
-#include <System.h>
-#include <Task.h>
-#include <esp_log.h>
-#include <freertos/event_groups.h>
+#include <external/ArduinoJson.h>
+#include <freertos/freertos.h>
+#include <sys/time.h>
+#include <time.h>
 
-#include "cmd.hpp"
-#include "engine.hpp"
-#include "readings.hpp"
-#include "util.hpp"
+#include "devs/id.hpp"
+#include "readings/reading.hpp"
 
-static const char tTAG[] = "mcrEngine";
+typedef class startupReading startupReading_t;
 
-// mcrEngine::mcrEngine<mcrDevID_t, T>(mcrMQTT *mqtt) { _mqtt = mqtt; }
+class startupReading : public Reading {
+private:
+public:
+  startupReading(time_t mtime);
+
+protected:
+  virtual void populateJSON(JsonObject &root);
+};
+
+#endif // startup_reading_hpp

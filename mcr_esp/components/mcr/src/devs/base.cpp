@@ -24,18 +24,17 @@
 #include <string>
 #include <tuple>
 
-#include <FreeRTOS.h>
-#include <System.h>
 #include <esp_log.h>
 #include <esp_timer.h>
+#include <freertos/FreeRTOS.h>
 #include <sys/time.h>
 #include <time.h>
 
-#include "addr.hpp"
-#include "base.hpp"
-#include "id.hpp"
-#include "readings.hpp"
-#include "util.hpp"
+#include "devs/addr.hpp"
+#include "devs/base.hpp"
+#include "devs/id.hpp"
+#include "misc/util.hpp"
+#include "readings/readings.hpp"
 
 // construct a new mcrDev with only an address
 mcrDev::mcrDev(mcrDevAddr_t &addr) { _addr = addr; }

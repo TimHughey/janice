@@ -56,7 +56,7 @@ sample code bearing this copyright.
 //--------------------------------------------------------------------------
 */
 
-#include "owb.h"
+#include "drivers/owb.h"
 
 #include "driver/rmt.h"
 #include "driver/gpio.h"

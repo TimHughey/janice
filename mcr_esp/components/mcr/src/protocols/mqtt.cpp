@@ -32,12 +32,12 @@
 #include <freertos/event_groups.h>
 
 // MCR specific includes
-#include "mongoose.h"
-#include "mqtt.hpp"
-#include "mqtt_in.hpp"
-#include "readings.hpp"
-#include "util.hpp"
-#include "version.hpp"
+#include "external/mongoose.h"
+#include "misc/util.hpp"
+#include "misc/version.hpp"
+#include "protocols/mqtt.hpp"
+#include "protocols/mqtt_in.hpp"
+#include "readings/readings.hpp"
 
 // static uint32_t cmd_callback_count = 0;
 // static cmdCallback_t cmd_callback[10] = {nullptr};

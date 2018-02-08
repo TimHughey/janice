@@ -1,5 +1,5 @@
 /*
-    engine.hpp - Master Control Remote Dallas Semiconductor
+    humidity.hpp - Master Control Remote Relative Humidity Reading
     Copyright (C) 2017  Tim Hughey
 
     This program is free software: you can redistribute it and/or modify
@@ -18,18 +18,33 @@
     https://www.wisslanding.com
 */
 
-#ifndef mcr_type_hpp
-#define mcr_type_hpp
+#ifndef humidity_reading_h
+#define humidity_reading_h
 
-typedef enum {
-  IDLE,
-  INIT,
-  DISCOVER,
-  CONVERT,
-  REPORT,
-  CMD,
-  CMD_ACK,
-  STATS
-} mcrEngineState_t;
+#include <string>
 
-#endif // mcr_type_h
+#include <external/ArduinoJson.h>
+#include <freertos/freertos.h>
+#include <sys/time.h>
+#include <time.h>
+
+#include "devs/id.hpp"
+#include "readings/celsius.hpp"
+
+typedef class humidityReading humidityReading_t;
+
+class humidityReading : public celsiusReading {
+private:
+  // actual reading data
+  float _relhum = 0.0;
+
+public:
+  // undefined reading
+  humidityReading(const mcrDevID_t &id, time_t mtime, float celsius,
+                  float relhum);
+
+protected:
+  void populateJSON(JsonObject &root);
+};
+
+#endif // temp_reading_h

@@ -1,5 +1,5 @@
 /*
-    ramutil.hpp - Master Control Remote Relative Humidity Reading
+    celsius.hpp - Master Control Remote Celsius Reading
     Copyright (C) 2017  Tim Hughey
 
     This program is free software: you can redistribute it and/or modify
@@ -18,34 +18,33 @@
     https://www.wisslanding.com
 */
 
-#ifndef ram_util_reading_h
-#define ram_util_reading_h
+#ifndef celsius_h
+#define celsius_h
 
 #include <string>
 
-#include <ArduinoJson.h>
-#include <FreeRTOS.h>
-#include <System.h>
+#include <external/ArduinoJson.h>
+#include <freertos/freertos.h>
 #include <sys/time.h>
 #include <time.h>
 
-#include "reading.hpp"
+#include "devs/id.hpp"
+#include "readings/reading.hpp"
 
-typedef class ramUtilReading ramUtilReading_t;
+typedef class celsiusReading celsiusReading_t;
 
-class ramUtilReading : public Reading {
+class celsiusReading : public Reading {
 private:
-  const uint32_t _max_ram = 520 * 1024;
   // actual reading data
-  uint32_t _free_ram = 0;
+  float _celsius = 0.0;
 
 public:
   // undefined reading
-  ramUtilReading(uint32_t free_ram, time_t mtime = time(nullptr));
-  uint32_t freeRAM() { return _free_ram; }
+  // celsiusReading(){};
+  celsiusReading(const mcrDevID_t &id, time_t mtime, float celsius);
 
 protected:
   virtual void populateJSON(JsonObject &root);
 };
 
-#endif // ram_util_reading_h
+#endif // __cplusplus

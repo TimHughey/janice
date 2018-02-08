@@ -31,15 +31,15 @@
 #include <freertos/task.h>
 #include <sdkconfig.h>
 
-#include "addr.hpp"
-#include "engine.hpp"
-#include "i2c_dev.hpp"
-#include "i2c_engine.hpp"
-#include "id.hpp"
-#include "mongoose.h"
-#include "mqtt.hpp"
-#include "readings.hpp"
-#include "util.hpp"
+#include "devs/addr.hpp"
+#include "devs/i2c_dev.hpp"
+#include "devs/id.hpp"
+#include "engines/engine.hpp"
+#include "engines/i2c_engine.hpp"
+#include "external/mongoose.h"
+#include "protocols/mqtt.hpp"
+// #include "readings/readings.hpp"
+#include "misc/util.hpp"
 
 #define mcr_i2c_version_1 1
 
@@ -119,7 +119,7 @@ private:
         {"discover", "mcrI2c discover"},
         {"convert", "mcrI2c convert"},
         {"report", "mcrI2c report"},
-        {"cmd", "mcrI2c command"},
+        {"command", "mcrI2c command"},
         {"detect", "mcrI2c detectDev"},
         {"readAM2315", "mcrI2c readAM2315"},
         {"readSHT31", "mcrI2c readSHT31"},

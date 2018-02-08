@@ -1,5 +1,5 @@
 /*
-    celsius.hpp - Master Control Remote Celsius Reading
+    readings/all.hpp - Readings used within Master Control Remote
     Copyright (C) 2017  Tim Hughey
 
     This program is free software: you can redistribute it and/or modify
@@ -18,34 +18,8 @@
     https://www.wisslanding.com
 */
 
-#ifndef celsius_h
-#define celsius_h
-
-#include <string>
-
-#include <ArduinoJson.h>
-#include <FreeRTOS.h>
-#include <System.h>
-#include <sys/time.h>
-#include <time.h>
-
-#include "id.hpp"
-#include "reading.hpp"
-
-typedef class celsiusReading celsiusReading_t;
-
-class celsiusReading : public Reading {
-private:
-  // actual reading data
-  float _celsius = 0.0;
-
-public:
-  // undefined reading
-  // celsiusReading(){};
-  celsiusReading(const mcrDevID_t &id, time_t mtime, float celsius);
-
-protected:
-  virtual void populateJSON(JsonObject &root);
-};
-
-#endif // __cplusplus
+#include "readings/celsius.hpp"
+#include "readings/humidity.hpp"
+#include "readings/positions.hpp"
+#include "readings/ramutil.hpp"
+#include "readings/startup_reading.hpp"

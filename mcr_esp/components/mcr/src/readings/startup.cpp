@@ -21,14 +21,9 @@
 #include <cstdlib>
 #include <ctime>
 
-#include <FreeRTOS.h>
-#include <System.h>
-#include <Task.h>
+#include <external/ArduinoJSON.h>
 
-#include "cJSON.h"
-
-#include "id.hpp"
-#include "startup_reading.hpp"
+#include "readings/startup_reading.hpp"
 
 startupReading::startupReading(time_t mtime) : Reading(mtime){};
 
