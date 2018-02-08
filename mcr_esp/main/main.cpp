@@ -146,9 +146,10 @@ void app_main() {
   localtime_r(&now, &timeinfo);
   strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
   ESP_LOGI(TAG, "The current date/time in UTC is: %s", strftime_buf);
+  ESP_LOGI(TAG, "1ms = %uticks", pdMS_TO_TICKS(1));
 
   for (;;) {
-    vTaskDelay((5 * 60 * 1000) / portTICK_PERIOD_MS);
+    vTaskDelay(pdMS_TO_TICKS(5 * 60 * 1000));
   }
 }
 
