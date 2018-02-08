@@ -190,7 +190,8 @@ void mcrMQTT::run(void *data) {
   _connection = mg_connect(&_mgr, _endpoint.c_str(), _ev_handler);
 
   if (_connection) {
-    ESP_LOGI(tTAG, "mongoose connection created %p", (void *)_connection);
+    ESP_LOGI(tTAG, "mongoose connection created to endpoint %s (%p)",
+             _endpoint.c_str(), (void *)_connection);
   }
 
   for (;;) {

@@ -19,7 +19,7 @@ menu "Protocols"
 
 		config MCR_MQTT_PORT
 			int "IoT Endpoint Port"
-			default 8883
+			default 1883
 			range 0 65535
 			help
 				Default port number to connect to MCR IoT MQTT/S gateway
