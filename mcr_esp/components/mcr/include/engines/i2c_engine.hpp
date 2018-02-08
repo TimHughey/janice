@@ -160,6 +160,29 @@ private:
     }
     return tag;
   }
+
+  const char *espError(esp_err_t esp_rc) {
+    static char catch_all[25] = {0x00};
+
+    bzero(catch_all, sizeof(catch_all));
+
+    switch (esp_rc) {
+    case ESP_OK:
+      return (const char *)"ESP_OK";
+      break;
+    case ESP_FAIL:
+      return (const char *)"ESP_FAIL";
+      break;
+    case ESP_ERR_TIMEOUT:
+      return (const char *)"ESP_ERRO_TIMEOUT";
+      break;
+    default:
+      snprintf(catch_all, sizeof(catch_all), "err=0x%03x", esp_rc);
+      break;
+    }
+
+    return catch_all;
+  }
 };
 
 #endif // mcr_i2c_h

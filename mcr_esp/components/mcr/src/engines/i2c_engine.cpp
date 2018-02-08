@@ -139,8 +139,8 @@ bool mcrI2c::detectDevice(mcrDevAddr_t &addr) {
     break;
 
   default:
-    ESP_LOGD(tagEngine(), "%s not found (esp_rc=0x%02x)", addr.debug().c_str(),
-             esp_rc);
+    ESP_LOGD(tagEngine(), "%s not found (%s)", addr.debug().c_str(),
+             espError(esp_rc));
   }
 
   return rc;
@@ -261,8 +261,8 @@ bool mcrI2c::readAM2315(i2cDev_t *dev, humidityReading_t **reading, bool wake) {
   i2c_cmd_link_delete(cmd);
 
   if (esp_rc != ESP_OK) {
-    ESP_LOGW(tagReadAM2315(), "write failed (cmd) to %s esp_rc=0x%02x",
-             dev->debug().c_str(), esp_rc);
+    ESP_LOGW(tagReadAM2315(), "write failed (cmd) to %s %s",
+             dev->debug().c_str(), espError(esp_rc));
     dev->stopRead();
     dev->writeFailure();
     return rc;
@@ -286,8 +286,8 @@ bool mcrI2c::readAM2315(i2cDev_t *dev, humidityReading_t **reading, bool wake) {
   i2c_cmd_link_delete(cmd);
 
   if (esp_rc != ESP_OK) {
-    ESP_LOGW(tagReadAM2315(), "read failed for %s esp_rc=0x%02x",
-             dev->debug().c_str(), esp_rc);
+    ESP_LOGW(tagReadAM2315(), "read failed for %s %s", dev->debug().c_str(),
+             espError(esp_rc));
     dev->stopRead();
     dev->readFailure();
     return rc;
@@ -326,7 +326,7 @@ bool mcrI2c::readAM2315(i2cDev_t *dev, humidityReading_t **reading, bool wake) {
 
     rc = true;
   } else { // crc did not match
-    ESP_LOGW(tagReadAM2315(), "crc mismatch for %s", dev->debug().c_str())
+    ESP_LOGW(tagReadAM2315(), "crc mismatch for %s", dev->debug().c_str());
     dev->crcMismatch();
   }
   return rc;
@@ -359,8 +359,8 @@ bool mcrI2c::readSHT31(i2cDev_t *dev, humidityReading_t **reading) {
   i2c_cmd_link_delete(cmd);
 
   if (esp_rc != ESP_OK) {
-    ESP_LOGW(tagReadSHT31(), "write failed (cmd) to %s esp_rc=0x%02x",
-             dev->debug().c_str(), esp_rc);
+    ESP_LOGW(tagReadSHT31(), "write failed (cmd) to %s %s",
+             dev->debug().c_str(), espError(esp_rc));
     dev->stopRead();
     dev->writeFailure();
     return rc;
@@ -394,8 +394,8 @@ bool mcrI2c::readSHT31(i2cDev_t *dev, humidityReading_t **reading) {
   dev->stopRead();
 
   if (esp_rc != ESP_OK) {
-    ESP_LOGW(tagReadSHT31(), "read failed for %s esp_rc=%d",
-             dev->debug().c_str(), esp_rc);
+    ESP_LOGW(tagReadSHT31(), "read failed for %s %s", dev->debug().c_str(),
+             espError(esp_rc));
 
     if (convert_ms < 100) {
       convert_ms += 3;
@@ -419,7 +419,7 @@ bool mcrI2c::readSHT31(i2cDev_t *dev, humidityReading_t **reading) {
 
     rc = true;
   } else { // crc did not match
-    ESP_LOGW(tagReadSHT31(), "crc mismatch for %s", dev->debug().c_str())
+    ESP_LOGW(tagReadSHT31(), "crc mismatch for %s", dev->debug().c_str());
     dev->crcMismatch();
   }
 
@@ -540,8 +540,8 @@ bool mcrI2c::selectBus(uint32_t bus) {
     if (esp_rc != ESP_OK) {
       _bus_select_errors++;
       ESP_LOGW(tagSelectBus(),
-               "unable to select bus %d (selects=%u errors=%u) esp_rc=0x%02x",
-               bus, _bus_selects, _bus_select_errors, esp_rc);
+               "unable to select bus %d (selects=%u errors=%u) %s", bus,
+               _bus_selects, _bus_select_errors, espError(esp_rc));
 
       rc = false;
     }
