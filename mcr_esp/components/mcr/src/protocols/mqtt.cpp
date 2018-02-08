@@ -114,7 +114,7 @@ void mcrMQTT::outboundMsg() {
   size_t len = 0;
   mqttRingbufferEntry_t *entry = nullptr;
 
-  entry = (mqttRingbufferEntry_t *)_rb_out->receive(&len, _outbound_msg_ticks);
+  entry = (mqttRingbufferEntry_t *)_rb_out->receive(&len, 0);
 
   while (entry) {
     int64_t start_us = esp_timer_get_time();
@@ -143,7 +143,8 @@ void mcrMQTT::outboundMsg() {
       ESP_LOGD(outboundTAG, "publish msg took %lluus", publish_us);
     }
 
-    entry = (mqttRingbufferEntry_t *)_rb_out->receive(&len, 0);
+    entry =
+        (mqttRingbufferEntry_t *)_rb_out->receive(&len, _outbound_msg_ticks);
   }
 }
 
@@ -201,20 +202,11 @@ void mcrMQTT::run(void *data) {
     // prioritizing inbound and outbound messages
     mg_mgr_poll(&_mgr, _inbound_msg_ms);
 
-    // only try to send outbound messages if mqtt is ready
-    EventBits_t check = xEventGroupWaitBits(_ev_group, MQTT_READY_BIT,
-                                            pdFALSE, // don't clear
-                                            pdTRUE,  // wait for all bits
-                                            0);
-
-    if ((check & MQTT_READY_BIT) == MQTT_READY_BIT) {
+    if (isReady()) {
       outboundMsg();
     }
   }
 }
-
-void mcrMQTT::setNotReady() { xEventGroupClearBits(_ev_group, MQTT_READY_BIT); }
-void mcrMQTT::setReady() { xEventGroupSetBits(_ev_group, MQTT_READY_BIT); }
 
 static void _ev_handler(struct mg_connection *nc, int ev, void *p) {
   struct mg_mqtt_message *msg = (struct mg_mqtt_message *)p;

@@ -55,8 +55,9 @@ public:
   void publish(Reading_t *reading);
   void registerCmdQueue(cmdQueue_t &cmd_q);
   void run(void *data);
-  void setNotReady();
-  void setReady();
+  void setNotReady() { _mqtt_ready = false; }
+  void setReady() { _mqtt_ready = true; };
+  bool isReady() { return _mqtt_ready; };
 
   // configuration info
   const char *cmdFeed() { return _cmd_feed; }
@@ -72,6 +73,7 @@ private:
   struct mg_mgr _mgr;
   struct mg_connection *_connection = nullptr;
   uint16_t _msg_id = 0;
+  bool _mqtt_ready = false;
 
   // mg_mgr uses LWIP and the timeout is specified in ms
   int _inbound_msg_ms = CONFIG_MCR_MQTT_INBOUND_MSG_WAIT_MS;

@@ -124,10 +124,6 @@ const std::string mcrDev::debug() {
     debug_str << " wus=" << writeUS();
   }
 
-  if (_reading == nullptr) {
-    debug_str << " reading=NULLPTR";
-  }
-
   if (_crc_mismatches > 0) {
     debug_str << " crc_mismatches=" << _crc_mismatches;
   }
