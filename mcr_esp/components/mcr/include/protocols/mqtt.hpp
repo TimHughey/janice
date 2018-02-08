@@ -37,13 +37,6 @@
 #include "protocols/mqtt_in.hpp"
 #include "readings/readings.hpp"
 
-#define mcr_mqtt_version_1 1
-
-// Set the version of MCP Remote
-#ifndef mcr_mqtt_version
-#define mcr_mqtt_version mcr_mqtt_version_1
-#endif
-
 #define MQTT_READY_BIT BIT7
 
 typedef struct {
@@ -71,28 +64,33 @@ public:
   const char *user() { return _user; }
 
 private:
-  const char *_address = "jophiel.wisslanding.com:1883";
+  std::string _endpoint;
 
   EventGroupHandle_t _ev_group;
   int _wait_bit;
 
   struct mg_mgr _mgr;
   struct mg_connection *_connection = nullptr;
-  time_t _lastLoop;
   uint16_t _msg_id = 0;
-  int _poll_wait = 1;
-  int _outbound_msg_wait = 1;
+  TickType_t _inbound_msg_ticks =
+      pdMS_TO_TICKS(CONFIG_MCR_MQTT_INBOUND_MSG_WAIT_MS);
+  TickType_t _outbound_msg_ticks =
+      pdMS_TO_TICKS(CONFIG_MCR_MQTT_OUTBOUND_MSG_WAIT_MS);
 
-  const size_t _rb_size = (sizeof(mqttRingbufferEntry_t) * 128);
+  const size_t _rb_size =
+      (sizeof(mqttRingbufferEntry_t) * CONFIG_MCR_MQTT_RINGBUFFER_PENDING_MSGS);
   Ringbuffer *_rb_out = nullptr;
   Ringbuffer *_rb_in = nullptr;
 
   mcrMQTTin_t *_mqtt_in = nullptr;
 
-  const char *_user = "mqtt";
-  const char *_passwd = "mqtt";
-  const char *_rpt_feed = "prod/mcr/f/report";
-  const char *_cmd_feed = "prod/mcr/f/command";
+  const char *_dns_server = CONFIG_MCR_DNS_SERVER;
+  const std::string _host = CONFIG_MCR_MQTT_HOST;
+  const int _port = CONFIG_MCR_MQTT_PORT;
+  const char *_user = CONFIG_MCR_MQTT_USER;
+  const char *_passwd = CONFIG_MCR_MQTT_PASSWD;
+  const char *_rpt_feed = CONFIG_MCR_MQTT_RPT_FEED;
+  const char *_cmd_feed = CONFIG_MCR_MQTT_CMD_FEED;
 
   void outboundMsg();
   void publish(std::string *json);

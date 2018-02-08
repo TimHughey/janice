@@ -1,19 +1,106 @@
 menu "MCR"
 
-config MCR_DEBUG
-	bool "Global debug"
-	default false
-	help
-	  Set to true to indicate debug should be set globally
+menu "Network"
+	config MCR_DNS_SERVER
+		string "DNS server"
+		default "192.168.2.4"
+		help
+			IP address of the DNS server to use for host name resolution
+endmenu
 
-config PROD_BUILD
-	bool "Build for Production"
-	default true
-	help
-		Set to true to indicate this is a production build
+menu "Protocols"
 
-config MG_ENABLE_SYNC_RESOLVER
-	bool "Use Mongoose synchronous DNS resolver"
-	default true
+	menu "MQTT"
+		config MCR_MQTT_HOST
+			string "IoT Endpoint Hostname"
+			default "jophiel.wisslanding.com"
+			help
+				Default endpoint host name to connect to MCR IoT MQTT/S gateway
+
+		config MCR_MQTT_PORT
+			int "IoT Endpoint Port"
+			default 8883
+			range 0 65535
+			help
+				Default port number to connect to MCR IoT MQTT/S gateway
+
+		config MCR_MQTT_USER
+			string "IoT Endpoint User"
+			default "mqtt"
+			help
+				Default user name to connect to the MCR IoT MQTT/S gateway
+
+		config MCR_MQTT_PASSWD
+			string "IoT Endpoint Password"
+			default "mqtt"
+			help
+				Default password to connect to the MCR IoT MQTT/S gateway
+
+		config MCR_MQTT_RPT_FEED
+			string "IoT Endpoint Reporting Topic"
+			default "prod/mcr/f/report"
+			help
+				Default topic (feed) for reporting data from the MCR device
+				to the IoT endpoint
+
+		config MCR_MQTT_CMD_FEED
+			string "IoT Endpoint Command Topic"
+			default "prod/mcr/f/cmd"
+			help
+				Default topic (feed) for receiving commands from the IoT endpoint
+				to the MCR device
+
+		config MCR_MQTT_RINGBUFFER_PENDING_MSGS
+			int "Pending Messages"
+			default 128
+			range 12 256
+			help
+				The processing of inbound/outbound messages from/to the IoT endpoint are
+				buffered between receiving and sending before being sent to the device or the endoint.
+
+				This value configures how many pending messages are permitted.
+
+		config MCR_MQTT_INBOUND_MSG_WAIT_MS
+			int "Wait for inbound messages (ms)"
+			default 1
+			range 0 1000
+			help
+				To avoid consuming excessive CPU the endpoint task will delay at two points:
+				   1. Poll for inbound messages to process (this configuration value)
+					 2. Wait for outbound messages to send
+
+				This value configures how long (in milliseconds) to wait for an inbound message.
+
+				It is advisable to match this value with the outbound message wait to best balance the
+				processing of inbound and outbound messages.
+
+		config MCR_MQTT_OUTBOUND_MSG_WAIT_MS
+			int "Wait for outbound messages (ms)"
+			default 1
+			range 0 1000
+			help
+				To avoid consuming excessive CPU the endpoint task will delay at two points:
+					 1. Poll for inbound messages to process
+					 2. Wait for outbound messages to send (this configuration value)
+
+				This value configures how long (in milliseconds) to wait for an outbound message.
+
+				It is advisable to match this value with the inbound message wait to best balance the
+				processing of inbound and outbound messages.
+
+		endmenu
+	endmenu
+
+	config PROD_BUILD
+		bool "Build for Production"
+		default true
+		help
+			Set to true to indicate this is a production build
+
+	config MG_ENABLE_SYNC_RESOLVER
+		bool "Use Mongoose synchronous DNS resolver"
+		default true
+
+
 
 endmenu

@@ -21,6 +21,7 @@
 // #define VERBOSE 1
 
 #include <cstdlib>
+#include <sstream>
 #include <string>
 
 #include <FreeRTOS.h>
@@ -54,7 +55,13 @@ static struct mg_mqtt_topic_expression s_topic_expr = {NULL, 0};
 mcrMQTT::mcrMQTT(EventGroupHandle_t evg, int bit) : Task(tTAG, 5 * 1024, 15) {
   _ev_group = evg;
   _wait_bit = bit;
-  _lastLoop = 0;
+
+  // convert the port number to a string
+  std::ostringstream endpoint_ss;
+  endpoint_ss << _host << ':' << _port;
+
+  // create the endpoint URI
+  _endpoint = endpoint_ss.str();
 
   _rb_out = new Ringbuffer(_rb_size);
   _rb_in = new Ringbuffer(_rb_size);
@@ -105,7 +112,7 @@ void mcrMQTT::outboundMsg() {
   size_t len = 0;
   mqttRingbufferEntry_t *entry = nullptr;
 
-  entry = (mqttRingbufferEntry_t *)_rb_out->receive(&len, _outbound_msg_wait);
+  entry = (mqttRingbufferEntry_t *)_rb_out->receive(&len, _outbound_msg_ticks);
 
   while (entry) {
     int64_t start_us = esp_timer_get_time();
@@ -176,11 +183,11 @@ void mcrMQTT::run(void *data) {
   ESP_LOGD(tTAG, "event_group wait complete, starting mongoose");
 
   bzero(&opts, sizeof(opts));
-  opts.nameserver = (const char *)"192.168.2.4";
+  opts.nameserver = _dns_server;
 
   mg_mgr_init_opt(&_mgr, NULL, opts);
 
-  _connection = mg_connect(&_mgr, _address, _ev_handler);
+  _connection = mg_connect(&_mgr, _endpoint.c_str(), _ev_handler);
 
   if (_connection) {
     ESP_LOGI(tTAG, "mongoose connection created %p", (void *)_connection);
@@ -189,7 +196,7 @@ void mcrMQTT::run(void *data) {
   for (;;) {
     // we wait here AND we wait in outboundMsg -- this alternates between
     // prioritizing inbound and outbound messages
-    mg_mgr_poll(&_mgr, _poll_wait);
+    mg_mgr_poll(&_mgr, _inbound_msg_ticks);
 
     // only try to send outbound messages if mqtt is ready
     EventBits_t check = xEventGroupWaitBits(_ev_group, MQTT_READY_BIT,
