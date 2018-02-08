@@ -21,7 +21,7 @@
 #include <cstdlib>
 #include <ctime>
 
-#include <external/ArduinoJSON.h>
+#include <external/ArduinoJson.h>
 
 #include "readings/startup_reading.hpp"
 
