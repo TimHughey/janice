@@ -72,8 +72,9 @@ private:
   struct mg_mgr _mgr;
   struct mg_connection *_connection = nullptr;
   uint16_t _msg_id = 0;
-  TickType_t _inbound_msg_ticks =
-      pdMS_TO_TICKS(CONFIG_MCR_MQTT_INBOUND_MSG_WAIT_MS);
+
+  // mg_mgr uses LWIP and the timeout is specified in ms
+  int _inbound_msg_ms = CONFIG_MCR_MQTT_INBOUND_MSG_WAIT_MS;
   TickType_t _outbound_msg_ticks =
       pdMS_TO_TICKS(CONFIG_MCR_MQTT_OUTBOUND_MSG_WAIT_MS);
 

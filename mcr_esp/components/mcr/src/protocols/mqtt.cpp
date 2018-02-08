@@ -101,8 +101,10 @@ void mcrMQTT::incomingMsg(const char *data, const size_t len) {
              "INCOMING msg sent to ringbuffer (ptr=%p,len=%u,json_len=%u)",
              (void *)json, sizeof(json), len);
   } else {
-    ESP_LOGW(tTAG, "INCOMING msg FAILED send to ringbuffer len=%u",
+    ESP_LOGW(tTAG,
+             "INCOMING msg(len=%u) FAILED send to ringbuffer, msg dropped",
              sizeof(json));
+    delete json;
   }
 }
 
@@ -163,7 +165,9 @@ void mcrMQTT::publish(std::string *json) {
   rb_rc = _rb_out->send((void *)&entry, sizeof(mqttRingbufferEntry_t), 0);
 
   if (!rb_rc) {
-    ESP_LOGW(tTAG, "failed send PUBLISH msg to ringbuffer len=%u", entry.len);
+    ESP_LOGW(tTAG, "PUBLISH msg(len=%u) FAILED to ringbuffer, msg dropped",
+             entry.len);
+    delete json;
   }
 }
 
@@ -177,10 +181,8 @@ void mcrMQTT::run(void *data) {
   ESP_LOGI(tTAG, "started, created mcrMQTTin task %p", (void *)_mqtt_in);
   _mqtt_in->start();
 
-  ESP_LOGD(tTAG, "waiting on event_group=%p for bits=0x%x", (void *)_ev_group,
-           _wait_bit);
+  ESP_LOGD(tTAG, "waiting on %p for bits=0x%x", (void *)_ev_group, _wait_bit);
   xEventGroupWaitBits(_ev_group, _wait_bit, false, true, portMAX_DELAY);
-  ESP_LOGD(tTAG, "event_group wait complete, starting mongoose");
 
   bzero(&opts, sizeof(opts));
   opts.nameserver = _dns_server;
@@ -197,7 +199,7 @@ void mcrMQTT::run(void *data) {
   for (;;) {
     // we wait here AND we wait in outboundMsg -- this alternates between
     // prioritizing inbound and outbound messages
-    mg_mgr_poll(&_mgr, _inbound_msg_ticks);
+    mg_mgr_poll(&_mgr, _inbound_msg_ms);
 
     // only try to send outbound messages if mqtt is ready
     EventBits_t check = xEventGroupWaitBits(_ev_group, MQTT_READY_BIT,
@@ -271,6 +273,7 @@ static void _ev_handler(struct mg_connection *nc, int ev, void *p) {
 
   case MG_EV_CLOSE:
     ESP_LOGW(tTAG, "connection closed");
+    // mg_close_conn();
     __singleton->setNotReady();
     break;
 
