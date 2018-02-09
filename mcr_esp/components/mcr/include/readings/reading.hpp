@@ -50,11 +50,17 @@ private:
   bool _cmd_ack = false;
   time_t _latency = 0;
 
+  int64_t _read_us = 0;
+  int64_t _write_us = 0;
+  int _crc_mismatches = 0;
+  int _read_errors = 0;
+  int _write_errors = 0;
+
   char *_json = nullptr;
 
 protected:
-  virtual void populateJSON(JsonObject &root){};
   void commonJSON(JsonObject &root);
+  virtual void populateJSON(JsonObject &root){};
 
 public:
   // default constructor, Reading type undefined
@@ -63,8 +69,16 @@ public:
   Reading(time_t mtime = time(nullptr));
   virtual ~Reading();
 
-  void setCmdAck(time_t latency, const char *refid_raw = NULL);
   std::string *json(char *buffer = nullptr, size_t len = 0);
+  void setCmdAck(time_t latency, const char *refid_raw = NULL);
+
+  void setCRCMismatches(int crc_mismatches) {
+    _crc_mismatches = crc_mismatches;
+  }
+  void setReadErrors(int read_errors) { _read_errors = read_errors; }
+  void setReadUS(int64_t read_us) { _read_us = read_us; }
+  void setWriteErrors(int write_errors) { _write_errors = write_errors; }
+  void setWriteUS(int64_t write_us) { _write_us = write_us; }
 };
 
 #endif // reading_h

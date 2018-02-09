@@ -11,44 +11,74 @@ endmenu
 menu "Protocols"
 
 	menu "MQTT"
-		config MCR_MQTT_HOST
-			string "IoT Endpoint Hostname"
-			default "jophiel.wisslanding.com"
-			help
-				Default endpoint host name to connect to MCR IoT MQTT/S gateway
+		menu "IoT Endpoint"
+			config MCR_MQTT_HOST
+				string "Host"
+				default "jophiel.wisslanding.com"
+				help
+					Endpoint host name for the IoT MQTT/S gateway
 
-		config MCR_MQTT_PORT
-			int "IoT Endpoint Port"
-			default 1883
-			range 0 65535
-			help
-				Default port number to connect to MCR IoT MQTT/S gateway
+			config MCR_MQTT_PORT
+				int "Port"
+				default 1883
+				range 0 65535
+				help
+					Endpoint port for the IoT MQTT/S gateway
 
-		config MCR_MQTT_USER
-			string "IoT Endpoint User"
-			default "mqtt"
-			help
-				Default user name to connect to the MCR IoT MQTT/S gateway
+			config MCR_MQTT_USER
+				string "User"
+				default "mqtt"
+				help
+					User name for connecting to the IoT MQTT/S gateway
 
-		config MCR_MQTT_PASSWD
-			string "IoT Endpoint Password"
-			default "mqtt"
-			help
-				Default password to connect to the MCR IoT MQTT/S gateway
+			config MCR_MQTT_PASSWD
+				string "Password"
+				default "mqtt"
+				help
+					Password for connecting to the IoT MQTT/S gateway
 
-		config MCR_MQTT_RPT_FEED
-			string "IoT Endpoint Reporting Topic"
-			default "prod/mcr/f/report"
-			help
-				Default topic (feed) for reporting data from the MCR device
-				to the IoT endpoint
+			config MCR_MQTT_RPT_FEED
+				string "Reporting Publish Topic (Feed)"
+				default "prod/mcr/f/report"
+				help
+					Topic (feed) for reporting data from the MCR device to the IoT endpoint
 
-		config MCR_MQTT_CMD_FEED
-			string "IoT Endpoint Command Topic"
-			default "prod/mcr/f/cmd"
+			config MCR_MQTT_CMD_FEED
+				string "Command Subscribe Topic (Feed)"
+				default "prod/mcr/f/cmd"
+				help
+					Topic (feed) for receiving commands from the IoT endpoint
+		endmenu
+
+		config MCT_MQTT_TASK_PRIORITY
+			int "Send/Receive Task Priority"
+			default 14
+			range 1 19
 			help
-				Default topic (feed) for receiving commands from the IoT endpoint
-				to the MCR device
+				MQTT processing is divided into two tasks:
+				  1. Sending and receiving all MQTT messages (this configuration value)
+					2. Processing messages (e.g. parsing JSON) to hand-off to Engine tasks for action
+
+				This value configures the priority of the sending and receiving task.
+
+				It is advisable for this task to be a higher priority than the inbound processing
+				task to ensure that messages are overall sent and received with minimal delay.
+
+		config MCT_MQTT_INBOUND_TASK_PRIORITY
+			int "Inbound Processing Task Priority"
+			default 10
+			range 1 19
+			help
+				MQTT processing is divided into two tasks:
+					1. Sending and receiving all MQTT messages
+					2. Processing messages (e.g. parsing JSON) to hand-off to Engine tasks for action
+					   (this configuration value)
+
+				This value configures the priority processing task.
+
+				It is advisable for this task to be a lower priority than the sending and receiving
+				task to avoid delays in sending and receiving.
+
 
 		config MCR_MQTT_RINGBUFFER_PENDING_MSGS
 			int "Pending Messages"

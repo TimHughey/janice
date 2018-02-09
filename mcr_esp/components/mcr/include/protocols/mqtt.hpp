@@ -37,8 +37,6 @@
 #include "protocols/mqtt_in.hpp"
 #include "readings/readings.hpp"
 
-#define MQTT_READY_BIT BIT7
-
 typedef struct {
   size_t len = 0;
   std::string *data = nullptr;

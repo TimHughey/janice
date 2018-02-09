@@ -47,14 +47,6 @@ Reading::~Reading() {
   }
 }
 
-void Reading::setCmdAck(time_t latency, const char *refid_raw) {
-  _cmd_ack = true;
-  _latency = latency;
-
-  if (refid_raw)
-    _refid = refid_raw;
-}
-
 void Reading::commonJSON(JsonObject &root) {
   root["version"] = _version;
   root["host"] = mcrUtil::hostID();
@@ -68,6 +60,26 @@ void Reading::commonJSON(JsonObject &root) {
     root["cmdack"] = _cmd_ack;
     root["latency"] = _latency;
     root["refid"] = (const char *)_refid;
+  }
+
+  if (_crc_mismatches > 0) {
+    root["crc_mismatches"] = _crc_mismatches;
+  }
+
+  if (_read_errors > 0) {
+    root["read_errors"] = _read_errors;
+  }
+
+  if (_write_errors > 0) {
+    root["write_errors"] = _write_errors;
+  }
+
+  if (_read_us > 0) {
+    root["read_us"] = _read_us;
+  }
+
+  if (_write_us > 0) {
+    root["write_us"] = _write_us;
   }
 }
 
@@ -84,4 +96,12 @@ std::string *Reading::json(char *buffer, size_t len) {
   root.printTo(*json_string);
 
   return json_string;
+}
+
+void Reading::setCmdAck(time_t latency, const char *refid_raw) {
+  _cmd_ack = true;
+  _latency = latency;
+
+  if (refid_raw)
+    _refid = refid_raw;
 }

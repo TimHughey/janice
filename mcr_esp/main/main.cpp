@@ -91,23 +91,6 @@ static void initialise_wifi(void);
 void app_main() {
   ESP_LOGI(TAG, "%s entered", __PRETTY_FUNCTION__);
 
-  // NOTE: moved to mcrI2c class
-  // ESP_LOGI(TAG, "installing i2c driver...");
-  // i2c_config_t _conf;
-  // bzero(&_conf, sizeof(_conf));
-  // _conf.mode = I2C_MODE_MASTER;
-  // _conf.sda_io_num = (gpio_num_t)23;
-  // _conf.scl_io_num = (gpio_num_t)22;
-  // _conf.sda_pullup_en = GPIO_PULLUP_ENABLE;
-  // _conf.scl_pullup_en = GPIO_PULLUP_ENABLE;
-  // _conf.master.clk_speed = 100000;
-  //
-  // ESP_ERROR_CHECK(i2c_param_config(I2C_NUM_0, &_conf));
-  // ESP_ERROR_CHECK(i2c_driver_install(I2C_NUM_0, _conf.mode, 0, 0, 0));
-  // vTaskDelay(pdMS_TO_TICKS(200));
-  //
-  // ESP_LOGI(TAG, "i2c driver installed");
-
   wifi_event_group = xEventGroupCreate();
 
   // create and start our tasks
