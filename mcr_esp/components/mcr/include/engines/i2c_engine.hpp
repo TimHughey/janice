@@ -174,10 +174,10 @@ private:
       return (const char *)"ESP_FAIL";
       break;
     case ESP_ERR_TIMEOUT:
-      return (const char *)"ESP_ERRO_TIMEOUT";
+      return (const char *)"ESP_ERROR_TIMEOUT";
       break;
     default:
-      snprintf(catch_all, sizeof(catch_all), "err=0x%03x", esp_rc);
+      snprintf(catch_all, sizeof(catch_all), "err=0x%04x", esp_rc);
       break;
     }
 

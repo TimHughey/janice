@@ -47,7 +47,7 @@ class mcrMQTT : public Task {
 public:
   mcrMQTT(EventGroupHandle_t evg, int bit);
   void announceStartup();
-  static char *clientId();
+  static const char *clientId();
   void connect(int wait_ms = 0);
   void incomingMsg(const char *json, const size_t len);
   static mcrMQTT_t *instance();

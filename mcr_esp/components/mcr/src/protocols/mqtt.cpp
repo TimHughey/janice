@@ -40,8 +40,6 @@
 #include "protocols/mqtt_in.hpp"
 #include "readings/readings.hpp"
 
-// static uint32_t cmd_callback_count = 0;
-// static cmdCallback_t cmd_callback[10] = {nullptr};
 static char tTAG[] = "mcrMQTT";
 static char outboundTAG[] = "mcrMQTT outboundMsg";
 
@@ -100,15 +98,15 @@ void mcrMQTT::connect(int wait_ms) {
   }
 }
 
-char *mcrMQTT::clientId() {
-  const size_t len = 16;
-  static char client_id[len + 1] = {0x00};
+const char *mcrMQTT::clientId() {
+  static std::string client_id;
 
-  if (client_id[0] == 0x00) {
-    snprintf(client_id, len, "fm0-%s", mcrUtil::macAddress());
+  if (client_id.length() == 0) {
+    client_id = "esp-";
+    client_id += mcrUtil::macAddress();
   }
 
-  return client_id;
+  return client_id.c_str();
 }
 
 void mcrMQTT::incomingMsg(const char *data, const size_t len) {
@@ -159,8 +157,8 @@ void mcrMQTT::outboundMsg() {
     _rb_out->returnItem(entry);
 
     int64_t publish_us = esp_timer_get_time() - start_us;
-    if (publish_us > 1000) {
-      ESP_LOGW(outboundTAG, "publish msg took %lluus", publish_us);
+    if (publish_us > 3000) {
+      ESP_LOGW(outboundTAG, "publish msg took %llums", (publish_us / 1000));
     } else {
       ESP_LOGD(outboundTAG, "publish msg took %lluus", publish_us);
     }
