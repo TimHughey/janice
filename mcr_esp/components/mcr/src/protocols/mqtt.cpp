@@ -79,7 +79,7 @@ void mcrMQTT::announceStartup() {
 }
 
 void mcrMQTT::connect(int wait_ms) {
-  TickType_t last_wake = esp_timer_get_time();
+  TickType_t last_wake = xTaskGetTickCount();
 
   // struct mg_mgr_init_opts opts;
   //
