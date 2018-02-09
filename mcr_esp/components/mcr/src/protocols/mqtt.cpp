@@ -78,6 +78,22 @@ void mcrMQTT::announceStartup() {
   publish(&reading);
 }
 
+void mcrMQTT::connect() {
+  struct mg_mgr_init_opts opts;
+
+  bzero(&opts, sizeof(opts));
+  opts.nameserver = _dns_server;
+
+  mg_mgr_init_opt(&_mgr, NULL, opts);
+
+  _connection = mg_connect(&_mgr, _endpoint.c_str(), _ev_handler);
+
+  if (_connection) {
+    ESP_LOGI(tTAG, "mongoose connection created to endpoint %s (%p)",
+             _endpoint.c_str(), (void *)_connection);
+  }
+}
+
 char *mcrMQTT::clientId() {
   const size_t len = 16;
   static char client_id[len + 1] = {0x00};
@@ -177,7 +193,7 @@ void mcrMQTT::registerCmdQueue(cmdQueue_t &cmd_q) {
 }
 
 void mcrMQTT::run(void *data) {
-  struct mg_mgr_init_opts opts;
+
   _mqtt_in = new mcrMQTTin(_rb_in);
   ESP_LOGI(tTAG, "started, created mcrMQTTin task %p", (void *)_mqtt_in);
   _mqtt_in->start();
@@ -185,17 +201,7 @@ void mcrMQTT::run(void *data) {
   ESP_LOGD(tTAG, "waiting on %p for bits=0x%x", (void *)_ev_group, _wait_bit);
   xEventGroupWaitBits(_ev_group, _wait_bit, false, true, portMAX_DELAY);
 
-  bzero(&opts, sizeof(opts));
-  opts.nameserver = _dns_server;
-
-  mg_mgr_init_opt(&_mgr, NULL, opts);
-
-  _connection = mg_connect(&_mgr, _endpoint.c_str(), _ev_handler);
-
-  if (_connection) {
-    ESP_LOGI(tTAG, "mongoose connection created to endpoint %s (%p)",
-             _endpoint.c_str(), (void *)_connection);
-  }
+  connect();
 
   for (;;) {
     // we wait here AND we wait in outboundMsg -- this alternates between
@@ -265,8 +271,8 @@ static void _ev_handler(struct mg_connection *nc, int ev, void *p) {
 
   case MG_EV_CLOSE:
     ESP_LOGW(tTAG, "connection closed");
-    // mg_close_conn();
     __singleton->setNotReady();
+    __singleton->connect();
     break;
 
   case MG_EV_POLL:

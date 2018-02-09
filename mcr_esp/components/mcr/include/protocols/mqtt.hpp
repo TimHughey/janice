@@ -48,12 +48,16 @@ public:
   mcrMQTT(EventGroupHandle_t evg, int bit);
   void announceStartup();
   static char *clientId();
+  void connect();
   void incomingMsg(const char *json, const size_t len);
   static mcrMQTT_t *instance();
   void publish(Reading_t *reading);
   void registerCmdQueue(cmdQueue_t &cmd_q);
   void run(void *data);
-  void setNotReady() { _mqtt_ready = false; }
+  void setNotReady() {
+    _mqtt_ready = false;
+    _connection = nullptr;
+  }
   void setReady() { _mqtt_ready = true; };
   bool isReady() { return _mqtt_ready; };
 
