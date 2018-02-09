@@ -47,15 +47,14 @@ defmodule Dispatcher.Reading do
   """
   def decode(json)
       when is_binary(json) do
-    case Poison.decode!(json, keys: :atoms, as: %Dispatcher.Reading{}) do
+    case Poison.decode(json, keys: :atoms, as: %Dispatcher.Reading{}) do
       {:ok, r} ->
         Map.put(r, :json, json)
         Map.put(r, :msg_recv_dt, Timex.now())
         {:ok, r}
 
       {:error, e} ->
-        msg = Poison.DecoderError.message(e)
-        {:error, "inbound msg parse failed #{msg}"}
+        {:error, "inbound msg parse failed #{inspect(e)}"}
     end
   end
 

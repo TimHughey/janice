@@ -177,7 +177,7 @@ defmodule Dispatcher.InboundMessage do
     nil
   end
 
-  defp decoded_msg({:error, e}) do
+  defp decoded_msg({:error, e}, _s) do
     Logger.warn(fn -> e end)
   end
 end
