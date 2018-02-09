@@ -20,6 +20,9 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <iomanip>
+#include <sstream>
+#include <string>
 
 #include <FreeRTOS.h>
 #include <System.h>
@@ -34,28 +37,32 @@ int setenv(const char *envname, const char *envval, int overwrite);
 void tzset(void);
 }
 
-char *mcrUtil::macAddress() {
-  static char _mac[13] = {0x00};
+const std::string &mcrUtil::macAddress() {
+  static std::string _mac;
 
-  if (_mac[0] == 0x00) {
+  if (_mac.length() == 0) {
+    std::stringstream bytes;
     uint8_t mac[6];
 
     esp_wifi_get_mac(WIFI_IF_STA, mac);
 
-    sprintf(_mac, "%02x%02x%02x%02x%02x%02x", mac[5], mac[4], mac[3], mac[2],
-            mac[1], mac[0]);
+    bytes << std::hex << std::setfill('0');
+    for (int i = 5; i >= 0; i--) {
+      bytes << std::setw(sizeof(uint8_t) * 2) << static_cast<unsigned>(mac[i]);
+    }
+
+    _mac = bytes.str();
   }
 
   return _mac;
 };
 
-const char *mcrUtil::hostID() {
-  static char _host_id[20] = {0x00};
+const std::string &mcrUtil::hostID() {
+  static std::string _host_id;
 
-  if (_host_id[0] == 0x00) {
-    char *macAddress = mcrUtil::macAddress();
-
-    sprintf(_host_id, "mcr.%s", macAddress);
+  if (_host_id.length() == 0) {
+    _host_id = "mcr.";
+    _host_id += mcrUtil::macAddress();
   }
 
   return _host_id;
@@ -66,22 +73,6 @@ int mcrUtil::freeRAM() {
 
   return system.getFreeHeapSize();
 };
-
-const char *mcrUtil::indentString(uint32_t indent) {
-  const uint32_t max_indent = 25;
-  static char indent_str[max_indent + 1] = {0x00}; // used for indenting
-
-  indent = (indent < max_indent) ? indent : max_indent;
-
-  memset(indent_str, 0x20, indent - 1);
-  indent_str[indent] = 0x00;
-
-  return indent_str;
-}
-
-void mcrUtil::printIndent(uint32_t indent) {
-  // Serial.print(indentString(indent));
-}
 
 bool mcrUtil::isTimeByeondEpochYear() {
   time_t now = 0;
@@ -104,7 +95,7 @@ const char *mcrUtil::dateTimeString(time_t t) {
   setenv("TZ", "EST5EDT,M3.2.0/2,M11.1.0", 1);
   tzset();
   localtime_r(&now, &timeinfo);
-  // strftime(buf, buf_size, "%Y-%m-%d %H:%M:%S", &timeinfo);
+
   strftime(buf, buf_size, "%c", &timeinfo);
 
   return buf;

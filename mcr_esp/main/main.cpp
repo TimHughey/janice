@@ -67,7 +67,7 @@ public:
 
   esp_err_t staGotIp(system_event_sta_got_ip_t event_sta_got_ip) {
     ESP_LOGI("WiFiEventHandler", "got IP address");
-    ESP_LOGI("WiFiEventHandler", "host_id: %s", mcrUtil::hostID());
+    ESP_LOGI("WiFiEventHandler", "host_id: %s", mcrUtil::hostID().c_str());
 
     // once connected set the wait group bit so other waiting tasks
     // are allowed to run

@@ -32,8 +32,8 @@
 
 class mcrUtil {
 public:
-  static char *macAddress();
-  static const char *hostID();
+  static const std::string &macAddress();
+  static const std::string &hostID();
 
   static int freeRAM();
 
