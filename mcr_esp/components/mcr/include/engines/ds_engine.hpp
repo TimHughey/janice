@@ -51,14 +51,6 @@
 #define W1_PIN 14
 
 typedef struct {
-  TaskHandle_t handle;
-  void *data;
-  TickType_t lastWake;
-  UBaseType_t priority;
-  UBaseType_t stackSize;
-} dsTask_t;
-
-typedef struct {
   EventBits_t need_bus;
   EventBits_t engine_running;
   EventBits_t devices_available;
@@ -87,34 +79,34 @@ private:
   SemaphoreHandle_t _bus_mutex = nullptr;
   const int _max_queue_len = 30;
   QueueHandle_t _cmd_q = nullptr;
-  dsTask_t _engineTask = {.handle = nullptr,
-                          .data = nullptr,
-                          .lastWake = 0,
-                          .priority = 1,
-                          .stackSize = (2 * 1024)};
+  mcrTask_t _engineTask = {.handle = nullptr,
+                           .data = nullptr,
+                           .lastWake = 0,
+                           .priority = 1,
+                           .stackSize = (2 * 1024)};
 
-  dsTask_t _cmdTask = {.handle = nullptr,
-                       .data = nullptr,
-                       .lastWake = 0,
-                       .priority = 14,
-                       .stackSize = (3 * 1024)};
-  dsTask_t _convertTask = {.handle = nullptr,
+  mcrTask_t _cmdTask = {.handle = nullptr,
+                        .data = nullptr,
+                        .lastWake = 0,
+                        .priority = 14,
+                        .stackSize = (3 * 1024)};
+  mcrTask_t _convertTask = {.handle = nullptr,
+                            .data = nullptr,
+                            .lastWake = 0,
+                            .priority = 13,
+                            .stackSize = (3 * 1024)};
+
+  mcrTask_t _discoverTask = {.handle = nullptr,
+                             .data = nullptr,
+                             .lastWake = 0,
+                             .priority = 12,
+                             .stackSize = (4 * 1024)};
+
+  mcrTask_t _reportTask = {.handle = nullptr,
                            .data = nullptr,
                            .lastWake = 0,
                            .priority = 13,
                            .stackSize = (3 * 1024)};
-
-  dsTask_t _discoverTask = {.handle = nullptr,
-                            .data = nullptr,
-                            .lastWake = 0,
-                            .priority = 12,
-                            .stackSize = (4 * 1024)};
-
-  dsTask_t _reportTask = {.handle = nullptr,
-                          .data = nullptr,
-                          .lastWake = 0,
-                          .priority = 13,
-                          .stackSize = (3 * 1024)};
 
   bool _devices_powered = true;
   bool _temp_devices_present = true;
@@ -123,11 +115,11 @@ private:
   void *_handle_cmd_task_data = nullptr;
 
   // delay times
-  const TickType_t _loop_frequency = pdMS_TO_TICKS(30000);
+  const TickType_t _loop_frequency = pdMS_TO_TICKS(30 * 1000);
   const TickType_t _convert_frequency = pdMS_TO_TICKS(7 * 1000);
   const TickType_t _discover_frequency = pdMS_TO_TICKS(30 * 1000);
   const TickType_t _report_frequency = pdMS_TO_TICKS(7 * 1000);
-  const TickType_t _temp_convert_wait = pdMS_TO_TICKS(5);
+  const TickType_t _temp_convert_wait = pdMS_TO_TICKS(10);
 
   // static entry point to tasks
   static void runConvert(void *data);

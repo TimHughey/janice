@@ -21,4 +21,16 @@
 #ifndef mcr_type_hpp
 #define mcr_type_hpp
 
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <sdkconfig.h>
+
+typedef struct {
+  TaskHandle_t handle;
+  void *data;
+  TickType_t lastWake;
+  UBaseType_t priority;
+  UBaseType_t stackSize;
+} mcrTask_t;
+
 #endif // mcr_type_h

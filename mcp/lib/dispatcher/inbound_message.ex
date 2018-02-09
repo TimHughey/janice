@@ -75,34 +75,7 @@ defmodule Dispatcher.InboundMessage do
       IO.write(s.json_log, log)
     end
 
-    r = Reading.decode!(msg)
-    log_reading(r, s.log_reading)
-
-    if Reading.startup?(r) do
-      Logger.info("#{r.host} version #{r.version} announced startup")
-      StartupAnnouncement.record(host: r.host, vsn: r.version)
-      Control.send_timesync()
-    end
-
-    if Reading.temperature?(r) || Reading.relhum?(r) do
-      {mod, func} = config(:temperature_msgs)
-      # Logger.info(msg)
-      apply(mod, func, [Reading.as_map(r)])
-      # Sensor.external_update(Reading.as_map(r))
-    end
-
-    if Reading.switch?(r) do
-      {mod, func} = config(:switch_msgs)
-      # if not Reading.cmdack?(r), do: Logger.info(msg)
-
-      apply(mod, func, [Reading.as_map(r)])
-      # Switch.external_update(Reading.as_map(r))
-    end
-
-    if Reading.free_ram_stat?(r) do
-      # Logger.info("#{msg}")
-      FreeRamStat.record(remote_host: r.host, val: r.freeram)
-    end
+    Reading.decode(msg) |> decoded_msg(s)
 
     s = %{s | messages_dispatched: s.messages_dispatched + 1}
 
@@ -160,7 +133,7 @@ defmodule Dispatcher.InboundMessage do
 
   def handle_info({:periodic_log}, s)
       when is_map(s) do
-    Logger.info("messages dispatched: #{s.messages_dispatched}")
+    Logger.info(fn -> "messages dispatched: #{s.messages_dispatched}" end)
 
     send_after(self(), {:periodic_log}, config(:periodic_log_ms))
 
@@ -170,5 +143,41 @@ defmodule Dispatcher.InboundMessage do
   defp config(key)
        when is_atom(key) do
     get_env(:mcp, Dispatcher.InboundMessage) |> Keyword.get(key)
+  end
+
+  defp decoded_msg({:ok, r}, s) do
+    log_reading(r, s.log_reading)
+
+    if Reading.startup?(r) do
+      Logger.info(fn -> "#{r.host} version #{r.version} announced startup" end)
+      StartupAnnouncement.record(host: r.host, vsn: r.version)
+      Control.send_timesync()
+    end
+
+    if Reading.temperature?(r) || Reading.relhum?(r) do
+      {mod, func} = config(:temperature_msgs)
+      # Logger.info(msg)
+      apply(mod, func, [Reading.as_map(r)])
+      # Sensor.external_update(Reading.as_map(r))
+    end
+
+    if Reading.switch?(r) do
+      {mod, func} = config(:switch_msgs)
+      # if not Reading.cmdack?(r), do: Logger.info(msg)
+
+      apply(mod, func, [Reading.as_map(r)])
+      # Switch.external_update(Reading.as_map(r))
+    end
+
+    if Reading.free_ram_stat?(r) do
+      # Logger.info("#{msg}")
+      FreeRamStat.record(remote_host: r.host, val: r.freeram)
+    end
+
+    nil
+  end
+
+  defp decoded_msg({:error, e}) do
+    Logger.warn(fn -> e end)
   end
 end

@@ -8,49 +8,66 @@ menu "Network"
 			IP address of the DNS server to use for host name resolution
 endmenu
 
-menu "Protocols"
+config MCR_IOT_ENDPOINT
+	bool "Use IoT Endpoint"
+	default y
+	select MCR_MQTT_CONFIG
+	select MCR_IOT_TASKS
 
-	menu "MQTT"
-		menu "IoT Endpoint"
-			config MCR_MQTT_HOST
-				string "Host"
-				default "jophiel.wisslanding.com"
-				help
-					Endpoint host name for the IoT MQTT/S gateway
+	config MCR_MQTT_CONFIG
+		bool "Configure IoT Endpoint"
+		default y
 
-			config MCR_MQTT_PORT
-				int "Port"
-				default 1883
-				range 0 65535
-				help
-					Endpoint port for the IoT MQTT/S gateway
 
-			config MCR_MQTT_USER
-				string "User"
-				default "mqtt"
-				help
-					User name for connecting to the IoT MQTT/S gateway
+	config MCR_MQTT_HOST
+		depends on MCR_MQTT_CONFIG
+		string "IoT Endpoint Host"
+		default "jophiel.wisslanding.com"
+		help
+			Endpoint host name for the IoT MQTT/S gateway
 
-			config MCR_MQTT_PASSWD
-				string "Password"
-				default "mqtt"
-				help
-					Password for connecting to the IoT MQTT/S gateway
+	config MCR_MQTT_PORT
+		depends on MCR_MQTT_CONFIG
+		int "IoT Endpoint Port"
+		default 1883
+		range 0 65535
+		help
+			Endpoint port for the IoT MQTT/S gateway
 
-			config MCR_MQTT_RPT_FEED
-				string "Reporting Publish Topic (Feed)"
-				default "prod/mcr/f/report"
-				help
-					Topic (feed) for reporting data from the MCR device to the IoT endpoint
+	config MCR_MQTT_USER
+		depends on MCR_MQTT_CONFIG
+		string "IoT Endpoint User"
+		default "mqtt"
+		help
+			User name for connecting to the IoT MQTT/S gateway
 
-			config MCR_MQTT_CMD_FEED
-				string "Command Subscribe Topic (Feed)"
-				default "prod/mcr/f/cmd"
-				help
-					Topic (feed) for receiving commands from the IoT endpoint
-		endmenu
+	config MCR_MQTT_PASSWD
+		depends on MCR_MQTT_CONFIG
+		string "IoT Endpoint Password"
+		default "mqtt"
+		help
+			Password for connecting to the IoT MQTT/S gateway
 
-		config MCT_MQTT_TASK_PRIORITY
+	config MCR_MQTT_RPT_FEED
+		depends on MCR_MQTT_CONFIG
+		string "Reporting Publish Topic (Feed)"
+		default "prod/mcr/f/report"
+		help
+			Topic (feed) for reporting data from the MCR device to the IoT endpoint
+
+	config MCR_MQTT_CMD_FEED
+		depends on MCR_MQTT_CONFIG
+		string "Command Subscribe Topic (Feed)"
+		default "prod/mcr/f/cmd"
+		help
+			Topic (feed) for receiving commands from the IoT endpoint
+
+	config MCR_IOT_TASKS
+		bool "IoT Tasks for Inbound and Outbound Messages"
+		default y
+
+		config MCR_MQTT_TASK_PRIORITY
+			depends on MCR_IOT_TASKS
 			int "Send/Receive Task Priority"
 			default 14
 			range 1 19
@@ -64,7 +81,8 @@ menu "Protocols"
 				It is advisable for this task to be a higher priority than the inbound processing
 				task to ensure that messages are overall sent and received with minimal delay.
 
-		config MCT_MQTT_INBOUND_TASK_PRIORITY
+		config MCR_MQTT_INBOUND_TASK_PRIORITY
+			depends on MCR_IOT_TASKS
 			int "Inbound Processing Task Priority"
 			default 10
 			range 1 19
@@ -81,6 +99,7 @@ menu "Protocols"
 
 
 		config MCR_MQTT_RINGBUFFER_PENDING_MSGS
+			depends on MCR_IOT_TASKS
 			int "Pending Messages"
 			default 128
 			range 12 256
@@ -91,6 +110,7 @@ menu "Protocols"
 				This value configures how many pending messages are permitted.
 
 		config MCR_MQTT_INBOUND_MSG_WAIT_MS
+			depends on MCR_IOT_TASKS
 			int "Wait for inbound messages (ms)"
 			default 1
 			range 0 1000
@@ -105,6 +125,7 @@ menu "Protocols"
 				processing of inbound and outbound messages.
 
 		config MCR_MQTT_OUTBOUND_MSG_WAIT_MS
+			depends on MCR_IOT_TASKS
 			int "Wait for outbound messages (ms)"
 			default 1
 			range 0 1000
@@ -118,7 +139,187 @@ menu "Protocols"
 				It is advisable to match this value with the inbound message wait to best balance the
 				processing of inbound and outbound messages.
 
-		endmenu
+menu "Engines"
+	config MCR_DS_ENABLE
+		bool "Enable the 1-Wire Engine"
+		default y
+		select MCR_DS_PHASES
+		select MCR_DS_TASKS
+
+		config MCR_DS_PHASES
+			depends on MCR_DS_ENABLE
+			bool "1-Wire Phases"
+
+		config MCR_DS_CONVERT_FREQUENCY_SECS
+			depends on MCR_DS_PHASES
+			int "Convert Frequency (seconds)"
+			default 7
+			range 3 600
+			help
+				How often to issue the temperature convert command to temperature capable
+				devices on the 1-Wire bus
+
+				Temperature capable devices will only be reported to the IoT endpoint
+				once for each temperature convert.  Use this configuration value to indicate
+				how often perform the temperature conversion.
+
+				When temperature capable devices are available on the bus this value also
+				controls how often all device readings are published to the IoT endpoint.
+
+		config MCR_DS_DISCOVER_FREQUENCY_SECS
+			depends on MCR_DS_PHASES
+			int "Discover Frequency (seconds)"
+			default 30
+			range 3 600
+			help
+				How often to execute the 1-Wire search command on the 1-Wire bus
+
+				Typically the 1-Wire bus is stable and there isn't a need to discover (search for)
+				devices frequency.  This configuration controls often to find new devices.
+
+		config MCR_DS_REPORT_FREQUENCY_SECS
+			depends on MCR_DS_PHASES
+			int "Report Frequency (seconds)"
+			default 7
+			range 3 600
+			help
+				How often to read the devices available on the 1-Wire bus and publish their
+				readings to the IoT endpoint
+
+				This configuration value is only used if no temperature capable devices are
+				found on the 1-Wire bus.
+
+		config MCR_DS_ENGINE_FREQUENCY_SECS
+			depends on MCR_DS_PHASES
+			int "Main Loop Frequency (seconds)"
+			default 30
+			range 3 600
+			help
+				How often to execute the housekeeping task for the 1-Wire bus engine
+
+				As of now this loop only reports various metrics to the console.
+
+		config MCR_DS_TEMP_CONVERT_POLL_MS
+			depends on MCR_DS_PHASES
+			int "Delay between polls to check if temperature convert is finished (ms)"
+			default 10
+			range 10 1000
+			help
+				How much to delay between checks that a temperature convert is complete
+
+				To avoid busy waiting for the temperature capable devices to release the 1-Wire
+				bus this value introduces a task delay between checks.
+
+
+		config MCR_DS_TASKS
+			depends on MCR_DS_ENABLE
+			bool "1-Wire Tasks"
+
+		config MCR_DS_TASK_INIT_PRIORITY
+			depends on MCR_DS_TASKS
+			int "Core Task Initialization Priority"
+			default 14
+			range 1 19
+			help
+				The 1-Wire Engine is divided in multiple tasks:
+				  1. Core (initialization)
+					2. Discover
+					3. Convert
+					4. Report
+					5. Command
+
+			 	This configuration value defines the task priority of the Core during
+			 	initialization which includes starting the other tasks.
+
+	 	config MCR_DS_TASK_HOUSEKEEPING_PRIORITY
+			depends on MCR_DS_TASKS
+ 			int "Core Task Housekeeping Priority"
+ 			default 1
+ 			range 0 19
+ 			help
+ 				The 1-Wire Engine is divided in multiple tasks:
+ 				  1. Core (housekeeping)
+ 					2. Discover
+ 					3. Convert
+ 					4. Report
+					5. Command
+
+	 			 This configuration value defines the task priority of the Core after
+				 initialization is complete and it has entered the housekeeping phase.
+
+				 It is advisable to set this priority to a very low value since the housekeeping
+				 activities are generally minimal (e.g. reporting runtime metrics).
+
+	 	config MCR_DS_DISCOVER_TASK_PRIORITY
+			depends on MCR_DS_TASKS
+		 	int "Discover Task Priority"
+		 	default 12
+		 	range 1 19
+		 	help
+		 		The 1-Wire Engine is divided in multiple tasks:
+		 			1. Core
+		 			2. Discover (this configuration value)
+		 			3. Convert
+		 			4. Report
+					5. Command
+
+			 	 This configuration value defines the task priority of the Discover task.
+
+				 It is advisable to set this priority lower than all other tasks except the
+				 Core housekeeping task.
+
+	 	config MCR_DS_CONVERT_TASK_PRIORITY
+			depends on MCR_DS_TASKS
+ 		 int "Convert Task Priority"
+ 		 default 13
+ 		 range 1 19
+ 		 help
+ 			 The 1-Wire Engine is divided in multiple tasks:
+ 				 1. Core
+ 				 2. Discover
+ 				 3. Convert (this configuration value)
+ 				 4. Report
+ 				 5. Command
+
+	 			This configuration value defines the task priority of the Convert task.
+
+	 			It is advisable to set this priority to match the Report priority and
+				higher than other tasks but lower than the Command task.
+
+		config MCR_DS_REPORT_TASK_PRIORITY
+			depends on MCR_DS_TASKS
+			int "Report Task Priority"
+			default 13
+			range 1 19
+			help
+			 The 1-Wire Engine is divided in multiple tasks:
+				 1. Core
+				 2. Discover
+				 3. Convert
+				 4. Report (this configuration value)
+				 5. Command
+
+				This configuration value defines the task priority of the Report task.
+
+				It is advisable to match this priority to the Convert task.
+
+		config MCR_DS_COMMAND_TASK_PRIORITY
+			depends on MCR_DS_TASKS
+			int "Command Task Priority"
+			default 14
+			range 1 19
+			help
+			 The 1-Wire Engine is divided in multiple tasks:
+				 1. Core
+				 2. Discover
+				 3. Convert
+				 4. Report
+				 5. Command (this configuration value)
+
+				This configuration value defines the task priority of the Command task.
+
+				It is advisable to set this priority the highest of all 1-Wire Engine tasks
+				to ensure handling commands (e.g. changing a switch position) swiftly.
 	endmenu
 
 	config PROD_BUILD
@@ -130,7 +331,5 @@ menu "Protocols"
 	config MG_ENABLE_SYNC_RESOLVER
 		bool "Use Mongoose synchronous DNS resolver"
 		default true
-
-
 
 endmenu
