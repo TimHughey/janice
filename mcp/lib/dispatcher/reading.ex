@@ -49,8 +49,7 @@ defmodule Dispatcher.Reading do
       when is_binary(json) do
     case Poison.decode(json, keys: :atoms, as: %Dispatcher.Reading{}) do
       {:ok, r} ->
-        Map.put(r, :json, json)
-        Map.put(r, :msg_recv_dt, Timex.now())
+        r = Map.put(r, :json, json) |> Map.put(:msg_recv_dt, Timex.now())
         {:ok, r}
 
       {:error, e} ->
