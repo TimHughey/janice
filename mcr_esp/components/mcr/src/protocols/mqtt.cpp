@@ -79,12 +79,18 @@ void mcrMQTT::announceStartup() {
 }
 
 void mcrMQTT::connect(int wait_ms) {
-  struct mg_mgr_init_opts opts;
+  TickType_t last_wake = esp_timer_get_time();
 
-  bzero(&opts, sizeof(opts));
-  opts.nameserver = _dns_server;
+  // struct mg_mgr_init_opts opts;
+  //
+  // bzero(&opts, sizeof(opts));
+  // opts.nameserver = _dns_server;
+  //
+  // mg_mgr_init_opt(&_mgr, NULL, opts);
 
-  mg_mgr_init_opt(&_mgr, NULL, opts);
+  if (wait_ms > 0) {
+    vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(wait_ms));
+  }
 
   _connection = mg_connect(&_mgr, _endpoint.c_str(), _ev_handler);
 
@@ -193,6 +199,7 @@ void mcrMQTT::registerCmdQueue(cmdQueue_t &cmd_q) {
 }
 
 void mcrMQTT::run(void *data) {
+  struct mg_mgr_init_opts opts;
 
   _mqtt_in = new mcrMQTTin(_rb_in);
   ESP_LOGI(tTAG, "started, created mcrMQTTin task %p", (void *)_mqtt_in);
@@ -200,6 +207,11 @@ void mcrMQTT::run(void *data) {
 
   ESP_LOGD(tTAG, "waiting on %p for bits=0x%x", (void *)_ev_group, _wait_bit);
   xEventGroupWaitBits(_ev_group, _wait_bit, false, true, portMAX_DELAY);
+
+  bzero(&opts, sizeof(opts));
+  opts.nameserver = _dns_server;
+
+  mg_mgr_init_opt(&_mgr, NULL, opts);
 
   connect();
 
