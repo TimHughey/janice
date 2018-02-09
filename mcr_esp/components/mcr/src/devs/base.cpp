@@ -73,11 +73,13 @@ void mcrDev::setReading(Reading_t *reading) {
     _reading = nullptr;
   }
 
-  reading->setCRCMismatches(_crc_mismatches);
-  reading->setReadErrors(_read_errors);
-  reading->setReadUS(_read_us);
-  reading->setWriteErrors(_write_errors);
-  reading->setWriteUS(_write_us);
+  if (reading) {
+    reading->setCRCMismatches(_crc_mismatches);
+    reading->setReadErrors(_read_errors);
+    reading->setReadUS(_read_us);
+    reading->setWriteErrors(_write_errors);
+    reading->setWriteUS(_write_us);
+  }
 
   _reading = reading;
 };
