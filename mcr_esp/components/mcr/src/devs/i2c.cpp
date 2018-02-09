@@ -61,8 +61,8 @@ i2cDev::i2cDev(mcrDevAddr_t &addr, bool use_multiplexer, uint8_t bus)
   //      example id: i2c/f8f005f73b53.04.am2315
   //    format of id: i2c/mac_address.bus.desc
   id_ss << "i2c/" << mcrUtil::macAddress() << ".";
-  id_ss << std::setfill('0') << std::setw(sizeof(uint8_t) * 2) << std::hex
-        << this->bus();
+  id_ss << std::setw(sizeof(uint8_t) * 2) << std::setfill('0') << std::hex
+        << static_cast<unsigned>(this->bus());
   id_ss << "." << description();
 
   mcrDevID_t new_id = mcrDevID(id_ss.str().c_str());
