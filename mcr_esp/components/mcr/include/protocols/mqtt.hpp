@@ -48,7 +48,7 @@ public:
   mcrMQTT(EventGroupHandle_t evg, int bit);
   void announceStartup();
   static char *clientId();
-  void connect();
+  void connect(int wait_ms = 0);
   void incomingMsg(const char *json, const size_t len);
   static mcrMQTT_t *instance();
   void publish(Reading_t *reading);

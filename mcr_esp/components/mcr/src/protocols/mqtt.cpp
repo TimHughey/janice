@@ -78,7 +78,7 @@ void mcrMQTT::announceStartup() {
   publish(&reading);
 }
 
-void mcrMQTT::connect() {
+void mcrMQTT::connect(int wait_ms) {
   struct mg_mgr_init_opts opts;
 
   bzero(&opts, sizeof(opts));
@@ -272,7 +272,7 @@ static void _ev_handler(struct mg_connection *nc, int ev, void *p) {
   case MG_EV_CLOSE:
     ESP_LOGW(tTAG, "connection closed");
     __singleton->setNotReady();
-    __singleton->connect();
+    __singleton->connect(5 * 1000); // wait five seconds before reconnecting
     break;
 
   case MG_EV_POLL:
