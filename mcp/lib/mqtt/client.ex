@@ -38,7 +38,7 @@ defmodule Mqtt.Client do
       |> Map.put(:connected, false)
 
     case Map.get(s, :autostart, false) do
-      true -> send_after(self(), {:startup}, 1)
+      true -> send_after(self(), {:startup}, 1000)
       false -> nil
     end
 
@@ -365,10 +365,8 @@ defmodule Mqtt.Client do
 
       {:error, reason} ->
         # kill off the connection that was just started since it's not valid
-        Connection.stop(conn_pid)
 
         Logger.warn(fn -> "client connect " <> "failed, reason=#{reason}" end)
-        Logger.warn(fn -> "not connected, stopped #{inspect(conn_pid)}" end)
 
         s = Map.merge(%{connection: nil}, s)
         s = Map.put(s, :connected, false)
