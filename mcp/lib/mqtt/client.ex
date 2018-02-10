@@ -138,8 +138,16 @@ defmodule Mqtt.Client do
   end
 
   def handle_cast(:startup, s) when is_map(s) do
-    connect()
-    report_subscribe()
+    case connect() do
+      :ok ->
+        Logger.info(fn -> "connection established" end)
+        report_subscribe()
+
+      {:error, _reason} ->
+        Logger.warn(fn -> "will retry connection" end)
+        send_after(self(), {:startup}, 1000)
+    end
+
     Logger.info(fn -> "startup()" end)
   end
 

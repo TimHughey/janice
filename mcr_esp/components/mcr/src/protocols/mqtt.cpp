@@ -52,7 +52,6 @@ static void _ev_handler(struct mg_connection *nc, int ev, void *);
 static struct mg_mqtt_topic_expression s_topic_expr = {NULL, 0};
 
 mcrMQTT::mcrMQTT() : Task(tTAG, 5 * 1024, 15) {
-
   // convert the port number to a string
   std::ostringstream endpoint_ss;
   endpoint_ss << _host << ':' << _port;
