@@ -19,14 +19,13 @@
 */
 
 #include <cstdlib>
-#include <cstring>
 #include <iomanip>
 #include <sstream>
 #include <string>
 
-#include <FreeRTOS.h>
-#include <System.h>
+#include <esp_heap_caps.h>
 #include <esp_wifi.h>
+#include <freertos/FreeRTOS.h>
 #include <sys/time.h>
 #include <time.h>
 
@@ -68,11 +67,7 @@ const std::string &mcrUtil::hostID() {
   return _host_id;
 }
 
-int mcrUtil::freeRAM() {
-  System system;
-
-  return system.getFreeHeapSize();
-};
+int mcrUtil::freeRAM() { return heap_caps_get_free_size(MALLOC_CAP_8BIT); };
 
 bool mcrUtil::isTimeByeondEpochYear() {
   time_t now = 0;
