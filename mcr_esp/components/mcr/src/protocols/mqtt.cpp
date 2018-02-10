@@ -202,8 +202,8 @@ void mcrMQTT::run(void *data) {
   ESP_LOGI(tTAG, "started, created mcrMQTTin task %p", (void *)_mqtt_in);
   _mqtt_in->start();
 
-  ESP_LOGD(tTAG, "waiting for time to be set...");
-  mcrNetwork::waitForTimeset();
+  ESP_LOGD(tTAG, "waiting for network connection...");
+  mcrNetwork::waitForConnection();
 
   bzero(&opts, sizeof(opts));
   opts.nameserver = _dns_server;
@@ -211,6 +211,9 @@ void mcrMQTT::run(void *data) {
   mg_mgr_init_opt(&_mgr, NULL, opts);
 
   connect();
+
+  ESP_LOGD(tTAG, "waiting for time to be set...");
+  mcrNetwork::waitForTimeset();
 
   for (;;) {
     // we wait here AND we wait in outboundMsg -- this alternates between
