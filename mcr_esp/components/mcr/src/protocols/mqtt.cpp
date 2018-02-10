@@ -36,6 +36,7 @@
 #include "external/mongoose.h"
 #include "misc/util.hpp"
 #include "misc/version.hpp"
+#include "net/mcr_net.hpp"
 #include "protocols/mqtt.hpp"
 #include "protocols/mqtt_in.hpp"
 #include "readings/readings.hpp"
@@ -50,9 +51,7 @@ static void _ev_handler(struct mg_connection *nc, int ev, void *);
 
 static struct mg_mqtt_topic_expression s_topic_expr = {NULL, 0};
 
-mcrMQTT::mcrMQTT(EventGroupHandle_t evg, int bit) : Task(tTAG, 5 * 1024, 15) {
-  _ev_group = evg;
-  _wait_bit = bit;
+mcrMQTT::mcrMQTT() : Task(tTAG, 5 * 1024, 15) {
 
   // convert the port number to a string
   std::ostringstream endpoint_ss;
@@ -203,8 +202,8 @@ void mcrMQTT::run(void *data) {
   ESP_LOGI(tTAG, "started, created mcrMQTTin task %p", (void *)_mqtt_in);
   _mqtt_in->start();
 
-  ESP_LOGD(tTAG, "waiting on %p for bits=0x%x", (void *)_ev_group, _wait_bit);
-  xEventGroupWaitBits(_ev_group, _wait_bit, false, true, portMAX_DELAY);
+  ESP_LOGD(tTAG, "waiting for time to be set...");
+  mcrNetwork::waitForTimeset();
 
   bzero(&opts, sizeof(opts));
   opts.nameserver = _dns_server;

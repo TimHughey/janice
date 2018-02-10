@@ -45,7 +45,7 @@ typedef struct {
 typedef class mcrMQTT mcrMQTT_t;
 class mcrMQTT : public Task {
 public:
-  mcrMQTT(EventGroupHandle_t evg, int bit);
+  mcrMQTT();
   void announceStartup();
   static const char *clientId();
   void connect(int wait_ms = 0);
@@ -68,9 +68,6 @@ public:
 
 private:
   std::string _endpoint;
-
-  EventGroupHandle_t _ev_group;
-  int _wait_bit;
 
   struct mg_mgr _mgr;
   struct mg_connection *_connection = nullptr;

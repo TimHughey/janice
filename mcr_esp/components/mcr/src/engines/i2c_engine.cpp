@@ -41,10 +41,11 @@
 #include "engines/engine.hpp"
 #include "engines/i2c_engine.hpp"
 #include "misc/util.hpp"
+#include "net/mcr_net.hpp"
 #include "protocols/mqtt.hpp"
 #include "readings/readings.hpp"
 
-mcrI2c::mcrI2c(mcrMQTT_t *mqtt, EventGroupHandle_t evg, int bit) {
+mcrI2c::mcrI2c() {
   setTags(localTags());
   setLoggingLevel(ESP_LOG_WARN);
   // setLoggingLevel(tagEngine(), ESP_LOG_INFO);
@@ -52,10 +53,6 @@ mcrI2c::mcrI2c(mcrMQTT_t *mqtt, EventGroupHandle_t evg, int bit) {
   _engine_task_name = tagEngine();
   _engine_stack_size = 5 * 1024;
   _engine_priority = 14;
-
-  _mqtt = mqtt;
-  _ev_group = evg;
-  _wait_bit = bit;
 
   // TODO: do we need to assign a GPIO to power up the i2c devices?
   // power up the i2c devices
@@ -484,10 +481,9 @@ void mcrI2c::run(void *task_data) {
 
   ESP_LOGI(tagEngine(), "i2c driver installed");
 
-  ESP_LOGI(tagEngine(), "waiting on event_group=%p for bits=0x%x",
-           (void *)_ev_group, _wait_bit);
-  xEventGroupWaitBits(_ev_group, _wait_bit, false, true, portMAX_DELAY);
-  ESP_LOGI(tagEngine(), "event_group wait complete, proceeding to task loop");
+  ESP_LOGI(tagEngine(), "waiting for the time to be set...");
+  mcrNetwork::waitForTimeset();
+  ESP_LOGI(tagEngine(), "time set, proceeding to task loop");
 
   delay(3000);
   _last_wake.engine = xTaskGetTickCount();

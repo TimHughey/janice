@@ -62,13 +62,11 @@ typedef class mcrDS mcrDS_t;
 class mcrDS : public mcrEngine<dsDev_t> {
 
 public:
-  mcrDS(mcrMQTT *mqtt, EventGroupHandle_t evg, int bit);
+  mcrDS();
   void run(void *data);
 
 private:
   OneWireBus *ds = nullptr;
-  EventGroupHandle_t _ev_group;
-  int _wait_bit;
   EventGroupHandle_t _ds_evg;
   dsEventBits_t _event_bits = {.need_bus = BIT0,
                                .engine_running = BIT1,

@@ -36,4 +36,4 @@ public:
   static const std::string &macAddress();
 };
 
-#endif // reading_h
+#endif // mcrUtil_hpp

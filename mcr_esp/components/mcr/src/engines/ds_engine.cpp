@@ -43,9 +43,10 @@
 #include "engines/ds_engine.hpp"
 #include "engines/engine.hpp"
 #include "misc/util.hpp"
+#include "net/mcr_net.hpp"
 #include "protocols/mqtt.hpp"
 
-mcrDS::mcrDS(mcrMQTT_t *mqtt, EventGroupHandle_t evg, int bit) {
+mcrDS::mcrDS() {
   setTags(localTags());
   setLoggingLevel(ESP_LOG_WARN);
   // setLoggingLevel(tagConvert(), ESP_LOG_INFO);
@@ -56,10 +57,6 @@ mcrDS::mcrDS(mcrMQTT_t *mqtt, EventGroupHandle_t evg, int bit) {
   _engine_task_name = tagEngine();
   _engine_stack_size = 3 * 1024;
   _engine_priority = 14;
-
-  _mqtt = mqtt;
-  _ev_group = evg;
-  _wait_bit = bit;
 }
 
 bool mcrDS::checkDevicesPowered() {
@@ -710,12 +707,11 @@ void mcrDS::run(void *data) {
            (void *)_discoverTask.handle, (void *)_reportTask.handle);
 
   cmdQueue_t cmd_q = {"mcrDS", "ds", _cmd_q};
-  _mqtt->registerCmdQueue(cmd_q);
+  mcrMQTT::instance()->registerCmdQueue(cmd_q);
 
-  ESP_LOGI(tagEngine(), "waiting on %p for bits=0x%x", (void *)_ev_group,
-           _wait_bit);
-  xEventGroupWaitBits(_ev_group, _wait_bit, false, true, portMAX_DELAY);
-  ESP_LOGI(tagEngine(), "bits set, proceeding to task loop");
+  ESP_LOGI(tagEngine(), "waiting for time to be set...");
+  mcrNetwork::waitForTimeset();
+  ESP_LOGI(tagEngine(), "time set, proceeding to task loop");
 
   _engineTask.lastWake = xTaskGetTickCount();
 

@@ -12,7 +12,7 @@
 
 class mcrTimestampTask {
 public:
-  mcrTimestampTask(EventGroupHandle_t evg, int bit);
+  mcrTimestampTask();
   ~mcrTimestampTask();
 
   void run(void *data);
@@ -33,16 +33,12 @@ private:
   uint32_t vref_voltage();
 
 private:
-  EventGroupHandle_t ev_group;
-
   const char *_engTAG = nullptr;
   xTaskHandle _engine_task;
   void *_engine_task_data;
   std::string _engine_task_name;
   uint16_t _engine_stack_size = 4 * 1024;
   uint16_t _engine_priority = 0;
-
-  int wait_bit;
 
   size_t _firstHeap = 0;
   size_t _availHeap = 0;

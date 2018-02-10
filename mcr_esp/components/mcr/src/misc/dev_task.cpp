@@ -19,15 +19,12 @@
 #include "cmds/cmd.hpp"
 #include "devs/id.hpp"
 #include "misc/dev_task.hpp"
+#include "net/mcr_net.hpp"
 #include "readings/readings.hpp"
 
 static char tTAG[] = "mcrDevTask";
 
-mcrDevTask::mcrDevTask(EventGroupHandle_t evg, int bit)
-    : Task(tTAG, (6 * 1024), 1) {
-  ev_group = evg;
-  wait_bit = bit;
-}
+mcrDevTask::mcrDevTask() : Task(tTAG, (6 * 1024), 1) {}
 
 mcrDevTask::~mcrDevTask() {}
 
@@ -40,10 +37,9 @@ void mcrDevTask::run(void *data) {
   size_t prevHeap = System::getFreeHeapSize();
   size_t availHeap = 0;
 
-  ESP_LOGD(tTAG, "started, waiting on event_group=%p for bits=0x%x",
-           (void *)ev_group, wait_bit);
-  xEventGroupWaitBits(ev_group, wait_bit, false, true, portMAX_DELAY);
-  ESP_LOGD(tTAG, "event_group wait complete, entering task loop");
+  ESP_LOGD(tTAG, "started, waiting for network connection...");
+  mcrNetwork::waitForConnection();
+  ESP_LOGD(tTAG, "connection available, entering task loop");
 
   _last_wake = xTaskGetTickCount();
 

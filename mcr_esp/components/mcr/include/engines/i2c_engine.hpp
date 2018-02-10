@@ -75,15 +75,13 @@ private:
   const TickType_t _loop_frequency = pdMS_TO_TICKS(7000);
   static const uint32_t _max_buses = 8;
   bool _use_multiplexer = false;
-  EventGroupHandle_t _ev_group;
-  int _wait_bit;
   i2cLastWakeTime_t _last_wake;
 
   uint32_t _bus_selects = 0;
   uint32_t _bus_select_errors = 0;
 
 public:
-  mcrI2c(mcrMQTT *mqtt, EventGroupHandle_t evg, int bit);
+  mcrI2c();
   void run(void *data);
 
 private:

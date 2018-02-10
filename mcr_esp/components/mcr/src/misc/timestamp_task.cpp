@@ -19,6 +19,7 @@
 
 #include "misc/timestamp_task.hpp"
 #include "misc/util.hpp"
+#include "net/mcr_net.hpp"
 #include "protocols/mqtt.hpp"
 #include "readings/readings.hpp"
 
@@ -27,9 +28,7 @@
 
 static char tTAG[] = "mcrTimestamp";
 
-mcrTimestampTask::mcrTimestampTask(EventGroupHandle_t evg, int bit) {
-  ev_group = evg;
-  wait_bit = bit;
+mcrTimestampTask::mcrTimestampTask() {
   _engTAG = tTAG;
   _engine_task_name = tTAG;
 
@@ -41,10 +40,9 @@ mcrTimestampTask::~mcrTimestampTask() {}
 
 void mcrTimestampTask::run(void *data) {
 
-  ESP_LOGD(tTAG, "started, waiting on %p for bits=0x%x", (void *)ev_group,
-           wait_bit);
-  xEventGroupWaitBits(ev_group, wait_bit, false, true, portMAX_DELAY);
-  ESP_LOGD(tTAG, "bits set, entering task loop");
+  ESP_LOGD(tTAG, "started, waiting time to be set...");
+  mcrNetwork::waitForTimeset();
+  ESP_LOGD(tTAG, "time set, entering task loop");
 
   for (;;) {
     int delta;
