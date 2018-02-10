@@ -217,7 +217,6 @@ protected:
   uint16_t _engine_stack_size = 10000;
   uint16_t _engine_priority = 5;
 
-  mcrMQTT_t *_mqtt = nullptr;
   mcrEngineTagMap_t _tags;
 
   // virtual bool discover();
@@ -266,7 +265,7 @@ protected:
     auto rc = false;
 
     if (reading) {
-      _mqtt->publish(reading);
+      mcrMQTT::instance()->publish(reading);
     }
 
     return rc;
