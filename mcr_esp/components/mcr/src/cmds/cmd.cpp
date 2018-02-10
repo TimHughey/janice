@@ -69,7 +69,8 @@ bool mcrCmd::matchPrefix(char *prefix) {
 
 time_t mcrCmd::latency() {
   int64_t latency = esp_timer_get_time() - _latency;
-  ESP_LOGI("mcrCmd", "latency=%llums", (latency / 1000));
+  ESP_LOGI("mcrCmd", "%s latency=%llums", _dev_id.debug().c_str(),
+           (latency / 1000));
   return latency;
 }
 
