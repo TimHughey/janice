@@ -137,20 +137,6 @@ defmodule Mqtt.Client do
     {:reply, h, t}
   end
 
-  def handle_cast(:startup, s) when is_map(s) do
-    case connect() do
-      :ok ->
-        Logger.info(fn -> "connection established" end)
-        report_subscribe()
-
-      {:error, _reason} ->
-        Logger.warn(fn -> "will retry connection" end)
-        send_after(self(), {:startup}, 1000)
-    end
-
-    Logger.info(fn -> "startup()" end)
-  end
-
   def handle_cast({:push, h}, t) do
     {:noreply, [h | t]}
   end
@@ -161,8 +147,12 @@ defmodule Mqtt.Client do
     {s, conn_result} = do_connect(s)
 
     case conn_result do
-      :ok -> do_subscribe(s, opts)
-      {:error, reason} -> {:reply, {:error, reason}, s}
+      :ok ->
+        do_subscribe(s, opts)
+
+      {:error, _reason} ->
+        Logger.warn(fn -> "will retry connection..." end)
+        send_after(self(), {:startup}, 1000)
     end
 
     {:noreply, s}
@@ -319,9 +309,11 @@ defmodule Mqtt.Client do
   def on_disconnect(message: _message, state: _state), do: true
 
   defp do_connect(s) when is_map(s) do
+    Logger.info(fn -> "attemping to create connection to MQTT" end)
     opts = config(:broker)
 
     {:ok, conn_pid} = Connection.start_link(self())
+    Logger.info(fn -> "created connection #{inspect(conn_pid)}" end)
 
     host = opts |> Keyword.fetch!(:host)
     port = opts |> Keyword.fetch!(:port)
@@ -354,8 +346,6 @@ defmodule Mqtt.Client do
         keep_alive
       )
 
-    s = Map.merge(%{connection: conn_pid}, s)
-
     connect_opts = [host: host, port: port, timeout: timeout, ssl: ssl]
 
     s = %{
@@ -364,16 +354,23 @@ defmodule Mqtt.Client do
         ping_response_timeout_interval: ping_response_timeout * 1000
     }
 
-    # conn_result = s.connection |> Connection.connect(message, connect_opts)
-    result = s.connection |> Connection.connect(message, connect_opts)
+    result = Connection.connect(conn_pid, message, connect_opts)
 
     case result do
       :ok ->
+        Logger.info(fn -> "connection established" end)
+        s = Map.merge(%{connection: conn_pid}, s)
         s = Map.put(s, :connected, true)
         {s, :ok}
 
       {:error, reason} ->
-        Logger.warn(fn -> "client connect " <> "failed #{reason}" end)
+        # kill off the connection that was just started since it's not valid
+        Connection.stop(conn_pid)
+
+        Logger.warn(fn -> "client connect " <> "failed, reason=#{reason}" end)
+        Logger.warn(fn -> "not connected, stopped #{inspect(conn_pid)}" end)
+
+        s = Map.merge(%{connection: nil}, s)
         s = Map.put(s, :connected, false)
         {s, {:error, reason}}
     end
