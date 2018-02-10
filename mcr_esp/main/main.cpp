@@ -31,25 +31,25 @@ void app_main() {
   ESP_LOGI(TAG, "portTICK_PERIOD_MS=%u and 10ms=%uticks", portTICK_PERIOD_MS,
            pdMS_TO_TICKS(10));
 
+  // must create network first
+  network = new mcrNetwork();
+  timestampTask = new mcrTimestampTask();
+  mqttTask = new mcrMQTT();
+  dsEngineTask = new mcrDS();
+  i2cEngineTask = new mcrI2c();
+
   // create and start our tasks
   // NOTE: task implementation handles syncronization
-  timestampTask = new mcrTimestampTask();
-  timestampTask->start();
 
-  mqttTask = new mcrMQTT();
+  timestampTask->start();
   mqttTask->start();
+  dsEngineTask->start();
+  i2cEngineTask->start();
 
   // mcrDevTask *devTask = nullptr;
   // devTask = new mcrDevTask();
   // devTask->start();
 
-  dsEngineTask = new mcrDS();
-  dsEngineTask->start();
-
-  i2cEngineTask = new mcrI2c();
-  i2cEngineTask->start();
-
-  network = new mcrNetwork();
   network->start();
 
   for (;;) {
