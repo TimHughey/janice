@@ -38,7 +38,7 @@ defmodule Mqtt.Client do
       |> Map.put(:connected, false)
 
     case Map.get(s, :autostart, false) do
-      true -> send_after(self(), {:startup}, 1000)
+      true -> send_after(self(), {:startup}, 0)
       false -> nil
     end
 
