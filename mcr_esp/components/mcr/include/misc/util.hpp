@@ -23,8 +23,6 @@
 
 #include <string>
 
-#include <FreeRTOS.h>
-#include <System.h>
 #include <sys/time.h>
 #include <time.h>
 
@@ -32,13 +30,10 @@
 
 class mcrUtil {
 public:
-  static const std::string &macAddress();
-  static const std::string &hostID();
-
-  static int freeRAM();
-
-  static bool isTimeByeondEpochYear();
   static const char *dateTimeString(time_t t = 0);
+  static int freeRAM();
+  static const std::string &hostID();
+  static const std::string &macAddress();
 };
 
 #endif // reading_h

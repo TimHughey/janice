@@ -36,6 +36,36 @@ int setenv(const char *envname, const char *envval, int overwrite);
 void tzset(void);
 }
 
+const char *mcrUtil::dateTimeString(time_t t) {
+  static char buf[64] = {0x00};
+  const auto buf_size = sizeof(buf);
+  time_t now;
+  struct tm timeinfo = {};
+
+  time(&now);
+  // Set timezone to Eastern Standard Time and print local time
+  setenv("TZ", "EST5EDT,M3.2.0/2,M11.1.0", 1);
+  tzset();
+  localtime_r(&now, &timeinfo);
+
+  strftime(buf, buf_size, "%c", &timeinfo);
+
+  return buf;
+}
+
+int mcrUtil::freeRAM() { return heap_caps_get_free_size(MALLOC_CAP_8BIT); };
+
+const std::string &mcrUtil::hostID() {
+  static std::string _host_id;
+
+  if (_host_id.length() == 0) {
+    _host_id = "mcr.";
+    _host_id += mcrUtil::macAddress();
+  }
+
+  return _host_id;
+}
+
 const std::string &mcrUtil::macAddress() {
   static std::string _mac;
 
@@ -55,43 +85,3 @@ const std::string &mcrUtil::macAddress() {
 
   return _mac;
 };
-
-const std::string &mcrUtil::hostID() {
-  static std::string _host_id;
-
-  if (_host_id.length() == 0) {
-    _host_id = "mcr.";
-    _host_id += mcrUtil::macAddress();
-  }
-
-  return _host_id;
-}
-
-int mcrUtil::freeRAM() { return heap_caps_get_free_size(MALLOC_CAP_8BIT); };
-
-bool mcrUtil::isTimeByeondEpochYear() {
-  time_t now = 0;
-  struct tm timeinfo = {};
-
-  time(&now);
-  localtime_r(&now, &timeinfo);
-
-  return (timeinfo.tm_year > 1971);
-}
-
-const char *mcrUtil::dateTimeString(time_t t) {
-  static char buf[64] = {0x00};
-  const auto buf_size = sizeof(buf);
-  time_t now;
-  struct tm timeinfo = {};
-
-  time(&now);
-  // Set timezone to Eastern Standard Time and print local time
-  setenv("TZ", "EST5EDT,M3.2.0/2,M11.1.0", 1);
-  tzset();
-  localtime_r(&now, &timeinfo);
-
-  strftime(buf, buf_size, "%c", &timeinfo);
-
-  return buf;
-}
