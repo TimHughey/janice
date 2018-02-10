@@ -31,12 +31,12 @@ mcrNetwork::mcrNetwork() {
   __singleton = this;
 
   ESP_ERROR_CHECK(nvs_flash_init());
-  ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
 
   tcpip_adapter_init();
   _evg = xEventGroupCreate();
 
   _event_handler = new mcrWiFiEventHandler(_evg);
+  _wifi.setWifiEventHandler(_event_handler);
 }
 
 EventBits_t mcrNetwork::connectedBit() { return BIT0; }
@@ -65,6 +65,7 @@ void mcrNetwork::ensureTimeIsSet() {
 bool mcrNetwork::start() {
 
   _wifi.connectAP(CONFIG_WIFI_SSID, CONFIG_WIFI_PASSWORD);
+  ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
 
   waitForConnection();
 
