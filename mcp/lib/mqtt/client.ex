@@ -149,13 +149,11 @@ defmodule Mqtt.Client do
     case conn_result do
       :ok ->
         do_subscribe(s, opts)
+        {:noreply, s}
 
       {:error, _reason} ->
-        Logger.warn(fn -> "will retry connection..." end)
-        send_after(self(), {:startup}, 1000)
+        {:stop, "MQTT connection failed", s}
     end
-
-    {:noreply, s}
   end
 
   def handle_info({:sent, %Message.Connect{} = message}, state) do
