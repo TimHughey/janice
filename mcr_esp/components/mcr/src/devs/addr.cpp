@@ -17,9 +17,11 @@
 
     https://www.wisslanding.com
 */
+#include <algorithm>
 #include <cstdlib>
 #include <cstring>
 #include <iomanip>
+#include <sstream>
 
 #include <esp_log.h>
 #include <sys/time.h>
@@ -56,14 +58,13 @@ bool mcrDevAddr::operator==(const mcrDevAddr_t &rhs) {
 bool mcrDevAddr::isValid() { return !_addr.empty(); }
 
 std::string mcrDevAddr::debug() {
-  std::ostringstream debug_str;
-  std::stringstream addr_str;
+  std::stringstream debug_str;
 
   debug_str << "mcrDevAddr(0x";
-  for (auto it : _addr) {
+  for (auto it = _addr.begin(); it != _addr.end(); it++) {
     debug_str << std::setw(sizeof(uint8_t) * 2) << std::setfill('0') << std::hex
-              << static_cast<uint8_t>(it);
-  }
+              << static_cast<uint8_t>(*it);
+  };
 
   debug_str << ")";
 
