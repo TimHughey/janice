@@ -47,8 +47,8 @@
 
 mcrI2c::mcrI2c() {
   setTags(localTags());
-  setLoggingLevel(ESP_LOG_WARN);
-  // setLoggingLevel(tagEngine(), ESP_LOG_INFO);
+  // setLoggingLevel(ESP_LOG_WARN);
+  setLoggingLevel(tagEngine(), ESP_LOG_INFO);
 
   _engine_task_name = tagEngine();
   _engine_stack_size = 5 * 1024;
