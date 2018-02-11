@@ -4,11 +4,7 @@ defmodule Mqtt.Client do
   require Logger
   use GenServer
 
-  alias Hulaaki.Connection
-  alias Hulaaki.Message
-
   import Application, only: [get_env: 2, get_env: 3]
-  import Process, only: [send_after: 3]
 
   #  def child_spec(opts) do
   #
@@ -28,392 +24,157 @@ defmodule Mqtt.Client do
   ## Callbacks
 
   def init(s) when is_map(s) do
-    s =
-      s
-      |> Map.put(:packet_id, 1)
-      |> Map.put(:keep_alive_interval, nil)
-      |> Map.put(:keep_alive_timer_ref, nil)
-      |> Map.put(:ping_response_timeout_interval, nil)
-      |> Map.put(:ping_response_timer_ref, nil)
-      |> Map.put(:connected, false)
+    Logger.info(fn -> "init()" end)
 
-    case Map.get(s, :autostart, false) do
-      true -> send_after(self(), {:startup}, 0)
-      false -> nil
+    # pass the same initial state (opts) to Mqtt.InboundMessage and allow it to
+    # figure out what to do.  ultimately all that is passed is autostart which will
+    # be the same
+    {:ok, dispatcher_pid} = Mqtt.InboundMessage.start_link(s)
+
+    if Map.get(s, :autostart, false) do
+      # prepare the opts that will be passed to emqttc (erlang)
+      opts = config(:broker)
+      # add logger config for emqttc
+      opts = Keyword.merge([logger: :info], opts)
+      {:ok, mqtt_pid} = :emqttc.start_link(opts)
+      # populate the state and construct init() return
+      s = Map.put_new(s, :dispatcher_pid, dispatcher_pid)
+      s = Map.put_new(s, :mqtt_pid, mqtt_pid)
+
+      {:ok, s}
+    else
+      # when we don't autostart the mqtt pid will be nil
+      s = Map.put_new(s, :dispatcher_pid, dispatcher_pid)
+      s = Map.put_new(s, :mqtt_pid, nil)
+
+      {:ok, s}
     end
 
-    Logger.info("init()")
-
-    {:ok, s}
-  end
-
-  def connect do
-    GenServer.call(__MODULE__, :connect)
-  end
-
-  def get_state do
-    GenServer.call(__MODULE__, :state)
+    # init() return is calculated above in if block
+    # at the conclusion of init() we have a running InboundMessage GenServer and
+    # potentially a running emqttc (actual connection to MQTT)
   end
 
   def report_subscribe do
-    opts = config(:feeds)
-    subscribe(opts)
+    feed = get_env(:mcp, :feeds, []) |> Keyword.get(:rpt, nil)
+    subscribe(feed)
   end
 
-  def subscribe(opts) do
-    GenServer.call(__MODULE__, {:subscribe, opts})
+  def subscribe(feed) when is_nil(feed) do
+    Logger.warn(fn -> "can't subscribe to nil feed" end)
+    Logger.warn(fn -> "hint: check :feeds are defined in the configuration" end)
+    :ok
   end
 
-  def publish(opts) do
-    GenServer.call(__MODULE__, {:publish, opts})
+  def subscribe(feed) when is_tuple(feed) do
+    GenServer.call(__MODULE__, {:subscribe, feed})
+  end
+
+  def subscribe(feed) do
+    Logger.warn(fn -> "subscribe feed doesn't make sense, got #{inspect(feed)}" end)
+    Logger.warn(fn -> "hint: subscribe feed should be a tuple" end)
+    :ok
+  end
+
+  def publish(message) when is_binary(message) do
+    {feed, qos} = get_env(:mcp, :feeds, []) |> Keyword.get(:cmd, {nil, nil})
+    payload = message
+    pub_opts = [qos]
+
+    opts = [feed: feed, message: payload, pub_opts: pub_opts]
+    publish(opts)
+  end
+
+  def publish(opts) when is_list(opts) do
+    feed = Keyword.get(opts, :feed, nil)
+    payload = Keyword.get(opts, :message, nil)
+    pub_opts = Keyword.get(opts, :pub_opts, [])
+
+    if is_nil(feed) or is_nil(payload) do
+      Logger.warn(fn ->
+        "can't publish: feed=#{inspect(feed)} payload=#{inspect(payload)}"
+      end)
+
+      Logger.warn(fn -> "hint: check :feeds are defined in the configuration" end)
+
+      :ok
+    else
+      Logger.debug(fn -> "outbound: #{payload}" end)
+      MessageSave.save(:out, payload)
+      GenServer.call(__MODULE__, {:publish, feed, payload, pub_opts})
+    end
   end
 
   def publish_switch_cmd(message) do
-    feed = get_env(:mcp, :feeds, []) |> Keyword.get(:cmd, nil)
+    {feed, qos} = get_env(:mcp, :feeds, []) |> Keyword.get(:cmd, {nil, nil})
+    payload = message
+    pub_opts = [qos]
 
-    if feed do
-      opts = [topic: feed, message: message, dup: 0, qos: 0, retain: 0]
-      publish(opts)
-    else
-      :cmd_feed_config_missing
-    end
+    opts = [feed: feed, message: payload, pub_opts: pub_opts]
+    publish(opts)
   end
 
-  def handle_call(:state, _from, state) do
-    {:reply, state, state}
+  def handle_call({:subscribe, feed}, _from, s)
+      when is_tuple(feed) do
+    Logger.info(fn -> "subscribing to #{inspect(feed)}" end)
+
+    res = :emqttc.subscribe(s.mqtt_pid, feed)
+    {:reply, res, s}
   end
 
-  def handle_call(:connect, _from, s) do
-    case do_connect(s) do
-      :ok -> {:reply, {:ok, s}, s}
-      {:error, reason} -> {:reply, {:error, reason}, s}
-    end
+  def handle_call({:publish, feed, payload, pub_opts}, _from, s)
+      when is_binary(feed) and is_binary(payload) and is_list(pub_opts) do
+    res = :emqttc.publish(s.mqtt_pid, feed, payload, pub_opts)
+    {:reply, res, s}
   end
 
-  def handle_call({:subscribe, opts}, _from, s) do
-    do_subscribe(s, opts)
-  end
-
-  # catch the case when there isn't an active connection
-  def handle_call({:publish, opts}, _from, %{connected: false} = s) do
-    msg = opts |> Keyword.fetch!(:message)
-
-    MessageSave.save(:out, msg, true)
-
-    config(:log_dropped_msgs) &&
-      Logger.warn(fn ->
-        ~s/not connected, dropping msg #{msg}/
-      end)
-
+  def handle_call(unhandled_msg, _from, s) do
+    log_unhandled("call", unhandled_msg)
     {:reply, :ok, s}
   end
 
-  def handle_call({:publish, opts}, _from, %{connection: _} = s) do
-    topic = opts |> Keyword.fetch!(:topic)
-    msg = opts |> Keyword.fetch!(:message)
-    dup = opts |> Keyword.fetch!(:dup)
-    qos = opts |> Keyword.fetch!(:qos)
-    retain = opts |> Keyword.fetch!(:retain)
-
-    Logger.debug(fn -> "outbound: #{msg}" end)
-    MessageSave.save(:out, msg)
-
-    {message, s} =
-      case qos do
-        0 ->
-          {Message.publish(topic, msg, dup, qos, retain), s}
-
-        _ ->
-          id = s.packet_id
-          s = update_packet_id(s)
-          {Message.publish(id, topic, msg, dup, qos, retain), s}
-      end
-
-    :ok = s.connection |> Connection.publish(message)
-    {:reply, :ok, s}
+  def handle_cast(unhandled_msg, _from, s) do
+    log_unhandled("cast", unhandled_msg)
+    {:noreply, s}
   end
 
-  def handle_call(:pop, _from, [h | t]) do
-    {:reply, h, t}
+  def handle_info({:mqttc, _pid, :connected}, s) do
+    s = Map.put(s, :connected, true)
+    Logger.info(fn -> "mqtt endpoint connected" end)
+
+    # subscribe to the report feed
+    feed = get_env(:mcp, :feeds, []) |> Keyword.get(:rpt, nil)
+    res = :emqttc.subscribe(s.mqtt_pid, feed)
+
+    s = Map.put(s, :rpt_feed_subscribed, res)
+
+    {:noreply, s}
   end
 
-  def handle_cast({:push, h}, t) do
-    {:noreply, [h | t]}
+  def handle_info({:mqttc, _pid, :disconnected}, s) do
+    Logger.warn(fn -> "mqtt endpoint disconnected" end)
+    s = Map.put(s, :connected, false)
+    {:noreply, s}
   end
 
-  def handle_info({:startup}, s) when is_map(s) do
-    opts = config(:feeds)
+  def handle_info({:publish, _topic, message}, s) do
+    MessageSave.save(:in, message)
+    Mqtt.InboundMessage.process(message)
 
-    {s, conn_result} = do_connect(s)
-
-    case conn_result do
-      :ok ->
-        do_subscribe(s, opts)
-        {:noreply, s}
-
-      {:error, _reason} ->
-        {:stop, "MQTT connection failed", s}
-    end
+    {:noreply, s}
   end
 
-  def handle_info({:sent, %Message.Connect{} = message}, state) do
-    state = reset_keep_alive_timer(state)
-    on_connect(message: message, state: state)
-    {:noreply, state}
-  end
-
-  def handle_info({:received, %Message.ConnAck{} = message}, state) do
-    on_connect_ack(message: message, state: state)
-    {:noreply, state}
-  end
-
-  def handle_info({:sent, %Message.Publish{} = message}, state) do
-    state = reset_keep_alive_timer(state)
-    on_publish(message: message, state: state)
-    {:noreply, state}
-  end
-
-  def handle_info({:received, %Message.Publish{qos: qos} = message}, state) do
-    on_subscribed_publish(message: message, state: state)
-
-    case qos do
-      1 ->
-        message = Message.publish_ack(message.id)
-        :ok = state.connection |> Connection.publish_ack(message)
-
-      _ ->
-        nil
-        # unsure about supporting qos 2 yet
-    end
-
-    {:noreply, state}
-  end
-
-  def handle_info({:sent, %Message.PubAck{} = message}, state) do
-    state = reset_keep_alive_timer(state)
-    on_subscribed_publish_ack(message: message, state: state)
-    {:noreply, state}
-  end
-
-  def handle_info({:received, %Message.PubRec{} = message}, state) do
-    on_publish_receive(message: message, state: state)
-
-    message = Message.publish_release(message.id)
-    :ok = state.connection |> Connection.publish_release(message)
-
-    {:noreply, state}
-  end
-
-  def handle_info({:sent, %Message.PubRel{} = message}, state) do
-    state = reset_keep_alive_timer(state)
-    on_publish_release(message: message, state: state)
-    {:noreply, state}
-  end
-
-  def handle_info({:received, %Message.PubComp{} = message}, state) do
-    on_publish_complete(message: message, state: state)
-    {:noreply, state}
-  end
-
-  def handle_info({:received, %Message.PubAck{} = message}, state) do
-    on_publish_ack(message: message, state: state)
-    {:noreply, state}
-  end
-
-  def handle_info({:sent, %Message.Subscribe{} = message}, state) do
-    state = reset_keep_alive_timer(state)
-    on_subscribe(message: message, state: state)
-    {:noreply, state}
-  end
-
-  def handle_info({:received, %Message.SubAck{} = message}, state) do
-    on_subscribe_ack(message: message, state: state)
-    {:noreply, state}
-  end
-
-  def handle_info({:sent, %Message.Unsubscribe{} = message}, state) do
-    state = reset_keep_alive_timer(state)
-    on_unsubscribe(message: message, state: state)
-    {:noreply, state}
-  end
-
-  def handle_info({:received, %Message.UnsubAck{} = message}, state) do
-    on_unsubscribe_ack(message: message, state: state)
-    {:noreply, state}
-  end
-
-  def handle_info({:sent, %Message.PingReq{} = message}, state) do
-    state = reset_keep_alive_timer(state)
-    state = reset_ping_response_timer(state)
-    on_ping(message: message, state: state)
-    {:noreply, state}
-  end
-
-  def handle_info({:received, %Message.PingResp{} = message}, state) do
-    state = cancel_ping_response_timer(state)
-    on_ping_response(message: message, state: state)
-    {:noreply, state}
-  end
-
-  def handle_info({:sent, %Message.Disconnect{} = message}, state) do
-    state = reset_keep_alive_timer(state)
-    on_disconnect(message: message, state: state)
-    {:noreply, state}
-  end
-
-  def handle_info({:keep_alive}, state) do
-    :ok = state.connection |> Connection.ping()
-    {:noreply, state}
-  end
-
-  def handle_info({:ping_response_timeout}, state) do
-    on_ping_response_timeout(message: nil, state: state)
-    {:noreply, state}
-  end
-
-  def on_connect(message: _message, state: _state) do
-    # Logger.info("on_connect")
-    true
-  end
-
-  def on_connect_ack(message: _message, state: _state) do
-    # Logger.info("on_connect_ack")
-    true
-  end
-
-  def on_subscribed_publish(message: %Message.Publish{} = data, state: _s) do
-    msg = data.message
-    MessageSave.save(:in, msg)
-    # Logger.info fn -> "#{msg}" end
-
-    GenServer.cast(Dispatcher.InboundMessage, {:incoming_message, msg})
-    true
-  end
-
-  def on_publish(message: _message, state: _state), do: true
-  def on_publish_receive(message: _message, state: _state), do: true
-  def on_publish_release(message: _message, state: _state), do: true
-  def on_publish_complete(message: _message, state: _state), do: true
-  def on_publish_ack(message: _message, state: _state), do: true
-  def on_subscribe(message: _message, state: _state), do: true
-  def on_subscribe_ack(message: _message, state: _state), do: true
-  def on_unsubscribe(message: _message, state: _state), do: true
-  def on_unsubscribe_ack(message: _message, state: _state), do: true
-
-  def on_subscribed_publish_ack(message: _message, state: _state), do: true
-  def on_ping(message: _message, state: _state), do: true
-  def on_ping_response(message: _message, state: _state), do: true
-  def on_ping_response_timeout(message: _message, state: _state), do: true
-  def on_disconnect(message: _message, state: _state), do: true
-
-  defp do_connect(s) when is_map(s) do
-    Logger.info(fn -> "attemping to create connection to MQTT" end)
-    opts = config(:broker)
-
-    {:ok, conn_pid} = Connection.start_link(self())
-    Logger.info(fn -> "created connection #{inspect(conn_pid)}" end)
-
-    host = opts |> Keyword.fetch!(:host)
-    port = opts |> Keyword.fetch!(:port)
-    timeout = opts |> Keyword.get(:timeout, 100)
-    ssl = opts |> Keyword.get(:ssl, false)
-
-    client_id = opts |> Keyword.fetch!(:client_id)
-    username = opts |> Keyword.get(:username, "")
-    password = opts |> Keyword.get(:password, "")
-    will_topic = opts |> Keyword.get(:will_topic, "")
-    will_message = opts |> Keyword.get(:will_message, "")
-    will_qos = opts |> Keyword.get(:will_qos, 0)
-    will_retain = opts |> Keyword.get(:will_retain, 0)
-    clean_session = opts |> Keyword.get(:clean_session, 0)
-    keep_alive = opts |> Keyword.get(:keep_alive, 100)
-
-    # arbritary : based off recommendation on MQTT 3.1.1 spec Line 542/543
-    ping_response_timeout = keep_alive * 2
-
-    message =
-      Message.connect(
-        client_id,
-        username,
-        password,
-        will_topic,
-        will_message,
-        will_qos,
-        will_retain,
-        clean_session,
-        keep_alive
-      )
-
-    connect_opts = [host: host, port: port, timeout: timeout, ssl: ssl]
-
-    s = %{
-      s
-      | keep_alive_interval: keep_alive * 1000,
-        ping_response_timeout_interval: ping_response_timeout * 1000
-    }
-
-    result = Connection.connect(conn_pid, message, connect_opts)
-
-    case result do
-      :ok ->
-        Logger.info(fn -> "connection established" end)
-        s = Map.merge(%{connection: conn_pid}, s)
-        s = Map.put(s, :connected, true)
-        {s, :ok}
-
-      {:error, reason} ->
-        # kill off the connection that was just started since it's not valid
-
-        Logger.warn(fn -> "client connect " <> "failed, reason=#{reason}" end)
-
-        s = Map.merge(%{connection: nil}, s)
-        s = Map.put(s, :connected, false)
-        {s, {:error, reason}}
-    end
-  end
-
-  defp do_subscribe(s, opts) when is_map(s) do
-    id = s.packet_id
-    topics = opts |> Keyword.fetch!(:topics)
-    qoses = opts |> Keyword.fetch!(:qoses)
-
-    message = Message.subscribe(id, topics, qoses)
-
-    :ok = s.connection |> Connection.subscribe(message)
-    s = s |> update_packet_id()
-    {:reply, :ok, s}
-  end
-
-  ## Private functions
-  defp reset_keep_alive_timer(%{keep_alive_interval: kai, keep_alive_timer_ref: katr} = state) do
-    if katr, do: Process.cancel_timer(katr)
-    katr = Process.send_after(self(), {:keep_alive}, kai)
-    %{state | keep_alive_timer_ref: katr}
-  end
-
-  defp reset_ping_response_timer(
-         %{ping_response_timeout_interval: prti, ping_response_timer_ref: prtr} = state
-       ) do
-    if prtr, do: Process.cancel_timer(prtr)
-    prtr = Process.send_after(self(), {:ping_response_timeout}, prti)
-    %{state | ping_response_timer_ref: prtr}
-  end
-
-  defp cancel_ping_response_timer(%{ping_response_timer_ref: prtr} = state) do
-    if prtr, do: Process.cancel_timer(prtr)
-    %{state | ping_response_timer_ref: nil}
-  end
-
-  defp update_packet_id(%{packet_id: 65_535} = state) do
-    %{state | packet_id: 1}
-  end
-
-  defp update_packet_id(%{packet_id: packet_id} = state) do
-    %{state | packet_id: packet_id + 1}
+  def handle_info(unhandled_msg, _from, s) do
+    log_unhandled("info", unhandled_msg)
+    {:noreply, s}
   end
 
   defp config(key)
        when is_atom(key) do
     get_env(:mcp, Mqtt.Client) |> Keyword.get(key)
+  end
+
+  defp log_unhandled(type, message) do
+    Logger.warn(fn -> "unhandled #{type} message #{inspect(message)}" end)
   end
 end

@@ -1,4 +1,4 @@
-defmodule Dispatcher.InboundMessage do
+defmodule Mqtt.InboundMessage do
   @moduledoc """
   """
   require Logger
@@ -6,7 +6,7 @@ defmodule Dispatcher.InboundMessage do
   import Application, only: [get_env: 2]
   import Process, only: [send_after: 3]
 
-  alias Dispatcher.Reading
+  alias Mqtt.Reading
   alias Fact.FreeRamStat
   alias Fact.RunMetric
   alias Fact.StartupAnnouncement
@@ -14,7 +14,7 @@ defmodule Dispatcher.InboundMessage do
   alias Command.Control
 
   def start_link(s) do
-    GenServer.start_link(Dispatcher.InboundMessage, s, name: Dispatcher.InboundMessage)
+    GenServer.start_link(Mqtt.InboundMessage, s, name: Mqtt.InboundMessage)
   end
 
   ## Callbacks
@@ -37,18 +37,14 @@ defmodule Dispatcher.InboundMessage do
 
   @log_json_msg :log_json
   def log_json(args) do
-    GenServer.cast(Dispatcher.InboundMessage, {@log_json_msg, args})
+    GenServer.cast(Mqtt.InboundMessage, {@log_json_msg, args})
   end
 
   # internal work functions
-  def process(msg, :save) do
-    MessageSave.save(:in, msg)
-    process(msg)
-  end
 
   def process(msg)
       when is_binary(msg) do
-    GenServer.cast(Dispatcher.InboundMessage, {:incoming_message, msg})
+    GenServer.cast(Mqtt.InboundMessage, {:incoming_message, msg})
   end
 
   defp log_reading(%Reading{}, false), do: nil
@@ -142,7 +138,7 @@ defmodule Dispatcher.InboundMessage do
 
   defp config(key)
        when is_atom(key) do
-    get_env(:mcp, Dispatcher.InboundMessage) |> Keyword.get(key)
+    get_env(:mcp, Mqtt.InboundMessage) |> Keyword.get(key)
   end
 
   defp decoded_msg({:ok, r}, s) do

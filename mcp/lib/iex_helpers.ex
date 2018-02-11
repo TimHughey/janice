@@ -1,18 +1,12 @@
 defmodule Mcp.IExHelpers do
   require Logger
   use Timex
-  alias Mqtt.Client
 
   @moduledoc """
   """
   # def main_grow do
   #   Mcp.Chamber.status("main grow", :print)
   # end
-
-  def mqtt_start do
-    Client.connect()
-    Client.report_subscribe()
-  end
 
   def server_state(mod), do: :sys.get_state(mod)
 
@@ -53,7 +47,7 @@ defmodule Mcp.IExHelpers do
 
     make_mtime_current(json)
     |> change_device(device)
-    |> Dispatcher.InboundMessage.process(:save)
+    |> Mqtt.InboundMessage.process()
   end
 
   def tsensor_test(device, tf) do
@@ -68,7 +62,7 @@ defmodule Mcp.IExHelpers do
     make_mtime_current(json)
     |> change_device(device)
     |> change_temp(device, tf)
-    |> Dispatcher.InboundMessage.process(:save)
+    |> Mqtt.InboundMessage.process()
   end
 
   def mixtank_low_temp do
@@ -102,7 +96,7 @@ defmodule Mcp.IExHelpers do
 
     make_mtime_current(json)
     |> change_device(device)
-    |> Dispatcher.InboundMessage.process(:save)
+    |> Mqtt.InboundMessage.process()
   end
 
   def switch_json do
@@ -123,7 +117,7 @@ defmodule Mcp.IExHelpers do
     switch_json()
     |> make_mtime_current()
     |> change_device(device)
-    |> Dispatcher.InboundMessage.process(:save)
+    |> Mqtt.InboundMessage.process()
   end
 
   def ack_all_cmds do
@@ -154,7 +148,7 @@ defmodule Mcp.IExHelpers do
       cmdack: true
     }
     |> Poison.encode!()
-    |> Dispatcher.InboundMessage.process(:save)
+    |> Mqtt.InboundMessage.process()
   end
 
   def big_switch_state_test do

@@ -55,9 +55,6 @@ defmodule SwitchCmd do
         {:not_found, refid}
 
       cmd ->
-
-        # rt_latency = Timex.to_gregorian_microseconds(recv_dt) - Timex.to_gregorian_microseconds(cmd.sent_at) 
-
         rt_latency = Timex.diff(recv_dt, cmd.sent_at, :microseconds)
 
         Logger.info(fn ->

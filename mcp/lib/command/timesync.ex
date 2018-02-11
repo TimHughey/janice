@@ -26,7 +26,7 @@ defmodule Command.Timesync do
     single = opts.timesync.single
 
     msg = Timesync.new_cmd() |> Timesync.json()
-    res = publish_opts(opts.feeds.cmd, msg) |> publish()
+    res = publish(msg)
 
     log && Logger.info(fn -> "published timesync #{inspect(res)}" end)
 
@@ -84,10 +84,5 @@ defmodule Command.Timesync do
   """
   def json(%Timesync{} = c) do
     Poison.encode!(c)
-  end
-
-  defp publish_opts(topic, msg)
-       when is_binary(topic) and is_binary(msg) do
-    [topic: topic, message: msg, dup: 0, qos: 0, retain: 0]
   end
 end

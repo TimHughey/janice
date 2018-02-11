@@ -1,4 +1,4 @@
-defmodule Dispatcher.Reading do
+defmodule Mqtt.Reading do
   @moduledoc """
   """
 
@@ -42,12 +42,12 @@ defmodule Dispatcher.Reading do
     iex> json =
     ...>   ~s({"version": 1, "host": "mcr-macaddr", "device": "ds/29.00000ffff",
     ...>       "mtime": 1506867918, "type": "temp", "tc": 20.0, "tf": 80.0})
-    ...> Dispatcher.Reading.decode!(json) |> Dispatcher.Reading.metadata?()
+    ...> Mqtt.Reading.decode!(json) |> Mqtt.Reading.metadata?()
     true
   """
   def decode(json)
       when is_binary(json) do
-    case Poison.decode(json, keys: :atoms, as: %Dispatcher.Reading{}) do
+    case Poison.decode(json, keys: :atoms, as: %Mqtt.Reading{}) do
       {:ok, r} ->
         r = Map.put(r, :json, json) |> Map.put(:msg_recv_dt, Timex.now())
         {:ok, r}
@@ -70,13 +70,13 @@ defmodule Dispatcher.Reading do
     iex> json =
     ...>   ~s({"version": 1, "host":"mcr-macaddr", "device":"ds/28.00000ffff",
     ...>       "mtime": 1506867918, "type": "temp", "tc": 20.0, "tf": 80.0})
-    ...> Dispatcher.Reading.decode!(json) |> Dispatcher.Reading.metadata?()
+    ...> Mqtt.Reading.decode!(json) |> Mqtt.Reading.metadata?()
     true
 
     iex> json =
     ...>   ~s({"version": 0, "host": "other-macaddr", "device": "ds/28.0000",
     ...>       "mtime": 1506867918, "type": "temp", "tc": 20.0, "tf": 80.0})
-    ...> Dispatcher.Reading.decode!(json) |> Dispatcher.Reading.metadata?()
+    ...> Mqtt.Reading.decode!(json) |> Mqtt.Reading.metadata?()
     false
   """
   def metadata?(%Reading{} = r) do
@@ -94,13 +94,13 @@ defmodule Dispatcher.Reading do
     iex> json =
     ...>   ~s({"version": 1, "host":"mcr-macaddr", "device":"ds/28.0000",
     ...>       "mtime": 1506867918, "type": "temp", "tc": 20.0, "tf": 80.0})
-    ...> Dispatcher.Reading.decode!(json) |> Dispatcher.Reading.mtime_good?()
+    ...> Mqtt.Reading.decode!(json) |> Mqtt.Reading.mtime_good?()
     true
 
     iex> json =
     ...>   ~s({"version": 0, "host": "other-macaddr",
     ...>       "mtime": 2106, "type": "startup"})
-    ...> Dispatcher.Reading.decode!(json) |> Dispatcher.Reading.mtime_good?()
+    ...> Mqtt.Reading.decode!(json) |> Mqtt.Reading.mtime_good?()
     false
   """
 
@@ -118,13 +118,13 @@ defmodule Dispatcher.Reading do
     iex> json =
     ...>   ~s({"version": 1, "host": "mcr-macaddr",
     ...>       "mtime": 2106, "type": "startup"})
-    ...> Dispatcher.Reading.decode!(json) |> Dispatcher.Reading.startup?()
+    ...> Mqtt.Reading.decode!(json) |> Mqtt.Reading.startup?()
     true
 
     iex> json =
     ...>   ~s({"version": 1, "host":"mcr-macaddr", "device":"ds/28.0000",
     ...>       "mtime": 1506867918, "type": "temp", "tc": 20.0, "tf": 80.0})
-    ...> Dispatcher.Reading.decode!(json) |> Dispatcher.Reading.startup?()
+    ...> Mqtt.Reading.decode!(json) |> Mqtt.Reading.startup?()
     false
   """
   def startup?(%Reading{} = r) do
@@ -138,7 +138,7 @@ defmodule Dispatcher.Reading do
     iex> json =
     ...>   ~s({"version": 1, "host": "mcr-macaddr", "device": "ds/28.0000",
     ...>       "mtime": 1506867918, "type": "temp", "tc": 20.0, "tf": 80.0})
-    ...> Dispatcher.Reading.decode!(json) |> Dispatcher.Reading.temperature?()
+    ...> Mqtt.Reading.decode!(json) |> Mqtt.Reading.temperature?()
     true
   """
   def temperature?(%Reading{} = r) do
@@ -154,7 +154,7 @@ defmodule Dispatcher.Reading do
    ...>       "device": "ds/29.0000", "mtime": 1506867918,
    ...>       "type": "relhum",
    ...>       "rh": 56.0})
-   ...> Dispatcher.Reading.decode!(json) |> Dispatcher.Reading.relhum?()
+   ...> Mqtt.Reading.decode!(json) |> Mqtt.Reading.relhum?()
    true
   """
   def relhum?(%Reading{} = r) do
@@ -172,7 +172,7 @@ defmodule Dispatcher.Reading do
     ...>        "states": [{"pio": 0, "state": true},
     ...>                      {"pio": 1, "state": false}],
     ...>        "pio_count": 2})
-    ...> Dispatcher.Reading.decode!(json) |> Dispatcher.Reading.switch?()
+    ...> Mqtt.Reading.decode!(json) |> Mqtt.Reading.switch?()
     true
   """
   def switch?(%Reading{} = r) do
@@ -196,7 +196,7 @@ defmodule Dispatcher.Reading do
     ...>                      {"pio": 1, "state": false}],
     ...>        "pio_count": 2,
     ...>        "cmdack": true, "latency": 10, "refid": "uuid"})
-    ...> Dispatcher.Reading.decode!(json) |> Dispatcher.Reading.cmdack?()
+    ...> Mqtt.Reading.decode!(json) |> Mqtt.Reading.cmdack?()
     true
   """
   def cmdack?(%Reading{} = r) do

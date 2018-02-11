@@ -34,7 +34,7 @@ config :mcp, Web.Endpoint,
   render_errors: [view: Web.ErrorView, accepts: ~w(html json)],
   pubsub: [name: Web.PubSub, pool_size: 1, adapter: Phoenix.PubSub.PG2]
 
-config :mcp, Dispatcher.InboundMessage,
+config :mcp, Mqtt.InboundMessage,
   log_reading: false,
   temperature_msgs: {Sensor, :external_update},
   switch_msgs: {Switch, :external_update}

@@ -13,7 +13,7 @@ defmodule Command.Control do
   # GenServer Startup and Initialization
   #
   def start_link(s) do
-    base = [timesync: [], feeds: []]
+    base = [timesync: []]
 
     defs = %{
       timesync: %{frequency: 60 * 1000, loops: 0, forever: true, log: false, single: false}
@@ -22,11 +22,6 @@ defmodule Command.Control do
     opts = get_env(:mcp, Command.Control, base) |> Enum.into(%{})
     ts_opts = Map.merge(defs.timesync, Enum.into(opts.timesync, %{}))
     opts = Map.put(opts, :timesync, ts_opts)
-
-    def_feeds = %{cmd: "mcr/f/command", rpt: "mcr/f/report"}
-    feeds = get_env(:mcp, :feeds, [])
-    feeds_opts = Map.merge(def_feeds, Enum.into(feeds, %{}))
-    opts = Map.put(opts, :feeds, feeds_opts)
 
     s = Map.put(s, :opts, opts)
     s = Map.put(s, :timesync, nil)

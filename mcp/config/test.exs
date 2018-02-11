@@ -2,13 +2,15 @@
 # and its dependencies with the aid of the Mix.Config module.
 use Mix.Config
 
+config :mcp, feeds: [cmd: {"test/mcr/f/command", :qos0}, rpt: {"test/mcr/f/report", :qos0}]
+
 config :command, Command.Control,
   startup_delay_ms: 200,
   periodic_timesync_ms: 5 * 60 * 1000,
   rpt_feed: "mcr/f/report",
   cmd_feed: "mcr/f/command"
 
-config :dispatcher, Dispatcher.InboundMessage,
+config :dispatcher, Mqtt.InboundMessage,
   log_reading: true,
   startup_delay_ms: 200,
   periodic_log_first_ms: 30_000,
@@ -65,18 +67,17 @@ config :mcp, Mcp.Dutycycle,
   routine_check_ms: 1000
 
 config :mqtt, Mqtt.Client,
+  log_dropped_msg: true,
   broker: [
-    client_id: "mercurial-test",
-    clean_session: 0,
+    host: 'jophiel.wisslanding.com',
+    port: 1883,
+    client_id: "merc-test",
+    clean_sess: true,
     username: "mqtt",
     password: "mqtt",
-    host: "jophiel.wisslanding.com",
-    port: 1883,
-    ssl: false
-  ],
-  feeds: [topics: ["test/mcr/f/report"], qoses: [0]],
-  rpt_feed: "test/mcr/f/report",
-  cmd_feed: "test/mcr/f/command"
+    auto_resub: true,
+    reconnect: 2
+  ]
 
 config :mcp, Web.Endpoint,
   http: [port: 4001],

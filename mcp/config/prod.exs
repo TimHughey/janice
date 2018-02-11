@@ -6,7 +6,7 @@ config :logger,
   # level: debug,
   level: :info
 
-config :mcp, feeds: [cmd: "prod/mcr/f/command", rpt: "prod/mcr/f/report"]
+config :mcp, feeds: [cmd: {"prod/mcr/f/command", :qos0}, rpt: {"prod/mcr/f/report", :qos0}]
 
 config :mcp, Mcp.Chamber,
   autostart_wait_ms: 0,
@@ -15,7 +15,7 @@ config :mcp, Mcp.Chamber,
 config :mcp, Command.Control,
   timesync: [frequency: 60 * 1000, loops: 0, forever: true, log: false]
 
-config :mcp, Dispatcher.InboundMessage,
+config :mcp, Mqtt.InboundMessage,
   periodic_log_first_ms: 60 * 60 * 1000,
   periodic_log_ms: 120 * 60 * 1000
 
@@ -48,17 +48,18 @@ config :mcp, MessageSave,
 config :mcp, Mixtank, control_temp_secs: 27
 
 config :mcp, Mqtt.Client,
+  log_dropped_msgs: true,
   broker: [
-    client_id: "mercurial-prod",
-    clean_session: 1,
+    # must be a char string (not binary) for emqttc
+    host: '** set in prod.secret.exs **',
+    port: 1883,
+    client_id: "merc-prod",
+    clean_sess: false,
     username: "** set in prod.secret.exs",
     password: "** set in prod.secret.exs",
-    host: "** set in prod.secret.exs",
-    port: 1883,
-    ssl: false
-  ],
-  # subscribe
-  feeds: [topics: ["prod/mcr/f/report"], qoses: [0]]
+    auto_resub: true,
+    reconect: 2
+  ]
 
 config :mcp, Repo,
   adapter: Ecto.Adapters.Postgres,

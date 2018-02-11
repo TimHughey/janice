@@ -4,8 +4,8 @@ defmodule Fact.DevMetric do
   """
 
   use Instream.Series
-  alias Fact.DevMetric
-  import(Fact.Influx, only: [write: 2])
+  # alias Fact.DevMetric
+  # import(Fact.Influx, only: [write: 2])
 
   series do
     database("merc_repo")

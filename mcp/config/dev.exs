@@ -6,6 +6,8 @@ config :logger,
   # level: debug,
   level: :info
 
+config :mcp, feeds: [cmd: {"dev/mcr/f/command", :qos0}, rpt: {"prod/mcr/f/report", :qos0}]
+
 config :mcp, MessageSave,
   save: true,
   delete_older_than_hrs: 12
@@ -13,7 +15,7 @@ config :mcp, MessageSave,
 config :mcp, Command.Control,
   timesync: [frequency: 60 * 1000, loops: 5, forever: false, log: false]
 
-config :mcp, Dispatcher.InboundMessage,
+config :mcp, Mqtt.InboundMessage,
   periodic_log_first_ms: 60 * 60 * 1000,
   periodic_log_ms: 120 * 60 * 1000
 
@@ -60,18 +62,17 @@ config :mcp, Mixtank.Control, control_temp_secs: 27
 config :mcp, Dutycycle, routine_check_ms: 1000
 
 config :mcp, Mqtt.Client,
+  log_dropped_msgs: true,
   broker: [
-    client_id: "mercurial-dev",
-    clean_session: 1,
+    host: 'jophiel.wisslanding.com',
+    client_id: "merc-dev",
+    clean_sess: false,
+    # keepalive: 30_000,
     username: "mqtt",
     password: "mqtt",
-    host: "jophiel.wisslanding.com",
-    port: 1883,
-    ssl: false
-  ],
-  # subscribe
-  feeds: [topics: ["mcr/f/report"], qoses: [0]],
-  log_dropped_msgs: false
+    auto_resub: true,
+    reconnect: 2
+  ]
 
 config :mcp, Web.Endpoint,
   http: [port: 4000],

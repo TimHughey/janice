@@ -23,7 +23,6 @@ defmodule Mcp.Application do
       {MessageSave, initial},
       {Fact.Supervisor, initial},
       {Mqtt.Supervisor, initial},
-      {Dispatcher.Supervisor, initial},
       {Command.Control, initial},
       {Janitor, initial},
       {Dutycycle.Control, initial},
@@ -35,7 +34,7 @@ defmodule Mcp.Application do
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
-    opts = [strategy: :one_for_one, name: Mcp.Supervisor, max_restarts: 5000, max_seconds: 10]
+    opts = [strategy: :one_for_one, name: Mcp.Supervisor, max_restarts: 1, max_seconds: 10]
 
     # only start the Supervisor if the database password is set
     if get_env(:mcp, Repo, []) |> has_key?(:password) do
