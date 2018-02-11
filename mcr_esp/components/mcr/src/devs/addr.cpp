@@ -57,12 +57,13 @@ std::string mcrDevAddr::debug() {
   std::ostringstream debug_str;
   std::stringstream addr_str;
 
+  debug_str << "mcrDevAddr(0x";
   for (auto it : _addr) {
-    addr_str << std::setfill('0') << std::setw(sizeof(uint8_t) * 2) << std::hex
-             << static_cast<uint8_t>(it);
+    debug_str << std::setw(sizeof(uint8_t) * 2) << std::setfill('0') << std::hex
+              << static_cast<uint8_t>(it);
   }
 
-  debug_str << "mcrDevAddr(0x" << addr_str.str() << ")";
+  debug_str << ")";
 
   return debug_str.str();
 }
