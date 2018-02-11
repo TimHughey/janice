@@ -28,17 +28,19 @@
 #include "misc/util.hpp"
 
 // construct a very simple device address of only one uint8_t
-mcrDevAddr::mcrDevAddr(uint8_t addr) { _addr[0] = addr, _len = 1; }
+mcrDevAddr::mcrDevAddr(uint8_t addr) { _addr[0] = addr; }
 // construct a slightly more complex device of a multi byte address
-mcrDevAddr::mcrDevAddr(uint8_t *addr, uint32_t len) { initAndCopy(addr, len); }
+mcrDevAddr::mcrDevAddr(uint8_t *addr, uint32_t len) {
+  _addr.insert(_addr.begin(), len, *addr);
+}
 
-uint32_t mcrDevAddr::len() { return _len; }
+uint32_t mcrDevAddr::len() { return _addr.size(); }
 uint8_t mcrDevAddr::firstAddressByte() { return _addr[0]; }
 uint8_t mcrDevAddr::addressByteByIndex(uint32_t index) { return _addr[0]; }
 uint32_t mcrDevAddr::max_len() { return _max_len; }
 
 // support type casting from mcrDevID_t to a plain ole char array
-mcrDevAddr::operator uint8_t *() { return _addr; }
+mcrDevAddr::operator uint8_t *() { return _addr.data(); }
 
 uint8_t mcrDevAddr::operator[](int i) { return _addr[i]; }
 
@@ -46,39 +48,18 @@ uint8_t mcrDevAddr::operator[](int i) { return _addr[i]; }
 //    1. the == ooperator will compare the actual addr and not the pointers
 //    2. the lhs argument decides the length of address to compare
 bool mcrDevAddr::operator==(const mcrDevAddr_t &rhs) {
-  auto rc = false;
-  if (memcmp(_addr, rhs._addr, _len) == 0) {
-    rc = true;
-  }
-
-  return rc;
+  return (_addr == rhs._addr);
 }
 
-// allow comparsions of a mcrDeviID to a plain ole char string array
-bool mcrDevAddr::operator==(uint8_t *rhs) {
-  auto rc = false;
-  if (memcmp(_addr, rhs, _len) == 0) {
-    rc = true;
-  }
-
-  return rc;
-};
-
-void mcrDevAddr::initAndCopy(uint8_t *addr, uint32_t len) {
-  memset(_addr, 0x00, _max_len);
-  memcpy(_addr, addr, len);
-  _len = len;
-}
-
-bool mcrDevAddr::isValid() { return ((_addr[0] == 0x00) ? false : true); }
+bool mcrDevAddr::isValid() { return !_addr.empty(); }
 
 std::string mcrDevAddr::debug() {
   std::ostringstream debug_str;
   std::stringstream addr_str;
 
-  for (int i = 0; i < _len; i++) {
-    addr_str << std::setfill('0') << std::setw(sizeof(uint8_t)) << std::hex
-             << (uint32_t)_addr[i];
+  for (auto it : _addr) {
+    addr_str << std::setfill('0') << std::setw(sizeof(uint8_t) * 2) << std::hex
+             << static_cast<uint8_t>(it);
   }
 
   debug_str << "mcrDevAddr(0x" << addr_str.str() << ")";

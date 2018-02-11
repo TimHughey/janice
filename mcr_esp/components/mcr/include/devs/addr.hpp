@@ -23,18 +23,14 @@
 
 #include <sstream>
 #include <string>
-#include <sys/time.h>
-#include <time.h>
+#include <vector>
 
 typedef class mcrDevAddr mcrDevAddr_t;
 
 class mcrDevAddr {
 private:
   static const uint32_t _max_len = 10;
-  uint8_t _addr[_max_len + 1] = {0x00};
-  uint8_t _len = 0;
-
-  void initAndCopy(uint8_t *addr, uint32_t len);
+  std::vector<uint8_t> _addr;
 
 public:
   static const int max_addr_len = _max_len;
@@ -55,13 +51,7 @@ public:
 
   uint8_t operator[](int i);
 
-  // NOTE:
-  //    1. the == ooperator will compare the actual addr and not the pointers
-  //    2. the lhs argument decides the length of address to compare
   bool operator==(const mcrDevAddr_t &rhs);
-
-  // allow comparsions of a mcrDeviID to a plain ole char string array
-  bool operator==(uint8_t *rhs);
 
   std::string debug();
 

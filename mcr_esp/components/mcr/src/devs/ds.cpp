@@ -61,7 +61,7 @@ uint8_t dsDev::family() { return firstAddressByte(); };
 uint8_t dsDev::crc() { return addr()[_crc_byte]; };
 uint8_t dsDev::addrLen() { return _ds_max_addr_len; }
 void dsDev::copyAddrToCmd(uint8_t *cmd) {
-  memcpy(cmd + 1, addr(), _ds_max_addr_len);
+  *(cmd + 1) = addr().firstAddressByte();
 }
 
 bool dsDev::isPowered() { return _power; };
