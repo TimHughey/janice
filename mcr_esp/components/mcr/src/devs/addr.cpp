@@ -32,8 +32,9 @@
 
 mcrDevAddr::mcrDevAddr(uint8_t addr) {
   _addr.resize(1);
-  _addr.insert(_addr.begin(), addr);
+  _addr.assign(&addr, &addr + 1);
 }
+
 mcrDevAddr::mcrDevAddr(uint8_t *addr, uint32_t len) {
   _addr.reserve(len);
   _addr.assign(addr, addr + len);
