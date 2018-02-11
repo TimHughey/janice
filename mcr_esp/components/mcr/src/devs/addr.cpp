@@ -43,7 +43,7 @@ mcrDevAddr::mcrDevAddr(uint8_t *addr, uint32_t len) {
 }
 
 uint32_t mcrDevAddr::len() { return _addr.size(); }
-uint8_t mcrDevAddr::firstAddressByte() { return _addr[0]; }
+uint8_t mcrDevAddr::firstAddressByte() { return _addr.front(); }
 // uint8_t mcrDevAddr::addressByteByIndex(uint32_t index) { return _addr[0]; }
 uint8_t mcrDevAddr::lastAddressByte() { return _addr.back(); }
 uint32_t mcrDevAddr::max_len() { return _max_len; }
