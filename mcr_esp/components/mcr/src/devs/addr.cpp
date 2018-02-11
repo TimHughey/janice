@@ -33,7 +33,6 @@
 mcrDevAddr::mcrDevAddr(uint8_t addr) {
   _addr.resize(1);
   _addr.assign(&addr, &addr + 1);
-  ESP_LOGW("mcrDevAddr", "%s", debug().c_str());
 }
 
 mcrDevAddr::mcrDevAddr(uint8_t *addr, uint32_t len) {
