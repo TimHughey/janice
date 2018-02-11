@@ -30,23 +30,28 @@
 #include "devs/addr.hpp"
 #include "misc/util.hpp"
 
-mcrDevAddr::mcrDevAddr(uint8_t addr) { _addr.push_back(addr); }
+mcrDevAddr::mcrDevAddr(uint8_t addr) {
+  _addr.resize(1);
+  _addr.insert(_addr.begin(), addr);
+}
 mcrDevAddr::mcrDevAddr(uint8_t *addr, uint32_t len) {
   _addr.reserve(len);
-  std::copy(addr, addr + len, std::back_inserter(_addr));
+  _addr.assign(addr, addr + len);
+  // std::copy(addr, addr + len, std::back_inserter(_addr));
   ESP_LOGW("mcrDevAddr", "%s", debug().c_str());
   // _addr.assign(len, *addr);
 }
 
 uint32_t mcrDevAddr::len() { return _addr.size(); }
 uint8_t mcrDevAddr::firstAddressByte() { return _addr[0]; }
-uint8_t mcrDevAddr::addressByteByIndex(uint32_t index) { return _addr[0]; }
+// uint8_t mcrDevAddr::addressByteByIndex(uint32_t index) { return _addr[0]; }
+uint8_t mcrDevAddr::lastAddressByte() { return _addr.back(); }
 uint32_t mcrDevAddr::max_len() { return _max_len; }
 
 // support type casting from mcrDevID_t to a plain ole char array
 mcrDevAddr::operator uint8_t *() { return _addr.data(); }
 
-uint8_t mcrDevAddr::operator[](int i) { return _addr[i]; }
+uint8_t mcrDevAddr::operator[](int i) { return _addr.at(i); }
 
 // NOTE:
 //    1. the == ooperator will compare the actual addr and not the pointers

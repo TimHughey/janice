@@ -59,6 +59,7 @@ public:
   void justSeen();
 
   uint8_t firstAddressByte();
+  uint8_t lastAddressByte();
   mcrDevAddr_t &addr();
   uint8_t *addrBytes();
 

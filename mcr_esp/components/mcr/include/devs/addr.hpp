@@ -42,7 +42,8 @@ public:
 
   uint32_t len();
   uint8_t firstAddressByte();
-  uint8_t addressByteByIndex(uint32_t index);
+  // uint8_t addressByteByIndex(uint32_t index);
+  uint8_t lastAddressByte();
   uint32_t max_len();
   bool isValid();
 

@@ -85,6 +85,7 @@ void mcrDev::setReading(Reading_t *reading) {
 };
 
 uint8_t mcrDev::firstAddressByte() { return _addr.firstAddressByte(); };
+uint8_t mcrDev::lastAddressByte() { return _addr.lastAddressByte(); };
 mcrDevAddr_t &mcrDev::addr() { return _addr; }
 uint8_t *mcrDev::addrBytes() { return (uint8_t *)_addr; }
 Reading_t *mcrDev::reading() { return _reading; }

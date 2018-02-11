@@ -58,10 +58,11 @@ dsDev::dsDev(mcrDevAddr_t &addr, bool power) : mcrDev(addr) {
 };
 
 uint8_t dsDev::family() { return firstAddressByte(); };
-uint8_t dsDev::crc() { return addr()[_crc_byte]; };
+uint8_t dsDev::crc() { return lastAddressByte(); };
 uint8_t dsDev::addrLen() { return _ds_max_addr_len; }
 void dsDev::copyAddrToCmd(uint8_t *cmd) {
-  *(cmd + 1) = addr().firstAddressByte();
+  memcpy((cmd + 1), (uint8_t *)addr(), addr().len());
+  // *(cmd + 1) = addr().firstAddressByte();
 }
 
 bool dsDev::isPowered() { return _power; };
