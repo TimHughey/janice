@@ -97,7 +97,7 @@ bool mcrI2c::detectDevice(mcrDevAddr_t &addr) {
     i2c_master_write_byte(cmd, 0x00, ACK_CHECK_EN); // 0x00 selects no bus
     i2c_master_stop(cmd);
 
-    esp_rc = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(5000));
+    esp_rc = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(1000));
     i2c_cmd_link_delete(cmd);
     break;
 
@@ -111,7 +111,7 @@ bool mcrI2c::detectDevice(mcrDevAddr_t &addr) {
     i2c_master_write_byte(cmd, sht31_cmd_data[1], ACK_CHECK_EN);
     i2c_master_stop(cmd);
 
-    esp_rc = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(5000));
+    esp_rc = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(1000));
     i2c_cmd_link_delete(cmd);
     break;
 
@@ -124,7 +124,7 @@ bool mcrI2c::detectDevice(mcrDevAddr_t &addr) {
     i2c_master_write_byte(
         cmd, (addr.firstAddressByte() << 1) | I2C_MASTER_WRITE, ACK_CHECK_EN);
     i2c_master_stop(cmd);
-    esp_rc = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(5000));
+    esp_rc = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(1000));
     i2c_cmd_link_delete(cmd);
 
     break;
@@ -254,7 +254,7 @@ bool mcrI2c::readAM2315(i2cDev_t *dev, humidityReading_t **reading, bool wake) {
   i2c_master_write_byte(cmd, 0x04, ACK_CHECK_EN);
   i2c_master_stop(cmd);
 
-  esp_rc = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(5000));
+  esp_rc = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(1000));
   i2c_cmd_link_delete(cmd);
 
   if (esp_rc != ESP_OK) {
@@ -352,7 +352,7 @@ bool mcrI2c::readSHT31(i2cDev_t *dev, humidityReading_t **reading) {
   i2c_master_write_byte(cmd, 0x00, 0x01);
   i2c_master_stop(cmd);
 
-  esp_rc = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(5000));
+  esp_rc = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(1000));
   i2c_cmd_link_delete(cmd);
 
   if (esp_rc != ESP_OK) {
@@ -385,7 +385,7 @@ bool mcrI2c::readSHT31(i2cDev_t *dev, humidityReading_t **reading) {
 
   i2c_master_stop(cmd);
 
-  esp_rc = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(5000));
+  esp_rc = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(1000));
   i2c_cmd_link_delete(cmd);
 
   dev->stopRead();
@@ -489,7 +489,7 @@ void mcrI2c::run(void *task_data) {
   _last_wake.engine = xTaskGetTickCount();
   for (;;) {
     discover(nullptr);
-    // delay(pdMS_TO_TICKS(5000));
+    // delay(pdMS_TO_TICKS(1000));
 
     for (int i = 0; i < 10; i++) {
       report(nullptr);
@@ -530,7 +530,7 @@ bool mcrI2c::selectBus(uint32_t bus) {
                           ACK_CHECK_EN); // 0x00 selects no bus
     i2c_master_stop(cmd);
 
-    esp_rc = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(10000));
+    esp_rc = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(1000));
     i2c_cmd_link_delete(cmd);
 
     if (esp_rc != ESP_OK) {
@@ -556,7 +556,7 @@ void mcrI2c::wakeAM2315(mcrDevAddr_t &addr) {
   i2c_master_stop(cmd);
   // ignore the error code here since the device will not answer while
   // waking up
-  i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(5000));
+  i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(1000));
   i2c_cmd_link_delete(cmd);
 
   delay(100);
