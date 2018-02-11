@@ -27,9 +27,7 @@
 #include "devs/addr.hpp"
 #include "misc/util.hpp"
 
-// construct a very simple device address of only one uint8_t
-mcrDevAddr::mcrDevAddr(uint8_t addr) { _addr[0] = addr; }
-// construct a slightly more complex device of a multi byte address
+mcrDevAddr::mcrDevAddr(uint8_t addr) { _addr.push_back(addr); }
 mcrDevAddr::mcrDevAddr(uint8_t *addr, uint32_t len) {
   _addr.insert(_addr.begin(), len, *addr);
 }
