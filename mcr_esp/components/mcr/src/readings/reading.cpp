@@ -59,7 +59,7 @@ void Reading::commonJSON(JsonObject &root) {
   if (_cmd_ack) {
     root["cmdack"] = _cmd_ack;
     root["latency"] = _latency;
-    root["refid"] = (const char *)_refid;
+    root["refid"] = _refid;
   }
 
   if (_crc_mismatches > 0) {
@@ -98,10 +98,9 @@ std::string *Reading::json(char *buffer, size_t len) {
   return json_string;
 }
 
-void Reading::setCmdAck(time_t latency, const char *refid_raw) {
+void Reading::setCmdAck(time_t latency, mcrRefID_t &refid) {
   _cmd_ack = true;
   _latency = latency;
 
-  if (refid_raw)
-    _refid = refid_raw;
+  _refid = refid;
 }

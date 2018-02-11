@@ -70,7 +70,7 @@ public:
   virtual ~Reading();
 
   std::string *json(char *buffer = nullptr, size_t len = 0);
-  void setCmdAck(time_t latency, const char *refid_raw = NULL);
+  void setCmdAck(time_t latency, mcrRefID_t &refid);
 
   void setCRCMismatches(int crc_mismatches) {
     _crc_mismatches = crc_mismatches;

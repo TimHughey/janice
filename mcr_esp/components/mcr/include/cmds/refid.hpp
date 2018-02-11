@@ -23,43 +23,6 @@
 
 #include <string>
 
-#include <sys/time.h>
-#include <time.h>
-
-typedef class mcrRefID mcrRefID_t;
-
-class mcrRefID {
-private:
-  static const uint32_t _max_len = 39;
-  char _id[_max_len + 1] = {0x00}; // +1 for null terminating byte
-
-public:
-  static const int max_id_len = _max_len;
-
-  mcrRefID(){};
-  mcrRefID(const char *id);
-
-  static uint32_t max_len();
-
-  // support type casting to a plain ole char array
-  operator char *();
-  operator const char *();
-
-  // NOTE:  the == ooperator will compare the actual id and not the pointers
-  bool operator==(mcrRefID_t &rhs);
-
-  // allow comparsions of an id to a plain ole char string array
-  bool operator==(char *rhs);
-
-  // assignment operators
-  // mcrRefID_t &operator=(mcrRefID_t &id);
-  // mcrRefID_t &operator=(mcrRefID_t *id);
-  mcrRefID_t &operator=(const char *id);
-
-  const char *asString();
-
-private:
-  void initAndCopy(const char *id);
-};
+typedef std::string mcrRefID_t;
 
 #endif // mcrDev_h
