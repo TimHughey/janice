@@ -62,7 +62,7 @@ bool mcrDevAddr::operator==(const mcrDevAddr_t &rhs) {
 bool mcrDevAddr::isValid() { return !_addr.empty(); }
 
 std::string mcrDevAddr::debug() {
-  std::ostringstream debug_str;
+  std::stringstream debug_str;
 
   debug_str << "mcrDevAddr(0x";
   for (auto it = _addr.begin(); it != _addr.end(); it++) {
