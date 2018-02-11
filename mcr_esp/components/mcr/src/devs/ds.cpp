@@ -28,7 +28,6 @@
 #include <sys/time.h>
 #include <time.h>
 
-#include "cmds/refid.hpp"
 #include "devs/addr.hpp"
 #include "devs/base.hpp"
 #include "devs/ds_dev.hpp"

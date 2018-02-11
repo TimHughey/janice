@@ -29,8 +29,6 @@
 #include <sys/time.h>
 #include <time.h>
 
-//#include "id.hpp"
-#include "cmds/refid.hpp"
 #include "readings/reading.hpp"
 
 Reading::Reading(time_t mtime) { _mtime = mtime; }

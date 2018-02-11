@@ -32,7 +32,6 @@
 #include <sys/time.h>
 #include <time.h>
 
-#include "cmds/refid.hpp"
 #include "devs/base.hpp"
 #include "misc/util.hpp"
 

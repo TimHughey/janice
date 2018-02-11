@@ -24,7 +24,6 @@
 #include <sstream>
 #include <string>
 
-#include "cmds/refid.hpp"
 #include "devs/base.hpp"
 
 typedef class dsDev dsDev_t;

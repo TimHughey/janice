@@ -21,6 +21,8 @@
 #ifndef mcr_type_hpp
 #define mcr_type_hpp
 
+#include <string>
+
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <sdkconfig.h>
@@ -32,5 +34,7 @@ typedef struct {
   UBaseType_t priority;
   UBaseType_t stackSize;
 } mcrTask_t;
+
+typedef std::string mcrRefID_t;
 
 #endif // mcr_type_h
