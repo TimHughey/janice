@@ -21,6 +21,7 @@
 #include <cstring>
 #include <iomanip>
 
+#include <esp_log.h>
 #include <sys/time.h>
 #include <time.h>
 
@@ -31,6 +32,7 @@ mcrDevAddr::mcrDevAddr(uint8_t addr) { _addr.push_back(addr); }
 mcrDevAddr::mcrDevAddr(uint8_t *addr, uint32_t len) {
   _addr.reserve(len);
   std::copy(addr, addr + len, std::back_inserter(_addr));
+  ESP_LOGW("mcrDevAddr", "%s", debug().c_str());
   // _addr.assign(len, *addr);
 }
 
