@@ -19,13 +19,17 @@ defmodule Mqtt.Timesync do
             version: 1
 
   def run(opts) do
-    frequency = opts.frequency
-    loops = opts.loops
-    forever = opts.forever
-    log = opts.log
-    single = opts.single
+    # reasonable defaults if configuration is not set
+    frequency = Map.get(opts, :frequency, 60 * 1000)
+    loops = Map.get(opts, :loops, 0)
+    forever = Map.get(opts, :forever, true)
+    log = Map.get(opts, :log, false)
+    single = Map.get(opts, :single, false)
 
+    # construct the timesync message
     msg = Timesync.new_cmd() |> Timesync.json()
+
+    # publish it!
     res = publish(msg)
 
     log && Logger.info(fn -> "published timesync #{inspect(res)}" end)
@@ -45,10 +49,8 @@ defmodule Mqtt.Timesync do
     end
   end
 
-  def send(%{timesync: _} = opts) do
-    opts = %{opts | single: true}
-
-    run(opts)
+  def send do
+    run(%{single: true})
   end
 
   @doc ~S"""

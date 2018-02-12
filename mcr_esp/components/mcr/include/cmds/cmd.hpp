@@ -77,22 +77,22 @@ public:
     _refid = cmd->_refid;
   }
 
-  // ~mcrCmd();
-
-  const mcrDevID_t &dev_id() const;
-  cmd_bitset_t state();
-  cmd_bitset_t mask();
-  bool matchPrefix(char *prefix);
-  time_t latency();
-  mcrRefID_t &refID();
   void ack(bool ack);
   bool ack();
-  void set_parse_metrics(int64_t parse_us, int64_t create_us);
 
-  static size_t size();
+  const mcrDevID_t &dev_id() const;
+  time_t latency();
+  cmd_bitset_t mask();
+  bool matchPrefix(char *prefix);
+  mcrRefID_t &refID();
+  void set_parse_metrics(int64_t parse_us, int64_t create_us);
+  cmd_bitset_t state();
+
+  static void checkTimeSkew(JsonObject &root);
   static mcrCmd_t *createSetSwitch(JsonObject &root, int64_t parse_us);
   static mcrCmd_t *fromJSON(const std::string *json);
   static cmdType_t parseCmd(JsonObject &root);
+  static size_t size();
 
   const std::string debug();
 };

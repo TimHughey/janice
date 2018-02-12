@@ -44,3 +44,4 @@ assets/node_modules
 # Lager will write log files to the cwd when running iex, exclude those logs
 /log/
 /var/log/
+ttb_last_config

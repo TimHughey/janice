@@ -51,7 +51,15 @@ mcrCmd::mcrCmd(const mcrDevID_t &id, cmd_bitset_t mask, cmd_bitset_t state,
   _refid = refid;
 }
 
-// mcrCmd::~mcrCmd() {}
+// STATIC MEMBER FUNCTION
+void mcrCmd::checkTimeSkew(JsonObject &root) {
+  const time_t cmd_mtime = root["mtime"];
+  time_t now;
+  time(&now);
+
+  // as a sanity check, compare the time sent to the device's time
+  ESP_LOGI("mcrCmd", "timesync: skew=%ds", (int)(now - cmd_mtime));
+}
 
 const mcrDevID_t &mcrCmd::dev_id() const { return _dev_id; }
 
@@ -69,8 +77,8 @@ bool mcrCmd::matchPrefix(char *prefix) {
 
 time_t mcrCmd::latency() {
   int64_t latency = esp_timer_get_time() - _latency;
-  ESP_LOGI("mcrCmd", "%s latency=%llums", _dev_id.debug().c_str(),
-           (latency / 1000));
+  ESP_LOGI("mcrCmd", "%s %s latency=%llums", _dev_id.debug().c_str(),
+           _refid.c_str(), (latency / 1000));
   return latency;
 }
 
@@ -99,10 +107,6 @@ mcrCmd_t *mcrCmd::createSetSwitch(JsonObject &root, int64_t parse_us) {
   const JsonVariant ack_flag = root["ack"];
   uint32_t mask = 0x00;
   uint32_t tobe_state = 0x00;
-
-  // logDateTime(__PRETTY_FUNCTION__);
-  // log("invoked for ");
-  // sw.debug(true);
 
   // iterate through the array of new states
   for (auto element : states) {
@@ -166,6 +170,8 @@ mcrCmd_t *mcrCmd::fromJSON(const std::string *json) {
   case cmdTIME_SYNC:
     ESP_LOGD("mcrCmd", "%s unncessary for ESP32 (parse=%lldus)", cmd_str,
              parse_us);
+
+    checkTimeSkew(root);
     break;
 
   case cmdSET_SWITCH:

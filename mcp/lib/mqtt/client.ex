@@ -139,8 +139,7 @@ defmodule Mqtt.Client do
   end
 
   def handle_call({:timesync_msg}, _from, s) do
-    opts = %{frequency: 60 * 1000, loops: 0, forever: true, log: false, single: false}
-    r = Timesync.send(opts)
+    r = Timesync.send()
 
     {:reply, {r}, s}
   end
@@ -225,13 +224,12 @@ defmodule Mqtt.Client do
   end
 
   defp start_timesync_task(s) do
-    defs = %{frequency: 60 * 1000, loops: 0, forever: true, log: false, single: false}
-
-    opts = get_env(:mcp, Mqtt.Client, []) |> Keyword.get(:timesync, []) |> Enum.into(%{})
-    opts = Map.merge(defs, opts)
-
-    task = Task.async(Timesync, :run, [opts])
+    task = Task.async(Timesync, :run, [timesync_opts()])
 
     Map.put(s, :timesync, %{task: task, status: :started})
+  end
+
+  defp timesync_opts do
+    get_env(:mcp, Mqtt.Client, []) |> Keyword.get(:timesync, []) |> Enum.into(%{})
   end
 end
