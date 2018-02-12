@@ -54,11 +54,14 @@ mcrCmd::mcrCmd(const mcrDevID_t &id, cmd_bitset_t mask, cmd_bitset_t state,
 // STATIC MEMBER FUNCTION
 void mcrCmd::checkTimeSkew(JsonObject &root) {
   const time_t cmd_mtime = root["mtime"];
-  time_t now;
-  time(&now);
+  time_t now = time(nullptr);
+  int skew = (int)(now - cmd_mtime);
 
-  // as a sanity check, compare the time sent to the device's time
-  ESP_LOGI("mcrCmd", "timesync: skew=%ds", (int)(now - cmd_mtime));
+  if (abs(skew) > 2) {
+    ESP_LOGW("mcrCmd", "skew of %d detected from timesync message", skew);
+  } else {
+    ESP_LOGD("mcrCmd", "timesync message skew=%d", skew);
+  }
 }
 
 const mcrDevID_t &mcrCmd::dev_id() const { return _dev_id; }
