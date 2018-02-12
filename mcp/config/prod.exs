@@ -3,8 +3,9 @@
 use Mix.Config
 
 config :logger,
-  # level: debug,
-  level: :info
+  # level: :debug
+  # level: :info
+  level: :warn
 
 config :mcp, feeds: [cmd: {"prod/mcr/f/command", :qos0}, rpt: {"prod/mcr/f/report", :qos0}]
 

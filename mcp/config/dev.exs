@@ -3,10 +3,11 @@
 use Mix.Config
 
 config :logger,
-  # level: debug,
+  # level: :debug
+  # level: :warn
   level: :info
 
-config :mcp, feeds: [cmd: {"dev/mcr/f/command", :qos0}, rpt: {"prod/mcr/f/report", :qos0}]
+config :mcp, feeds: [cmd: {"dev/mcr/f/command", :qos0}, rpt: {"dev/mcr/f/report", :qos0}]
 
 config :mcp, MessageSave,
   save: true,
@@ -66,7 +67,7 @@ config :mcp, Mqtt.Client,
   broker: [
     host: 'jophiel.wisslanding.com',
     client_id: "merc-dev",
-    clean_sess: false,
+    clean_sess: true,
     # keepalive: 30_000,
     username: "mqtt",
     password: "mqtt",

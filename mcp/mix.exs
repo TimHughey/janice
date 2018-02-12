@@ -57,7 +57,13 @@ defmodule Mcp.Mixfile do
     ]
 
     [
-      extra_applications: [:logger, :runtime_tools, :ueberauth_identity, :ueberauth_github],
+      extra_applications: [
+        :logger,
+        :runtime_tools,
+        :ueberauth_identity,
+        :ueberauth_github,
+        :lager
+      ],
       mod: {Mcp.Application, args}
     ]
   end

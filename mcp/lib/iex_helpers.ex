@@ -184,7 +184,10 @@ defmodule Mcp.IExHelpers do
     :ok
   end
 
-  def observer, do: :observer.start()
+  def observer do
+    :observer.start()
+    Node.connect(:"mcp@jophiel.wisslanding.com")
+  end
 end
 
 ## defmodule end
