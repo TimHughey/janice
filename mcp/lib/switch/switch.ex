@@ -260,47 +260,22 @@ defmodule Switch do
       # PIO numbers always start at zero they can be easily used as list index ids
       ss = Enum.at(sw.states, new.pio)
 
+      # we only want to update the switch if the stored state does not match the
+      # incoming update.  however, we must also take into account that the stored switch state
+      # could be different while there are pending cmds
       if ss.state != new.state do
         pending = SwitchCmd.pending_cmds(sw)
 
+        # if there aren't pending commands and the stored state doesn't match the
+        # incoming state then we have a problem.  so, force an update.
         if pending == 0 do
           Logger.warn(fn ->
-            "[#{ss.name}] forcing update to reported state #{inspect(new.state)}"
+            "[#{ss.name}] forcing to reported state=#{inspect(new.state)}"
           end)
 
           change(ss, %{state: new.state}) |> update!()
-        else
-          Logger.warn(fn ->
-            "[#{ss.name}] -> update (#{new.state}) != stored (#{ss.state}) (pending=#{pending})"
-          end)
         end
       end
     end
   end
-
-  # two scenarios exist for updating the switch state and they both
-  # center on a mismatch between the stored state and the reported state
-  # scenario 1:  not a cmdack, no pending cmdacks and states don't match
-  # scenario 2:  a cmdack and the states don't match
-
-  # scenario 1 can be a result of a switch state report arriving between the time a
-  # switch cmd was sent and before the cmdack is received
-  # if not r.cmdack and ss.state != new.state and SwitchCmd.unacked_count() == 0 do
-  #   Logger.warn(fn ->
-  #     "[#{ss.name}] forcing update to reported state #{inspect(new.state)}"
-  #   end)
-  #
-  #   change(ss, %{state: new.state}) |> update!()
-  # end
-
-  # the new state and stored state should always match when processing a cmdack
-  # if they don't log a warning and force update
-  #   if r.cmdack && ss.state != new.state do
-  #     Logger.warn(fn ->
-  #       "[#{ss.name}] cmdack [#{inspect(new.state)}] != stored [#{inspect(ss.state)}]"
-  #     end)
-  #
-  #     change(ss, %{state: new.state}) |> update!()
-  #   end
-  # end
 end
