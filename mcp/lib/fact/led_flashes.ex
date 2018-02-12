@@ -13,7 +13,7 @@ defmodule Fact.LedFlashes do
 
     tag(:name, default: "unknown-friendly")
     tag(:application, default: "unknown-application")
-    tag(:env, default: "dev")
+    tag(:env, default: "#{Mix.env()}")
 
     field(:val)
   end

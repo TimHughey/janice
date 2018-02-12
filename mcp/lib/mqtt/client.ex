@@ -32,14 +32,19 @@ defmodule Mqtt.Client do
     {:ok, dispatcher_pid} = Mqtt.InboundMessage.start_link(s)
 
     if Map.get(s, :autostart, false) do
-      # prepare the opts that will be passed to emqttc (erlang)
+      # prepare the opts that will be passed to emqttc (erlang) including logger config and
+      # start it up
       opts = config(:broker)
-      # add logger config for emqttc
-      opts = Keyword.merge([logger: :info], opts)
+      opts = Keyword.merge([logger: :warning], opts)
       {:ok, mqtt_pid} = :emqttc.start_link(opts)
+
+      # start-up MsgSaver
+      {:ok, msgsave_pid} = MessageSave.start_link(s)
+
       # populate the state and construct init() return
       s = Map.put_new(s, :dispatcher_pid, dispatcher_pid)
       s = Map.put_new(s, :mqtt_pid, mqtt_pid)
+      s = Map.put_new(s, :messagesave_pid, msgsave_pid)
 
       {:ok, s}
     else

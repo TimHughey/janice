@@ -14,13 +14,13 @@ config :mcp, Fact.Influx,
 # and the config below works with it
 config :mcp, Mqtt.Client,
   broker: [
-    client_id: "mercurial-prod",
-    clean_session: 1,
+    client_id: "merc-prod",
+    clean_session: false,
     username: "user",
     password: "pass",
-    host: "hostname",
-    port: 1883,
-    ssl: false
+    # NOTE: charlist for compatibility with erlang emqttc library!
+    host: 'hostname.example.com',
+    port: 18883
   ]
 
 config :mcp, Web.Guardian, secret_key: "use mix guardian.gen.key to create one"

@@ -10,7 +10,7 @@ defmodule Fact.FreeRamStat do
     measurement("mcr_stat")
 
     tag(:remote_host, default: "unknown-host")
-    tag(:env, default: "dev")
+    tag(:env, default: "#{Mix.env()}")
     tag(:mcr_stat, default: "freeram")
 
     field(:val)

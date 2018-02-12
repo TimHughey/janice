@@ -13,7 +13,7 @@ defmodule Fact.DevMetric do
 
     tag(:remote_host, default: "unknown_host")
     tag(:device, default: "unknown_device")
-    tag(:env, default: "dev")
+    tag(:env, default: "#{Mix.env()}")
 
     field(:val)
   end

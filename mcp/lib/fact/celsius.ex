@@ -13,7 +13,7 @@ defmodule Fact.Celsius do
     tag(:remote_host, default: "unknown_host")
     tag(:device, default: "unknown_device")
     tag(:name, default: "unknown_name")
-    tag(:env, default: "dev")
+    tag(:env, default: "#{Mix.env()}")
 
     field(:val)
   end
