@@ -19,7 +19,7 @@ defmodule SwitchCmd do
 
   import Mqtt.Client, only: [publish_switch_cmd: 1]
 
-  alias Command.SetSwitch
+  alias Mqtt.SetSwitch
   alias Fact.RunMetric
 
   schema "switch_cmd" do

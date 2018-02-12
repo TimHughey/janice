@@ -5,6 +5,7 @@ defmodule Mqtt.Client do
   use GenServer
 
   import Application, only: [get_env: 2, get_env: 3]
+  alias Mqtt.Timesync
 
   #  def child_spec(opts) do
   #
@@ -65,6 +66,10 @@ defmodule Mqtt.Client do
     subscribe(feed)
   end
 
+  def send_timesync do
+    GenServer.call(__MODULE__, {:timesync_msg})
+  end
+
   def subscribe(feed) when is_nil(feed) do
     Logger.warn(fn -> "can't subscribe to nil feed" end)
     Logger.warn(fn -> "hint: check :feeds are defined in the configuration" end)
@@ -119,6 +124,12 @@ defmodule Mqtt.Client do
     publish(opts)
   end
 
+  def handle_call({:publish, feed, payload, pub_opts}, _from, s)
+      when is_binary(feed) and is_binary(payload) and is_list(pub_opts) do
+    res = :emqttc.publish(s.mqtt_pid, feed, payload, pub_opts)
+    {:reply, res, s}
+  end
+
   def handle_call({:subscribe, feed}, _from, s)
       when is_tuple(feed) do
     Logger.info(fn -> "subscribing to #{inspect(feed)}" end)
@@ -127,10 +138,11 @@ defmodule Mqtt.Client do
     {:reply, res, s}
   end
 
-  def handle_call({:publish, feed, payload, pub_opts}, _from, s)
-      when is_binary(feed) and is_binary(payload) and is_list(pub_opts) do
-    res = :emqttc.publish(s.mqtt_pid, feed, payload, pub_opts)
-    {:reply, res, s}
+  def handle_call({:timesync_msg}, _from, s) do
+    opts = %{frequency: 60 * 1000, loops: 0, forever: true, log: false, single: false}
+    r = Timesync.send(opts)
+
+    {:reply, {r}, s}
   end
 
   def handle_call(unhandled_msg, _from, s) do
@@ -153,6 +165,8 @@ defmodule Mqtt.Client do
 
     s = Map.put(s, :rpt_feed_subscribed, res)
 
+    s = start_timesync_task(s)
+
     {:noreply, s}
   end
 
@@ -169,6 +183,33 @@ defmodule Mqtt.Client do
     {:noreply, s}
   end
 
+  def handle_info({ref, result} = msg, %{timesync: %{task: %{ref: timesync_ref}}} = s)
+      when is_reference(ref) and ref == timesync_ref do
+    Logger.debug(fn -> "handle_info(#{inspect(msg)}, #{inspect(s)})" end)
+    s = Map.put(s, :timesync, Map.put(s.timesync, :result, result))
+
+    {:noreply, s}
+  end
+
+  def handle_info(
+        {:DOWN, ref, :process, pid, reason} = msg,
+        %{timesync: %{task: %{ref: timesync_ref}}} = s
+      )
+      when is_reference(ref) and is_pid(pid) do
+    Logger.debug(fn -> "handle_info(#{inspect(msg)}, #{inspect(s)})" end)
+
+    s =
+      if ref == timesync_ref do
+        track =
+          Map.put(s.timesync, :exit, reason) |> Map.put(:task, nil)
+          |> Map.put(:status, :finished)
+
+        Map.put(s, :timesync, track)
+      end
+
+    {:noreply, s}
+  end
+
   def handle_info(unhandled_msg, _from, s) do
     log_unhandled("info", unhandled_msg)
     {:noreply, s}
@@ -181,5 +222,16 @@ defmodule Mqtt.Client do
 
   defp log_unhandled(type, message) do
     Logger.warn(fn -> "unhandled #{type} message #{inspect(message)}" end)
+  end
+
+  defp start_timesync_task(s) do
+    defs = %{frequency: 60 * 1000, loops: 0, forever: true, log: false, single: false}
+
+    opts = get_env(:mcp, Mqtt.Client, []) |> Keyword.get(:timesync, []) |> Enum.into(%{})
+    opts = Map.merge(defs, opts)
+
+    task = Task.async(Timesync, :run, [opts])
+
+    Map.put(s, :timesync, %{task: task, status: :started})
   end
 end

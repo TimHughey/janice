@@ -9,18 +9,34 @@ config :logger,
 
 config :mcp, feeds: [cmd: {"prod/mcr/f/command", :qos0}, rpt: {"prod/mcr/f/report", :qos0}]
 
-config :mcp, Mcp.Chamber,
-  autostart_wait_ms: 0,
-  routine_check_ms: 1000
+config :mcp, Dutycycle, routine_check_ms: 1000
 
-config :mcp, Command.Control,
+config :mcp, Janitor,
+  switch_cmds: [purge: true, interval_mins: 2, older_than_hrs: 24 * 90, log: true],
+  orphan_acks: [interval_mins: 1, older_than_mins: 1, log: true]
+
+config :mcp, MessageSave,
+  save: true,
+  delete_older_than_hrs: 7 * 24
+
+config :mcp, Mqtt.Client,
+  log_dropped_msgs: true,
+  broker: [
+    # must be a char string (not binary) for emqttc
+    host: '** set in prod.secret.exs **',
+    port: 1883,
+    client_id: "merc-prod",
+    clean_sess: false,
+    username: "** set in prod.secret.exs",
+    password: "** set in prod.secret.exs",
+    auto_resub: true,
+    reconnect: 2
+  ],
   timesync: [frequency: 60 * 1000, loops: 0, forever: true, log: false]
 
 config :mcp, Mqtt.InboundMessage,
   periodic_log_first_ms: 60 * 60 * 1000,
   periodic_log_ms: 120 * 60 * 1000
-
-config :mcp, Dutycycle, routine_check_ms: 1000
 
 config :mcp, Fact.Influx,
   database: "mcp_repo",
@@ -38,29 +54,7 @@ config :mcp, Fact.Influx,
   periodic_log_first_ms: 1 * 60 * 1000,
   periodic_log_ms: 15 * 60 * 1000
 
-config :mcp, Janitor,
-  switch_cmds: [purge: true, interval_mins: 2, older_than_hrs: 24 * 90, log: true],
-  orphan_acks: [interval_mins: 1, older_than_mins: 1, log: true]
-
-config :mcp, MessageSave,
-  save: true,
-  delete_older_than_hrs: 7 * 24
-
-config :mcp, Mixtank, control_temp_secs: 27
-
-config :mcp, Mqtt.Client,
-  log_dropped_msgs: true,
-  broker: [
-    # must be a char string (not binary) for emqttc
-    host: '** set in prod.secret.exs **',
-    port: 1883,
-    client_id: "merc-prod",
-    clean_sess: false,
-    username: "** set in prod.secret.exs",
-    password: "** set in prod.secret.exs",
-    auto_resub: true,
-    reconect: 2
-  ]
+config :mcp, Mixtank.Control, control_temp_secs: 27
 
 config :mcp, Repo,
   adapter: Ecto.Adapters.Postgres,
@@ -78,6 +72,10 @@ config :mcp, Mcp.SoakTest,
   flash_led_ms: 3 * 1000
 
 config :mcp, Switch, logCmdAck: false
+
+config :mcp, Mcp.Chamber,
+  autostart_wait_ms: 0,
+  routine_check_ms: 1000
 
 config :mcp, Web.Endpoint,
   # http: [port: {:system, "PORT"}],

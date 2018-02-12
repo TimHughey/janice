@@ -2,13 +2,36 @@
 # and its dependencies with the aid of the Mix.Config module.
 use Mix.Config
 
+config :logger,
+  # level: :debug
+  # level: :warn
+  level: :info
+
 config :mcp, feeds: [cmd: {"test/mcr/f/command", :qos0}, rpt: {"test/mcr/f/report", :qos0}]
 
-config :command, Command.Control,
-  startup_delay_ms: 200,
-  periodic_timesync_ms: 5 * 60 * 1000,
-  rpt_feed: "mcr/f/report",
-  cmd_feed: "mcr/f/command"
+config :mcp, Mcp.Dutycycle, routine_check_ms: 1000
+
+config :mcp, Janitor,
+  switch_cmds: [purge: true, interval_mins: 2, older_than_hrs: 24 * 7, log: true],
+  orphan_acks: [interval_mins: 1, older_than_mins: 1, log: true]
+
+config :mcp, MessageSave,
+  save: true,
+  delete_older_than_hrs: 12
+
+config :mqtt, Mqtt.Client,
+  log_dropped_msg: true,
+  broker: [
+    host: 'jophiel.wisslanding.com',
+    port: 1883,
+    client_id: "merc-test",
+    clean_sess: true,
+    username: "mqtt",
+    password: "mqtt",
+    auto_resub: true,
+    reconnect: 2
+  ],
+  timesync: [frequency: 5 * 1000, loops: 5, forever: false, log: true]
 
 config :dispatcher, Mqtt.InboundMessage,
   log_reading: true,
@@ -31,11 +54,7 @@ config :fact, Fact.Influx,
   periodic_log_first_ms: 1 * 60 * 1000,
   periodic_log_ms: 15 * 60 * 1000
 
-config :mcp, Mcp.SoakTest,
-  startup_delay_ms: 1000,
-  periodic_log_first_ms: 1 * 60 * 1000,
-  periodic_log_ms: 15 * 50 * 1000,
-  flash_led_ms: 1000
+config :mcp, Mixtank.Control, control_temp_ms: 1000
 
 config :mcp, Repo,
   adapter: Ecto.Adapters.Postgres,
@@ -45,43 +64,41 @@ config :mcp, Repo,
   hostname: "jophiel.wisslanding.com",
   pool_size: 10
 
+config :mcp, Mcp.SoakTest,
+  startup_delay_ms: 1000,
+  periodic_log_first_ms: 1 * 60 * 1000,
+  periodic_log_ms: 15 * 50 * 1000,
+  flash_led_ms: 1000
+
 config :mcp, Switch, logCmdAck: false
 
-config :mcp, Mcp.Janitor,
-  startup_delay_ms: 12_000,
-  purge_switch_cmds_interval_minutes: 2,
-  purge_switch_cmds_older_than_hours: 3
-
 config :mcp, Mcp.Chamber,
-  autostart_wait_ms: 100,
+  autostart_wait_ms: 0,
   routine_check_ms: 1000
-
-config :mcp, Mcp.Mixtank,
-  autostart_wait_ms: 100,
-  control_temp_ms: 1000,
-  activate_ms: 1000,
-  manage_ms: 1000
-
-config :mcp, Mcp.Dutycycle,
-  autostart_wait_ms: 100,
-  routine_check_ms: 1000
-
-config :mqtt, Mqtt.Client,
-  log_dropped_msg: true,
-  broker: [
-    host: 'jophiel.wisslanding.com',
-    port: 1883,
-    client_id: "merc-test",
-    clean_sess: true,
-    username: "mqtt",
-    password: "mqtt",
-    auto_resub: true,
-    reconnect: 2
-  ]
 
 config :mcp, Web.Endpoint,
-  http: [port: 4001],
-  server: false
+  http: [port: 4000],
+  # url: [scheme: "https", url: "www.wisslanding.com", port: 443],
+  static_url: [path: "/mercurial"],
+  debug_errors: true,
+  code_reloader: true,
+  check_origin: false,
+  watchers: [
+    node: [
+      "node_modules/brunch/bin/brunch",
+      "watch",
+      "--stdin",
+      cd: Path.expand("../assets", __DIR__)
+    ]
+  ],
+  live_reload: [
+    patterns: [
+      ~r{priv/static/.*(js|css|png|jpeg|jpg|gif|svg)$},
+      ~r{priv/gettext/.*(po)$},
+      ~r{lib/web/views/.*(ex)$},
+      ~r{lib/web/templates/.*(eex)$}
+    ]
+  ]
 
 config :ueberauth, Ueberauth,
   providers: [
@@ -94,3 +111,5 @@ config :ueberauth, Ueberauth,
          nickname_field: :username
        ]}
   ]
+
+config :phoenix, :stacktrace_depth, 20

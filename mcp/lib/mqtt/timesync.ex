@@ -1,4 +1,4 @@
-defmodule Command.Timesync do
+defmodule Mqtt.Timesync do
   @moduledoc """
   """
 
@@ -19,18 +19,18 @@ defmodule Command.Timesync do
             version: 1
 
   def run(opts) do
-    frequency = opts.timesync.frequency
-    loops = opts.timesync.loops
-    forever = opts.timesync.forever
-    log = opts.timesync.log
-    single = opts.timesync.single
+    frequency = opts.frequency
+    loops = opts.loops
+    forever = opts.forever
+    log = opts.log
+    single = opts.single
 
     msg = Timesync.new_cmd() |> Timesync.json()
     res = publish(msg)
 
     log && Logger.info(fn -> "published timesync #{inspect(res)}" end)
 
-    opts = update_in(opts, [:timesync, :loops], fn x -> x - 1 end)
+    opts = %{opts | loops: opts.loops - 1}
 
     cond do
       single ->
@@ -46,7 +46,7 @@ defmodule Command.Timesync do
   end
 
   def send(%{timesync: _} = opts) do
-    opts = update_in(opts, [:timesync, :single], fn _ -> true end)
+    opts = %{opts | single: true}
 
     run(opts)
   end

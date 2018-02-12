@@ -11,7 +11,7 @@ defmodule Mqtt.InboundMessage do
   alias Fact.RunMetric
   alias Fact.StartupAnnouncement
 
-  alias Command.Control
+  alias Mqtt.Client
 
   def start_link(s) do
     GenServer.start_link(Mqtt.InboundMessage, s, name: Mqtt.InboundMessage)
@@ -147,7 +147,7 @@ defmodule Mqtt.InboundMessage do
     if Reading.startup?(r) do
       Logger.info(fn -> "#{r.host} version #{r.version} announced startup" end)
       StartupAnnouncement.record(host: r.host, vsn: r.version)
-      Control.send_timesync()
+      Client.send_timesync()
     end
 
     if Reading.temperature?(r) || Reading.relhum?(r) do

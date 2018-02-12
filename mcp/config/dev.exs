@@ -9,12 +9,29 @@ config :logger,
 
 config :mcp, feeds: [cmd: {"dev/mcr/f/command", :qos0}, rpt: {"dev/mcr/f/report", :qos0}]
 
+config :mcp, Dutycycle, routine_check_ms: 1000
+
+config :mcp, Janitor,
+  switch_cmds: [purge: true, interval_mins: 2, older_than_hrs: 24 * 7, log: true],
+  orphan_acks: [interval_mins: 1, older_than_mins: 1, log: true]
+
 config :mcp, MessageSave,
   save: true,
   delete_older_than_hrs: 12
 
-config :mcp, Command.Control,
-  timesync: [frequency: 60 * 1000, loops: 5, forever: false, log: false]
+config :mcp, Mqtt.Client,
+  log_dropped_msgs: true,
+  broker: [
+    host: 'jophiel.wisslanding.com',
+    client_id: "merc-dev",
+    clean_sess: false,
+    # keepalive: 30_000,
+    username: "mqtt",
+    password: "mqtt",
+    auto_resub: true,
+    reconnect: 2
+  ],
+  timesync: [frequency: 5 * 1000, loops: 5, forever: false, log: true]
 
 config :mcp, Mqtt.InboundMessage,
   periodic_log_first_ms: 60 * 60 * 1000,
@@ -32,12 +49,7 @@ config :mcp, Fact.Influx,
   periodic_log_first_ms: 1 * 60 * 1000,
   periodic_log_ms: 15 * 60 * 1000
 
-config :mcp, Mcp.SoakTest,
-  # don't start
-  startup_delay_ms: 0,
-  periodic_log_first_ms: 30 * 60 * 1000,
-  periodic_log_ms: 60 * 60 * 1000,
-  flash_led_ms: 3 * 1000
+config :mcp, Mixtank.Control, control_temp_secs: 600
 
 config :mcp, Repo,
   adapter: Ecto.Adapters.Postgres,
@@ -48,32 +60,18 @@ config :mcp, Repo,
   hostname: "jophiel.wisslanding.com",
   pool_size: 10
 
-config :mcp, Switch, logCmdAck: false
+config :mcp, Mcp.SoakTest,
+  # don't start
+  startup_delay_ms: 0,
+  periodic_log_first_ms: 30 * 60 * 1000,
+  periodic_log_ms: 60 * 60 * 1000,
+  flash_led_ms: 3 * 1000
 
-config :mcp, Janitor,
-  switch_cmds: [purge: true, interval_mins: 2, older_than_hrs: 24 * 7, log: true],
-  orphan_acks: [interval_mins: 1, older_than_mins: 1, log: true]
+config :mcp, Switch, logCmdAck: false
 
 config :mcp, Mcp.Chamber,
   autostart_wait_ms: 0,
   routine_check_ms: 1000
-
-config :mcp, Mixtank.Control, control_temp_secs: 27
-
-config :mcp, Dutycycle, routine_check_ms: 1000
-
-config :mcp, Mqtt.Client,
-  log_dropped_msgs: true,
-  broker: [
-    host: 'jophiel.wisslanding.com',
-    client_id: "merc-dev",
-    clean_sess: false,
-    # keepalive: 30_000,
-    username: "mqtt",
-    password: "mqtt",
-    auto_resub: true,
-    reconnect: 2
-  ]
 
 config :mcp, Web.Endpoint,
   http: [port: 4000],

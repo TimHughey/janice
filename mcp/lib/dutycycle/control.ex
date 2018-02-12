@@ -76,7 +76,7 @@ defmodule Dutycycle.Control do
     all_dcs = Dutycycle.all()
     stop_all(s, all_dcs, s.opts)
 
-    Logger.info(fn -> "terminating with reason #{inspect(reason)}" end)
+    Logger.warn(fn -> "terminating with reason #{inspect(reason)}" end)
   end
 
   ####################
@@ -177,7 +177,7 @@ defmodule Dutycycle.Control do
     {result, s} =
       case Map.get(tasks, name) do
         %{task: nil} ->
-          Logger.info(fn -> "cycle not running for [#{name}]" end)
+          Logger.warn(fn -> "cycle not running for [#{name}]" end)
           {:not_running, s}
 
         %{task: task} ->
@@ -189,7 +189,7 @@ defmodule Dutycycle.Control do
           {:ok, Map.put(s, :tasks, new_tasks)}
 
         _not_found ->
-          Logger.info(fn -> "[#{name}] is unknown" end)
+          Logger.warn(fn -> "[#{name}] is unknown" end)
           {:not_found, s}
       end
 
@@ -227,18 +227,18 @@ defmodule Dutycycle.Control do
 
   def handle_info({ref, result}, %{tasks: tasks} = s)
       when is_reference(ref) do
-    Logger.info(fn -> "ref: #{inspect(ref)} result: #{inspect(result)}" end)
-    Logger.info(fn -> "tasks: #{tasks}" end)
+    Logger.debug(fn -> "ref: #{inspect(ref)} result: #{inspect(result)}" end)
+    Logger.debug(fn -> "tasks: #{tasks}" end)
 
     for %{ref: ^ref} = task <- tasks do
-      Logger.info(fn -> "[#{task.name}] ended " <> "with result #{inspect(result)}" end)
+      Logger.debug(fn -> "[#{task.name}] ended " <> "with result #{inspect(result)}" end)
     end
 
     {:noreply, s}
   end
 
   def handle_info({:DOWN, ref, :process, pid, reason}, %{tasks: tasks} = s) do
-    Logger.info(fn ->
+    Logger.debug(fn ->
       "ref: #{inspect(ref)} pid: #{inspect(pid)} " <> "reason: #{reason}\n" <> "tasks: #{tasks}"
     end)
 
@@ -250,7 +250,7 @@ defmodule Dutycycle.Control do
   end
 
   def handle_info({:EXIT, pid, reason}, state) do
-    Logger.info(fn -> ":EXIT message " <> "pid: #{inspect(pid)} reason: #{inspect(reason)}" end)
+    Logger.debug(fn -> ":EXIT message " <> "pid: #{inspect(pid)} reason: #{inspect(reason)}" end)
 
     {:noreply, state}
   end
@@ -300,7 +300,7 @@ defmodule Dutycycle.Control do
   end
 
   defp start_task(%Dutycycle{profiles: []} = dc, task, _opts) do
-    Logger.info(fn -> "[#{dc.name}] has no active profile, will not start" end)
+    Logger.warn(fn -> "[#{dc.name}] has no active profile, will not start" end)
     task
   end
 
@@ -362,7 +362,7 @@ defmodule Dutycycle.Control do
   defp stop_task(%{task: nil}, _opts), do: %{task: nil}
 
   defp stop_task(%{task: %Task{} = task}, _opts) do
-    Logger.info(fn -> "stopped #{inspect(task.ref)}" end)
+    Logger.debug(fn -> "stopped #{inspect(task.ref)}" end)
     Task.shutdown(task)
     %{task: nil}
   end

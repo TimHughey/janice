@@ -1,4 +1,4 @@
-defmodule Command.SetSwitch do
+defmodule Mqtt.SetSwitch do
   @moduledoc """
   """
 
@@ -20,8 +20,8 @@ defmodule Command.SetSwitch do
 
    ##Examples:
     iex> new_states = [%{"pio": 0, "state": true}, %{"pio": 1, "state": false}]
-    ...> c = Command.SetSwitch.new_cmd.setswitch("device", new_states, "uuid")
-    ...> %Command.SetSwitch{cmd: "setswitch", mtime: cmd_time} = c
+    ...> c = Mqtt.SetSwitch.new_cmd.setswitch("device", new_states, "uuid")
+    ...> %Mqtt.SetSwitch{cmd: "setswitch", mtime: cmd_time} = c
     ...> (cmd_time > 0) and Map.has_key?(c, :states)
     true
   """
@@ -47,10 +47,10 @@ defmodule Command.SetSwitch do
   Generate JSON for a command
 
   ##Examples:
-   iex> c = Command.setswitch([%{p0: true}, %{p1: false}], "uuid")
-   ...> json = Command.SetSwitch.json(c)
+   iex> c = Mqtt.setswitch([%{p0: true}, %{p1: false}], "uuid")
+   ...> json = Mqtt.SetSwitch.json(c)
    ...> parsed_cmd = Poison.Parser.parse!(json, [keys: :atoms!,
-   ...>                                   as: Command.SetSwitch])
+   ...>                                   as: Mqtt.SetSwitch])
    ...> parsed_cmd === Map.from_struct(c)
    true
   """
