@@ -15,7 +15,7 @@ config :logger,
 config :lager,
   handlers: [
     lager_console_backend: :error,
-    lager_file_backend: [file: "var/log/error.log", level: :error, size: 4096, count: 2]
+    lager_file_backend: [file: 'var/log/error.log', level: :error, size: 4096, count: 2]
   ],
   error_logger_redirect: false,
   error_logger_whitelist: [Logger.ErrorHandler],
