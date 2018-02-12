@@ -139,9 +139,19 @@ defmodule Mqtt.Client do
   end
 
   def handle_call({:timesync_msg}, _from, s) do
-    r = Timesync.send()
+    {feed, qos} = get_env(:mcp, :feeds, []) |> Keyword.get(:cmd, {nil, nil})
 
-    {:reply, {r}, s}
+    if not is_nil(feed) and not is_nil(qos) do
+      payload = Timesync.new_cmd() |> Timesync.json()
+      pub_opts = [qos]
+
+      opts = [feed: feed, message: payload, pub_opts: pub_opts]
+      res = :emqttc.publish(s.mqtt_pid, feed, payload, pub_opts)
+      {:reply, {res}, s}
+    else
+      Logger.warn(fn -> "can't send timesync, feed configuration missing" end)
+      {:reply, {:failed}, s}
+    end
   end
 
   def handle_call(unhandled_msg, _from, s) do
