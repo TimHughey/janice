@@ -138,6 +138,21 @@ defmodule SwitchCmd do
     |> one()
   end
 
+  def pending_cmds(%Switch{} = sw) do
+    since =
+      Timex.to_datetime(Timex.now(), "UTC")
+      |> Timex.shift(seconds: -5)
+
+    from(
+      cmd in SwitchCmd,
+      where: cmd.switch_id == ^sw.id,
+      where: cmd.acked == false,
+      where: cmd.sent_at > ^since,
+      select: count(cmd.id)
+    )
+    |> one()
+  end
+
   def purge_acked_cmds(opts)
       when is_map(opts) do
     hrs_ago = opts.older_than_hrs

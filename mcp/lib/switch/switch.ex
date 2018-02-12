@@ -252,38 +252,55 @@ defmodule Switch do
   end
 
   defp update_states_from_reading(%Switch{} = sw, %{} = r) do
+    # NOTE: must ack the command first so the below is able to determine if this
+    #       update should be persisted (if the state is different)
+    SwitchCmd.ack_if_needed(r)
+
     for new <- r.states do
       # PIO numbers always start at zero they can be easily used as list index ids
       ss = Enum.at(sw.states, new.pio)
 
-      # two scenarios exist for updating the switch state and they both
-      # center on a mismatch between the stored state and the reported state
-      # scenario 1:  not a cmdack, no pending cmdacks and states don't match
-      # scenario 2:  a cmdack and the states don't match
+      if ss.state != new.state do
+        pending = SwitchCmd.pending_cmds(sw)
 
-      # scenario 1 can be a result of a switch state report arriving between the time a
-      # switch cmd was sent and before the cmdack is received
-      if not r.cmdack and ss.state != new.state and SwitchCmd.unacked_count() == 0 do
-        Logger.warn(fn ->
-          "[#{ss.name}] forcing update to reported state #{inspect(new.state)}"
-        end)
+        if pending == 0 do
+          Logger.warn(fn ->
+            "[#{ss.name}] forcing update to reported state #{inspect(new.state)}"
+          end)
 
-        change(ss, %{state: new.state}) |> update!()
-      end
-
-      # the new state and stored state should always match when processing a cmdack
-      # if they don't log a warning and force update
-      if r.cmdack && ss.state != new.state do
-        Logger.warn(fn ->
-          "[#{ss.name}] cmdack [#{inspect(new.state)}] != stored [#{inspect(ss.state)}]"
-        end)
-
-        change(ss, %{state: new.state}) |> update!()
+          change(ss, %{state: new.state}) |> update!()
+        else
+          Logger.warn(fn ->
+            "[#{ss.name}] -> update (#{new.state}) != stored (#{ss.state}) (pending=#{pending})"
+          end)
+        end
       end
     end
-
-    # NOTE: this must occur after the above checks since the pending ack is used
-    #       when there is a mismatch
-    SwitchCmd.ack_if_needed(r)
   end
+
+  # two scenarios exist for updating the switch state and they both
+  # center on a mismatch between the stored state and the reported state
+  # scenario 1:  not a cmdack, no pending cmdacks and states don't match
+  # scenario 2:  a cmdack and the states don't match
+
+  # scenario 1 can be a result of a switch state report arriving between the time a
+  # switch cmd was sent and before the cmdack is received
+  # if not r.cmdack and ss.state != new.state and SwitchCmd.unacked_count() == 0 do
+  #   Logger.warn(fn ->
+  #     "[#{ss.name}] forcing update to reported state #{inspect(new.state)}"
+  #   end)
+  #
+  #   change(ss, %{state: new.state}) |> update!()
+  # end
+
+  # the new state and stored state should always match when processing a cmdack
+  # if they don't log a warning and force update
+  #   if r.cmdack && ss.state != new.state do
+  #     Logger.warn(fn ->
+  #       "[#{ss.name}] cmdack [#{inspect(new.state)}] != stored [#{inspect(ss.state)}]"
+  #     end)
+  #
+  #     change(ss, %{state: new.state}) |> update!()
+  #   end
+  # end
 end
