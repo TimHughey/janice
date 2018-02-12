@@ -145,7 +145,6 @@ defmodule Mqtt.Client do
       payload = Timesync.new_cmd() |> Timesync.json()
       pub_opts = [qos]
 
-      opts = [feed: feed, message: payload, pub_opts: pub_opts]
       res = :emqttc.publish(s.mqtt_pid, feed, payload, pub_opts)
       {:reply, {res}, s}
     else
