@@ -41,4 +41,6 @@ assets/node_modules
 # variables.
 /config/*.secret.exs
 
+# Lager will write log files to the cwd when running iex, exclude those logs
 /log/
+/var/log/
