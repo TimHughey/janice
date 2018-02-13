@@ -56,10 +56,15 @@ defmodule SwitchCmd do
 
       cmd ->
         rt_latency = Timex.diff(recv_dt, cmd.sent_at, :microseconds)
+        rt_latency_ms = rt_latency / 1000.0
 
         Logger.info(fn ->
-          "state name [#{cmd.name}] acking refid [#{refid}] rt_latency=#{rt_latency / 1000.0}ms"
+          "state name [#{cmd.name}] acking refid [#{refid}] rt_latency=#{rt_latency_ms}ms"
         end)
+
+        # log a warning for more than 1sec rt_latency, helps with tracking down prod issues
+        rt_latency_ms > 1000.0 &&
+          Logger.warn(fn -> "#{inspect(cmd.name)} rt_latency=#{rt_latency_ms}ms" end)
 
         opts = %{acked: true, rt_latency: rt_latency, ack_at: Timex.now()}
 
@@ -139,6 +144,7 @@ defmodule SwitchCmd do
   end
 
   def pending_cmds(%Switch{} = sw) do
+    # a reasonable default for the timescale of pending cmds appears to be 15mins
     since =
       Timex.to_datetime(Timex.now(), "UTC")
       |> Timex.shift(minutes: -15)
