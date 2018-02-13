@@ -270,6 +270,10 @@ defmodule Switch do
             "[#{ss.name}] forcing to reported state=#{inspect(new.state)}"
           end)
 
+          Logger.warn(fn ->
+            "^^^ hint: the mcr device may have lost power and restarted"
+          end)
+
           # ok, update the switch state -- it truly doesn't match
           change(ss, %{state: new.state}) |> update!()
         end
