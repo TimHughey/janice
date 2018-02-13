@@ -141,7 +141,7 @@ defmodule SwitchCmd do
   def pending_cmds(%Switch{} = sw) do
     since =
       Timex.to_datetime(Timex.now(), "UTC")
-      |> Timex.shift(seconds: -5)
+      |> Timex.shift(minutes: -15)
 
     from(
       cmd in SwitchCmd,

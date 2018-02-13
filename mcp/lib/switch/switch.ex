@@ -220,6 +220,12 @@ defmodule Switch do
     #  by PIO number!  PIO numbers always start at zero.
     ###
 
+    # NOTE: must ack the command first so the below is able to determine if this
+    #       update should be persisted (if the state is different)
+    # NOTE:  reminder, switch cmds operate a the switch device level, not individual
+    #        switch states
+    SwitchCmd.ack_if_needed(r)
+
     # as a sanity check be certain the number of reported states actually
     # matches the switch we intend to update
     case Enum.count(r.states) == Enum.count(sw.states) do
@@ -242,20 +248,11 @@ defmodule Switch do
           "number of states in reading does not match switch [#{sw.device}]"
         end)
 
-        # go ahead and ack the switch cmd since it couldn't be processed
-        # NOTE:  reminder, switch cmds operate a the switch device level, not individual
-        #        switch states
-        SwitchCmd.ack_if_needed(r)
-
         {:error, sw}
     end
   end
 
   defp update_states_from_reading(%Switch{} = sw, %{} = r) do
-    # NOTE: must ack the command first so the below is able to determine if this
-    #       update should be persisted (if the state is different)
-    SwitchCmd.ack_if_needed(r)
-
     for new <- r.states do
       # PIO numbers always start at zero they can be easily used as list index ids
       ss = Enum.at(sw.states, new.pio)
@@ -273,6 +270,7 @@ defmodule Switch do
             "[#{ss.name}] forcing to reported state=#{inspect(new.state)}"
           end)
 
+          # ok, update the switch state -- it truly doesn't match
           change(ss, %{state: new.state}) |> update!()
         end
       end
