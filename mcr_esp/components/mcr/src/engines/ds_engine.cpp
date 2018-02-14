@@ -116,9 +116,10 @@ void mcrDS::command(void *task_data) {
       int64_t bus_wait_us = esp_timer_get_time() - bus_wait_start;
 
       if (bus_wait_us < 500) {
-        ESP_LOGD(tagCommand(), "acquired bus mutex");
+        ESP_LOGD(tagCommand(), "acquired bus mutex (%lluus)", bus_wait_us);
       } else {
-        ESP_LOGW(tagCommand(), "acquire bus mutex took %lldus", bus_wait_us);
+        float wait_ms = ((float)bus_wait_us / 1000.0);
+        ESP_LOGW(tagCommand(), "acquire bus mutex took %0.2fms", wait_ms);
       }
 
       if (dev->isDS2406())
