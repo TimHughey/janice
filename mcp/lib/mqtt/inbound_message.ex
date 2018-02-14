@@ -66,12 +66,15 @@ defmodule Mqtt.InboundMessage do
   # GenServer callbacks
   def handle_cast({:incoming_message, msg}, s)
       when is_binary(msg) and is_map(s) do
-    if is_pid(s.json_log) do
-      log = "#{msg}\n"
-      IO.write(s.json_log, log)
-    end
+    {elapsed_us, _res} =
+      :timer.tc(fn ->
+        if is_pid(s.json_log) do
+          log = "#{msg}\n"
+          IO.write(s.json_log, log)
+        end
 
-    Reading.decode(msg) |> decoded_msg(s)
+        Reading.decode(msg) |> decoded_msg(s)
+      end)
 
     s = %{s | messages_dispatched: s.messages_dispatched + 1}
 
@@ -80,6 +83,13 @@ defmodule Mqtt.InboundMessage do
       application: "mercurial",
       metric: "msgs_dispatched",
       val: s.messages_dispatched
+    )
+
+    RunMetric.record(
+      module: "#{__MODULE__}",
+      metric: "mqtt_process_inbound_msg_us",
+      device: "none",
+      val: elapsed_us
     )
 
     {:noreply, s}

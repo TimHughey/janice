@@ -117,17 +117,38 @@ defmodule Mqtt.Client do
   end
 
   def publish_switch_cmd(message) do
-    {feed, qos} = get_env(:mcp, :feeds, []) |> Keyword.get(:cmd, {nil, nil})
-    payload = message
-    pub_opts = [qos]
+    {elapsed_us, _res} =
+      :timer.tc(fn ->
+        {feed, qos} = get_env(:mcp, :feeds, []) |> Keyword.get(:cmd, {nil, nil})
+        payload = message
+        pub_opts = [qos]
 
-    opts = [feed: feed, message: payload, pub_opts: pub_opts]
-    publish(opts)
+        opts = [feed: feed, message: payload, pub_opts: pub_opts]
+        publish(opts)
+      end)
+
+    RunMetric.record(
+      module: "#{__MODULE__}",
+      metric: "publish_switch_cmd_us",
+      device: "none",
+      val: elapsed_us
+    )
   end
 
   def handle_call({:publish, feed, payload, pub_opts}, _from, s)
       when is_binary(feed) and is_binary(payload) and is_list(pub_opts) do
-    res = :emqttc.publish(s.mqtt_pid, feed, payload, pub_opts)
+    {elapsed_us, res} =
+      :timer.tc(fn ->
+        :emqttc.publish(s.mqtt_pid, feed, payload, pub_opts)
+      end)
+
+    RunMetric.record(
+      module: "#{__MODULE__}",
+      metric: "mqtt_pub_msg_us",
+      device: "none",
+      val: elapsed_us
+    )
+
     {:reply, res, s}
   end
 
@@ -194,7 +215,7 @@ defmodule Mqtt.Client do
 
     RunMetric.record(
       module: "#{__MODULE__}",
-      metric: "process_msg_us",
+      metric: "mqtt_recv_msg_us",
       device: "none",
       val: elapsed_us
     )

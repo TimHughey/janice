@@ -118,8 +118,6 @@ defmodule Switch do
   end
 
   def external_update(%{device: device} = r) do
-    # Logger.metadata(switch_device: device)
-
     result =
       :timer.tc(fn ->
         sw = get_by_device(device)
@@ -152,15 +150,6 @@ defmodule Switch do
         :error
     end
   end
-
-  # FLAGGED FOR REMOVAL
-  # def states_updated(name, id) when is_integer(id) do
-  # now = Timex.now()
-  #
-  # from(sw in Switch,
-  #       update: [set: [last_cmd_at: ^now]],
-  #       where: sw.id == ^id) |> update_all([])
-  # end
 
   ##
   ## Internal / private functions

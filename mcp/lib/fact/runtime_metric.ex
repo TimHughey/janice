@@ -15,7 +15,7 @@ defmodule Fact.RunMetric do
     tag(:application, default: "mercurial")
     tag(:metric, default: "unknown-metric")
     tag(:env, default: "#{Mix.env()}")
-    tag(:device, default: "unkown-device")
+    tag(:device, default: "none")
 
     field(:val)
   end

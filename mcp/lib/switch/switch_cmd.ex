@@ -62,8 +62,8 @@ defmodule SwitchCmd do
           "state name [#{cmd.name}] acking refid [#{refid}] rt_latency=#{rt_latency_ms}ms"
         end)
 
-        # log a warning for more than 1sec rt_latency, helps with tracking down prod issues
-        rt_latency_ms > 1000.0 &&
+        # log a warning for more than 150ms rt_latency, helps with tracking down prod issues
+        rt_latency_ms > 150.0 &&
           Logger.warn(fn -> "#{inspect(cmd.name)} rt_latency=#{rt_latency_ms}ms" end)
 
         opts = %{acked: true, rt_latency: rt_latency, ack_at: Timex.now()}
@@ -173,37 +173,47 @@ defmodule SwitchCmd do
   def record_cmd(name, %SwitchState{} = ss), do: record_cmd(name, [ss])
 
   def record_cmd(name, [%SwitchState{} = ss_ref | _tail] = list) do
-    # ensure the associated switch is loaded
-    ss_ref = preload(ss_ref, :switch)
-    sw_ref = ss_ref.switch
-    sw_ref_id = sw_ref.id
-    device = sw_ref.device
+    {elapsed_us, _res} =
+      :timer.tc(fn ->
+        # ensure the associated switch is loaded
+        ss_ref = preload(ss_ref, :switch)
+        sw_ref = ss_ref.switch
+        sw_ref_id = sw_ref.id
+        device = sw_ref.device
 
-    # create and presist a new switch comamnd
-    scmd =
-      Ecto.build_assoc(
-        sw_ref,
-        :cmds,
-        refid: uuid1(),
-        name: name,
-        sent_at: Timex.now()
-      )
-      |> insert!()
+        # create and presist a new switch comamnd
+        scmd =
+          Ecto.build_assoc(
+            sw_ref,
+            :cmds,
+            refid: uuid1(),
+            name: name,
+            sent_at: Timex.now()
+          )
+          |> insert!()
 
-    now = Timex.now()
+        now = Timex.now()
 
-    # update the switch device last cmd timestamp
-    from(
-      sw in Switch,
-      update: [set: [last_cmd_at: ^now]],
-      where: sw.id == ^sw_ref_id
+        # update the switch device last cmd timestamp
+        from(
+          sw in Switch,
+          update: [set: [last_cmd_at: ^now]],
+          where: sw.id == ^sw_ref_id
+        )
+        |> update_all([])
+
+        # create and publish the actual command to the remote device
+        new_state = SwitchState.as_list_of_maps(list)
+        remote_cmd = SetSwitch.new_cmd(device, new_state, scmd.refid)
+        publish_switch_cmd(SetSwitch.json(remote_cmd))
+      end)
+
+    RunMetric.record(
+      module: "#{__MODULE__}",
+      metric: "record_cmd_us",
+      device: ss_ref.name,
+      val: elapsed_us
     )
-    |> update_all([])
-
-    # create and publish the actual command to the remote device
-    new_state = SwitchState.as_list_of_maps(list)
-    remote_cmd = SetSwitch.new_cmd(device, new_state, scmd.refid)
-    publish_switch_cmd(SetSwitch.json(remote_cmd))
   end
 
   #

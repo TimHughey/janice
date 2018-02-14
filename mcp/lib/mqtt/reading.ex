@@ -25,9 +25,7 @@ defmodule Mqtt.Reading do
             tc: nil,
             tf: nil,
             rh: nil,
-            # switch: num of unique pio
             pio_count: 0,
-            # switch: array of states (for each pio)
             states: nil,
             cmdack: false,
             latency: 0,
