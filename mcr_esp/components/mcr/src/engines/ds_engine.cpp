@@ -92,6 +92,7 @@ void mcrDS::command(void *task_data) {
 
     xEventGroupClearBits(_ds_evg, needBusBit());
     queue_rc = xQueueReceive(_cmd_q, &cmd, portMAX_DELAY);
+    int64_t start = esp_timer_get_time();
 
     if (queue_rc != pdTRUE) {
       ESP_LOGW(tagCommand(), "queue receive failed rc=%d", queue_rc);
@@ -144,12 +145,20 @@ void mcrDS::command(void *task_data) {
                (const char *)cmd->dev_id());
     }
 
+    int64_t elapsed_us = esp_timer_get_time() - start;
+    if (elapsed_us > 1500) {
+      float elapsed_ms = (float)elapsed_us / 1000.0;
+      ESP_LOGW(tagCommand(), "took %0.3fms for %s", elapsed_ms,
+               cmd->debug().c_str());
+    }
+
     delete cmd;
   }
 }
 
 bool mcrDS::commandAck(mcrCmd_t &cmd) {
   bool rc = true;
+  int64_t start = esp_timer_get_time();
   dsDev_t *dev = findDevice(cmd.dev_id());
 
   if (dev != nullptr) {
@@ -163,6 +172,12 @@ bool mcrDS::commandAck(mcrCmd_t &cmd) {
   } else {
     ESP_LOGW(tagCommand(), "unable to find device for cmd ack %s",
              cmd.debug().c_str());
+  }
+
+  int64_t elapsed_us = esp_timer_get_time() - start;
+  if (elapsed_us > 1500) {
+    float elapsed_ms = (float)(elapsed_us / 1000.0);
+    ESP_LOGW(tagCommand(), "took %0.3fms", elapsed_ms);
   }
 
   return rc;

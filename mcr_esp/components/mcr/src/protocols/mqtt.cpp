@@ -155,8 +155,9 @@ void mcrMQTT::outboundMsg() {
     _rb_out->returnItem(entry);
 
     int64_t publish_us = esp_timer_get_time() - start_us;
-    if (publish_us > 3000) {
-      ESP_LOGW(outboundTAG, "publish msg took %llums", (publish_us / 1000));
+    if (publish_us > 1500) {
+      ESP_LOGW(outboundTAG, "publish msg took %0.2fms",
+               ((float)publish_us / 1000.0));
     } else {
       ESP_LOGD(outboundTAG, "publish msg took %lluus", publish_us);
     }
