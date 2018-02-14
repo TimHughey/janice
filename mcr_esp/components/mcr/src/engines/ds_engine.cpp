@@ -272,7 +272,7 @@ void mcrDS::convert(void *task_data) {
           owb_reset(ds, &present);     // abort the temperature convert
           convert_in_progress = false; // signal to break from loop
           ESP_LOGW(tagConvert(), "another task needs the bus, convert aborted");
-          _convertTask.lastWake += 1; // NOTE: magic!
+          _convertTask.lastWake -= 5; // NOTE: magic!
         }
 
         if ((esp_timer_get_time() - _wait_start) >= _max_temp_convert_us) {
@@ -369,7 +369,7 @@ void mcrDS::discover(void *task_data) {
         abort_search = false;    // signal to break from loop
         xEventGroupClearBits(_ds_evg, _event_bits.need_bus);
         ESP_LOGW(tagConvert(), "another task needs the bus, discover aborted");
-        _discoverTask.lastWake -= 2; // NOTE: magic!
+        _discoverTask.lastWake -= 5; // NOTE: magic!
       } else {
         // keeping searching
         owb_s = owb_search_next(ds, &search_state, &found);
