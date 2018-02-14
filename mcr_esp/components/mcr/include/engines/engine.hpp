@@ -219,13 +219,6 @@ protected:
 
   mcrEngineTagMap_t _tags;
 
-  // virtual bool discover();
-  // virtual bool convert();
-  // virtual bool report();
-  //
-  // virtual bool cmd();
-  // virtual bool cmdAck();
-
   DEV *getDeviceByCmd(mcrCmd_t &cmd) {
     DEV *dev = findDevice(cmd.dev_id());
     return dev;
@@ -235,6 +228,8 @@ protected:
     DEV *dev = findDevice(cmd->dev_id());
     return dev;
   };
+
+  uint32_t needBusBit() { return (uint32_t)0x0f; }
 
   bool publish(mcrCmd_t &cmd) { return publish(cmd.dev_id()); };
   bool publish(const mcrDevID_t &dev_id) {

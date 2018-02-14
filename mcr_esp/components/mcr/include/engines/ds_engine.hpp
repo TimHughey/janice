@@ -117,7 +117,9 @@ private:
   const TickType_t _convert_frequency = pdMS_TO_TICKS(7 * 1000);
   const TickType_t _discover_frequency = pdMS_TO_TICKS(30 * 1000);
   const TickType_t _report_frequency = pdMS_TO_TICKS(7 * 1000);
-  const TickType_t _temp_convert_wait = pdMS_TO_TICKS(10);
+  const TickType_t _temp_convert_wait = pdMS_TO_TICKS(50);
+  const uint64_t _max_temp_convert_us =
+      (1000 * 1000); // one second in microsecs
 
   // static entry point to tasks
   static void runConvert(void *data);

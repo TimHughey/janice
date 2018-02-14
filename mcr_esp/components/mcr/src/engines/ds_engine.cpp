@@ -167,17 +167,17 @@ bool mcrDS::commandAck(mcrCmd_t &cmd) {
 }
 
 void mcrDS::convert(void *task_data) {
-  bool temp_convert_done = false;
-  bool present = false;
-  uint8_t data = 0x00;
-
-  owb_status owb_s;
   uint8_t temp_convert_cmd[] = {0xcc, 0x44};
 
   // ensure the temp available bit is cleared at task startup
   xEventGroupClearBits(_ds_evg, _event_bits.temp_available);
 
   for (;;) {
+    // bool temp_convert_done = false;
+    bool present = false;
+    uint8_t data = 0x00;
+    owb_status owb_s;
+
     // wait here for the signal there are devices available
     xEventGroupWaitBits(
         _ds_evg,
@@ -218,7 +218,10 @@ void mcrDS::convert(void *task_data) {
     owb_s = owb_write_bytes(ds, temp_convert_cmd, sizeof(temp_convert_cmd));
     owb_s = owb_read_byte(ds, &data);
 
-    // we cheat a bit here and only check the owb status of the read
+    // before dropping into waiting for the temperature conversion to
+    // complete let's double check there weren't any errors after initiating
+    // the convert.  additionally, we should see zeroes on the bus since
+    // devices will hold the bus low during the convert
     if ((owb_s != OWB_STATUS_OK) || (data != 0x00)) {
       trackConvert(false);
       ESP_LOGW(tagConvert(), "cmd failed owb_s=%d data=0x%x", owb_s, data);
@@ -229,19 +232,57 @@ void mcrDS::convert(void *task_data) {
 
     ESP_LOGD(tagConvert(), "in-progress");
 
-    delay(450); // will take at least this long
-
-    while ((owb_s == 0) && (data == 0x00)) {
-      delay(_temp_convert_wait);
+    bool convert_in_progress = true;
+    bool temp_available = false;
+    uint64_t _wait_start = esp_timer_get_time();
+    while ((owb_s == 0) && (convert_in_progress)) {
       owb_s = owb_read_byte(ds, &data);
-      temp_convert_done = true;
+
+      if (owb_s != OWB_STATUS_OK) {
+        ESP_LOGW(tagConvert(), "temp convert failed (0x%02x)", owb_s);
+        break;
+      }
+
+      // if the bus isn't low then the convert is finished
+      if (data > 0x00) {
+        // NOTE: use a flag here so we can exit the while loop before
+        // setting the event group bit since tasks waiting for the bit
+        // will immediately wake up.  this allows for clean tracking of
+        // the temp convert elapsed time.
+        temp_available = true;
+        convert_in_progress = false;
+      }
+
+      if (convert_in_progress) {
+        uint32_t notification = 0x00;
+        BaseType_t notified = pdFALSE;
+
+        // wait for time to pass or to be notified that another
+        // task needs the bus
+        notified = xTaskNotifyWait(0x00, needBusBit(), &notification,
+                                   _temp_convert_wait);
+
+        // another task needs the bus so break out of the loop
+        if ((notified) && (notification & needBusBit())) {
+          owb_reset(ds, &present);     // abort the temperature convert
+          convert_in_progress = false; // signal to break from loop
+          ESP_LOGW(tagConvert(), "another task needs the bus, convert aborted");
+          _convertTask.lastWake += 1; // NOTE: magic!
+        }
+
+        if ((esp_timer_get_time() - _wait_start) >= _max_temp_convert_us) {
+          ESP_LOGW(tagConvert(), "temp convert timed out");
+          owb_reset(ds, &present);
+          convert_in_progress = false; // signal to break from loop
+        }
+      }
     }
 
     xSemaphoreGive(_bus_mutex);
     trackConvert(false);
 
-    // signal to other tasks that temperatures are now available
-    if (temp_convert_done) {
+    // signal to other tasks if temperatures are available
+    if (temp_available) {
       xEventGroupSetBits(_ds_evg, _event_bits.temp_available);
     }
 
