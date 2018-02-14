@@ -45,6 +45,7 @@ private:
     }
 
     esp_err_t staDisconnected(system_event_sta_disconnected_t info) {
+      xEventGroupClearBits(_event_group, mcrNetwork::connectedBit());
       mcrNetwork *net = mcrNetwork::instance();
       net->_wifi.connectAP(CONFIG_WIFI_SSID, CONFIG_WIFI_PASSWORD);
 

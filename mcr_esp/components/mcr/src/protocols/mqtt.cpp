@@ -77,6 +77,8 @@ void mcrMQTT::announceStartup() {
 void mcrMQTT::connect(int wait_ms) {
   TickType_t last_wake = xTaskGetTickCount();
 
+  mcrNetwork::waitForConnection();
+
   // struct mg_mgr_init_opts opts;
   //
   // bzero(&opts, sizeof(opts));
@@ -123,6 +125,7 @@ void mcrMQTT::incomingMsg(const char *data, const size_t len) {
              "INCOMING msg(len=%u) FAILED send to ringbuffer, msg dropped",
              sizeof(json));
     delete json;
+    esp_restart();
   }
 }
 
@@ -188,6 +191,7 @@ void mcrMQTT::publish(std::string *json) {
     ESP_LOGW(tTAG, "PUBLISH msg(len=%u) FAILED to ringbuffer, msg dropped",
              entry.len);
     delete json;
+    esp_restart();
   }
 }
 
