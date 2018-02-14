@@ -108,6 +108,8 @@ void mcrDS::command(void *task_data) {
 
       trackSwitchCmd(true);
 
+      xEventGroupSetBits(_ds_evg, _event_bits.need_bus);
+
       ESP_LOGD(tagCommand(), "attempting to aquire bux mutex...");
       int64_t bus_wait_start = esp_timer_get_time();
       xSemaphoreTake(_bus_mutex, portMAX_DELAY);
@@ -135,6 +137,8 @@ void mcrDS::command(void *task_data) {
 
       trackSwitchCmd(false);
       xSemaphoreGive(_bus_mutex);
+
+      xEventGroupClearBits(_ds_evg, _event_bits.need_bus);
 
       ESP_LOGD(tagCommand(), "released bus mutex");
     } else {
@@ -254,16 +258,16 @@ void mcrDS::convert(void *task_data) {
       }
 
       if (convert_in_progress) {
-        uint32_t notification = 0x00;
         BaseType_t notified = pdFALSE;
 
         // wait for time to pass or to be notified that another
         // task needs the bus
-        notified = xTaskNotifyWait(0x00, needBusBit(), &notification,
-                                   _temp_convert_wait);
+        EventBits_t bits = xEventGroupWaitBits(
+            _ds_evg, _event_bits.need_bus, pdTRUE, pdTRUE, _temp_convert_wait);
+        notified = (bits & _event_bits.need_bus);
 
         // another task needs the bus so break out of the loop
-        if ((notified) && (notification & needBusBit())) {
+        if (notified) {
           owb_reset(ds, &present);     // abort the temperature convert
           convert_in_progress = false; // signal to break from loop
           ESP_LOGW(tagConvert(), "another task needs the bus, convert aborted");
@@ -305,6 +309,7 @@ void mcrDS::discover(void *task_data) {
     bool found = false;
     auto device_found = false;
     auto temp_devices = false;
+    BaseType_t notified = pdFALSE;
     OneWireBus_SearchState search_state;
 
     _discoverTask.lastWake = xTaskGetTickCount();
@@ -334,7 +339,8 @@ void mcrDS::discover(void *task_data) {
       continue;
     }
 
-    while ((owb_s == OWB_STATUS_OK) && found) {
+    bool abort_search = false;
+    while ((owb_s == OWB_STATUS_OK) && found && (!abort_search)) {
       device_found = true;
 
       mcrDevAddr_t found_addr(search_state.rom_code.bytes, 8);
@@ -353,10 +359,23 @@ void mcrDS::discover(void *task_data) {
         temp_devices = true;
       }
 
-      owb_s = owb_search_next(ds, &search_state, &found);
+      EventBits_t bits = xEventGroupGetBits(_ds_evg);
+      notified = (bits & _event_bits.need_bus);
 
-      if (owb_s != OWB_STATUS_OK) {
-        ESP_LOGW(tagDiscover(), "search next failed owb_s=%d", owb_s);
+      // another task needs the bus so break out of the loop
+      if (notified) {
+        owb_reset(ds, &present); // abort the search
+        abort_search = false;    // signal to break from loop
+        xEventGroupClearBits(_ds_evg, _event_bits.need_bus);
+        ESP_LOGW(tagConvert(), "another task needs the bus, discover aborted");
+        _discoverTask.lastWake -= 2; // NOTE: magic!
+      } else {
+        // keeping searching
+        owb_s = owb_search_next(ds, &search_state, &found);
+
+        if (owb_s != OWB_STATUS_OK) {
+          ESP_LOGW(tagDiscover(), "search next failed owb_s=%d", owb_s);
+        }
       }
     }
 
@@ -434,7 +453,8 @@ void mcrDS::report(void *task_data) {
                  dev->debug().c_str());
         publish(dev);
       }
-
+      // hold onto the bus mutex to ensure that the device publih
+      // succeds (another task doesn't change the device just read)
       xSemaphoreGive(_bus_mutex);
     });
 
