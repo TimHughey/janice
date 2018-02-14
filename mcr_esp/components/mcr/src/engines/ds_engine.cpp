@@ -177,7 +177,7 @@ bool mcrDS::commandAck(mcrCmd_t &cmd) {
   int64_t elapsed_us = esp_timer_get_time() - start;
   if (elapsed_us > 1500) {
     float elapsed_ms = (float)(elapsed_us / 1000.0);
-    ESP_LOGW(tagCommand(), "took %0.3fms", elapsed_ms);
+    ESP_LOGW(tagCommand(), "ACK took %0.3fms", elapsed_ms);
   }
 
   return rc;

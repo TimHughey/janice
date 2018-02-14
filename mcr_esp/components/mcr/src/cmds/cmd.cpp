@@ -221,12 +221,13 @@ void mcrCmd::set_parse_metrics(int64_t parse_us, int64_t create_us) {
 
 const std::string mcrCmd::debug() {
   std::ostringstream debug_str;
+  float latency_ms = (float)latency() / 1000.0;
+  float parse_ms = (float)_parse_us / 1000.0;
+  float create_ms = (float)_create_us / 1000.0;
 
   debug_str << "mcrCmd(" << _dev_id << " mask=0b" << _mask << " state=0b"
-            << _state << ((_ack) ? " ACK" : "")
-            << " latency=" << (_latency / 1000.0) << "ms"
-            << " parse=" << (_parse_us / 1000.0) << "ms"
-            << " create=" << (_create_us / 1000.0) << "ms"
+            << _state << ((_ack) ? " ACK" : "") << " latency=" << latency_ms
+            << "ms parse=" << parse_ms << "ms create=" << create_ms << "ms"
             << ")";
 
   return debug_str.str();
