@@ -40,21 +40,6 @@
 #include "misc/util.hpp"
 #include "protocols/mqtt.hpp"
 
-#define mcr_engine_version_1 1
-
-// Set the version of MCP Remote
-#ifndef mcr_engine_version
-#define mcr_engine_version mcr_engine_version_1
-#endif
-
-// max devices supported by all mcrEngine
-// implementation
-// define this prior to the first include of this header
-// to increase
-#ifndef MAX_DEVICES_PER_ENGINE
-#define MAX_DEVICES_PER_ENGINE 30
-#endif
-
 typedef std::map<std::string, std::string> mcrEngineTagMap_t;
 typedef std::pair<std::string, std::string> mcrEngineTagItem_t;
 
@@ -121,7 +106,8 @@ public:
     ::vTaskDelete(temp);
   }
 
-  static uint32_t maxDevices() { return MAX_DEVICES_PER_ENGINE; };
+  // FIXME: move to external config
+  static uint32_t maxDevices() { return 100; };
 
   bool any_of_devices(bool (*func)(const DEV &)) {
     return std::any_of(_devices.cbegin(), _devices.cend(), func);
@@ -228,8 +214,6 @@ protected:
     DEV *dev = findDevice(cmd->dev_id());
     return dev;
   };
-
-  uint32_t needBusBit() { return (uint32_t)0x0f; }
 
   bool publish(mcrCmd_t &cmd) { return publish(cmd.dev_id()); };
   bool publish(const mcrDevID_t &dev_id) {

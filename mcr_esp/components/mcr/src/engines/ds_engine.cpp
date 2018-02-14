@@ -1,24 +1,22 @@
 /*
-         mcpr_ds.cpp - Master Control Remote Dallas Semiconductor
-         Copyright (C) 2017  Tim Hughey
+          mcrDS - Master Control Remote Dallas Semiconductor
+          Copyright (C) 2017  Tim Hughey
 
-         This program is free software: you can redistribute it and/or modify
-         it under the terms of the GNU General Public License as published by
-         the Free Software Foundation, either version 3 of the License, or
-         (at your option) any later version.
+          This program is free software: you can redistribute it and/or modify
+          it under the terms of the GNU General Public License as published by
+          the Free Software Foundation, either version 3 of the License, or
+          (at your option) any later version.
 
-         This program is distributed in the hope that it will be useful,
-         but WITHOUT ANY WARRANTY; without even the implied warranty of
-         MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-         GNU General Public License for more details.
+          This program is distributed in the hope that it will be useful,
+          but WITHOUT ANY WARRANTY; without even the implied warranty of
+          MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+          GNU General Public License for more details.
 
-         You should have received a copy of the GNU General Public License
-         along with this program.  If not, see <http://www.gnu.org/licenses/>.
+          You should have received a copy of the GNU General Public License
+          along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-         https://www.wisslanding.com
-     */
-
-// #define VERBOSE 1
+          https://www.wisslanding.com
+      */
 
 #include <bitset>
 #include <cstdlib>
@@ -92,6 +90,7 @@ void mcrDS::command(void *task_data) {
     BaseType_t queue_rc = pdFALSE;
     mcrCmd_t *cmd = nullptr;
 
+    xEventGroupClearBits(_ds_evg, needBusBit());
     queue_rc = xQueueReceive(_cmd_q, &cmd, portMAX_DELAY);
 
     if (queue_rc != pdTRUE) {
@@ -108,7 +107,7 @@ void mcrDS::command(void *task_data) {
 
       trackSwitchCmd(true);
 
-      xEventGroupSetBits(_ds_evg, _event_bits.need_bus);
+      xEventGroupSetBits(_ds_evg, needBusBit());
 
       ESP_LOGD(tagCommand(), "attempting to aquire bux mutex...");
       int64_t bus_wait_start = esp_timer_get_time();
@@ -138,8 +137,6 @@ void mcrDS::command(void *task_data) {
 
       trackSwitchCmd(false);
       xSemaphoreGive(_bus_mutex);
-
-      xEventGroupClearBits(_ds_evg, _event_bits.need_bus);
 
       ESP_LOGD(tagCommand(), "released bus mutex");
     } else {
@@ -237,10 +234,10 @@ void mcrDS::convert(void *task_data) {
 
     ESP_LOGD(tagConvert(), "in-progress");
 
-    bool convert_in_progress = true;
+    bool in_progress = true;
     bool temp_available = false;
     uint64_t _wait_start = esp_timer_get_time();
-    while ((owb_s == 0) && (convert_in_progress)) {
+    while ((owb_s == OWB_STATUS_OK) && in_progress) {
       owb_s = owb_read_byte(ds, &data);
 
       if (owb_s != OWB_STATUS_OK) {
@@ -255,22 +252,22 @@ void mcrDS::convert(void *task_data) {
         // will immediately wake up.  this allows for clean tracking of
         // the temp convert elapsed time.
         temp_available = true;
-        convert_in_progress = false;
+        in_progress = false;
       }
 
-      if (convert_in_progress) {
+      if (in_progress) {
         BaseType_t notified = pdFALSE;
 
         // wait for time to pass or to be notified that another
         // task needs the bus
-        EventBits_t bits = xEventGroupWaitBits(
-            _ds_evg, _event_bits.need_bus, pdTRUE, pdTRUE, _temp_convert_wait);
-        notified = (bits & _event_bits.need_bus);
+        EventBits_t bits = xEventGroupWaitBits(_ds_evg, needBusBit(), pdTRUE,
+                                               pdTRUE, _temp_convert_wait);
+        notified = (bits & needBusBit());
 
         // another task needs the bus so break out of the loop
         if (notified) {
-          owb_reset(ds, &present);     // abort the temperature convert
-          convert_in_progress = false; // signal to break from loop
+          owb_reset(ds, &present); // abort the temperature convert
+          in_progress = false;     // signal to break from loop
           ESP_LOGW(tagConvert(), "another task needs the bus, convert aborted");
           _convertTask.lastWake -= 5; // NOTE: magic!
         }
@@ -278,7 +275,7 @@ void mcrDS::convert(void *task_data) {
         if ((esp_timer_get_time() - _wait_start) >= _max_temp_convert_us) {
           ESP_LOGW(tagConvert(), "temp convert timed out");
           owb_reset(ds, &present);
-          convert_in_progress = false; // signal to break from loop
+          in_progress = false; // signal to break from loop
         }
       }
     }
@@ -340,8 +337,8 @@ void mcrDS::discover(void *task_data) {
       continue;
     }
 
-    bool abort_search = false;
-    while ((owb_s == OWB_STATUS_OK) && found && (!abort_search)) {
+    bool hold_bus = true;
+    while ((owb_s == OWB_STATUS_OK) && found && hold_bus) {
       device_found = true;
 
       mcrDevAddr_t found_addr(search_state.rom_code.bytes, 8);
@@ -361,14 +358,14 @@ void mcrDS::discover(void *task_data) {
       }
 
       EventBits_t bits = xEventGroupGetBits(_ds_evg);
-      notified = (bits & _event_bits.need_bus);
+      notified = (bits & needBusBit());
 
       // another task needs the bus so break out of the loop
       if (notified) {
-        owb_reset(ds, &present); // abort the search
-        abort_search = false;    // signal to break from loop
-        xEventGroupClearBits(_ds_evg, _event_bits.need_bus);
         ESP_LOGW(tagConvert(), "another task needs the bus, discover aborted");
+
+        owb_reset(ds, &present);     // abort the search
+        hold_bus = false;            // signal to break from loop
         _discoverTask.lastWake -= 5; // NOTE: magic!
       } else {
         // keeping searching

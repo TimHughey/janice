@@ -1,5 +1,5 @@
 /*
-    mcr_ds.h - Master Control Remote Dallas Semiconductor
+    mcrDS - Master Control Remote Dallas Semiconductor
     Copyright (C) 2017  Tim Hughey
 
     This program is free software: you can redistribute it and/or modify
@@ -40,13 +40,6 @@
 #include "engines/engine.hpp"
 #include "misc/util.hpp"
 #include "protocols/mqtt.hpp"
-
-#define mcr_ds_version_1 1
-
-// Set the version of MCP Remote
-#ifndef mcr_ds_version
-#define mcr_ds_version mcr_ds_version_1
-#endif
 
 #define W1_PIN 14
 
@@ -137,6 +130,7 @@ private:
   bool commandAck(mcrCmd_t &cmd);
 
   bool devicesPowered() { return _devices_powered; }
+  EventBits_t needBusBit() { return _event_bits.need_bus; }
 
   // accept a mcrCmd_t as input to reportDevice
   // bool readDevice(mcrCmd_t &cmd);
