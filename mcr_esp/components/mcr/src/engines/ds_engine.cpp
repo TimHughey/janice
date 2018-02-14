@@ -146,7 +146,7 @@ void mcrDS::command(void *task_data) {
     }
 
     int64_t elapsed_us = esp_timer_get_time() - start;
-    if (elapsed_us > 1500) {
+    if (elapsed_us > 100000) { // 100ms
       float elapsed_ms = (float)elapsed_us / 1000.0;
       ESP_LOGW(tagCommand(), "took %0.3fms for %s", elapsed_ms,
                cmd->debug().c_str());
@@ -175,7 +175,7 @@ bool mcrDS::commandAck(mcrCmd_t &cmd) {
   }
 
   int64_t elapsed_us = esp_timer_get_time() - start;
-  if (elapsed_us > 1500) {
+  if (elapsed_us > 100000) { // 100ms
     float elapsed_ms = (float)(elapsed_us / 1000.0);
     ESP_LOGW(tagCommand(), "ACK took %0.3fms", elapsed_ms);
   }
