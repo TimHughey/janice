@@ -46,7 +46,7 @@ Reading::~Reading() {
 }
 
 void Reading::commonJSON(JsonObject &root) {
-  root["version"] = _version;
+  root["vsn"] = _version;
   root["host"] = mcrUtil::hostID();
   root["mtime"] = _mtime;
 

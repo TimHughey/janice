@@ -16,7 +16,8 @@ defmodule Mqtt.Reading do
   @mcr_stat_t "stats"
 
   @derive [Poison.Encoder]
-  defstruct version: "undef",
+  defstruct version: "no version",
+            vsn: "no vsn",
             host: @undef,
             device: nil,
             type: nil,
@@ -40,7 +41,7 @@ defmodule Mqtt.Reading do
 
    ##Examples:
     iex> json =
-    ...>   ~s({"version": 1, "host": "mcr-macaddr", "device": "ds/29.00000ffff",
+    ...>   ~s({"vsn": 1, "host": "mcr-macaddr", "device": "ds/29.00000ffff",
     ...>       "mtime": 1506867918, "type": "temp", "tc": 20.0, "tf": 80.0})
     ...> Mqtt.Reading.decode!(json) |> Mqtt.Reading.metadata?()
     true
@@ -68,13 +69,13 @@ defmodule Mqtt.Reading do
 
    ##Examples:
     iex> json =
-    ...>   ~s({"version": 1, "host":"mcr-macaddr", "device":"ds/28.00000ffff",
+    ...>   ~s({"vsn": 1, "host":"mcr-macaddr", "device":"ds/28.00000ffff",
     ...>       "mtime": 1506867918, "type": "temp", "tc": 20.0, "tf": 80.0})
     ...> Mqtt.Reading.decode!(json) |> Mqtt.Reading.metadata?()
     true
 
     iex> json =
-    ...>   ~s({"version": 0, "host": "other-macaddr", "device": "ds/28.0000",
+    ...>   ~s({"vsn": 0, "host": "other-macaddr", "device": "ds/28.0000",
     ...>       "mtime": 1506867918, "type": "temp", "tc": 20.0, "tf": 80.0})
     ...> Mqtt.Reading.decode!(json) |> Mqtt.Reading.metadata?()
     false
@@ -92,13 +93,13 @@ defmodule Mqtt.Reading do
 
    ##Examples:
     iex> json =
-    ...>   ~s({"version": 1, "host":"mcr-macaddr", "device":"ds/28.0000",
+    ...>   ~s({"vsn": 1, "host":"mcr-macaddr", "device":"ds/28.0000",
     ...>       "mtime": 1506867918, "type": "temp", "tc": 20.0, "tf": 80.0})
     ...> Mqtt.Reading.decode!(json) |> Mqtt.Reading.mtime_good?()
     true
 
     iex> json =
-    ...>   ~s({"version": 0, "host": "other-macaddr",
+    ...>   ~s({"vsn": 0, "host": "other-macaddr",
     ...>       "mtime": 2106, "type": "startup"})
     ...> Mqtt.Reading.decode!(json) |> Mqtt.Reading.mtime_good?()
     false
@@ -116,13 +117,13 @@ defmodule Mqtt.Reading do
 
    ##Examples:
     iex> json =
-    ...>   ~s({"version": 1, "host": "mcr-macaddr",
+    ...>   ~s({"vsn": 1, "host": "mcr-macaddr",
     ...>       "mtime": 2106, "type": "startup"})
     ...> Mqtt.Reading.decode!(json) |> Mqtt.Reading.startup?()
     true
 
     iex> json =
-    ...>   ~s({"version": 1, "host":"mcr-macaddr", "device":"ds/28.0000",
+    ...>   ~s({"vsn": 1, "host":"mcr-macaddr", "device":"ds/28.0000",
     ...>       "mtime": 1506867918, "type": "temp", "tc": 20.0, "tf": 80.0})
     ...> Mqtt.Reading.decode!(json) |> Mqtt.Reading.startup?()
     false
@@ -136,7 +137,7 @@ defmodule Mqtt.Reading do
 
    ##Examples:
     iex> json =
-    ...>   ~s({"version": 1, "host": "mcr-macaddr", "device": "ds/28.0000",
+    ...>   ~s({"vsn": 1, "host": "mcr-macaddr", "device": "ds/28.0000",
     ...>       "mtime": 1506867918, "type": "temp", "tc": 20.0, "tf": 80.0})
     ...> Mqtt.Reading.decode!(json) |> Mqtt.Reading.temperature?()
     true
@@ -150,7 +151,7 @@ defmodule Mqtt.Reading do
 
    ##Examples:
    iex> json =
-   ...>   ~s({"version": 1, "host": "mcr-macaddr",
+   ...>   ~s({"vsn": 1, "host": "mcr-macaddr",
    ...>       "device": "ds/29.0000", "mtime": 1506867918,
    ...>       "type": "relhum",
    ...>       "rh": 56.0})
@@ -166,7 +167,7 @@ defmodule Mqtt.Reading do
 
    ##Examples:
     iex> json =
-    ...>   ~s({"version": 1, "host": "mcr-macaddr",
+    ...>   ~s({"vsn": 1, "host": "mcr-macaddr",
     ...>       "device": "ds/29.0000", "mtime": 1506867918,
     ...>        "type": "switch",
     ...>        "states": [{"pio": 0, "state": true},
@@ -189,7 +190,7 @@ defmodule Mqtt.Reading do
 
    ##Examples:
     iex> json =
-    ...>   ~s({"version": 1, "host": "mcr-macaddr",
+    ...>   ~s({"vsn": 1, "host": "mcr-macaddr",
     ...>       "device": "ds/29.0000", "mtime": 1506867918,
     ...>        "type": "switch",
     ...>        "states": [{"pio": 0, "state": true},

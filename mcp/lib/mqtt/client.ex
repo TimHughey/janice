@@ -5,6 +5,7 @@ defmodule Mqtt.Client do
   use GenServer
 
   import Application, only: [get_env: 2, get_env: 3]
+  alias Fact.RunMetric
   alias Mqtt.Timesync
 
   #  def child_spec(opts) do
@@ -185,8 +186,18 @@ defmodule Mqtt.Client do
   end
 
   def handle_info({:publish, _topic, message}, s) do
-    MessageSave.save(:in, message)
-    Mqtt.InboundMessage.process(message)
+    {elapsed_us, _res} =
+      :timer.tc(fn ->
+        MessageSave.save(:in, message)
+        Mqtt.InboundMessage.process(message)
+      end)
+
+    RunMetric.record(
+      module: "#{__MODULE__}",
+      metric: "process_msg_us",
+      device: "none",
+      val: elapsed_us
+    )
 
     {:noreply, s}
   end
