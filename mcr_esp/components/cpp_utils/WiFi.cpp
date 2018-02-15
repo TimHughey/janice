@@ -168,9 +168,9 @@ bool WiFi::connectAP(const std::string &ssid, const std::string &password,
   ::memset(&sta_config, 0, sizeof(sta_config));
   ::memcpy(sta_config.sta.ssid, ssid.data(), ssid.size());
   ::memcpy(sta_config.sta.password, password.data(), password.size());
-  sta_config.sta.bssid_set = 1;
-  uint8_t bssid[] = {0x64, 0xA5, 0xC3, 0x6D, 0xD5, 0x9B};
-  ::memcpy(sta_config.sta.bssid, bssid, sizeof(bssid));
+  sta_config.sta.bssid_set = 0;
+  // uint8_t bssid[] = {0x64, 0xA5, 0xC3, 0x6D, 0xD5, 0x9B};
+  // ::memcpy(sta_config.sta.bssid, bssid, sizeof(bssid));
   errRc = ::esp_wifi_set_config(WIFI_IF_STA, &sta_config);
   if (errRc != ESP_OK) {
     ESP_LOGE(LOG_TAG, "esp_wifi_set_config: rc=%d %s", errRc,
