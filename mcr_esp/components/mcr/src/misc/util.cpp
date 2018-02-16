@@ -76,7 +76,7 @@ const std::string &mcrUtil::macAddress() {
     esp_wifi_get_mac(WIFI_IF_STA, mac);
 
     bytes << std::hex << std::setfill('0');
-    for (int i = 5; i >= 0; i--) {
+    for (int i = 0; i <= 5; i++) {
       bytes << std::setw(sizeof(uint8_t) * 2) << static_cast<unsigned>(mac[i]);
     }
 
