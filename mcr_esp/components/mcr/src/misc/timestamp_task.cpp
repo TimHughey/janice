@@ -59,11 +59,11 @@ void mcrTimestampTask::run(void *data) {
 
     // voltage = vref_voltage();
 
-    ESP_LOGI(
+    ESP_LOGE(
         tTAG, "%s %s heap=%uk first=%uk min=%uk max=%uk %sdelta=%d",
         LOG_RESET_COLOR, mcrUtil::dateTimeString(), (curr_heap / 1024),
         (_firstHeap / 1024), (_minHeap / 1024), (_maxHeap / 1024),
-        ((delta < 0) ? LOG_COLOR(LOG_COLOR_RED) : LOG_COLOR(LOG_COLOR_GREEN)),
+        ((delta < 0) ? LOG_COLOR(LOG_COLOR_RED) : LOG_COLOR(LOG_RESET_COLOR)),
         delta);
 
     if (_task_report) {
