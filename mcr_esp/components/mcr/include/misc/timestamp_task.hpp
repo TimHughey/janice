@@ -34,7 +34,7 @@ private:
 
 private:
   const char *_engTAG = nullptr;
-  xTaskHandle _engine_task;
+  xTaskHandle _engine_task = nullptr;
   void *_engine_task_data;
   std::string _engine_task_name;
   uint16_t _engine_stack_size = 4 * 1024;

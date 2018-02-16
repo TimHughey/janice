@@ -36,6 +36,8 @@ private:
 
   static const uint8_t _family_DS2408 = 0x29;
   static const uint8_t _family_DS2406 = 0x12;
+  static const uint8_t _family_DS2413 = 0x3a;
+  static const uint8_t _family_DS2438 = 0x26;
 
   bool _power = false; // is the device powered?
 
@@ -58,6 +60,8 @@ public:
   bool isDS1820();
   bool isDS2406();
   bool isDS2408();
+  bool isDS2413();
+  bool isDS2438();
 
   static uint8_t *parseId(char *name);
 

@@ -86,6 +86,9 @@ public:
   time_t timeCreated();
   time_t secondsSinceLastSeen();
 
+  bool available();
+  bool missing();
+
   void crcMismatch();
   void readFailure();
   void writeFailure();

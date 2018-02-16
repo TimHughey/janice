@@ -128,6 +128,10 @@ void mcrDS::command(void *task_data) {
       if (dev->isDS2408())
         set_rc = setDS2408(*cmd, dev);
 
+      if (dev->isDS2413()) {
+        set_rc = setDS2413(*cmd, dev);
+      }
+
       if ((set_rc) && commandAck(*cmd)) {
         ESP_LOGD(tagCommand(), "cmd and ack complete %s",
                  (const char *)cmd->dev_id());
@@ -241,7 +245,14 @@ void mcrDS::convert(void *task_data) {
     // devices will hold the bus low during the convert
     if ((owb_s != OWB_STATUS_OK) || (data != 0x00)) {
       trackConvert(false);
-      ESP_LOGW(tagConvert(), "cmd failed owb_s=%d data=0x%x", owb_s, data);
+      if (owb_s != OWB_STATUS_OK) {
+        ESP_LOGW(tagConvert(), "cmd failed owb_s=%d data=0x%x", owb_s, data);
+      }
+
+      if (data == 0xff) {
+        ESP_LOGW(tagConvert(), "appears no temperature devices on bus");
+      }
+
       xSemaphoreGive(_bus_mutex);
       vTaskDelayUntil(&(_convertTask.lastWake), _convert_frequency);
       continue;
@@ -456,19 +467,26 @@ void mcrDS::report(void *task_data) {
              numKnownDevices());
 
     for_each(beginDevices(), endDevices(), [this](dsDev_t *dev) {
-      ESP_LOGI(tagReport(), "reading device %s", dev->debug().c_str());
+      if (dev->available()) {
+        ESP_LOGI(tagReport(), "reading device %s", dev->debug().c_str());
 
-      xSemaphoreTake(_bus_mutex, portMAX_DELAY);
-      auto rc = readDevice(dev);
+        xSemaphoreTake(_bus_mutex, portMAX_DELAY);
+        auto rc = readDevice(dev);
 
-      if (rc) {
-        ESP_LOGI(tagReport(), "publishing reading for %s",
-                 dev->debug().c_str());
-        publish(dev);
+        if (rc) {
+          ESP_LOGI(tagReport(), "publishing reading for %s",
+                   dev->debug().c_str());
+          publish(dev);
+          dev->justSeen();
+        }
+        // hold onto the bus mutex to ensure that the device publih
+        // succeds (another task doesn't change the device just read)
+        xSemaphoreGive(_bus_mutex);
+      } else {
+        if (dev->missing()) {
+          ESP_LOGW(tagReport(), "device missing: %s", dev->debug().c_str());
+        }
       }
-      // hold onto the bus mutex to ensure that the device publih
-      // succeds (another task doesn't change the device just read)
-      xSemaphoreGive(_bus_mutex);
     });
 
     trackReport(false);
@@ -485,7 +503,7 @@ void mcrDS::report(void *task_data) {
 bool mcrDS::readDevice(dsDev_t *dev) {
   celsiusReading_t *celsius = nullptr;
   positionsReading_t *positions = nullptr;
-  auto rc = true;
+  auto rc = false;
 
   if (dev->isNotValid()) {
     printInvalidDev(dev);
@@ -515,8 +533,19 @@ bool mcrDS::readDevice(dsDev_t *dev) {
       dev->setReading(positions);
     break;
 
+  case 0x3a: // DS2413 (Dual-Channel Addressable Switch)
+    rc = readDS2413(dev, &positions);
+    if (rc) {
+      dev->setReading(positions);
+    }
+    break;
+
+  case 0x26: // DS2438 (Smart Battery Monitor)
+    rc = false;
+    break;
+
   default:
-    ESP_LOGW(tagEngine(), "unknown family %d", dev->family());
+    ESP_LOGW(tagEngine(), "unknown family 0x%02x", dev->family());
   }
 
   return rc;
@@ -589,6 +618,16 @@ bool mcrDS::readDS1820(dsDev_t *dev, celsiusReading_t **reading) {
       raw = raw & ~1; // 11 bit res, 375 ms
     //// default is 12 bit resolution, 750 ms conversion time
   }
+
+  // calculate the crc of the received scratchpad
+  uint16_t crc8 = owb_crc8_bytes(0x00, data, sizeof(data));
+
+  if (crc8 != 0x00) {
+    ESP_LOGW(tagReadDS1820(), "crc FAILED (0x%02x) for %s", crc8,
+             dev->debug().c_str());
+    return rc;
+  }
+
   float celsius = (float)raw / 16.0;
 
   rc = true;
@@ -739,6 +778,76 @@ bool mcrDS::readDS2408(dsDev_t *dev, positionsReading_t **reading) {
         new positionsReading(dev->id(), time(nullptr), positions, (uint32_t)8);
   }
   rc = true;
+
+  return rc;
+}
+
+bool mcrDS::readDS2413(dsDev_t *dev, positionsReading_t **reading) {
+  bool present = false;
+  owb_status owb_s;
+  bool rc = false;
+
+  owb_s = owb_reset(ds, &present);
+
+  if (owb_s != OWB_STATUS_OK) {
+    ESP_LOGW(tagReadDS2413(), "no devices present");
+    return rc;
+  }
+
+  uint8_t cmd[] = {0x55, // match rom_code
+                   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // rom
+                   0xf5}; // pio access read
+
+  uint8_t buff[] = {0x00, 0x00}; // byte 0-1: pio status bit assignment (x2)
+
+  dev->startRead();
+  dev->copyAddrToCmd(cmd);
+
+  owb_s = owb_write_bytes(ds, cmd, sizeof(cmd));
+
+  if (owb_s != OWB_STATUS_OK) {
+    dev->stopRead();
+    ESP_LOGW(tagReadDS2413(), "failed to send read cmd owb_s=%d", owb_s);
+    return rc;
+  }
+
+  // fill buffer with bytes from DS2406, skipping the first byte
+  // since the first byte is included in the CRC16
+  owb_s = owb_read_bytes(ds, buff, sizeof(buff));
+  dev->stopRead();
+
+  if (owb_s != OWB_STATUS_OK) {
+    ESP_LOGW(tagReadDS2413(), "failed to read cmd results owb_s=%d", owb_s);
+    return rc;
+  }
+
+  owb_s = owb_reset(ds, &present);
+
+  // both bytes should be the same
+  if (buff[0] != buff[1]) {
+    ESP_LOGW(tagReadDS2413(), "state bytes don't match (0x%02x != 0x%02x ",
+             buff[0], buff[1]);
+    return rc;
+  }
+
+  uint32_t raw = buff[0];
+
+  // NOTE: pio states are inverted at the device
+  // PIO Status Bits:
+  // b0: PIOA State, b1: PIOA Latch, b2: PIOB State, b3: PIOB Latch
+  // b4-b7: complement of b3 to b0
+  uint32_t positions = 0x00;  // translate raw status to 0b000000xx
+  if ((raw & 0x01) == 0x00) { // represent PIO.A as bit 0
+    positions = 0x01;
+  }
+
+  if ((raw & 0x04) == 0x00) { // represent PIO.B as bit 1
+    positions = (positions | 0x02);
+  }
+
+  rc = true;
+  *reading =
+      new positionsReading(dev->id(), time(nullptr), positions, (uint8_t)2);
 
   return rc;
 }
@@ -1008,6 +1117,108 @@ bool mcrDS::setDS2408(mcrCmd_t &cmd, dsDev_t *dev) {
     rc = true;
   } else {
     ESP_LOGW(tagSetDS2408(), "FAILED check[0]=0x%x check[1]=0x%x for %s",
+             check[0], check[1], dev->debug().c_str());
+  }
+
+  return rc;
+}
+
+bool mcrDS::setDS2413(mcrCmd_t &cmd, dsDev_t *dev) {
+  bool present = false;
+  owb_status owb_s;
+  bool rc = false;
+
+  owb_s = owb_reset(ds, &present);
+
+  if (owb_s != OWB_STATUS_OK) {
+    ESP_LOGW(tagSetDS2413(), "no devices present");
+    return rc;
+  }
+
+  // read the device to ensure we have the current state
+  // important because setting the new state relies, in part, on the existing
+  // state for the pios not changing
+  if (readDevice(dev) == false) {
+    ESP_LOGW(tagSetDS2413(), "read before set failed for %s",
+             dev->debug().c_str());
+    return rc;
+  }
+
+  positionsReading_t *reading = (positionsReading_t *)dev->reading();
+
+  uint32_t mask = cmd.mask().to_ulong();
+  uint32_t changes = cmd.state().to_ulong();
+  uint32_t asis_state = reading->state();
+  uint32_t new_state = 0x00;
+
+  // use XOR tricks to apply the state changes to the as_is state using the
+  // mask computed
+  new_state = asis_state ^ ((asis_state ^ changes) & mask);
+
+  // report_state = new_state;
+  new_state = (~new_state) & 0xFF; // constrain to 8-bits
+
+  dev->startWrite();
+  owb_s = owb_reset(ds, &present);
+
+  if (owb_s != OWB_STATUS_OK) {
+    ESP_LOGW(tagSetDS2413(), "no devices present");
+    return rc;
+  }
+
+  uint8_t dev_cmd[] = {0x55, // byte 0: match rom_code
+                       0x00, // byte 1-8: rom
+                       0x00,
+                       0x00,
+                       0x00,
+                       0x00,
+                       0x00,
+                       0x00,
+                       0x00,
+                       0x5a,                 // byte 9: PIO Access Write cmd
+                       (uint8_t)new_state,   // byte10 : new state
+                       (uint8_t)~new_state}; // byte11: inverted state
+
+  dev->startWrite();
+  dev->copyAddrToCmd(dev_cmd);
+  owb_s = owb_write_bytes(ds, dev_cmd, sizeof(dev_cmd));
+
+  if (owb_s != OWB_STATUS_OK) {
+    ESP_LOGW(tagSetDS2413(), "device cmd failed for %s owb_s=%d",
+             dev->debug().c_str(), owb_s);
+    dev->stopWrite();
+    return rc;
+  }
+
+  uint8_t check[2] = {0x00};
+  owb_s = owb_read_bytes(ds, check, sizeof(check));
+
+  if (owb_s != OWB_STATUS_OK) {
+    ESP_LOGW(tagSetDS2413(), "read of check bytes failed for %s owb_s=%d",
+             dev->debug().c_str(), owb_s);
+    dev->stopWrite();
+    return rc;
+  }
+
+  owb_s = owb_reset(ds, &present);
+  dev->stopWrite();
+
+  // check what the device returned to determine success or failure
+  // byte 0 = 0xAA is a success, byte 1 = new_state
+  // this might be a bit of a hack however let's accept success if either
+  // the check byte is 0xAA *OR* the reported dev_state == new_state
+  // this handles the occasional situation where there is a single dropped
+  // bit in either (but hopefully not both)
+  uint32_t dev_state = check[1];
+  if ((check[0] == 0xaa) || (dev_state == (new_state & 0xff))) {
+    cmd_bitset_t b0 = check[0];
+    cmd_bitset_t b1 = check[1];
+    ESP_LOGD(tagSetDS2413(), "CONFIRMED check[0]=0b%s check[1]=0b%s for %s",
+             b0.to_string().c_str(), b1.to_string().c_str(),
+             dev->debug().c_str());
+    rc = true;
+  } else {
+    ESP_LOGW(tagSetDS2413(), "FAILED check[0]=0x%x check[1]=0x%x for %s",
              check[0], check[1], dev->debug().c_str());
   }
 

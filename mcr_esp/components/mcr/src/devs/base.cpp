@@ -50,20 +50,11 @@ mcrDev::~mcrDev() {
     delete _reading;
 }
 
-// operators
-// mcrDev_t &mcrDev::operator=(mcrDev_t &dev) {
-//  memcpy(this, dev, sizeof(mcrDev_t));
-//  return *this;
-//}
-// rely on the == operator from mcrDevID_t
-
 bool mcrDev::operator==(mcrDev_t *rhs) const {
   return (_id == (mcrDevID_t)rhs->_id);
 }
 
 void mcrDev::justSeen() { _last_seen = time(nullptr); }
-
-// void mcrDev::setID(char *id) { _id = id; }
 void mcrDev::setID(const mcrDevID_t &new_id) { _id = new_id; }
 
 // updaters
@@ -105,6 +96,9 @@ int64_t mcrDev::readUS() { return _read_us; }
 time_t mcrDev::readTimestamp() { return _read_timestamp; }
 time_t mcrDev::timeCreated() { return _created_mtime; }
 time_t mcrDev::secondsSinceLastSeen() { return (time(nullptr) - _last_seen); }
+
+bool mcrDev::available() { return (secondsSinceLastSeen() <= 15); }
+bool mcrDev::missing() { return (!available()); }
 
 void mcrDev::startWrite() { _write_start_us = esp_timer_get_time(); }
 time_t mcrDev::stopWrite() {

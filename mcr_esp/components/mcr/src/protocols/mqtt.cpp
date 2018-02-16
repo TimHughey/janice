@@ -151,7 +151,7 @@ void mcrMQTT::outboundMsg() {
 
     ESP_LOGD(tTAG, "send msg(len=%u), payload(len=%u)", len, json_len);
 
-    mg_mqtt_publish(_connection, _rpt_feed, _msg_id++, MG_MQTT_QOS(0),
+    mg_mqtt_publish(_connection, _rpt_feed, _msg_id++, MG_MQTT_QOS(1),
                     json->data(), json_len);
 
     delete json;
@@ -294,6 +294,7 @@ static void _ev_handler(struct mg_connection *nc, int ev, void *p) {
   case MG_EV_POLL:
   case MG_EV_RECV:
   case MG_EV_SEND:
+  case MG_EV_MQTT_PUBACK:
     // events to ignore
     break;
 

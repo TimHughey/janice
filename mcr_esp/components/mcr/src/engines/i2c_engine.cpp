@@ -258,8 +258,8 @@ bool mcrI2c::readAM2315(i2cDev_t *dev, humidityReading_t **reading, bool wake) {
   i2c_cmd_link_delete(cmd);
 
   if (esp_rc != ESP_OK) {
-    ESP_LOGW(tagReadAM2315(), "write failed (cmd) to %s %s",
-             dev->debug().c_str(), espError(esp_rc));
+    ESP_LOGW(tagReadAM2315(), "write failed %s %s", dev->debug().c_str(),
+             espError(esp_rc));
     dev->stopRead();
     dev->writeFailure();
     return rc;
@@ -356,8 +356,8 @@ bool mcrI2c::readSHT31(i2cDev_t *dev, humidityReading_t **reading) {
   i2c_cmd_link_delete(cmd);
 
   if (esp_rc != ESP_OK) {
-    ESP_LOGW(tagReadSHT31(), "write failed (cmd) to %s %s",
-             dev->debug().c_str(), espError(esp_rc));
+    ESP_LOGW(tagReadSHT31(), "write failed %s %s", dev->debug().c_str(),
+             espError(esp_rc));
     dev->stopRead();
     dev->writeFailure();
     return rc;
@@ -451,11 +451,10 @@ void mcrI2c::report(void *task_data) {
       break;
     }
 
-    if ((rc) && (humidity != nullptr)) {
+    if (rc && (humidity != nullptr)) {
       publish(humidity);
+      dev->justSeen();
     }
-
-    // delay(pdMS_TO_TICKS(500));
   }
 
   trackReport(false);

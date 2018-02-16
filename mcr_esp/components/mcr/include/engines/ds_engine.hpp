@@ -141,9 +141,11 @@ private:
   bool readDS1820(dsDev_t *dev, celsiusReading_t **reading);
   bool readDS2408(dsDev_t *dev, positionsReading_t **reading = nullptr);
   bool readDS2406(dsDev_t *dev, positionsReading_t **reading);
+  bool readDS2413(dsDev_t *dev, positionsReading_t **reading);
 
   bool setDS2406(mcrCmd_t &cmd, dsDev_t *dev);
   bool setDS2408(mcrCmd_t &cmd, dsDev_t *dev);
+  bool setDS2413(mcrCmd_t &cmd, dsDev_t *dev);
 
   // FIXME:  hard code there are always temperature devices
   bool tempDevicesPresent() { return _temp_devices_present; }
@@ -164,8 +166,10 @@ private:
         {"readDS1820", "mcrDS readDS1820"},
         {"readDS2406", "mcrDS readDS2406"},
         {"readDS2408", "mcrDS readDS2408"},
+        {"readDS2413", "mcrDS readDS2413"},
         {"setDS2406", "mcrDS setDS2406"},
-        {"setDS2408", "mcrDS setDS2408"}};
+        {"setDS2408", "mcrDS setDS2408"},
+        {"setDS2413", "mcrDS setDS2413"}};
 
     ESP_LOGI(tag_map["engine"].c_str(), "tag_map sizeof=%u", sizeof(tag_map));
     return tag_map;
@@ -195,6 +199,14 @@ private:
     return tag;
   }
 
+  const char *tagReadDS2413() {
+    static const char *tag = nullptr;
+    if (tag == nullptr) {
+      tag = _tags["readDS2413"].c_str();
+    }
+    return tag;
+  }
+
   const char *tagSetDS2406() {
     static const char *tag = nullptr;
     if (tag == nullptr) {
@@ -207,6 +219,14 @@ private:
     static const char *tag = nullptr;
     if (tag == nullptr) {
       tag = _tags["setDS2408"].c_str();
+    }
+    return tag;
+  }
+
+  const char *tagSetDS2413() {
+    static const char *tag = nullptr;
+    if (tag == nullptr) {
+      tag = _tags["setDS2413"].c_str();
     }
     return tag;
   }

@@ -126,7 +126,11 @@ public:
       ESP_LOGD(tagEngine(), "just saw: %s", dev.debug().c_str());
     }
 
-    if (found_dev != nullptr) {
+    if (found_dev) {
+      if (found_dev->missing()) {
+        ESP_LOGW(tagEngine(), "device returned %s", found_dev->debug().c_str());
+      }
+
       found_dev->justSeen();
     }
 
@@ -147,6 +151,7 @@ public:
     }
 
     if ((found = findDevice(dev->id())) == nullptr) {
+      dev->justSeen();
       _devices.push_back(dev);
       ESP_LOGI(tagEngine(), "added (%p) %s", (void *)dev, dev->debug().c_str());
     }

@@ -85,6 +85,9 @@ bool dsDev::isDS1820() {
 }
 bool dsDev::isDS2406() { return (family() == _family_DS2406) ? true : false; };
 bool dsDev::isDS2408() { return (family() == _family_DS2408) ? true : false; };
+bool dsDev::isDS2413() { return (family() == _family_DS2413) ? true : false; };
+bool dsDev::isDS2438() { return (family() == _family_DS2413) ? true : false; };
+
 bool dsDev::hasTemperature() { return isDS1820(); }
 
 void dsDev::setReadingCmdAck(time_t latency, mcrRefID_t &refid) {
@@ -135,6 +138,14 @@ const std::string &dsDev::familyDescription(uint8_t family) {
 
   case 0x12:
     desc = std::string("ds2406");
+    break;
+
+  case 0x3a:
+    desc = std::string("ds2413");
+    break;
+
+  case 0x26:
+    desc = std::string("ds2438");
     break;
 
   default:

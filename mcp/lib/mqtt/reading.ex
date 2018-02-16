@@ -32,7 +32,9 @@ defmodule Mqtt.Reading do
             refid: nil,
             json: nil,
             msg_recv_dt: Timex.now(),
-            freeram: nil
+            freeram: nil,
+            read_us: nil,
+            write_us: nil
 
   @doc ~S"""
   Parse a JSON into a Reading
@@ -51,8 +53,8 @@ defmodule Mqtt.Reading do
         r = Map.put(r, :json, json) |> Map.put(:msg_recv_dt, Timex.now())
         {:ok, r}
 
-      {:error, e} ->
-        {:error, "inbound msg parse failed #{inspect(e)}"}
+      {:error, {e, v}} ->
+        {:error, "inbound msg parse failed [#{inspect(e)}, #{inspect(v)}]"}
     end
   end
 
