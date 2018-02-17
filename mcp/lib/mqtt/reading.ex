@@ -15,26 +15,26 @@ defmodule Mqtt.Reading do
   @relhum_t "relhum"
   @mcr_stat_t "stats"
 
-  @derive [Jason.Encoder]
-  defstruct version: nil,
-            vsn: "no vsn",
-            host: @undef,
-            device: nil,
-            type: nil,
-            mtime: 0,
-            tc: nil,
-            tf: nil,
-            rh: nil,
-            pio_count: 0,
-            states: nil,
-            cmdack: false,
-            latency: 0,
-            refid: nil,
-            json: nil,
-            msg_recv_dt: Timex.now(),
-            freeram: nil,
-            read_us: nil,
-            write_us: nil
+  # @derive [Jason.Encoder]
+  # defstruct version: nil,
+  #           vsn: "no vsn",
+  #           host: @undef,
+  #           device: nil,
+  #           type: nil,
+  #           mtime: 0,
+  #           tc: nil,
+  #           tf: nil,
+  #           rh: nil,
+  #           pio_count: 0,
+  #           states: nil,
+  #           cmdack: false,
+  #           latency: 0,
+  #           refid: nil,
+  #           json: nil,
+  #           msg_recv_dt: Timex.now(),
+  #           freeram: nil,
+  #           read_us: nil,
+  #           write_us: nil
 
   @doc ~S"""
   Parse a JSON into a Reading
@@ -51,8 +51,11 @@ defmodule Mqtt.Reading do
     case Jason.decode(json, keys: :atoms) do
       {:ok, r} ->
         r =
-          Map.put(r, :json, json) |> Map.put(:msg_recv_dt, Timex.now())
+          r
+          |> Map.put(:json, json)
           |> Map.put(:msg_recv_dt, Timex.now())
+          |> Map.put(:msg_recv_dt, Timex.now())
+          |> Map.put_new(:cmdack, false)
 
         {:ok, r}
 
