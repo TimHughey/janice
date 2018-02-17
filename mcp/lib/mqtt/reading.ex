@@ -50,7 +50,10 @@ defmodule Mqtt.Reading do
       when is_binary(json) do
     case Jason.decode(json, keys: :atoms) do
       {:ok, r} ->
-        r = Map.put(r, :json, json) |> Map.put(:msg_recv_dt, Timex.now())
+        r =
+          Map.put(r, :json, json) |> Map.put(:msg_recv_dt, Timex.now())
+          |> Map.put(:msg_recv_dt, Timex.now())
+
         {:ok, r}
 
       {:error, %Jason.DecodeError{} = e} ->
