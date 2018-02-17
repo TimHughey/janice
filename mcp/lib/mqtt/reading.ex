@@ -82,7 +82,12 @@ defmodule Mqtt.Reading do
     false
   """
   def metadata?(%{} = r) do
-    is_integer(r.mtime) and String.starts_with?(r.host, "mcr") and is_binary(r.type)
+    proper =
+      is_integer(r.mtime) and String.starts_with?(r.host, "mcr") and is_binary(r.type) and
+        (Map.has_key?(r, :vsn) or Map.has_key?(r, :version))
+
+    not proper && Logger.warn(fn -> "bad metadata #{inspect(r)}" end)
+    proper
   end
 
   @doc ~S"""

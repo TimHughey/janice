@@ -155,7 +155,7 @@ defmodule Mqtt.InboundMessage do
     log_reading(r, s.log_reading)
 
     if Reading.startup?(r) do
-      vsn = if is_nil(r.version), do: r.vsn, else: r.version
+      vsn = if is_nil(Map.get(r, :version, nil)), do: r.vsn, else: r.version
       Logger.warn(fn -> "#{r.host} version #{vsn} announced startup" end)
       StartupAnnouncement.record(host: r.host, vsn: vsn)
       Client.send_timesync()
