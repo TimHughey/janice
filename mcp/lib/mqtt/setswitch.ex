@@ -10,7 +10,7 @@ defmodule Mqtt.SetSwitch do
   @undef "undef"
   @setswitch "set.switch"
 
-  @derive [Poison.Encoder]
+  @derive [Jason.Encoder]
   defstruct cmd: @undef,
             mtime: Timex.zero(),
             version: 1
@@ -49,12 +49,12 @@ defmodule Mqtt.SetSwitch do
   ##Examples:
    iex> c = Mqtt.setswitch([%{p0: true}, %{p1: false}], "uuid")
    ...> json = Mqtt.SetSwitch.json(c)
-   ...> parsed_cmd = Poison.Parser.parse!(json, [keys: :atoms!,
+   ...> parsed_cmd = Jason.Parser.parse!(json, [keys: :atoms!,
    ...>                                   as: Mqtt.SetSwitch])
    ...> parsed_cmd === Map.from_struct(c)
    true
   """
   def json(%SetSwitch{} = c) do
-    Poison.encode!(c)
+    Jason.encode!(c)
   end
 end

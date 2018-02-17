@@ -32,7 +32,7 @@ defmodule Web.AuthController do
   end
 
   def callback(%{assigns: %{ueberauth_failure: fails}} = conn, _params) do
-    Logger.warn(fn -> "Auth Failure Map: " <> Poison.encode_to_iodata!(fails, pretty: true) end)
+    Logger.warn(fn -> "Auth Failure Map: " <> Jason.encode_to_iodata!(fails) end)
 
     conn
     |> put_flash(:error, "Ueberauth failure")
@@ -41,7 +41,7 @@ defmodule Web.AuthController do
 
   def callback(%{assigns: %{ueberauth_auth: auth}} = conn, _params) do
     Logger.info(fn -> "Auth Map:" end)
-    Logger.info(fn -> Poison.encode_to_iodata!(auth, pretty: true) end)
+    Logger.info(fn -> Jason.encode_to_iodata!(auth) end)
     Logger.info(fn -> "#{auth.provider} success for #{auth.uid}" end)
 
     case UserFromAuth.find_or_create(auth) do

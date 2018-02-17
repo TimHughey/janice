@@ -13,7 +13,7 @@ defmodule Mqtt.Timesync do
   @undef "undef"
   @timesync "time.sync"
 
-  @derive [Poison.Encoder]
+  @derive [Jason.Encoder]
   defstruct cmd: @undef,
             mtime: Timex.zero(),
             version: 1
@@ -79,12 +79,12 @@ defmodule Mqtt.Timesync do
   ##Examples:
    iex> c = Command.Timesync.setswitch([%{p0: true}, %{p1: false}], "uuid")
    ...> json = Command.Timesync.json(c)
-   ...> parsed_cmd = Poison.Parser.parse!(json, [keys: :atoms!,
+   ...> parsed_cmd = Jason.Parser.parse!(json, [keys: :atoms!,
                                           as: Command.Timesync])
    ...> parsed_cmd === Map.from_struct(c)
    true
   """
   def json(%Timesync{} = c) do
-    Poison.encode!(c)
+    Jason.encode!(c)
   end
 end

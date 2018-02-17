@@ -21,7 +21,7 @@ defmodule Web.AuthErrorHandler do
     Logger.info(fn -> "type: #{inspect(type)} reason: #{inspect(reason)}" end)
     Logger.info(fn -> "opts: #{inspect(opts)}" end)
 
-    # body = Poison.encode!(%{message: to_string(type)})
+    # body = Jason.encode!(%{message: to_string(type)})
     # send_resp(conn, 401, body)
 
     unauthenticated(conn, opts)

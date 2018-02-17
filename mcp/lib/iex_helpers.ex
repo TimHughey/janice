@@ -13,23 +13,23 @@ defmodule Mcp.IExHelpers do
   def make_mtime_current(json) do
     mtime = Timex.now() |> Timex.to_unix()
 
-    Poison.decode!(json, keys: :atoms)
+    Jason.decode!(json, keys: :atoms)
     |> Map.put(:mtime, mtime)
-    |> Poison.encode!()
+    |> Jason.encode!()
   end
 
   def change_device(json, device) do
-    Poison.decode!(json, keys: :atoms)
+    Jason.decode!(json, keys: :atoms)
     |> Map.put(:device, device)
-    |> Poison.encode!()
+    |> Jason.encode!()
   end
 
   def change_temp(json, device, tf) do
-    Poison.decode!(json, keys: :atoms)
+    Jason.decode!(json, keys: :atoms)
     |> Map.put(:device, device)
     |> Map.put(:tf, tf)
     |> Map.put(:tc, (tf - 32.0) / 1.8)
-    |> Poison.encode!()
+    |> Jason.encode!()
   end
 
   def tsensor_test do
@@ -147,7 +147,7 @@ defmodule Mcp.IExHelpers do
       refid: cmd.refid,
       cmdack: true
     }
-    |> Poison.encode!()
+    |> Jason.encode!()
     |> Mqtt.InboundMessage.process()
   end
 

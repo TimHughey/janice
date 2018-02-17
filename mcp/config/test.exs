@@ -19,7 +19,7 @@ config :mcp, MessageSave,
   save: true,
   delete_older_than_hrs: 12
 
-config :mqtt, Mqtt.Client,
+config :mcp, Mqtt.Client,
   log_dropped_msg: true,
   broker: [
     host: 'jophiel.wisslanding.com',
@@ -33,7 +33,7 @@ config :mqtt, Mqtt.Client,
   ],
   timesync: [frequency: 5 * 1000, loops: 5, forever: false, log: true]
 
-config :dispatcher, Mqtt.InboundMessage,
+config :mcp, Mqtt.InboundMessage,
   log_reading: true,
   startup_delay_ms: 200,
   periodic_log_first_ms: 30_000,
@@ -41,7 +41,7 @@ config :dispatcher, Mqtt.InboundMessage,
   rpt_feed: "mcr/f/report",
   cmd_feed: "mcr/f/command"
 
-config :fact, Fact.Influx,
+config :mcp, Fact.Influx,
   database: "mcp_repo",
   host: "jophiel.wisslanding.com",
   auth: [method: :basic, username: "mcp_test", password: "mcp_test"],
@@ -81,24 +81,7 @@ config :mcp, Web.Endpoint,
   # url: [scheme: "https", url: "www.wisslanding.com", port: 443],
   static_url: [path: "/mercurial"],
   debug_errors: true,
-  code_reloader: true,
-  check_origin: false,
-  watchers: [
-    node: [
-      "node_modules/brunch/bin/brunch",
-      "watch",
-      "--stdin",
-      cd: Path.expand("../assets", __DIR__)
-    ]
-  ],
-  live_reload: [
-    patterns: [
-      ~r{priv/static/.*(js|css|png|jpeg|jpg|gif|svg)$},
-      ~r{priv/gettext/.*(po)$},
-      ~r{lib/web/views/.*(ex)$},
-      ~r{lib/web/templates/.*(eex)$}
-    ]
-  ]
+  check_origin: false
 
 config :ueberauth, Ueberauth,
   providers: [

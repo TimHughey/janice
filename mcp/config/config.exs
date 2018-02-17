@@ -75,4 +75,6 @@ config :mcp, Web.ApiAuthAccessPipeline,
   module: Web.Guardian,
   error_handler: Web.ApiAuthErrorHandler
 
+config :phoenix, :format_encoders, json: Jason
+
 import_config "#{Mix.env()}.exs"

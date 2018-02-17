@@ -1,7 +1,7 @@
 defmodule Mcp.ReadingTest do
   @moduledoc false
   use ExUnit.Case, async: true
-  doctest Dispatcher.Reading
+  doctest Mqtt.Reading
 
   setup_all do
     :ok

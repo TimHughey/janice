@@ -76,7 +76,7 @@ defmodule Mcp.Mixfile do
   defp deps do
     [
       {:timex, "~> 3.0"},
-      {:poison, "~> 3.1", override: true},
+      {:jason, "~> 1.0"},
       {:instream, "~> 0.16"},
       {:hackney, "~> 1.1"},
       {:poolboy, "~> 1.5"},

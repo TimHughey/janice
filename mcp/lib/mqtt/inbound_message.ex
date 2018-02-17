@@ -155,7 +155,8 @@ defmodule Mqtt.InboundMessage do
     log_reading(r, s.log_reading)
 
     if Reading.startup?(r) do
-      Logger.warn(fn -> "#{r.host} version #{r.version} announced startup" end)
+      vsn = if is_nil(r.version), do: r.vsn, else: r.version
+      Logger.warn(fn -> "#{r.host} version #{r.vsn} announced startup" end)
       StartupAnnouncement.record(host: r.host, vsn: r.version)
       Client.send_timesync()
     end
@@ -164,7 +165,7 @@ defmodule Mqtt.InboundMessage do
       {mod, func} = config(:temperature_msgs)
 
       # invoke the configured module to process the incoming sensor msg
-      apply(mod, func, [Reading.as_map(r)])
+      apply(mod, func, [r])
     end
 
     if Reading.switch?(r) do
@@ -172,7 +173,7 @@ defmodule Mqtt.InboundMessage do
       # if not Reading.cmdack?(r), do: Logger.info(msg)
 
       # invoke the configured module to process the incoming switch msg
-      apply(mod, func, [Reading.as_map(r)])
+      apply(mod, func, [r])
     end
 
     if Reading.free_ram_stat?(r) do

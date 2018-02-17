@@ -32,7 +32,7 @@ defmodule Mcp.Application do
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
-    opts = [strategy: :one_for_one, name: Mcp.Supervisor, max_restarts: 1, max_seconds: 10]
+    opts = [strategy: :one_for_one, name: Mcp.Supervisor, max_restarts: 100, max_seconds: 5]
 
     # only start the Supervisor if the database password is set
     if get_env(:mcp, Repo, []) |> has_key?(:password) do

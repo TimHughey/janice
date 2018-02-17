@@ -10,7 +10,7 @@ defmodule Web.ApiAuthErrorHandler do
     Logger.warn(fn -> "unauthenticated request for #{conn.request_path}" end)
 
     body =
-      Poison.encode!(%{
+      Jason.encode!(%{
         data: "not authenticated",
         type: "#{inspect(type)}",
         reason: "#{inspect(reason)}"
