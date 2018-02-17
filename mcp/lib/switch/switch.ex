@@ -227,7 +227,7 @@ defmodule Switch do
 
         opts =
           if latency = Map.get(r, :latency, 0) > 0,
-            do: Map.put(opts, :dev_latency, latency),
+            do: Map.put(opts, :dev_latency, r.latency),
             else: opts
 
         change(sw, opts) |> update()
