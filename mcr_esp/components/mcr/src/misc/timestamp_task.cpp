@@ -59,7 +59,7 @@ void mcrTimestampTask::run(void *data) {
 
     // voltage = vref_voltage();
 
-    ESP_LOGE(
+    ESP_LOGI(
         tTAG, "%s %s heap=%uk first=%uk min=%uk max=%uk %sdelta=%d",
         LOG_RESET_COLOR, mcrUtil::dateTimeString(), (curr_heap / 1024),
         (_firstHeap / 1024), (_minHeap / 1024), (_maxHeap / 1024),
@@ -70,9 +70,9 @@ void mcrTimestampTask::run(void *data) {
       char *buff = new char[1024];
       vTaskList(buff);
 
-      printf("\nTask          State  Priority   Stack   Num");
-      printf("\n------------- -----  --------   -----   ---");
-      printf("\n%s\n", buff);
+      ESP_LOGI(tTAG, "Task          State  Priority   Stack   Num");
+      ESP_LOGI(tTAG, "------------- -----  --------   -----   ---");
+      ESP_LOGI(tTAG, "%s", buff);
 
       delete buff;
     }
