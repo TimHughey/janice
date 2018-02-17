@@ -10,10 +10,10 @@ defmodule Mqtt.SetSwitch do
   @undef "undef"
   @setswitch "set.switch"
 
-  @derive [Jason.Encoder]
+  @derive {Jason.Encoder, only: [:cmd, :mtime, :vsn]}
   defstruct cmd: @undef,
             mtime: Timex.zero(),
-            version: 1
+            vsn: 1
 
   @doc ~S"""
   Create a setswitch command with all map values required set to appropriate values

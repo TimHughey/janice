@@ -13,10 +13,10 @@ defmodule Mqtt.Timesync do
   @undef "undef"
   @timesync "time.sync"
 
-  @derive [Jason.Encoder]
+  @derive {Jason.Encoder, only: [:cmd, :mtime, :vsn]}
   defstruct cmd: @undef,
             mtime: Timex.zero(),
-            version: 1
+            vsn: 1
 
   def run(opts) do
     # reasonable defaults if configuration is not set
