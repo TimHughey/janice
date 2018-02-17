@@ -47,9 +47,9 @@ defmodule Mqtt.InboundMessage do
     GenServer.cast(Mqtt.InboundMessage, {:incoming_message, msg})
   end
 
-  defp log_reading(%Reading{}, false), do: nil
+  defp log_reading(%{}, false), do: nil
 
-  defp log_reading(%Reading{} = r, true) do
+  defp log_reading(%{} = r, true) do
     if Reading.temperature?(r) do
       Logger.info(fn ->
         ~s(#{r.host} #{r.device} #{r.tc} #{r.tf})
@@ -156,8 +156,8 @@ defmodule Mqtt.InboundMessage do
 
     if Reading.startup?(r) do
       vsn = if is_nil(r.version), do: r.vsn, else: r.version
-      Logger.warn(fn -> "#{r.host} version #{r.vsn} announced startup" end)
-      StartupAnnouncement.record(host: r.host, vsn: r.version)
+      Logger.warn(fn -> "#{r.host} version #{vsn} announced startup" end)
+      StartupAnnouncement.record(host: r.host, vsn: vsn)
       Client.send_timesync()
     end
 
