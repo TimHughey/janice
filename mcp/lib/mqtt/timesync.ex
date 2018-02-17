@@ -10,13 +10,7 @@ defmodule Mqtt.Timesync do
 
   import Mqtt.Client, only: [publish: 1]
 
-  @undef "undef"
-  @timesync "time.sync"
-
-  @derive {Jason.Encoder, only: [:cmd, :mtime, :vsn]}
-  defstruct cmd: @undef,
-            mtime: Timex.zero(),
-            vsn: 1
+  @timesync_cmd "time.sync"
 
   def run(opts) do
     # reasonable defaults if configuration is not set
@@ -64,13 +58,10 @@ defmodule Mqtt.Timesync do
   """
 
   def new_cmd do
-    %Timesync{}
-    |> Map.put(:cmd, @timesync)
-    |> mtime()
-  end
-
-  defp mtime(%Timesync{} = c) do
-    %Timesync{c | mtime: Timex.now() |> Timex.to_unix()}
+    %{}
+    |> Map.put(:vsn, 1)
+    |> Map.put(:mtime, Timex.now() |> Timex.to_unix())
+    |> Map.put(:cmd, @timesync_cmd)
   end
 
   @doc ~S"""
@@ -84,7 +75,7 @@ defmodule Mqtt.Timesync do
    ...> parsed_cmd === Map.from_struct(c)
    true
   """
-  def json(%Timesync{} = c) do
+  def json(%{} = c) do
     Jason.encode!(c)
   end
 end

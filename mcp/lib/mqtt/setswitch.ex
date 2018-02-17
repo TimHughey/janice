@@ -2,18 +2,10 @@ defmodule Mqtt.SetSwitch do
   @moduledoc """
   """
 
-  alias __MODULE__
-
   require Logger
   use Timex
 
-  @undef "undef"
-  @setswitch "set.switch"
-
-  @derive {Jason.Encoder, only: [:cmd, :mtime, :vsn]}
-  defstruct cmd: @undef,
-            mtime: Timex.zero(),
-            vsn: 1
+  @setswitch_cmd "set.switch"
 
   @doc ~S"""
   Create a setswitch command with all map values required set to appropriate values
@@ -28,19 +20,16 @@ defmodule Mqtt.SetSwitch do
   def new_cmd(device, states, refid)
       when is_binary(device) and is_list(states) and is_binary(refid) do
     cmd =
-      %SetSwitch{}
-      |> Map.put(:cmd, @setswitch)
-      |> mtime()
+      %{}
+      |> Map.put(:vsn, 1)
+      |> Map.put(:cmd, @setswitch_cmd)
+      |> Map.put(:mtime, Timex.now() |> Timex.to_unix())
       |> Map.put_new(:switch, device)
       |> Map.put_new(:states, states)
       |> Map.put_new(:refid, refid)
 
     Logger.debug(fn -> "sw_cmd: #{inspect(cmd)}" end)
     cmd
-  end
-
-  defp mtime(%SetSwitch{} = c) do
-    %SetSwitch{c | mtime: Timex.now() |> Timex.to_unix()}
   end
 
   @doc ~S"""
@@ -54,7 +43,7 @@ defmodule Mqtt.SetSwitch do
    ...> parsed_cmd === Map.from_struct(c)
    true
   """
-  def json(%SetSwitch{} = c) do
+  def json(%{} = c) do
     Jason.encode!(c)
   end
 end
