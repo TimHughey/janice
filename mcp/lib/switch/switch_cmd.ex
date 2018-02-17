@@ -35,8 +35,6 @@ defmodule SwitchCmd do
     timestamps(usec: true)
   end
 
-  def ack_if_needed(%{cmdack: false}), do: :ok
-
   def ack_if_needed(%{cmdack: true, refid: refid, msg_recv_dt: recv_dt}) when is_binary(refid) do
     cmd =
       from(
@@ -78,6 +76,9 @@ defmodule SwitchCmd do
         change(cmd, opts) |> update
     end
   end
+
+  # if the above function doesn't match then this is not a cmd ack
+  def ack_if_needed(%{}), do: :ok
 
   def ack_orphans(opts) do
     minutes_ago = opts.older_than_mins

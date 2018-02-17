@@ -226,8 +226,8 @@ defmodule Switch do
         opts = %{last_seen_at: Timex.from_unix(r.mtime)}
 
         opts =
-          if r.latency > 0,
-            do: Map.put(opts, :dev_latency, r.latency),
+          if latency = Map.get(r, :latency, 0) > 0,
+            do: Map.put(opts, :dev_latency, latency),
             else: opts
 
         change(sw, opts) |> update()

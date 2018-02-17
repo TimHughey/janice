@@ -1,14 +1,11 @@
 defmodule Mqtt.Reading do
   @moduledoc """
   """
-
-  alias __MODULE__
   use Timex
   require Logger
 
   alias Jason
 
-  @undef "undef"
   @startup_t "startup"
   @temp_t "temp"
   @switch_t "switch"
@@ -54,8 +51,6 @@ defmodule Mqtt.Reading do
           r
           |> Map.put(:json, json)
           |> Map.put(:msg_recv_dt, Timex.now())
-          |> Map.put(:msg_recv_dt, Timex.now())
-          |> Map.put_new(:cmdack, false)
 
         {:ok, r}
 
