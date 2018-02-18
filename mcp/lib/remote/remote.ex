@@ -64,6 +64,18 @@ defmodule Remote do
     no_match
   end
 
+  def change_name(host, new_name) when is_binary(host) and is_binary(new_name) do
+    case get_by_host(host) do
+      nil ->
+        :error
+
+      found ->
+        opts = [name: new_name]
+        {res, _rem} = change(found, opts) |> update()
+        res
+    end
+  end
+
   def external_update(%{host: host, vsn: _vsn, mtime: _mtime, hw: _hw} = eu) do
     result =
       :timer.tc(fn ->

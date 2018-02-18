@@ -72,9 +72,9 @@ const std::string &mcrNetwork::getName() {
 }
 
 void mcrNetwork::setName(const std::string name) {
-  ESP_LOGI(TAG, "setting network name=%s", __singleton->_name.c_str());
 
   __singleton->_name = name;
+  ESP_LOGI(TAG, "network name=%s", __singleton->_name.c_str());
 
   xEventGroupSetBits(__singleton->eventGroup(), nameBit());
 }

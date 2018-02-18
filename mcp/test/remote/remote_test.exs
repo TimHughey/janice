@@ -3,6 +3,17 @@ defmodule RemoteTest do
   use Timex
 
   def test_host1, do: "mcr.0102030405"
+  def test_host2, do: "mcr.0102030415"
+
+  def test_ext2,
+    do: %{
+      host: test_host2(),
+      hw: "esp32",
+      vsn: "1234567",
+      mtime: Timex.now() |> Timex.to_unix()
+    }
+
+  def test_name2, do: "test_name"
 
   setup_all do
     :ok
@@ -40,5 +51,14 @@ defmodule RemoteTest do
     res = Remote.mark_as_seen(test_host1(), Timex.now() |> Timex.to_unix())
 
     assert test_host1() === res
+  end
+
+  test "change a name" do
+    test_ext2() |> Remote.external_update()
+
+    res = Remote.change_name(test_host2(), test_name2())
+    name = Remote.get_name_by_host(test_host2())
+
+    assert res === :ok and name === test_name2()
   end
 end
