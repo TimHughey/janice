@@ -73,8 +73,8 @@ defmodule Dutycycle.Control do
   end
 
   def terminate(reason, s) do
-    all_dcs = Dutycycle.all()
-    stop_all(s, all_dcs, s.opts)
+    # all_dcs = Dutycycle.all()
+    # stop_all(s, all_dcs, s.opts)
 
     Logger.warn(fn -> "terminating with reason #{inspect(reason)}" end)
   end
@@ -214,13 +214,13 @@ defmodule Dutycycle.Control do
   end
 
   def handle_info({:startup}, %{tasks: tasks} = s) do
-    all_dcs = Dutycycle.all()
-    stop_all(s, all_dcs, s.opts)
-
-    active_dcs = Dutycycle.all_active()
-    tasks = start_all(active_dcs, tasks, s.opts)
-
-    s = Map.put(s, :tasks, tasks)
+    # all_dcs = Dutycycle.all()
+    # stop_all(s, all_dcs, s.opts)
+    #
+    # active_dcs = Dutycycle.all_active()
+    # tasks = start_all(active_dcs, tasks, s.opts)
+    #
+    # s = Map.put(s, :tasks, tasks)
 
     {:noreply, s}
   end

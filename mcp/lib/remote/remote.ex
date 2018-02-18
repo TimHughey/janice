@@ -70,8 +70,11 @@ defmodule Remote do
         :error
 
       found ->
-        opts = [name: new_name]
-        {res, _rem} = change(found, opts) |> update()
+        {res, rem} = change(found, name: new_name) |> update()
+
+        if res == :ok,
+          do: SetName.new_cmd(rem.host, rem.name) |> SetName.json() |> Client.publish()
+
         res
     end
   end
