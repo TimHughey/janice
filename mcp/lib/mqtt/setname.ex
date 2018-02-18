@@ -14,8 +14,8 @@ defmodule Mqtt.SetName do
       |> Map.put(:vsn, Application.get_env(:mcp, :git_sha))
       |> Map.put(:cmd, @setname_cmd)
       |> Map.put(:mtime, Timex.now() |> Timex.to_unix())
-      |> Map.put_new(:host, String.replace_prefix(name, "mcr.", ""))
-      |> Map.put_new(:name, name)
+      |> Map.put_new(:host, host)
+      |> Map.put_new(:name, String.replace_prefix(name, "mcr.", ""))
 
     Logger.debug(fn -> "name_cmd: #{inspect(cmd)}" end)
     cmd
