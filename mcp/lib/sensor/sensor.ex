@@ -127,14 +127,15 @@ defmodule Sensor do
   def fahrenheit(%Sensor{temperature: %SensorTemperature{tf: tf}}), do: tf
   def fahrenheit(%Sensor{} = s), do: Logger.warn(inspect(s))
 
-  def external_update(r)
-      when is_map(r) do
-    s =
-      case get(r.device, r.type) do
-        nil ->
-          Logger.info(fn -> "discovered new sensor [#{r.device}]" end)
+  def external_update(%{device: device, host: host, mtime: mtime, type: type} = r) do
+    hostname = Remote.mark_as_seen(host, mtime)
 
-          %Sensor{name: r.device, device: r.device, type: r.type}
+    s =
+      case get(device, type) do
+        nil ->
+          Logger.info(fn -> "discovered new sensor [#{device}]" end)
+
+          %Sensor{name: device, device: device, type: type}
           |> ensure_temperature()
           |> ensure_relhum()
           |> insert!()
@@ -145,7 +146,8 @@ defmodule Sensor do
 
     s = update_reading(s, r)
 
-    case s.type do
+    # TODO: refactor this to a standalone function
+    case type do
       "temp" ->
         Logger.debug(fn ->
           tf = s.temperature.tf
@@ -157,7 +159,7 @@ defmodule Sensor do
         end)
 
         Fahrenheit.record(
-          remote_host: r.host,
+          remote_host: hostname,
           device: r.device,
           name: s.name,
           mtime: r.mtime,
@@ -165,7 +167,7 @@ defmodule Sensor do
         )
 
         Celsius.record(
-          remote_host: r.host,
+          remote_host: hostname,
           device: r.device,
           name: s.name,
           mtime: r.mtime,
@@ -186,7 +188,7 @@ defmodule Sensor do
         end)
 
         Fahrenheit.record(
-          remote_host: r.host,
+          remote_host: hostname,
           device: r.device,
           name: s.name,
           mtime: r.mtime,
@@ -194,7 +196,7 @@ defmodule Sensor do
         )
 
         Celsius.record(
-          remote_host: r.host,
+          remote_host: hostname,
           device: r.device,
           name: s.name,
           mtime: r.mtime,
@@ -202,7 +204,7 @@ defmodule Sensor do
         )
 
         RelativeHumidity.record(
-          remote_host: r.host,
+          remote_host: hostname,
           device: r.device,
           name: s.name,
           mtime: r.mtime,
@@ -211,6 +213,11 @@ defmodule Sensor do
     end
 
     s
+  end
+
+  def external_update(%{} = eu) do
+    Logger.warn(fn -> "external_update received a bad map #{inspect(eu)}" end)
+    :error
   end
 
   def get(name)

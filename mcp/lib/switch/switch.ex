@@ -117,9 +117,11 @@ defmodule Switch do
     |> delete_all()
   end
 
-  def external_update(%{device: device} = r) do
+  def external_update(%{host: host, device: device, mtime: mtime} = r) do
     result =
       :timer.tc(fn ->
+        Remote.mark_as_seen(host, mtime)
+
         sw = get_by_device(device)
 
         if sw == nil do
@@ -149,6 +151,11 @@ defmodule Switch do
 
         :error
     end
+  end
+
+  def external_update(%{} = eu) do
+    Logger.warn(fn -> "external_update received a bad map #{inspect(eu)}" end)
+    :error
   end
 
   ##

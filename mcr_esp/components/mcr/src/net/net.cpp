@@ -40,6 +40,7 @@ mcrNetwork::mcrNetwork() {
 }
 
 EventBits_t mcrNetwork::connectedBit() { return BIT0; }
+EventBits_t mcrNetwork::nameBit() { return BIT2; }
 EventBits_t mcrNetwork::timesetBit() { return BIT1; }
 
 EventGroupHandle_t mcrNetwork::eventGroup() { return __singleton->_evg; }
@@ -52,7 +53,7 @@ void mcrNetwork::ensureTimeIsSet() {
   int retry = 0;
   const int retry_count = 10;
   while (timeinfo.tm_year < (2016 - 1900) && ++retry < retry_count) {
-    ESP_LOGI(TAG, "Waiting for system time to be set... (%d/%d)", retry,
+    ESP_LOGI(TAG, "waiting for system time to be set... (%d/%d)", retry,
              retry_count);
     vTaskDelay(pdMS_TO_TICKS(2000));
     time(&now);
@@ -60,6 +61,22 @@ void mcrNetwork::ensureTimeIsSet() {
   }
 
   xEventGroupSetBits(_evg, timesetBit());
+}
+
+const std::string &mcrNetwork::getName() {
+  if (__singleton->_name.length() == 0) {
+    return mcrUtil::macAddress();
+  }
+
+  return __singleton->_name;
+}
+
+void mcrNetwork::setName(const std::string name) {
+  ESP_LOGI(TAG, "setting network name=%s", __singleton->_name.c_str());
+
+  __singleton->_name = name;
+
+  xEventGroupSetBits(__singleton->eventGroup(), nameBit());
 }
 
 bool mcrNetwork::start() {
@@ -83,6 +100,13 @@ bool mcrNetwork::waitForConnection() {
   xEventGroupWaitBits(__singleton->eventGroup(), connectedBit(), false, true,
                       portMAX_DELAY);
   return true;
+}
+
+bool mcrNetwork::waitForName(int wait_ms) {
+  esp_err_t res = xEventGroupWaitBits(__singleton->eventGroup(), nameBit(),
+                                      false, true, pdMS_TO_TICKS(wait_ms));
+
+  return (res == ESP_OK) ? true : false;
 }
 
 bool mcrNetwork::waitForTimeset() {

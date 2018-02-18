@@ -70,6 +70,7 @@ public:
   void setDescription(const std::string &desc) { _desc = desc; };
   void setDescription(const char *desc) { _desc = desc; };
   const std::string &description() const { return _desc; };
+  virtual const mcrDevID_t &externalName() const { return _id; };
 
   void setReading(Reading_t *reading);
   Reading_t *reading();
@@ -127,7 +128,11 @@ protected:
 
   int _crc_mismatches = 0;
   int _read_errors = 0;
+
   int _write_errors = 0;
+
+  mcrDevID_t _external_name; // name used when reporting externally
+  void setExternalName(const mcrDevID_t &ext_name);
 };
 
 #endif // mcrDev_h

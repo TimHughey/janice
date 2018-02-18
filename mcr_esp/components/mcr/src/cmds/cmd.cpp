@@ -34,6 +34,7 @@
 #include "cmds/cmd.hpp"
 #include "devs/base.hpp"
 #include "misc/util.hpp"
+#include "net/mcr_net.hpp"
 
 mcrCmd::mcrCmd(const mcrDevID_t &id, cmd_bitset_t mask, cmd_bitset_t state) {
   _type = cmdSET_SWITCH;
@@ -170,6 +171,11 @@ mcrCmd_t *mcrCmd::fromJSON(const std::string *json) {
   const char *cmd_str = root["cmd"];
 
   switch (cmd_type) {
+
+  case cmdSET_SWITCH:
+    cmd = createSetSwitch(root, parse_us);
+    break;
+
   case cmdTIME_SYNC:
     ESP_LOGD("mcrCmd", "%s unncessary for ESP32 (parse=%lldus)", cmd_str,
              parse_us);
@@ -177,8 +183,8 @@ mcrCmd_t *mcrCmd::fromJSON(const std::string *json) {
     checkTimeSkew(root);
     break;
 
-  case cmdSET_SWITCH:
-    cmd = createSetSwitch(root, parse_us);
+  case cmdSET_NAME:
+    handle_set_name_cmd(root);
     break;
 
   case cmdHEARTBEAT:
@@ -196,6 +202,12 @@ mcrCmd_t *mcrCmd::fromJSON(const std::string *json) {
   return cmd;
 }
 
+void mcrCmd::handle_set_name_cmd(JsonObject &root) {
+  if (root["host"] == mcrUtil::hostID()) {
+    mcrNetwork::setName(root["name"]);
+  }
+}
+
 cmdType_t mcrCmd::parseCmd(JsonObject &root) {
   const char *cmd = root["cmd"];
   if (cmd == nullptr) {
@@ -210,6 +222,9 @@ cmdType_t mcrCmd::parseCmd(JsonObject &root) {
 
   if (strcmp("heartbeat", cmd) == 0)
     return cmdHEARTBEAT;
+
+  if (strcmp("set.name", cmd) == 0)
+    return cmdSET_NAME;
 
   return cmdUNKNOWN;
 }

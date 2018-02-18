@@ -58,16 +58,21 @@ public:
 
   void ensureTimeIsSet();
   static EventGroupHandle_t eventGroup();
+  static const std::string &getName();
   static mcrNetwork *instance();
+  static void setName(const std::string name);
   bool start();
   static bool waitForConnection();
+  static bool waitForName(int wait_ms = 0);
   static bool waitForTimeset();
 
   static EventBits_t connectedBit();
+  static EventBits_t nameBit();
   static EventBits_t timesetBit();
 
 private:
   WiFi _wifi;
   EventGroupHandle_t _evg;
   mcrWiFiEventHandler *_event_handler = nullptr;
+  std::string _name;
 };

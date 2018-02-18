@@ -43,7 +43,8 @@ typedef enum {
   cmdNONE,
   cmdTIME_SYNC,
   cmdSET_SWITCH,
-  cmdHEARTBEAT
+  cmdHEARTBEAT,
+  cmdSET_NAME
 } cmdType_t;
 
 class mcrCmd {
@@ -91,6 +92,7 @@ public:
   static void checkTimeSkew(JsonObject &root);
   static mcrCmd_t *createSetSwitch(JsonObject &root, int64_t parse_us);
   static mcrCmd_t *fromJSON(const std::string *json);
+  static void handle_set_name_cmd(JsonObject &root);
   static cmdType_t parseCmd(JsonObject &root);
   static size_t size();
 

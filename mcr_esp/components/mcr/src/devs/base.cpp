@@ -113,6 +113,10 @@ void mcrDev::crcMismatch() { _crc_mismatches++; }
 void mcrDev::readFailure() { _read_errors++; }
 void mcrDev::writeFailure() { _write_errors++; }
 
+void mcrDev::setExternalName(const mcrDevID_t &ext_name) {
+  _external_name = ext_name;
+}
+
 const std::string mcrDev::debug() {
   std::ostringstream debug_str;
 

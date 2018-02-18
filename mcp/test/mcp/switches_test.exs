@@ -9,6 +9,7 @@ defmodule SwitchTest do
 
   test "process an external switch update" do
     r = %{
+      host: "mcr.0102030405",
       device: "ds/291d1823000000",
       pio_count: 8,
       cmdack: false,

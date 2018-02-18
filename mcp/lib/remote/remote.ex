@@ -11,12 +11,13 @@ defmodule Remote do
 
   import Ecto.Changeset, only: [change: 2]
   import Ecto.Query, only: [from: 2]
-  import Repo, only: [insert: 1, insert!: 1, one: 1, update: 1]
+  import Repo, only: [insert!: 1, one: 1, update: 1]
 
   alias Fact.RunMetric
   alias Fact.StartupAnnouncement
 
   alias Mqtt.Client
+  alias Mqtt.SetName
 
   schema "remote" do
     field(:host, :string)
@@ -31,20 +32,28 @@ defmodule Remote do
 
   def add(%Remote{} = r), do: add([r])
 
+  def add(%{host: host, hw: hw, vsn: vsn, mtime: mtime}) do
+    [
+      %Remote{
+        host: host,
+        name: host,
+        hw: hw,
+        firmware_vsn: vsn,
+        last_seen_at: Timex.from_unix(mtime),
+        last_start_at: Timex.from_unix(mtime)
+      }
+    ]
+    |> add()
+  end
+
   def add(list) when is_list(list) do
     for %Remote{} = r <- list do
-      q =
-        from(
-          remote in Remote,
-          where: remote.host == ^r.host
-        )
-
-      case one(q) do
+      case get_by_host(r.host) do
         nil ->
           insert!(r)
 
         found ->
-          Logger.warn(fn -> ~s/[#{r.host}] already exists, skipping add/ end)
+          Logger.debug(fn -> ~s/[#{r.host}] already exists, skipping add/ end)
           found
       end
     end
@@ -55,24 +64,10 @@ defmodule Remote do
     no_match
   end
 
-  def external_update(%{host: host, vsn: vsn, mtime: mtime, hw: hw} = eu) do
+  def external_update(%{host: host, vsn: _vsn, mtime: _mtime, hw: _hw} = eu) do
     result =
       :timer.tc(fn ->
-        rem = get_by_host(host)
-
-        if rem == nil do
-          %Remote{
-            host: host,
-            name: host,
-            hw: hw,
-            firmware_vsn: vsn,
-            last_seen_at: Timex.from_unix(mtime),
-            last_start_at: Timex.from_unix(mtime)
-          }
-          |> insert()
-        else
-          rem |> update_from_external(eu)
-        end
+        eu |> add() |> update_from_external(eu)
       end)
 
     case result do
@@ -87,7 +82,7 @@ defmodule Remote do
 
         :ok
 
-      # TODO: extract the actual error from the update
+      # TODO: extract the actual error from update
       {_t, {_, _}} ->
         Logger.warn(fn ->
           "external update failed for [#{host}]"
@@ -102,17 +97,46 @@ defmodule Remote do
     :error
   end
 
-  defp get_by_host(host) do
+  def get_by_host(host) do
     from(remote in Remote, where: remote.host == ^host) |> one()
   end
 
-  defp update_from_external(rem, eu) do
+  def get_name_by_host(host) do
+    case get_by_host(host) do
+      nil -> host
+      rem -> rem.name
+    end
+  end
+
+  def mark_as_seen(host, mtime) when is_binary(host) do
+    case get_by_host(host) do
+      nil -> host
+      rem -> mark_as_seen(rem, Timex.from_unix(mtime))
+    end
+  end
+
+  def mark_as_seen(%Remote{} = rem, %DateTime{} = dt) do
+    # only update last seen if more than 30 seconds different
+    # this is to avoid high rates of updates when a device hosts many sensors
+    if Timex.diff(dt, rem.last_seen_at, :seconds) > 10 do
+      opts = [last_seen_at: dt]
+      {res, updated} = change(rem, opts) |> update()
+      if res == :ok, do: updated.name, else: rem.name
+    else
+      rem.name
+    end
+  end
+
+  defp update_from_external([%Remote{} = rem], eu) do
+    # only the feather m0 remote devices need the time
+    if eu.hw in ["m0"], do: Client.send_timesync()
+
+    # all devices are sent their name
+    SetName.new_cmd(rem.host, rem.name) |> SetName.json() |> Client.publish()
+
     Logger.warn(fn -> "#{rem.name} started (host=#{rem.host},hw=#{eu.hw},vsn=#{eu.vsn})" end)
 
     StartupAnnouncement.record(host: rem.name, vsn: eu.vsn, hw: eu.hw)
-
-    # only the feather m0 remote devices need the time
-    if eu.hw in ["m0"], do: Client.send_timesync()
 
     opts = [
       last_start_at: Timex.from_unix(eu.mtime),
@@ -123,4 +147,6 @@ defmodule Remote do
 
     change(rem, opts) |> update()
   end
+
+  defp update_from_external({:error, _}, _), do: {:error, "bad update"}
 end

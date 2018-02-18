@@ -32,6 +32,7 @@
 #include "devs/base.hpp"
 #include "devs/i2c_dev.hpp"
 #include "misc/util.hpp"
+#include "net/mcr_net.hpp"
 
 const char *i2cDev::i2cDevDesc(uint8_t addr) {
   switch (addr) {
@@ -60,7 +61,7 @@ i2cDev::i2cDev(mcrDevAddr_t &addr, bool use_multiplexer, uint8_t bus)
 
   //      example id: i2c/f8f005f73b53.04.am2315
   //    format of id: i2c/mac_address.bus.desc
-  id_ss << "i2c/" << mcrUtil::macAddress() << ".";
+  id_ss << "i2c/self.";
   id_ss << std::setw(sizeof(uint8_t) * 2) << std::setfill('0') << std::hex
         << static_cast<unsigned>(this->bus());
   id_ss << "." << description();
@@ -68,6 +69,18 @@ i2cDev::i2cDev(mcrDevAddr_t &addr, bool use_multiplexer, uint8_t bus)
   mcrDevID_t new_id = mcrDevID(id_ss.str().c_str());
   setID(new_id);
 };
+
+const mcrDevID_t &i2cDev::externalName() {
+  std::stringstream ext_id;
+
+  ext_id << "i2c/" << mcrNetwork::getName();
+  ext_id << std::setw(sizeof(uint8_t) * 2) << std::setfill('0') << std::hex
+         << static_cast<unsigned>(this->bus());
+  ext_id << "." << description();
+
+  _external_name = mcrDevID(ext_id.str().c_str());
+  return _external_name;
+}
 
 uint8_t i2cDev::devAddr() { return firstAddressByte(); };
 bool i2cDev::useMultiplexer() { return _use_multiplexer; };

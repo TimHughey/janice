@@ -317,9 +317,8 @@ bool mcrI2c::readAM2315(i2cDev_t *dev, humidityReading_t **reading, bool wake) {
     float tc =
         ((((buff[4] & 0x7F) * 256) + buff[5]) / 10) * ((buff[4] >> 7) ? -1 : 1);
 
-    // if (reading != nullptr) {
-    *reading = new humidityReading(dev->id(), dev->readTimestamp(), tc, rh);
-    // }
+    *reading =
+        new humidityReading(dev->externalName(), dev->readTimestamp(), tc, rh);
 
     rc = true;
   } else { // crc did not match
@@ -412,7 +411,8 @@ bool mcrI2c::readSHT31(i2cDev_t *dev, humidityReading_t **reading) {
     float tc = (float)((stc * 175) / 0xffff) - 45;
     float rh = (float)((srh * 100) / 0xffff);
 
-    *reading = new humidityReading(dev->id(), dev->readTimestamp(), tc, rh);
+    *reading =
+        new humidityReading(dev->externalName(), dev->readTimestamp(), tc, rh);
 
     rc = true;
   } else { // crc did not match
@@ -424,10 +424,10 @@ bool mcrI2c::readSHT31(i2cDev_t *dev, humidityReading_t **reading) {
 }
 
 void mcrI2c::report(void *task_data) {
+  mcrNetwork::waitForName(10000);
 
   trackReport(true);
 
-  // while (next_dev != nullptr) {
   for (auto it = knownDevices(); moreDevices(it); it++) {
     auto rc = false;
     i2cDev_t *dev = (i2cDev_t *)*it;
@@ -484,7 +484,7 @@ void mcrI2c::run(void *task_data) {
   mcrNetwork::waitForTimeset();
   ESP_LOGI(tagEngine(), "time set, proceeding to task loop");
 
-  delay(3000);
+  // delay(3000);
   _last_wake.engine = xTaskGetTickCount();
   for (;;) {
     discover(nullptr);

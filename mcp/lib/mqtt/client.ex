@@ -135,7 +135,7 @@ defmodule Mqtt.Client do
     )
   end
 
-  def handle_call({:publish, feed, payload, pub_opts}, _from, s)
+  def handle_call({:publish, feed, payload, pub_opts}, _from, %{autostart: true} = s)
       when is_binary(feed) and is_binary(payload) and is_list(pub_opts) do
     {elapsed_us, res} =
       :timer.tc(fn ->
@@ -150,6 +150,12 @@ defmodule Mqtt.Client do
     )
 
     {:reply, res, s}
+  end
+
+  def handle_call({:publish, feed, payload, pub_opts}, _from, %{autostart: false} = s)
+      when is_binary(feed) and is_binary(payload) and is_list(pub_opts) do
+    Logger.warn(fn -> "not started, dropping #{inspect(payload)}" end)
+    {:reply, :not_started, s}
   end
 
   def handle_call({:subscribe, feed}, _from, s)
