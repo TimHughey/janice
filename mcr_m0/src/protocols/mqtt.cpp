@@ -71,8 +71,9 @@ void mcrMQTT::announceStartup() {
   JsonObject &root = jsonBuffer.createObject();
   root["host"] = mcrUtil::hostID();
   root["type"] = "startup";
+  root["hw"] = "m0";
   root["mtime"] = millis();
-  root["version"] = Version::git();
+  root["vsn"] = Version::git();
 
   root.printTo(buffer, json_max);
   publish(buffer);

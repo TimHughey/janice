@@ -6,6 +6,7 @@ defmodule Mqtt.Reading do
 
   alias Jason
 
+  @boot_t "boot"
   @startup_t "startup"
   @temp_t "temp"
   @switch_t "switch"
@@ -51,6 +52,8 @@ defmodule Mqtt.Reading do
           r
           |> Map.put(:json, json)
           |> Map.put(:msg_recv_dt, Timex.now())
+          |> Map.put_new(:vsn, Map.get(r, :version, "novsn"))
+          |> Map.put_new(:hw, "m0")
 
         {:ok, r}
 
@@ -135,7 +138,7 @@ defmodule Mqtt.Reading do
     false
   """
   def startup?(%{} = r) do
-    metadata?(r) and r.type === @startup_t
+    metadata?(r) and (r.type === @boot_t or r.type === @startup_t)
   end
 
   @doc ~S"""

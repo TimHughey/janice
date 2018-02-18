@@ -9,9 +9,6 @@ defmodule Mqtt.InboundMessage do
   alias Mqtt.Reading
   alias Fact.FreeRamStat
   alias Fact.RunMetric
-  alias Fact.StartupAnnouncement
-
-  alias Mqtt.Client
 
   def start_link(s) do
     GenServer.start_link(Mqtt.InboundMessage, s, name: Mqtt.InboundMessage)
@@ -155,10 +152,10 @@ defmodule Mqtt.InboundMessage do
     log_reading(r, s.log_reading)
 
     if Reading.startup?(r) do
-      vsn = if is_nil(Map.get(r, :version, nil)), do: r.vsn, else: r.version
-      Logger.warn(fn -> "#{r.host} version #{vsn} announced startup" end)
-      StartupAnnouncement.record(host: r.host, vsn: vsn)
-      Client.send_timesync()
+      {mod, func} = config(:startup_msgs)
+
+      # invoke the configured module to process startup messages
+      apply(mod, func, [r])
     end
 
     if Reading.temperature?(r) || Reading.relhum?(r) do

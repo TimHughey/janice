@@ -32,8 +32,8 @@
 #include <elapsedMillis.h>
 
 #include "../devs/id.hpp"
-#include "../misc/util.hpp"
 #include "../misc/refid.hpp"
+#include "../misc/util.hpp"
 #include "reading.hpp"
 
 Reading::Reading(time_t mtime) { _mtime = mtime; }
@@ -52,7 +52,7 @@ void Reading::setCmdAck(time_t latency, const char *refid_raw) {
 }
 
 void Reading::commonJSON(JsonObject &root) {
-  root["version"] = _version;
+  root["vsn"] = _version;
   root["host"] = mcrUtil::hostID();
   root["device"] = _id.asString();
   root["mtime"] = _mtime;

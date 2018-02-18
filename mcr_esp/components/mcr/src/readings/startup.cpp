@@ -28,5 +28,6 @@
 startupReading::startupReading(time_t mtime) : Reading(mtime){};
 
 void startupReading::populateJSON(JsonObject &root) {
-  root["type"] = "startup";
+  root["type"] = "boot";
+  root["hw"] = "esp32";
 };

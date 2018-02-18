@@ -16,6 +16,7 @@ defmodule Fact.StartupAnnouncement do
     tag(:env, default: "#{Mix.env()}")
     tag(:host, default: "unknown-host")
     tag(:vsn, default: "unknown-vsn")
+    tag(:hw, default: "unknown-hw")
 
     field(:val)
   end

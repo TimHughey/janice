@@ -47,7 +47,8 @@ config :mcp, Web.Endpoint,
 config :mcp, Mqtt.InboundMessage,
   log_reading: false,
   temperature_msgs: {Sensor, :external_update},
-  switch_msgs: {Switch, :external_update}
+  switch_msgs: {Switch, :external_update},
+  startup_msgs: {Remote, :external_update}
 
 config :ueberauth, Ueberauth, base_path: "/mercurial/auth"
 

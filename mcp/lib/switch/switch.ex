@@ -74,7 +74,7 @@ defmodule Switch do
         ensure_states(sw) |> ensure_cmds() |> insert!()
 
       found ->
-        Logger.warn(~s/[#{sw.device} already exists, skipping add]/)
+        Logger.warn(~s/[#{sw.device}] already exists, skipping add/)
         found
     end
   end
