@@ -11,6 +11,7 @@
 #include "misc/dev_task.hpp"
 #include "misc/timestamp_task.hpp"
 #include "misc/util.hpp"
+#include "misc/version.hpp"
 #include "net/mcr_net.hpp"
 #include "protocols/mqtt.hpp"
 
@@ -30,6 +31,8 @@ void app_main() {
   ESP_LOGI(TAG, "%s entered", __PRETTY_FUNCTION__);
   ESP_LOGI(TAG, "portTICK_PERIOD_MS=%u and 10ms=%uticks", portTICK_PERIOD_MS,
            pdMS_TO_TICKS(10));
+  ESP_LOGI(TAG, "mcr_rev=%s git_rev=%s", mcrVersion::mcr_stable(),
+           mcrVersion::git());
 
   // must create network first
   network = new mcrNetwork();

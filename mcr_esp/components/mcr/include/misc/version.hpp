@@ -29,10 +29,10 @@
 
 static const char novsn[] = "0000000";
 
-class Version {
+class mcrVersion {
 private:
 public:
-  Version(){};
+  mcrVersion(){};
   static const char *git() {
 #ifdef GIT_REV
     return GIT_VERSION(GIT_REV); // GIT_REV is set on compiler cmd line
