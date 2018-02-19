@@ -62,6 +62,14 @@ config MCR_IOT_ENDPOINT
 		help
 			Topic (feed) for receiving commands from the IoT endpoint
 
+	config MCR_MQTT_OTA_FEED
+		depends on MCR_MQTT_CONFIG
+		string "Over-The-Air (OTA) Subscribe Topc (Feed)"
+		default "proc/mcr/f/ota"
+		help
+			MCR devices can receive firmware upgrades OTA.  This is the feed (topic)
+			that will be used exclusively for the firmware binary.
+
 	config MCR_IOT_TASKS
 		bool "IoT Tasks for Inbound and Outbound Messages"
 		default y

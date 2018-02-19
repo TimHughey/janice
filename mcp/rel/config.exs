@@ -51,11 +51,6 @@ release :mcp do
   set(
     applications: [
       :runtime_tools,
-      web: :permanent,
-      command: :permanent,
-      dispatcher: :permanent,
-      fact: :permanent,
-      mcp: :permanent,
       mqtt: :permanent
     ]
   )

@@ -21,17 +21,6 @@ defmodule Mqtt.SetName do
     cmd
   end
 
-  @doc ~S"""
-  Generate JSON for a command
-
-  ##Examples:
-   iex> c = Mqtt.setswitch([%{p0: true}, %{p1: false}], "uuid")
-   ...> json = Mqtt.SetSwitch.json(c)
-   ...> parsed_cmd = Jason.Parser.parse!(json, [keys: :atoms!,
-   ...>                                   as: Mqtt.SetSwitch])
-   ...> parsed_cmd === Map.from_struct(c)
-   true
-  """
   def json(%{} = c) do
     Jason.encode!(c)
   end

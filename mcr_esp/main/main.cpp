@@ -8,7 +8,6 @@
 
 #include "engines/ds_engine.hpp"
 #include "engines/i2c_engine.hpp"
-#include "misc/dev_task.hpp"
 #include "misc/timestamp_task.hpp"
 #include "misc/util.hpp"
 #include "misc/version.hpp"
@@ -37,7 +36,7 @@ void app_main() {
   // must create network first
   network = new mcrNetwork();
   timestampTask = new mcrTimestampTask();
-  mqttTask = new mcrMQTT();
+  mqttTask = mcrMQTT::instance();
   dsEngineTask = new mcrDS();
   i2cEngineTask = new mcrI2c();
 
@@ -48,10 +47,6 @@ void app_main() {
   mqttTask->start();
   dsEngineTask->start();
   i2cEngineTask->start();
-
-  // mcrDevTask *devTask = nullptr;
-  // devTask = new mcrDevTask();
-  // devTask->start();
 
   network->start();
 

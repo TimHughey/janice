@@ -1,36 +1,34 @@
 /*
-    mcpr_mqtt.cpp - Master Control Remote MQTT
-    Copyright (C) 2017  Tim Hughey
+     mcpr_mqtt.cpp - Master Control Remote MQTT
+     Copyright (C) 2017  Tim Hughey
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+     This program is free software: you can redistribute it and/or modify
+     it under the terms of the GNU General Public License as published by
+     the Free Software Foundation, either version 3 of the License, or
+     (at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+     This program is distributed in the hope that it will be useful,
+     but WITHOUT ANY WARRANTY; without even the implied warranty of
+     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+     GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+     You should have received a copy of the GNU General Public License
+     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-    https://www.wisslanding.com
-*/
+     https://www.wisslanding.com
+ */
 
 // #define VERBOSE 1
 
+#include <array>
 #include <cstdlib>
 #include <sstream>
 #include <string>
 
-#include <FreeRTOS.h>
-#include <System.h>
-#include <Task.h>
-#include <WiFi.h>
-#include <WiFiEventHandler.h>
 #include <esp_log.h>
+#include <freertos/FreeRTOS.h>
 #include <freertos/event_groups.h>
+#include <freertos/task.h>
 
 // MCR specific includes
 #include "external/mongoose.h"
@@ -41,17 +39,22 @@
 #include "protocols/mqtt_in.hpp"
 #include "readings/readings.hpp"
 
-static char tTAG[] = "mcrMQTT";
-static char outboundTAG[] = "mcrMQTT outboundMsg";
-
 static mcrMQTT *__singleton = nullptr;
 
 // prototype for the event handler
 static void _ev_handler(struct mg_connection *nc, int ev, void *);
 
-static struct mg_mqtt_topic_expression s_topic_expr = {NULL, 0};
+// SINGLETON!  use instance() for object access
+mcrMQTT_t *mcrMQTT::instance() {
+  if (__singleton == nullptr) {
+    __singleton = new mcrMQTT();
+  }
 
-mcrMQTT::mcrMQTT() : Task(tTAG, 5 * 1024, 15) {
+  return __singleton;
+}
+
+// SINGLETON! constructor is private
+mcrMQTT::mcrMQTT() {
   // convert the port number to a string
   std::ostringstream endpoint_ss;
   endpoint_ss << _host << ':' << _port;
@@ -59,13 +62,13 @@ mcrMQTT::mcrMQTT() : Task(tTAG, 5 * 1024, 15) {
   // create the endpoint URI
   _endpoint = endpoint_ss.str();
 
-  _rb_out = new Ringbuffer(_rb_size);
-  _rb_in = new Ringbuffer(_rb_size);
+  _rb_out = xRingbufferCreate(_rb_out_size, RINGBUF_TYPE_NOSPLIT);
+  _rb_in = xRingbufferCreate(_rb_in_size, RINGBUF_TYPE_NOSPLIT);
 
-  ESP_LOGI(tTAG, "created ringbuffers size=%u in=%p out=%p", _rb_size, _rb_out,
-           _rb_in);
-
-  __singleton = this;
+  ESP_LOGI(tagEngine(), "rb in  size=%u msgs=%d", _rb_in_size,
+           (_rb_in_size / sizeof(mqttInMsg_t)));
+  ESP_LOGI(tagEngine(), "rb out size=%u msgs=%d", _rb_out_size,
+           (_rb_out_size / sizeof(mqttOutMsg_t)));
 }
 
 void mcrMQTT::announceStartup() {
@@ -75,6 +78,12 @@ void mcrMQTT::announceStartup() {
 }
 
 void mcrMQTT::connect(int wait_ms) {
+
+  // establish the client id
+  if (_client_id.length() == 0) {
+    _client_id = "esp-" + mcrUtil::macAddress();
+  }
+
   TickType_t last_wake = xTaskGetTickCount();
 
   mcrNetwork::waitForConnection();
@@ -93,80 +102,120 @@ void mcrMQTT::connect(int wait_ms) {
   _connection = mg_connect(&_mgr, _endpoint.c_str(), _ev_handler);
 
   if (_connection) {
-    ESP_LOGI(tTAG, "mongoose connection created to endpoint %s (%p)",
+    ESP_LOGI(tagEngine(), "mongoose connection created to endpoint %s (%p)",
              _endpoint.c_str(), (void *)_connection);
   }
 }
 
-const char *mcrMQTT::clientId() {
-  static std::string client_id;
+void mcrMQTT::connectionClosed() {
+  ESP_LOGW(tagEngine(), "connection closed");
+  _mqtt_ready = false;
+  _connection = nullptr;
 
-  if (client_id.length() == 0) {
-    client_id = "esp-";
-    client_id += mcrUtil::macAddress();
-  }
-
-  return client_id.c_str();
+  connect(5 * 1000); // wait five seconds before reconnect
 }
 
-void mcrMQTT::incomingMsg(const char *data, const size_t len) {
-  // allocate a new string here and deallocate it once processed through MQTTin
-  std::string *json = new std::string((const char *)data, len);
-  bool rb_rc = false;
+void mcrMQTT::finishOTA() {
+  char **unsub = (char **)&_ota_feed; // override const to align with mongoose
 
-  rb_rc = _rb_in->send(&json, sizeof(json), pdMS_TO_TICKS(100));
+  _ota_feed_msg_id = _msg_id++;
+  ESP_LOGI(tagEngine(), "finish OTA, unsubscribe feed=%s msg_id=%d", _ota_feed,
+           _ota_feed_msg_id);
+  if (_connection) {
+    mg_mqtt_unsubscribe(_connection, unsub, 1, _ota_feed_msg_id);
+  } else {
+    ESP_LOGW(tagEngine(), "can not unsubcribe OTA feed, no connection");
+  }
+}
+
+void mcrMQTT::handshake(struct mg_connection *nc) {
+  struct mg_send_mqtt_handshake_opts opts;
+  bzero(&opts, sizeof(opts));
+
+  opts.user_name = _user;
+  opts.password = _passwd;
+
+  mg_set_protocol_mqtt(nc);
+  mg_send_mqtt_handshake_opt(nc, _client_id.c_str(), opts);
+}
+
+void mcrMQTT::incomingMsg(struct mg_str *in_topic, struct mg_str *in_payload) {
+  // allocate a new string here and deallocate it once processed through MQTTin
+  std::string *topic = new std::string(in_topic->p, in_topic->len);
+  std::vector<char> *data =
+      new std::vector<char>(in_payload->p, (in_payload->p + in_payload->len));
+  mqttInMsg_t entry;
+  BaseType_t rb_rc;
+
+  entry.topic = topic;
+  entry.data = data;
+
+  rb_rc =
+      xRingbufferSend(_rb_in, &entry, sizeof(mqttInMsg_t), pdMS_TO_TICKS(100));
 
   if (rb_rc) {
-    ESP_LOGD(tTAG,
-             "INCOMING msg sent to ringbuffer (ptr=%p,len=%u,json_len=%u)",
-             (void *)json, sizeof(json), len);
+    ESP_LOGD(tagEngine(),
+             "INCOMING msg SENT to rb (topic=%s,len=%u,json_len=%u)",
+             topic->c_str(), sizeof(mqttInMsg_t), in_payload->len);
   } else {
-    ESP_LOGW(tTAG,
-             "INCOMING msg(len=%u) FAILED send to ringbuffer, msg dropped",
-             sizeof(json));
-    delete json;
+    ESP_LOGW(tagEngine(),
+             "INCOMING msg(len=%u) FAILED send to rb, will restart!",
+             sizeof(mqttInMsg_t));
+    delete data;
+    delete topic;
     esp_restart();
   }
 }
 
-mcrMQTT_t *mcrMQTT::instance() { return __singleton; }
-
 void mcrMQTT::outboundMsg() {
   size_t len = 0;
-  mqttRingbufferEntry_t *entry = nullptr;
+  mqttOutMsg_t *entry = nullptr;
 
-  entry = (mqttRingbufferEntry_t *)_rb_out->receive(&len, 0);
+  entry = (mqttOutMsg_t *)xRingbufferReceive(_rb_out, &len, 0);
 
   while (entry) {
     int64_t start_us = esp_timer_get_time();
 
-    if (len != sizeof(mqttRingbufferEntry_t)) {
-      ESP_LOGW(tTAG, "skipping ringbuffer entry of wrong length=%u", len);
-      _rb_out->returnItem(entry);
+    if (len != sizeof(mqttOutMsg_t)) {
+      ESP_LOGW(tagEngine(), "skipping ringbuffer msg of wrong length=%u", len);
+      vRingbufferReturnItem(_rb_out, entry);
       break;
     }
 
     const std::string *json = entry->data;
     size_t json_len = entry->len;
 
-    ESP_LOGD(tTAG, "send msg(len=%u), payload(len=%u)", len, json_len);
+    ESP_LOGD(tagEngine(), "send msg(len=%u), payload(len=%u)", len, json_len);
 
     mg_mqtt_publish(_connection, _rpt_feed, _msg_id++, MG_MQTT_QOS(1),
                     json->data(), json_len);
 
     delete json;
-    _rb_out->returnItem(entry);
+    vRingbufferReturnItem(_rb_out, entry);
 
     int64_t publish_us = esp_timer_get_time() - start_us;
     if (publish_us > 1500) {
-      ESP_LOGW(outboundTAG, "publish msg took %0.2fms",
+      ESP_LOGW(tagOutbound(), "publish msg took %0.2fms",
                ((float)publish_us / 1000.0));
     } else {
-      ESP_LOGD(outboundTAG, "publish msg took %lluus", publish_us);
+      ESP_LOGD(tagOutbound(), "publish msg took %lluus", publish_us);
     }
 
     entry =
-        (mqttRingbufferEntry_t *)_rb_out->receive(&len, _outbound_msg_ticks);
+        (mqttOutMsg_t *)xRingbufferReceive(_rb_out, &len, _outbound_msg_ticks);
+  }
+}
+
+void mcrMQTT::prepForOTA() {
+  struct mg_mqtt_topic_expression sub = {.topic = _ota_feed, .qos = 0};
+
+  _ota_feed_msg_id = _msg_id++;
+  ESP_LOGI(tagEngine(), "prep for OTA, subscribe feed=%s msg_id=%d", sub.topic,
+           _ota_feed_msg_id);
+  if (_connection) {
+    mg_mqtt_subscribe(_connection, &sub, 1, _ota_feed_msg_id);
+  } else {
+    ESP_LOGW(tagEngine(), "can not prep for OTA, no connection");
   }
 }
 
@@ -177,18 +226,19 @@ void mcrMQTT::publish(Reading_t *reading) {
 }
 
 void mcrMQTT::publish(std::string *json) {
-  bool rb_rc = false;
-  mqttRingbufferEntry_t entry;
+  BaseType_t rb_rc = false;
+  mqttOutMsg_t entry;
 
   // setup the entry noting that the actual pointer to the string will
   // be included so be certain to deallocate when it comes out of the ringbuffer
   entry.len = json->length();
   entry.data = json;
 
-  rb_rc = _rb_out->send((void *)&entry, sizeof(mqttRingbufferEntry_t), 0);
+  rb_rc = xRingbufferSend(_rb_out, (void *)&entry, sizeof(mqttOutMsg_t), 0);
 
   if (!rb_rc) {
-    ESP_LOGW(tTAG, "PUBLISH msg(len=%u) FAILED to ringbuffer, msg dropped",
+    ESP_LOGW(tagEngine(),
+             "PUBLISH msg(len=%u) FAILED to ringbuffer, msg dropped",
              entry.len);
     delete json;
     esp_restart();
@@ -203,10 +253,10 @@ void mcrMQTT::run(void *data) {
   struct mg_mgr_init_opts opts;
 
   _mqtt_in = new mcrMQTTin(_rb_in);
-  ESP_LOGI(tTAG, "started, created mcrMQTTin task %p", (void *)_mqtt_in);
+  ESP_LOGI(tagEngine(), "started, created mcrMQTTin task %p", (void *)_mqtt_in);
   _mqtt_in->start();
 
-  ESP_LOGD(tTAG, "waiting for network connection...");
+  ESP_LOGD(tagEngine(), "waiting for network connection...");
   mcrNetwork::waitForConnection();
 
   bzero(&opts, sizeof(opts));
@@ -216,8 +266,9 @@ void mcrMQTT::run(void *data) {
 
   connect();
 
-  ESP_LOGD(tTAG, "waiting for time to be set...");
+  ESP_LOGI(tagEngine(), "waiting for time to be set...");
   mcrNetwork::waitForTimeset();
+  ESP_LOGI(tagEngine(), "time set, proceeding to task loop")
 
   for (;;) {
     // we wait here AND we wait in outboundMsg -- this alternates between
@@ -230,65 +281,76 @@ void mcrMQTT::run(void *data) {
   }
 }
 
+void mcrMQTT::subACK(struct mg_mqtt_message *msg) {
+  ESP_LOGI(tagEngine(), "suback msg_id=%d", msg->message_id);
+
+  if (msg->message_id == _cmd_feed_msg_id) {
+    ESP_LOGI(tagEngine(), "subscribed to CMD feed");
+    _mqtt_ready = true;
+    announceStartup();
+  } else if (msg->message_id == _ota_feed_msg_id) {
+    ESP_LOGI(tagEngine(), "subscribed to OTA feed");
+    _ota_subscribed = true;
+  } else {
+    ESP_LOGW(tagEngine(), "suback did not match known subscription requests");
+  }
+}
+
+void mcrMQTT::subscribeCommandFeed(struct mg_connection *nc) {
+  struct mg_mqtt_topic_expression sub = {.topic = _cmd_feed, .qos = 0};
+
+  _cmd_feed_msg_id = _msg_id++;
+  ESP_LOGI(tagEngine(), "subscribe feed=%s msg_id=%d", sub.topic,
+           _cmd_feed_msg_id);
+  mg_mqtt_subscribe(nc, &sub, 1, _cmd_feed_msg_id);
+}
+
 static void _ev_handler(struct mg_connection *nc, int ev, void *p) {
   struct mg_mqtt_message *msg = (struct mg_mqtt_message *)p;
-  (void)nc;
 
   switch (ev) {
   case MG_EV_CONNECT: {
     int *status = (int *)p;
-    ESP_LOGI(tTAG, "CONNECT msg=%p err_code=%d err_str=%s", (void *)msg,
-             *status, strerror(*status));
-    struct mg_send_mqtt_handshake_opts opts;
-    bzero(&opts, sizeof(opts));
+    ESP_LOGI(mcrMQTT::tagEngine(), "CONNECT msg=%p err_code=%d err_str=%s",
+             (void *)msg, *status, strerror(*status));
 
-    opts.user_name = __singleton->user();
-    opts.password = __singleton->passwd();
-
-    mg_set_protocol_mqtt(nc);
-    mg_send_mqtt_handshake_opt(nc, mcrMQTT::clientId(), opts);
+    mcrMQTT::instance()->handshake(nc);
     break;
   }
+
   case MG_EV_MQTT_CONNACK:
     if (msg->connack_ret_code != MG_EV_MQTT_CONNACK_ACCEPTED) {
-      ESP_LOGW(tTAG, "got mqtt connection error: %d", msg->connack_ret_code);
+      ESP_LOGW(mcrMQTT::tagEngine(), "mqtt connection error: %d",
+               msg->connack_ret_code);
       return;
     }
 
-    ESP_LOGI(tTAG, "MG_EV_MQTT_CONNACK rc=%d", msg->connack_ret_code);
+    ESP_LOGD(mcrMQTT::tagEngine(), "MG_EV_MQTT_CONNACK rc=%d",
+             msg->connack_ret_code);
+    mcrMQTT::instance()->subscribeCommandFeed(nc);
 
-    s_topic_expr.topic = __singleton->cmdFeed();
-
-    ESP_LOGI(tTAG, "subscribing to [%s]", s_topic_expr.topic);
-    mg_mqtt_subscribe(nc, &s_topic_expr, 1, 42);
     break;
 
   case MG_EV_MQTT_SUBACK:
-    ESP_LOGI(tTAG, "subscription ack'ed");
-    __singleton->setReady();
-    __singleton->announceStartup();
+    mcrMQTT::instance()->subACK(msg);
 
     break;
 
   case MG_EV_MQTT_SUBSCRIBE:
-    ESP_LOGI(tTAG, "subscribe event, payload=%s", msg->payload.p);
+    ESP_LOGI(mcrMQTT::tagEngine(), "subscribe event, payload=%s",
+             msg->payload.p);
     break;
 
   case MG_EV_MQTT_PUBLISH:
-    mcrMQTT_t *instance;
-
-    instance = mcrMQTT::instance();
-    instance->incomingMsg(msg->payload.p, msg->payload.len);
+    mcrMQTT::instance()->incomingMsg(&(msg->topic), &(msg->payload));
     break;
 
   case MG_EV_MQTT_PINGRESP:
-    ESP_LOGD(tTAG, "ping response");
+    ESP_LOGD(mcrMQTT::tagEngine(), "ping response");
     break;
 
   case MG_EV_CLOSE:
-    ESP_LOGW(tTAG, "connection closed");
-    __singleton->setNotReady();
-    __singleton->connect(5 * 1000); // wait five seconds before reconnecting
+    mcrMQTT::instance()->connectionClosed();
     break;
 
   case MG_EV_POLL:
@@ -299,7 +361,7 @@ static void _ev_handler(struct mg_connection *nc, int ev, void *p) {
     break;
 
   default:
-    ESP_LOGW(tTAG, "unhandled event %d", ev);
+    ESP_LOGW(mcrMQTT::tagEngine(), "unhandled event %d", ev);
     break;
   }
 }

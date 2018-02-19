@@ -21,16 +21,17 @@
 #ifndef mcr_mqtt_in_h
 #define mcr_mqtt_in_h
 
+#include <array>
 #include <cstdlib>
 #include <string>
 #include <vector>
 
-#include <FreeRTOS.h>
-#include <System.h>
-#include <Task.h>
 #include <esp_log.h>
+#include <freertos/FreeRTOS.h>
 #include <freertos/event_groups.h>
 #include <freertos/queue.h>
+#include <freertos/ringbuf.h>
+#include <freertos/task.h>
 
 #include "external/mongoose.h"
 #include "readings/readings.hpp"
@@ -48,16 +49,17 @@ typedef struct {
   QueueHandle_t q;
 } cmdQueue_t;
 
+typedef struct {
+  std::string *topic = nullptr;
+  std::vector<char> *data = nullptr;
+} mqttInMsg_t;
+
 typedef class mcrMQTTin mcrMQTTin_t;
-class mcrMQTTin : public Task {
-public:
-  mcrMQTTin(Ringbuffer *rb);
-
-  void registerCmdQueue(cmdQueue_t &cmd_q);
-  void run(void *data);
-
+class mcrMQTTin {
 private:
-  Ringbuffer *_rb;
+  xTaskHandle _mqtt_task = nullptr;
+  RingbufHandle_t _rb;
+  void *_task_data = nullptr;
 
   struct mg_mgr _mgr;
   struct mg_connection *_connection = nullptr;
@@ -65,12 +67,43 @@ private:
   uint16_t _msg_id = 0;
   std::vector<cmdQueue_t> _cmd_queues;
 
-  // const char *_user = CONFIG_MCR_MQTT_USER;
-  // const char *_pass = CONFIG_MCR_MQTT_PASSWD;
-  const char *_rpt_feed = "prod/mcr/f/report";
-  // const char *_cmd_feed = "prod/mcr/f/command";
+  // Task implementation
+  static void runEngine(void *task_instance) {
+    mcrMQTTin_t *task = (mcrMQTTin_t *)task_instance;
+    task->run(task->_task_data);
+  }
 
-  void handleMsg(char *json);
+public:
+  mcrMQTTin(RingbufHandle_t rb);
+
+  void registerCmdQueue(cmdQueue_t &cmd_q);
+  void run(void *data);
+
+  void start(void *task_data = nullptr) {
+    if (_mqtt_task != nullptr) {
+      ESP_LOGW(tagEngine(), "there may already be a task running %p",
+               (void *)_mqtt_task);
+    }
+
+    // this (object) is passed as the data to the task creation and is
+    // used by the static runEngine method to call the implemented run
+    // method
+    ::xTaskCreate(&runEngine, tagEngine(), 5 * 1024, this, 10, &_mqtt_task);
+  }
+
+  void stop() {
+    if (_mqtt_task == nullptr) {
+      return;
+    }
+
+    xTaskHandle temp = _mqtt_task;
+    _mqtt_task = nullptr;
+    ::vTaskDelete(temp);
+  }
+
+  void processCmd(std::vector<char> *data);
+  void processOTA(std::vector<char> *data);
+  static const char *tagEngine() { return "mcrMQTTin"; };
 };
 
 #endif // mqtt_in_h

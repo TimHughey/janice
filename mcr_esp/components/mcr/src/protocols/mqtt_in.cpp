@@ -22,6 +22,7 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <vector>
 
 #include <FreeRTOS.h>
 #include <System.h>
@@ -31,6 +32,7 @@
 #include <esp_log.h>
 #include <forward_list>
 #include <freertos/event_groups.h>
+#include <freertos/ringbuf.h>
 
 // MCR specific includes
 #include "cmds/cmd.hpp"
@@ -46,12 +48,39 @@ static char tTAG[] = "mcrMQTTin";
 
 static mcrMQTTin *__singleton = nullptr;
 
-mcrMQTTin::mcrMQTTin(Ringbuffer *rb) : Task(tTAG, 5 * 1024, 10) {
+mcrMQTTin::mcrMQTTin(RingbufHandle_t rb) {
   _rb = rb;
 
   ESP_LOGI(tTAG, "task created, rb=%p", (void *)rb);
   __singleton = this;
 }
+
+void mcrMQTTin::processCmd(std::vector<char> *data) {
+  // mcrCmd::fromJSON() allocates memory for the command, be sure to free it!
+  std::string json(data->begin(), data->end());
+  mcrCmd_t *cmd = mcrCmd::fromJSON(json);
+
+  if (cmd) {
+    for (auto cmd_q : _cmd_queues) {
+      if (cmd->matchPrefix(cmd_q.prefix)) {
+        // make a fresh copy of the cmd before pusing to the queue to ensure:
+        //   a. each queue receives it's own copy
+        //   b. we're certain each cmd is in a clean state
+        mcrCmd_t *fresh_cmd = new mcrCmd(cmd);
+
+        if (xQueueSendToBack(cmd_q.q, (void *)&fresh_cmd, pdMS_TO_TICKS(1)) ==
+            pdTRUE) {
+          ESP_LOGD(tTAG, "added cmd to queue %s", cmd_q.id);
+        } else
+          ESP_LOGW(tTAG, "failed to place cmd on queue %s", cmd_q.id);
+      }
+    }
+
+    delete cmd;
+  }
+}
+
+void mcrMQTTin::processOTA(std::vector<char> *data) {}
 
 void mcrMQTTin::registerCmdQueue(cmdQueue_t &cmd_q) {
   ESP_LOGI(tTAG, "registering cmd_q id=%s prefix=%s q=%p", cmd_q.id,
@@ -62,51 +91,42 @@ void mcrMQTTin::registerCmdQueue(cmdQueue_t &cmd_q) {
 
 void mcrMQTTin::run(void *data) {
   size_t msg_len = 0;
-  std::string *json = nullptr;
+  mqttInMsg_t entry;
   void *msg = nullptr;
 
   ESP_LOGI(tTAG, "started, entering run loop");
 
   for (;;) {
-    ESP_LOGD(tTAG, "waiting for ringbuffer data");
-    msg = _rb->receive(&msg_len, portMAX_DELAY);
+    ESP_LOGD(tTAG, "waiting for rb data");
+    msg = xRingbufferReceive(_rb, &msg_len, portMAX_DELAY);
 
-    if (msg_len != sizeof(json)) {
-      ESP_LOGW(tTAG, "ringbuffer msg size mistmatch (msg_len=%u)", msg_len);
+    if (msg_len != sizeof(mqttInMsg_t)) {
+      ESP_LOGW(tTAG, "rb msg size mistmatch (msg_len=%u)", msg_len);
       continue;
     }
 
-    // _rb->receive returns a pointer to the msg.  the msg itself is a pointer
-    // to a std::string (the actual json)
-    memcpy(&json, msg, sizeof(json));
+    // _rb->receive returns a pointer to the msg of type mqttInMsg_t
+    // make a local copy and return the message to release it
+    memcpy(&entry, msg, sizeof(mqttInMsg_t));
 
-    ESP_LOGD(tTAG, "recv msg, payload(json=%p,msg_len=%u)", (void *)json,
-             msg_len);
+    ESP_LOGI(tTAG, "recv msg(len=%u): topic(%s) data(ptr=%p)", msg_len,
+             entry.topic->c_str(), (void *)entry.data);
 
-    mcrCmd_t *cmd = mcrCmd::fromJSON(json);
-    delete json;
+    // done with message, give it back to ringbuffer
+    vRingbufferReturnItem(_rb, msg);
 
-    _rb->returnItem(msg); // done with message, give it back to ringbuffer
-
-    if (cmd) {
-      for (auto cmd_q : _cmd_queues) {
-        if (cmd->matchPrefix(cmd_q.prefix)) {
-          // make a fresh copy of the cmd before pusing to the queue to ensure:
-          //   a. each queue receives it's own copy
-          //   b. we're certain each cmd is in a clean state
-          mcrCmd_t *fresh_cmd = new mcrCmd(cmd);
-
-          if (xQueueSendToBack(cmd_q.q, (void *)&fresh_cmd, pdMS_TO_TICKS(1)) ==
-              pdTRUE) {
-            ESP_LOGD(tTAG, "added cmd to queue %s", cmd_q.id);
-          } else
-            ESP_LOGW(tTAG, "failed to place cmd on queue %s", cmd_q.id);
-        }
-      }
-
-      delete cmd;
+    if (entry.topic->find("command")) {
+      processCmd(entry.data);
+    } else if (entry.topic->find("ota")) {
+      processOTA(entry.data);
+    } else {
+      ESP_LOGW(tTAG, "unhandled topic=%s", entry.topic->c_str());
     }
-  }
 
-  // never returns
+    // ok, we're done with the originally allocated inbound msg
+    delete entry.topic;
+    delete entry.data;
+
+    // never returns
+  }
 }

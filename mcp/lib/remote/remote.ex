@@ -18,6 +18,7 @@ defmodule Remote do
 
   alias Mqtt.Client
   alias Mqtt.SetName
+  alias Mqtt.OTA
 
   schema "remote" do
     field(:host, :string)
@@ -140,6 +141,14 @@ defmodule Remote do
     else
       rem.name
     end
+  end
+
+  def ota_begin do
+    OTA.send_begin()
+  end
+
+  def ota_end do
+    OTA.send_end()
   end
 
   defp update_from_external([%Remote{} = rem], eu) do

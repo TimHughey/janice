@@ -24,13 +24,11 @@
 #include <cstdlib>
 #include <string>
 
-#include <FreeRTOS.h>
-#include <System.h>
-#include <Task.h>
-#include <WiFi.h>
-#include <WiFiEventHandler.h>
 #include <esp_log.h>
+#include <freertos/FreeRTOS.h>
 #include <freertos/event_groups.h>
+#include <freertos/ringbuf.h>
+#include <freertos/task.h>
 #include <sdkconfig.h>
 
 #include "external/mongoose.h"
@@ -40,34 +38,58 @@
 typedef struct {
   size_t len = 0;
   std::string *data = nullptr;
-} mqttRingbufferEntry_t;
+} mqttOutMsg_t;
 
 typedef class mcrMQTT mcrMQTT_t;
-class mcrMQTT : public Task {
+class mcrMQTT {
 public:
-  mcrMQTT();
-  void announceStartup();
-  static const char *clientId();
+  static mcrMQTT_t *instance(); // singleton, use instance() for object
+
   void connect(int wait_ms = 0);
-  void incomingMsg(const char *json, const size_t len);
-  static mcrMQTT_t *instance();
+  void connectionClosed();
+  void finishOTA();
+  void handshake(struct mg_connection *nc);
+  void incomingMsg(struct mg_str *topic, struct mg_str *payload);
+  void prepForOTA();
   void publish(Reading_t *reading);
   void registerCmdQueue(cmdQueue_t &cmd_q);
   void run(void *data);
-  void setNotReady() {
-    _mqtt_ready = false;
-    _connection = nullptr;
-  }
-  void setReady() { _mqtt_ready = true; };
+  void setSubscribedOTA() { _ota_subscribed = true; };
+  void subACK(struct mg_mqtt_message *msg);
+  void subscribeCommandFeed(struct mg_connection *nc);
   bool isReady() { return _mqtt_ready; };
 
-  // configuration info
-  const char *cmdFeed() { return _cmd_feed; }
-  const char *passwd() { return _passwd; }
-  const char *user() { return _user; }
+  void start(void *task_data = nullptr) {
+    if (_mqtt_task != nullptr) {
+      ESP_LOGW(tagEngine(), "there may already be a task running %p",
+               (void *)_mqtt_task);
+    }
+
+    // this (object) is passed as the data to the task creation and is
+    // used by the static runEngine method to call the run method
+    ::xTaskCreate(&runEngine, tagEngine(), 5 * 1024, this, 15, &_mqtt_task);
+  }
+
+  void stop() {
+    if (_mqtt_task == nullptr) {
+      return;
+    }
+
+    xTaskHandle temp = _mqtt_task;
+    _mqtt_task = nullptr;
+    ::vTaskDelete(temp);
+  }
+
+  static const char *tagEngine() { return "mcrMQTT"; };
+  static const char *tagOutbound() { return "mcrMQTT outboundMsg"; };
 
 private:
+  mcrMQTT(); // singleton, constructor is private
+
+  std::string _client_id;
   std::string _endpoint;
+  xTaskHandle _mqtt_task = nullptr;
+  void *_task_data = nullptr;
 
   struct mg_mgr _mgr;
   struct mg_connection *_connection = nullptr;
@@ -79,10 +101,12 @@ private:
   TickType_t _outbound_msg_ticks =
       pdMS_TO_TICKS(CONFIG_MCR_MQTT_OUTBOUND_MSG_WAIT_MS);
 
-  const size_t _rb_size =
-      (sizeof(mqttRingbufferEntry_t) * CONFIG_MCR_MQTT_RINGBUFFER_PENDING_MSGS);
-  Ringbuffer *_rb_out = nullptr;
-  Ringbuffer *_rb_in = nullptr;
+  const size_t _rb_out_size =
+      (sizeof(mqttOutMsg_t) * CONFIG_MCR_MQTT_RINGBUFFER_PENDING_MSGS);
+  const size_t _rb_in_size =
+      (sizeof(mqttInMsg_t) * CONFIG_MCR_MQTT_RINGBUFFER_PENDING_MSGS);
+  RingbufHandle_t _rb_out = nullptr;
+  RingbufHandle_t _rb_in = nullptr;
 
   mcrMQTTin_t *_mqtt_in = nullptr;
 
@@ -92,10 +116,23 @@ private:
   const char *_user = CONFIG_MCR_MQTT_USER;
   const char *_passwd = CONFIG_MCR_MQTT_PASSWD;
   const char *_rpt_feed = CONFIG_MCR_MQTT_RPT_FEED;
-  const char *_cmd_feed = CONFIG_MCR_MQTT_CMD_FEED;
 
+  const char *_cmd_feed = CONFIG_MCR_MQTT_CMD_FEED;
+  uint16_t _cmd_feed_msg_id = 0;
+
+  const char *_ota_feed = CONFIG_MCR_MQTT_OTA_FEED;
+  uint16_t _ota_feed_msg_id = 0;
+  bool _ota_subscribed = false;
+
+  void announceStartup();
   void outboundMsg();
   void publish(std::string *json);
+
+  // Task implementation
+  static void runEngine(void *task_instance) {
+    mcrMQTT_t *task = (mcrMQTT_t *)task_instance;
+    task->run(task->_task_data);
+  }
 };
 
 #endif // mcp_mqtt_h

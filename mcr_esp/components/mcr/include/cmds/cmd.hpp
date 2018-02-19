@@ -25,6 +25,7 @@
 #include <cstdlib>
 #include <sstream>
 #include <string>
+#include <vector>
 
 #include <esp_timer.h>
 #include <external/ArduinoJson.h>
@@ -44,7 +45,9 @@ typedef enum {
   cmdTIME_SYNC,
   cmdSET_SWITCH,
   cmdHEARTBEAT,
-  cmdSET_NAME
+  cmdSET_NAME,
+  cmdOTA_BEGIN,
+  cmdOTA_END
 } cmdType_t;
 
 class mcrCmd {
@@ -91,7 +94,7 @@ public:
 
   static void checkTimeSkew(JsonObject &root);
   static mcrCmd_t *createSetSwitch(JsonObject &root, int64_t parse_us);
-  static mcrCmd_t *fromJSON(const std::string *json);
+  static mcrCmd_t *fromJSON(std::string &json);
   static void handle_set_name_cmd(JsonObject &root);
   static cmdType_t parseCmd(JsonObject &root);
   static size_t size();

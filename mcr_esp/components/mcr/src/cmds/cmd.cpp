@@ -23,6 +23,7 @@
 #include <cstring>
 #include <sstream>
 #include <string>
+#include <vector>
 
 #include <esp_log.h>
 #include <esp_timer.h>
@@ -35,6 +36,7 @@
 #include "devs/base.hpp"
 #include "misc/util.hpp"
 #include "net/mcr_net.hpp"
+#include "protocols/mqtt.hpp"
 
 mcrCmd::mcrCmd(const mcrDevID_t &id, cmd_bitset_t mask, cmd_bitset_t state) {
   _type = cmdSET_SWITCH;
@@ -149,17 +151,17 @@ mcrCmd_t *mcrCmd::createSetSwitch(JsonObject &root, int64_t parse_us) {
 // "refid":"0eb82430-0320-11e8-94b6-6cf049e7139f",
 // "mtime":1517029685,"cmd":"set.switch"}
 
-mcrCmd_t *mcrCmd::fromJSON(const std::string *json) {
+mcrCmd_t *mcrCmd::fromJSON(std::string &json) {
   StaticJsonBuffer<1024> jsonBuffer;
   mcrCmd_t *cmd = nullptr;
 
-  if ((json->length() == 0) || (json->at(0) != '{')) {
-    ESP_LOGW("mcrCmd", "improper JSON: %s", json->c_str());
+  if ((json.size() == 0) || (json.at(0) != '{')) {
+    ESP_LOGW("mcrCmd", "improper JSON: %s", json.c_str());
     return nullptr;
   }
 
   int64_t parse_start = esp_timer_get_time();
-  JsonObject &root = jsonBuffer.parseObject(*json);
+  JsonObject &root = jsonBuffer.parseObject(json);
   int64_t parse_us = esp_timer_get_time() - parse_start;
 
   if (!root.success()) { // bail if json parse failed
@@ -185,6 +187,14 @@ mcrCmd_t *mcrCmd::fromJSON(const std::string *json) {
 
   case cmdSET_NAME:
     handle_set_name_cmd(root);
+    break;
+
+  case cmdOTA_BEGIN:
+    mcrMQTT::instance()->prepForOTA();
+    break;
+
+  case cmdOTA_END:
+    mcrMQTT::instance()->finishOTA();
     break;
 
   case cmdHEARTBEAT:
@@ -225,6 +235,9 @@ cmdType_t mcrCmd::parseCmd(JsonObject &root) {
 
   if (strcmp("set.name", cmd) == 0)
     return cmdSET_NAME;
+
+  if (strcmp("ota.begin", cmd) == 0)
+    return cmdOTA_BEGIN;
 
   return cmdUNKNOWN;
 }
