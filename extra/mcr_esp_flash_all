@@ -1,0 +1,9 @@
+#!/bin/zsh
+
+
+cd ${HOME}/devel/mercurial && git pull
+
+
+ssh loki "cd ${HOME}/devel/mercurial && git pull && ./extra/mcr_esp_flash_local"
+ssh odin "cd ${HOME}/devel/mercurial && git pull && ./extra/mcr_esp_flash_local"
+./extra/mcr_esp_flash_local

@@ -1,0 +1,12 @@
+#!/bin/zsh
+
+source ${HOME}/.zshrc
+
+ttys=(/dev/ttyUSB*)
+
+cd ${HOME}/devel/mercurial/mcr_esp
+git pull
+
+for tty in $ttys; do
+	env ESPPORT=${tty} make -j6 flash || exit 1
+done
