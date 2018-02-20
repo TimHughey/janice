@@ -18,7 +18,6 @@ defmodule Remote do
 
   alias Mqtt.Client
   alias Mqtt.SetName
-  alias Mqtt.OTA
 
   schema "remote" do
     field(:host, :string)
@@ -150,10 +149,9 @@ defmodule Remote do
     :timer.sleep(10 * 1000)
 
     Logger.info(fn -> "transmit started" end)
-    Mqtt.OTA.transmit()
+    OTA.transmit()
     Logger.info(fn -> "transmit finished" end)
 
-    :timer.sleep(10 * 1000)
     Logger.info(fn -> "sending end cmd" end)
     ota_end()
   end

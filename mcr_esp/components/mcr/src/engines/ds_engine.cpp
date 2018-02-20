@@ -882,7 +882,7 @@ void mcrDS::run(void *data) {
 
   owb_use_crc(ds, true);
 
-  ESP_LOGI(tagEngine(),
+  ESP_LOGD(tagEngine(),
            "created ow_rmt=%p bus_mutex=%p cmd_q=%p ds_evg=%p cmd_task=%p "
            "convert_task=%p discover_task=%p report_task=%p",
            ds, (void *)_bus_mutex, (void *)_cmd_q, (void *)_ds_evg,

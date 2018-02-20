@@ -1,4 +1,4 @@
-defmodule Mqtt.OTA do
+defmodule OTA do
   @moduledoc """
   """
 
@@ -9,6 +9,7 @@ defmodule Mqtt.OTA do
 
   @ota_begin_cmd "ota.begin"
   @ota_end_cmd "ota.end"
+  @restart_cmd "restart"
   @block_size 2048
 
   def fw_file_version do
@@ -26,6 +27,16 @@ defmodule Mqtt.OTA do
     %{}
     |> Map.put_new(:head, Map.get(vsn, "head", "0000000"))
     |> Map.put_new(:stable, Map.get(vsn, "stable", "0000000"))
+  end
+
+  def restart(delay_secs \\ 5) when is_integer(delay_secs) do
+    %{}
+    |> Map.put(:vsn, Application.get_env(:mcp, :git_sha))
+    |> Map.put(:cmd, @restart_cmd)
+    |> Map.put(:mtime, Timex.now() |> Timex.to_unix())
+    |> Map.put(:delay, delay_secs)
+    |> json()
+    |> Client.publish()
   end
 
   def send_begin(delay_secs \\ 10) when is_integer(delay_secs) do

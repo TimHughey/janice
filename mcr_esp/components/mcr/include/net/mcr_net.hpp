@@ -38,7 +38,8 @@ private:
 
       // once connected set the wait group bit so other waiting tasks
       // are allowed to run
-      xEventGroupSetBits(_event_group, mcrNetwork::connectedBit());
+      xEventGroupSetBits(_event_group, (mcrNetwork::connectedBit() &&
+                                        mcrNetwork::normalOpsBit()));
 
       return ESP_OK;
     }
@@ -61,13 +62,17 @@ public:
   static mcrNetwork *instance();
   static void setName(const std::string name);
   bool start();
+  static void resumeNormalOps();
+  static void suspendNormalOps();
   static bool waitForConnection();
   static bool waitForName(int wait_ms = 0);
+  static bool waitForNormalOps();
   static bool waitForTimeset();
 
   static EventBits_t connectedBit();
   static EventBits_t nameBit();
   static EventBits_t timesetBit();
+  static EventBits_t normalOpsBit();
 
 private:
   WiFi _wifi;

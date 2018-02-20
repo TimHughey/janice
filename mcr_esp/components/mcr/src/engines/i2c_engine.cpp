@@ -491,12 +491,13 @@ void mcrI2c::run(void *task_data) {
     // delay(pdMS_TO_TICKS(1000));
 
     for (int i = 0; i < 10; i++) {
-      report(nullptr);
-      // signal to other tasks the dsEngine task is in it's run loop
-      // this ensures all other set-up activities are complete before
-      // xEventGroupSetBits(_ds_evg, _event_bits.engine_running);
 
-      // do stuff here
+      // NOTE: special case due to buggy i2c driver
+      //       the normalOpsBit is used to globally signal processes
+      //       should pause because a critical operation is underway (e.g. ota
+      //       update)
+      mcrNetwork::waitForNormalOps();
+
       vTaskDelayUntil(&(_last_wake.engine), _loop_frequency);
       runtimeMetricsReport();
     }

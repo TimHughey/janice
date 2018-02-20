@@ -42,6 +42,7 @@
 #include "external/mongoose.h"
 #include "misc/util.hpp"
 #include "misc/version.hpp"
+#include "net/mcr_net.hpp"
 #include "protocols/mqtt_in.hpp"
 #include "readings/readings.hpp"
 
@@ -104,6 +105,9 @@ void mcrMQTTin::prepForOTA() { instance()->__prepForOTA(); }
 void mcrMQTTin::__prepForOTA() {
   const esp_partition_t *boot_part = esp_ota_get_boot_partition();
   const esp_partition_t *run_part = esp_ota_get_running_partition();
+
+  mcrNetwork::suspendNormalOps();
+
   _update_part = esp_ota_get_next_update_partition(nullptr);
   ESP_LOGI(tagEngine(), "part: name=%-8s addr=0x%x (boot)", boot_part->label,
            boot_part->address);

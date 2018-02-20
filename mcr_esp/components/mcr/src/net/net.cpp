@@ -42,6 +42,7 @@ mcrNetwork::mcrNetwork() {
 EventBits_t mcrNetwork::connectedBit() { return BIT0; }
 EventBits_t mcrNetwork::nameBit() { return BIT2; }
 EventBits_t mcrNetwork::timesetBit() { return BIT1; }
+EventBits_t mcrNetwork::normalOpsBit() { return BIT2; }
 
 EventGroupHandle_t mcrNetwork::eventGroup() { return __singleton->_evg; }
 mcrNetwork *mcrNetwork::instance() { return __singleton; }
@@ -96,6 +97,14 @@ bool mcrNetwork::start() {
   return true;
 }
 
+void mcrNetwork::resumeNormalOps() {
+  xEventGroupSetBits(__singleton->eventGroup(), mcrNetwork::normalOpsBit());
+}
+
+void mcrNetwork::suspendNormalOps() {
+  xEventGroupClearBits(__singleton->eventGroup(), mcrNetwork::normalOpsBit());
+}
+
 bool mcrNetwork::waitForConnection() {
   xEventGroupWaitBits(__singleton->eventGroup(), connectedBit(), false, true,
                       portMAX_DELAY);
@@ -105,6 +114,13 @@ bool mcrNetwork::waitForConnection() {
 bool mcrNetwork::waitForName(int wait_ms) {
   esp_err_t res = xEventGroupWaitBits(__singleton->eventGroup(), nameBit(),
                                       false, true, pdMS_TO_TICKS(wait_ms));
+
+  return (res == ESP_OK) ? true : false;
+}
+
+bool mcrNetwork::waitForNormalOps() {
+  esp_err_t res = xEventGroupWaitBits(__singleton->eventGroup(), nameBit(),
+                                      false, true, portMAX_DELAY);
 
   return (res == ESP_OK) ? true : false;
 }
