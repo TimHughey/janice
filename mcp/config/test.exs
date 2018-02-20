@@ -7,7 +7,12 @@ config :logger,
   # level: :warn
   level: :info
 
-config :mcp, feeds: [cmd: {"test/mcr/f/command", :qos0}, rpt: {"test/mcr/f/report", :qos0}]
+config :mcp,
+  feeds: [
+    cmd: {"test/mcr/f/command", :qos0},
+    rpt: {"test/mcr/f/report", :qos0},
+    ota: {"test/mcr/f/ota", :qos0}
+  ]
 
 config :mcp, Mcp.Dutycycle, routine_check_ms: 1000
 

@@ -47,7 +47,9 @@ typedef enum {
   cmdHEARTBEAT,
   cmdSET_NAME,
   cmdOTA_BEGIN,
-  cmdOTA_END
+  cmdOTA_END,
+  cmdBOOT_FACTORY_NEXT,
+  cmdRESTART
 } cmdType_t;
 
 class mcrCmd {

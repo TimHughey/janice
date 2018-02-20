@@ -23,8 +23,10 @@
 
 // below defines are used to stringify the value passed in as a define from
 // the compiler cmd line
-#define GIT_VERSION(s) (const char *)AS_STRING(s)
-#define MCR_VERSION(s) (const char *)AS_STRING(s)
+#define MCR_EMBED_VSN_SHA(a, b)                                                \
+  (const char *)"mcr_sha_head=" AS_STRING(a) " mcr_sha_stable=" AS_STRING(b)
+#define MCR_HEAD_SHA(s) (const char *)AS_STRING(s)
+#define MCR_STABLE_SHA(s) (const char *)AS_STRING(s)
 #define AS_STRING(s) #s
 
 static const char novsn[] = "0000000";
@@ -33,17 +35,24 @@ class mcrVersion {
 private:
 public:
   mcrVersion(){};
+
+  static const char *embed_vsn_sha() {
+    return MCR_EMBED_VSN_SHA(_MCR_HEAD_SHA, _MCR_STABLE_SHA);
+  }
+
   static const char *git() {
-#ifdef GIT_REV
-    return GIT_VERSION(GIT_REV); // GIT_REV is set on compiler cmd line
+#ifdef _MCR_HEAD_SHA
+    // _MCR_HEAD_SHA is set on compiler cmd line
+    return MCR_HEAD_SHA(_MCR_HEAD_SHA);
 #else
     return novsn;
 #endif
   }
 
   static const char *mcr_stable() {
-#ifdef MCR_REV
-    return MCR_VERSION(MCR_REV); // MCR_REV is set on compiler cmd line
+#ifdef _MCR_STABLE_SHA
+    // _MCR_STABLE_SHA is set on compiler cmd line
+    return MCR_STABLE_SHA(_MCR_STABLE_SHA);
 #else
     return novsn;
 #endif

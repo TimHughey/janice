@@ -60,23 +60,24 @@ public:
   bool isReady() { return _mqtt_ready; };
 
   void start(void *task_data = nullptr) {
-    if (_mqtt_task != nullptr) {
+    if (_task.handle != nullptr) {
       ESP_LOGW(tagEngine(), "there may already be a task running %p",
-               (void *)_mqtt_task);
+               (void *)_task.handle);
     }
 
     // this (object) is passed as the data to the task creation and is
     // used by the static runEngine method to call the run method
-    ::xTaskCreate(&runEngine, tagEngine(), 5 * 1024, this, 15, &_mqtt_task);
+    ::xTaskCreate(&runEngine, tagEngine(), _task.stackSize, this,
+                  _task.priority, &_task.handle);
   }
 
   void stop() {
-    if (_mqtt_task == nullptr) {
+    if (_task.handle == nullptr) {
       return;
     }
 
-    xTaskHandle temp = _mqtt_task;
-    _mqtt_task = nullptr;
+    xTaskHandle temp = _task.handle;
+    _task.handle = nullptr;
     ::vTaskDelete(temp);
   }
 
@@ -88,8 +89,11 @@ private:
 
   std::string _client_id;
   std::string _endpoint;
-  xTaskHandle _mqtt_task = nullptr;
-  void *_task_data = nullptr;
+  mcrTask_t _task = {.handle = nullptr,
+                     .data = nullptr,
+                     .lastWake = 0,
+                     .priority = CONFIG_MCR_MQTT_TASK_PRIORITY,
+                     .stackSize = (5 * 1024)};
 
   struct mg_mgr _mgr;
   struct mg_connection *_connection = nullptr;
@@ -131,7 +135,7 @@ private:
   // Task implementation
   static void runEngine(void *task_instance) {
     mcrMQTT_t *task = (mcrMQTT_t *)task_instance;
-    task->run(task->_task_data);
+    task->run(task->_task.data);
   }
 };
 

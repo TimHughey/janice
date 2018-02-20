@@ -27,6 +27,9 @@
 #include <vector>
 
 #include <esp_log.h>
+#include <esp_ota_ops.h>
+#include <esp_partition.h>
+#include <esp_spi_flash.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/event_groups.h>
 #include <freertos/queue.h>
@@ -67,18 +70,37 @@ private:
   uint16_t _msg_id = 0;
   std::vector<cmdQueue_t> _cmd_queues;
 
+  const esp_partition_t *_update_part;
+  esp_err_t _ota_err = ESP_OK;
+  size_t _ota_size = 0;
+  uint64_t _ota_first_block = 0;
+  uint64_t _ota_last_block = 0;
+  uint64_t _ota_total_us = 0;
+  esp_ota_handle_t _ota_update;
+
   // Task implementation
   static void runEngine(void *task_instance) {
     mcrMQTTin_t *task = (mcrMQTTin_t *)task_instance;
     task->run(task->_task_data);
   }
 
+  void __prepForOTA();
+  void __finalizeOTA();
+
 public:
   mcrMQTTin(RingbufHandle_t rb);
+  static mcrMQTTin_t *instance();
+
+  static void bootFactoryNext();
+  static void finalizeOTA();
+  static void prepForOTA();
+  void processCmd(std::vector<char> *data);
+  void processOTA(std::vector<char> *data);
 
   void registerCmdQueue(cmdQueue_t &cmd_q);
   void run(void *data);
 
+  void delay(int ms) { ::vTaskDelay(pdMS_TO_TICKS(ms)); }
   void start(void *task_data = nullptr) {
     if (_mqtt_task != nullptr) {
       ESP_LOGW(tagEngine(), "there may already be a task running %p",
@@ -101,8 +123,6 @@ public:
     ::vTaskDelete(temp);
   }
 
-  void processCmd(std::vector<char> *data);
-  void processOTA(std::vector<char> *data);
   static const char *tagEngine() { return "mcrMQTTin"; };
 };
 

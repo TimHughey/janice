@@ -111,9 +111,18 @@ defmodule Mqtt.Client do
       :ok
     else
       Logger.debug(fn -> "outbound: #{payload}" end)
-      MessageSave.save(:out, payload)
+      # MessageSave.save(:out, payload)
       GenServer.call(__MODULE__, {:publish, feed, payload, pub_opts})
     end
+  end
+
+  def publish_ota(raw) when is_binary(raw) do
+    {feed, qos} = get_env(:mcp, :feeds, []) |> Keyword.get(:ota, {nil, nil})
+    payload = raw
+    pub_opts = [qos]
+
+    opts = [feed: feed, message: payload, pub_opts: pub_opts]
+    publish(opts)
   end
 
   def publish_switch_cmd(message) do

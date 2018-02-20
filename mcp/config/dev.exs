@@ -7,7 +7,12 @@ config :logger,
   # level: :warn
   level: :info
 
-config :mcp, feeds: [cmd: {"dev/mcr/f/command", :qos0}, rpt: {"dev/mcr/f/report", :qos0}]
+config :mcp,
+  feeds: [
+    cmd: {"dev/mcr/f/command", :qos0},
+    rpt: {"dev/mcr/f/report", :qos0},
+    ota: {"dev/mcr/f/ota", :qos0}
+  ]
 
 config :mcp, Dutycycle, routine_check_ms: 1000
 
@@ -31,7 +36,7 @@ config :mcp, Mqtt.Client,
     auto_resub: true,
     reconnect: 2
   ],
-  timesync: [frequency: 5 * 1000, loops: 5, forever: false, log: true]
+  timesync: [frequency: 1 * 1000, loops: 5, forever: true, log: false]
 
 config :mcp, Mqtt.InboundMessage,
   periodic_log_first_ms: 60 * 60 * 1000,

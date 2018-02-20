@@ -9,11 +9,11 @@ defmodule Mcp.Application do
   def start(_type, args) do
     Logger.info(fn -> "start() args: #{inspect(args)}" end)
 
-    git_sha = Keyword.get(args, :git_sha, "0000000")
-    mcr_sha = Keyword.get(args, :mcr_sha, "0000000")
+    sha_head = Keyword.get(args, :sha_head, "0000000")
+    sha_mcr_stable = Keyword.get(args, :sha_mcr_stable, "0000000")
 
-    Application.put_env(:mcp, :git_sha, git_sha)
-    Application.put_env(:mcp, :mcr_sha, mcr_sha)
+    Application.put_env(:mcp, :sha_head, sha_head)
+    Application.put_env(:mcp, :sha_mcr_stable, sha_mcr_stable)
 
     autostart =
       case fetch_env(:mcp, :build_env) do

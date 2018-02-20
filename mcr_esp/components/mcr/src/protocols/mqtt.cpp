@@ -119,13 +119,15 @@ void mcrMQTT::finishOTA() {
   char **unsub = (char **)&_ota_feed; // override const to align with mongoose
 
   _ota_feed_msg_id = _msg_id++;
-  ESP_LOGI(tagEngine(), "finish OTA, unsubscribe feed=%s msg_id=%d", _ota_feed,
+  ESP_LOGI(tagEngine(), "finish ota, unsubscribe feed=%s msg_id=%d", _ota_feed,
            _ota_feed_msg_id);
   if (_connection) {
     mg_mqtt_unsubscribe(_connection, unsub, 1, _ota_feed_msg_id);
   } else {
-    ESP_LOGW(tagEngine(), "can not unsubcribe OTA feed, no connection");
+    ESP_LOGW(tagEngine(), "can not unsubcribe ota feed, no connection");
   }
+
+  mcrMQTTin::finalizeOTA();
 }
 
 void mcrMQTT::handshake(struct mg_connection *nc) {
@@ -152,6 +154,13 @@ void mcrMQTT::incomingMsg(struct mg_str *in_topic, struct mg_str *in_payload) {
 
   rb_rc =
       xRingbufferSend(_rb_in, &entry, sizeof(mqttInMsg_t), pdMS_TO_TICKS(100));
+
+  size_t avail_bytes = xRingbufferGetCurFreeSize(_rb_in);
+
+  if (avail_bytes < (_rb_in_size >> 4)) {
+    ESP_LOGW(tagEngine(), "in rb avail (%u) < %u", avail_bytes,
+             (_rb_in_size >> 4));
+  }
 
   if (rb_rc) {
     ESP_LOGD(tagEngine(),
@@ -210,13 +219,15 @@ void mcrMQTT::prepForOTA() {
   struct mg_mqtt_topic_expression sub = {.topic = _ota_feed, .qos = 0};
 
   _ota_feed_msg_id = _msg_id++;
-  ESP_LOGI(tagEngine(), "prep for OTA, subscribe feed=%s msg_id=%d", sub.topic,
+  ESP_LOGI(tagEngine(), "prep for ota, subscribe feed=%s msg_id=%d", sub.topic,
            _ota_feed_msg_id);
   if (_connection) {
     mg_mqtt_subscribe(_connection, &sub, 1, _ota_feed_msg_id);
   } else {
-    ESP_LOGW(tagEngine(), "can not prep for OTA, no connection");
+    ESP_LOGW(tagEngine(), "can not prep for ota, no connection");
   }
+
+  mcrMQTTin::prepForOTA();
 }
 
 void mcrMQTT::publish(Reading_t *reading) {
@@ -339,6 +350,10 @@ static void _ev_handler(struct mg_connection *nc, int ev, void *p) {
   case MG_EV_MQTT_SUBSCRIBE:
     ESP_LOGI(mcrMQTT::tagEngine(), "subscribe event, payload=%s",
              msg->payload.p);
+    break;
+
+  case MG_EV_MQTT_UNSUBACK:
+    ESP_LOGI(mcrMQTT::tagEngine(), "unsub ack");
     break;
 
   case MG_EV_MQTT_PUBLISH:

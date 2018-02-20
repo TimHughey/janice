@@ -24,15 +24,15 @@ defmodule Mcp.Mixfile do
 
   def project do
     {result, _rc} = System.cmd("git", ["rev-parse", "--short", "HEAD"])
-    git_sha = String.trim(result)
+    sha_head = String.trim(result)
 
     {result, _rc} = System.cmd("git", ["rev-parse", "--short", "mcr-stable"])
-    mcr_sha = String.trim(result)
+    sha_mcr_stable = String.trim(result)
 
     [
       app: :mcp,
-      version: "0.1.1-#{git_sha}",
-      elixir: "~> 1.5",
+      version: "0.1.1-#{sha_head}",
+      elixir: "~> 1.6",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       elixirc_paths: elixirc_paths(Mix.env()),
@@ -43,8 +43,8 @@ defmodule Mcp.Mixfile do
       package: package(),
       description: description(),
       escript: escript_config(),
-      git_sha: "#{git_sha}",
-      mcr_sha: "#{mcr_sha}"
+      sha_head: "#{sha_head}",
+      sha_mcr_stable: "#{sha_mcr_stable}"
     ]
   end
 
@@ -52,8 +52,8 @@ defmodule Mcp.Mixfile do
   def application do
     args = [
       build_env: "#{Mix.env()}",
-      git_sha: project() |> Keyword.get(:git_sha),
-      mcr_sha: project() |> Keyword.get(:mcr_sha)
+      sha_head: project() |> Keyword.get(:sha_head),
+      sha_mcr_stabl: project() |> Keyword.get(:sha_mcr_stable)
     ]
 
     [

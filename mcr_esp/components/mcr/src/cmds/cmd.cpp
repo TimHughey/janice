@@ -37,6 +37,7 @@
 #include "misc/util.hpp"
 #include "net/mcr_net.hpp"
 #include "protocols/mqtt.hpp"
+#include "protocols/mqtt_in.hpp"
 
 mcrCmd::mcrCmd(const mcrDevID_t &id, cmd_bitset_t mask, cmd_bitset_t state) {
   _type = cmdSET_SWITCH;
@@ -61,9 +62,9 @@ void mcrCmd::checkTimeSkew(JsonObject &root) {
   int skew = (int)(now - cmd_mtime);
 
   if (abs(skew) > 2) {
-    ESP_LOGW("mcrCmd", "skew of %d detected from timesync message", skew);
+    ESP_LOGW("mcrCmd", "timesync skew=%ds", skew);
   } else {
-    ESP_LOGD("mcrCmd", "timesync message skew=%d", skew);
+    ESP_LOGD("mcrCmd", "timesync skew=%ds", skew);
   }
 }
 
@@ -173,7 +174,6 @@ mcrCmd_t *mcrCmd::fromJSON(std::string &json) {
   const char *cmd_str = root["cmd"];
 
   switch (cmd_type) {
-
   case cmdSET_SWITCH:
     cmd = createSetSwitch(root, parse_us);
     break;
@@ -195,6 +195,15 @@ mcrCmd_t *mcrCmd::fromJSON(std::string &json) {
 
   case cmdOTA_END:
     mcrMQTT::instance()->finishOTA();
+    break;
+
+  case cmdBOOT_FACTORY_NEXT:
+    mcrMQTTin::instance()->bootFactoryNext();
+    break;
+
+  case cmdRESTART:
+    ESP_LOGI("mcrCmd", "JUMP!");
+    esp_restart();
     break;
 
   case cmdHEARTBEAT:
@@ -238,6 +247,15 @@ cmdType_t mcrCmd::parseCmd(JsonObject &root) {
 
   if (strcmp("ota.begin", cmd) == 0)
     return cmdOTA_BEGIN;
+
+  if (strcmp("ota.end", cmd) == 0)
+    return cmdOTA_END;
+
+  if (strcmp("boot.factory.next", cmd) == 0)
+    return cmdBOOT_FACTORY_NEXT;
+
+  if (strcmp("restart", cmd) == 0)
+    return cmdRESTART;
 
   return cmdUNKNOWN;
 }

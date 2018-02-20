@@ -3,6 +3,7 @@
 #include <cstdlib>
 
 #include <esp_log.h>
+#include <esp_spi_flash.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 
@@ -18,6 +19,7 @@ extern "C" {
 void app_main(void);
 }
 
+static const char *embed_vsn_sha = mcrVersion::embed_vsn_sha();
 static const char *TAG = "mcr_esp";
 
 static mcrNetwork *network = nullptr;
@@ -30,8 +32,10 @@ void app_main() {
   ESP_LOGI(TAG, "%s entered", __PRETTY_FUNCTION__);
   ESP_LOGI(TAG, "portTICK_PERIOD_MS=%u and 10ms=%uticks", portTICK_PERIOD_MS,
            pdMS_TO_TICKS(10));
-  ESP_LOGI(TAG, "mcr_rev=%s git_rev=%s", mcrVersion::mcr_stable(),
-           mcrVersion::git());
+  ESP_LOGI(TAG, "mcr_rev=%s git_rev=%s %s", mcrVersion::mcr_stable(),
+           mcrVersion::git(), embed_vsn_sha);
+
+  spi_flash_init();
 
   // must create network first
   network = new mcrNetwork();

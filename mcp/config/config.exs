@@ -28,7 +28,11 @@ config :mcp,
   namespace: Web,
   generators: [context_app: false],
   # default settings for dev and test, must override in prod
-  feeds: [cmd: "mcr/f/command", rpt: "mcr/f/report"]
+  feeds: [
+    cmd: {"dev/mcr/f/command", :qos0},
+    rpt: {"dev/mcr/f/report", :qos0},
+    ota: {"prod/mcr/f/ota", :qos0}
+  ]
 
 # config :mcp, build_env, "#{Mix.env}"
 # config :mcp, namespace: Web

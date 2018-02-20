@@ -71,6 +71,7 @@ defmodule Remote do
         :error
 
       found ->
+        new_name = String.replace(new_name, " ", "_")
         {res, rem} = change(found, name: new_name) |> update()
 
         if res == :ok,
@@ -143,8 +144,23 @@ defmodule Remote do
     end
   end
 
+  def ota_update do
+    Logger.info(fn -> "sending begin cmd" end)
+    ota_begin()
+    :timer.sleep(10 * 1000)
+
+    Logger.info(fn -> "transmit started" end)
+    Mqtt.OTA.transmit()
+    Logger.info(fn -> "transmit finished" end)
+
+    :timer.sleep(10 * 1000)
+    Logger.info(fn -> "sending end cmd" end)
+    ota_end()
+  end
+
   def ota_begin do
     OTA.send_begin()
+    :timer.sleep(10)
   end
 
   def ota_end do
