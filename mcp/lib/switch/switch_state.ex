@@ -123,7 +123,12 @@ defmodule SwitchState do
 
   def state(name, position, :lazy)
       when is_binary(name) and is_boolean(position) do
-    if state(name) != position, do: state(name, position), else: position
+    if state(name) != position do
+      Logger.info(fn -> "lazy requested, change to #{position} necessary" end)
+      state(name, position)
+    else
+      position
+    end
   end
 
   def toggle(id) when is_integer(id) do

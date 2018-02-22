@@ -120,7 +120,7 @@ defmodule Mixtank.Control do
     {result, s} =
       case Map.get(tasks, name) do
         %{task: nil} ->
-          Logger.info(fn -> "tank not running for [#{name}]" end)
+          Logger.warn(fn -> "tank not running for [#{name}]" end)
           {:not_running, s}
 
         %{task: task} ->
@@ -135,7 +135,7 @@ defmodule Mixtank.Control do
           {:ok, Map.put(s, :tasks, new_tasks)}
 
         _not_found ->
-          Logger.info(fn -> "tank [#{name}] is unknown" end)
+          Logger.warn(fn -> "tank [#{name}] is unknown" end)
           {:not_found, s}
       end
 
@@ -156,11 +156,11 @@ defmodule Mixtank.Control do
 
   def handle_info({ref, result}, %{tasks: tasks} = s)
       when is_reference(ref) do
-    Logger.info(fn -> "ref: #{inspect(ref)} result: #{inspect(result)}" end)
-    Logger.info(fn -> "tasks: #{tasks}" end)
+    Logger.debug(fn -> "ref: #{inspect(ref)} result: #{inspect(result)}" end)
+    Logger.debug(fn -> "tasks: #{tasks}" end)
 
     for %{ref: ^ref} = task <- tasks do
-      Logger.info(fn ->
+      Logger.debug(fn ->
         "tank task for [#{task.name}] ended " <> "with result #{inspect(result)}"
       end)
     end
@@ -169,7 +169,7 @@ defmodule Mixtank.Control do
   end
 
   def handle_info({:DOWN, ref, :process, pid, reason}, %{tasks: tasks} = s) do
-    Logger.info(fn ->
+    Logger.debug(fn ->
       "ref: #{inspect(ref)} pid: #{inspect(pid)} " <>
         "reason: #{reason}\n" <> "tasks: #{inspect(tasks)}"
     end)
@@ -202,7 +202,7 @@ defmodule Mixtank.Control do
   end
 
   defp start_all(list, %{} = tasks, opts) when is_list(list) do
-    Logger.info(fn -> "begin start_all()" end)
+    Logger.debug(fn -> "begin start_all()" end)
 
     tasks =
       for %Mixtank{enable: true} = mt <- list do
@@ -211,12 +211,16 @@ defmodule Mixtank.Control do
       |> Enum.reduce(tasks, fn x, acc -> Map.merge(acc, x) end)
 
     Logger.info(fn ->
-      names =
-        Map.keys(tasks)
-        |> Enum.map(fn x -> "[#{x}]" end)
-        |> Enum.join(" ")
+      keys = Map.keys(tasks)
 
-      "end start_all(): #{names}"
+      names =
+        if Enum.empty?(keys),
+          do: "** NONE **",
+          else:
+            Enum.map(keys, fn x -> "[#{x}]" end)
+            |> Enum.join(" ")
+
+      "start_all(): #{names}"
     end)
 
     tasks
@@ -230,7 +234,7 @@ defmodule Mixtank.Control do
   end
 
   defp start_task(%Mixtank{profiles: []} = mt, task, _opts) do
-    Logger.info(fn -> "[#{mt.name}] has no active profile, will not start" end)
+    Logger.warn(fn -> "[#{mt.name}] has no active profile, will not start" end)
     task
   end
 
@@ -245,7 +249,7 @@ defmodule Mixtank.Control do
   end
 
   defp stop_all(%{} = s, list, opts) when is_list(list) do
-    Logger.info(fn -> "begin stop_all()" end)
+    Logger.debug(fn -> "begin stop_all()" end)
     # returns a map of tasks
     tasks =
       for %Mixtank{} = mt <- list do
@@ -258,12 +262,16 @@ defmodule Mixtank.Control do
       |> Enum.reduce(%{}, fn x, acc -> Map.merge(acc, x) end)
 
     Logger.info(fn ->
-      names =
-        Map.keys(tasks)
-        |> Enum.map(fn x -> "[#{x}]" end)
-        |> Enum.join(" ")
+      keys = Map.keys(tasks)
 
-      "end stop_all(): #{names}"
+      names =
+        if Enum.empty?(keys),
+          do: "** NONE **",
+          else:
+            Enum.map(keys, fn x -> "[#{x}]" end)
+            |> Enum.join(" ")
+
+      "stop_all(): #{names}"
     end)
 
     tasks
@@ -285,7 +293,7 @@ defmodule Mixtank.Control do
   end
 
   defp stop_single(name, %{} = tasks, opts) when is_binary(name) do
-    Logger.info(fn -> "stopping tank [#{name}]" end)
+    Logger.debug(fn -> "stopping tank [#{name}]" end)
 
     State.set_stopped(name)
     task = Map.get(tasks, name, %{task: nil})

@@ -39,6 +39,7 @@ defmodule Dutycycle do
     field(:name)
     field(:comment)
     field(:enable, :boolean)
+    field(:standalone, :boolean)
     field(:log, :boolean)
     field(:device)
     has_one(:state, State)

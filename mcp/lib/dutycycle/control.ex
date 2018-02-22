@@ -73,8 +73,8 @@ defmodule Dutycycle.Control do
   end
 
   def terminate(reason, s) do
-    # all_dcs = Dutycycle.all()
-    # stop_all(s, all_dcs, s.opts)
+    all_dcs = Dutycycle.all()
+    stop_all(s, all_dcs, s.opts)
 
     Logger.warn(fn -> "terminating with reason #{inspect(reason)}" end)
   end
@@ -146,7 +146,7 @@ defmodule Dutycycle.Control do
 
     s = Map.put(s, :tasks, tasks)
 
-    Logger.info(fn -> "[#{name}] disabled" end)
+    Logger.debug(fn -> "[#{name}] disabled" end)
 
     {:reply, {:ok, results}, s}
   end
@@ -158,7 +158,7 @@ defmodule Dutycycle.Control do
 
     s = Map.put(s, :tasks, tasks)
 
-    Logger.info(fn -> "[#{name}] enabled" end)
+    Logger.debug(fn -> "[#{name}] enabled" end)
 
     {:reply, {:ok, results}, s}
   end
@@ -214,13 +214,13 @@ defmodule Dutycycle.Control do
   end
 
   def handle_info({:startup}, %{tasks: tasks} = s) do
-    # all_dcs = Dutycycle.all()
-    # stop_all(s, all_dcs, s.opts)
-    #
-    # active_dcs = Dutycycle.all_active()
-    # tasks = start_all(active_dcs, tasks, s.opts)
-    #
-    # s = Map.put(s, :tasks, tasks)
+    all_dcs = Dutycycle.all()
+    stop_all(s, all_dcs, s.opts)
+
+    active_dcs = Dutycycle.all_active()
+    tasks = start_all(active_dcs, tasks, s.opts)
+
+    s = Map.put(s, :tasks, tasks)
 
     {:noreply, s}
   end
@@ -272,21 +272,25 @@ defmodule Dutycycle.Control do
   end
 
   defp start_all(list, %{} = tasks, opts) when is_list(list) do
-    Logger.info(fn -> "begin start_all()" end)
+    Logger.debug(fn -> "begin start_all()" end)
 
     tasks =
-      for %Dutycycle{enable: true} = dc <- list do
+      for %Dutycycle{enable: true, standalone: true} = dc <- list do
         start_single(dc, tasks, opts)
       end
       |> Enum.reduce(tasks, fn x, acc -> Map.merge(acc, x) end)
 
     Logger.info(fn ->
-      names =
-        Map.keys(tasks)
-        |> Enum.map(fn x -> "[#{x}]" end)
-        |> Enum.join(" ")
+      keys = Map.keys(tasks)
 
-      "end start_all(): #{names}"
+      names =
+        if Enum.empty?(keys),
+          do: "** NONE **",
+          else:
+            Enum.map(keys, fn x -> "[#{x}]" end)
+            |> Enum.join(" ")
+
+      "start_all(): #{names}"
     end)
 
     tasks
@@ -324,35 +328,36 @@ defmodule Dutycycle.Control do
   end
 
   defp stop_all(%{} = s, list, opts) when is_list(list) do
-    Logger.info(fn -> "begin stop_all()" end)
+    Logger.debug(fn -> "begin stop_all()" end)
 
     # returns a map of tasks
-    tasks =
-      for %Dutycycle{} = dc <- list do
+    names =
+      for %Dutycycle{standalone: true} = dc <- list do
         asis_task = Map.get(s.tasks, dc.name, %{task: nil})
         State.set_stopped(dc)
         stop_task(asis_task, opts)
-        %{dc.name => %{task: nil}}
+        dc.name
       end
-      |> Enum.reduce(fn x, acc -> Map.merge(acc, x) end)
 
     Logger.info(fn ->
       names =
-        Map.keys(tasks)
-        |> Enum.map(fn x -> "[#{x}]" end)
-        |> Enum.join(" ")
+        if Enum.empty?(names),
+          do: "** NONE **",
+          else:
+            Enum.map(names, fn x -> "[#{x}]" end)
+            |> Enum.join(" ")
 
-      "end stop_all(): #{names}"
+      "stop_all(): #{names}"
     end)
 
-    tasks
+    names
   end
 
   defp stop_single(nil, %{} = t, _opts), do: t
   defp stop_single(%Dutycycle{name: name}, %{} = t, opts), do: stop_single(name, t, opts)
 
   defp stop_single(name, %{} = tasks, opts) when is_binary(name) do
-    Logger.info(fn -> "[#{name}] stopping" end)
+    Logger.debug(fn -> "[#{name}] stopping" end)
 
     State.set_stopped(name)
     task = Map.get(tasks, name, %{task: nil})

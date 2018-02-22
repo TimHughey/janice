@@ -11,7 +11,7 @@ defmodule Remote do
 
   import Ecto.Changeset, only: [change: 2]
   import Ecto.Query, only: [from: 2]
-  import Repo, only: [all: 1, insert!: 1, one: 1, update: 1]
+  import Repo, only: [insert!: 1, one: 1, update: 1]
 
   alias Fact.RunMetric
   alias Fact.StartupAnnouncement
@@ -70,7 +70,7 @@ defmodule Remote do
       r in Remote,
       select: %{host: r.host, name: r.name}
     )
-    |> all()
+    |> Repo.all()
   end
 
   def change_name(host, new_name) when is_binary(host) and is_binary(new_name) do
@@ -152,7 +152,13 @@ defmodule Remote do
     end
   end
 
-  def ota_update([%{host: host}]), do: ota_update(host)
+  def ota_update(:all), do: all() |> ota_update()
+
+  def ota_update(list) when is_list(list) do
+    for %{host: host} <- list do
+      %{host: host, result: ota_update(host)}
+    end
+  end
 
   def ota_update(host) when is_binary(host) do
     r = get_by_host(host)
@@ -160,6 +166,7 @@ defmodule Remote do
 
     if at_preferred_vsn?(r, preferred_vsn) do
       Logger.info(fn -> "#{r.host} already at vsn #{preferred_vsn}" end)
+      :at_preferred_vsn
     else
       Logger.info(fn -> "#{r.host} needs update to vsn #{preferred_vsn}" end)
       Logger.info(fn -> "sending begin cmd" end)
@@ -172,6 +179,7 @@ defmodule Remote do
 
       Logger.info(fn -> "sending end cmd" end)
       OTA.send_end()
+      :updated
     end
   end
 
