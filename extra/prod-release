@@ -15,6 +15,7 @@ function run_cmd {
 
 BASE=${HOME}/devel/mercurial
 MCP=${BASE}/mcp
+MCR=${BASE}/mcr_esp
 
 [[ ! -x $BASE ]] && exit 1
 
@@ -32,6 +33,9 @@ run_cmd brunch build --production
 
 cd $MCP
 run_cmd env MIX_ENV=prod mix phx.digest
+
+cd $MCR
+make -j12 deploy
 
 cd $MCP
 run_cmd env MIX_ENV=prod mix release --env=prod

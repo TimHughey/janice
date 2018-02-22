@@ -7,7 +7,7 @@
 # please read the ESP-IDF documents if you need to do this.
 
 git_head_sha := $(shell git rev-parse --short HEAD)
-mcr_stable_sha := $(shell git rev-parse --short mcr_stable)
+mcr_stable_sha := $(shell git rev-parse --short mcr-stable)
 
 COMPONENT_ADD_INCLUDEDIRS := . include include/external ../components
 COMPONENT_SRCDIRS := . src/cmds src/devs src/net src/misc src/drivers src/readings src/protocols src/libs src/engines
