@@ -15,6 +15,7 @@ EXTRA=$BASE/extra
 
 cd $BASE
 
+rum_cmd git pull --tags
 run_cmd git pull --all
-run_cmd $EXTRA/prod-release 
+run_cmd $EXTRA/prod-release
 run_cmd $EXTRA/install-and-start --clean

@@ -195,6 +195,12 @@ bool mcrI2c::detectMultiplexer() {
 }
 
 void mcrI2c::discover(void *task_data) {
+  // NOTE: special case due to buggy i2c driver
+  //       the normalOpsBit is used to globally signal processes
+  //       should pause because a critical operation is underway (e.g. ota
+  //       update)
+  mcrNetwork::waitForNormalOps();
+
   trackDiscover(true);
   detectMultiplexer();
 
@@ -425,6 +431,11 @@ bool mcrI2c::readSHT31(i2cDev_t *dev, humidityReading_t **reading) {
 
 void mcrI2c::report(void *task_data) {
   mcrNetwork::waitForName(10000);
+  // NOTE: special case due to buggy i2c driver
+  //       the normalOpsBit is used to globally signal processes
+  //       should pause because a critical operation is underway (e.g. ota
+  //       update)
+  mcrNetwork::waitForNormalOps();
 
   trackReport(true);
 
@@ -490,12 +501,6 @@ void mcrI2c::run(void *task_data) {
 
     for (int i = 0; i < 6; i++) {
       report(nullptr);
-
-      // NOTE: special case due to buggy i2c driver
-      //       the normalOpsBit is used to globally signal processes
-      //       should pause because a critical operation is underway (e.g. ota
-      //       update)
-      mcrNetwork::waitForNormalOps();
 
       vTaskDelayUntil(&(_last_wake.engine), _loop_frequency);
       runtimeMetricsReport();
