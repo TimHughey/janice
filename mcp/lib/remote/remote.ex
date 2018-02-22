@@ -155,8 +155,28 @@ defmodule Remote do
   def ota_update(:all), do: all() |> ota_update()
 
   def ota_update(list) when is_list(list) do
-    for %{host: host} <- list do
-      %{host: host, result: ota_update(host)}
+    check =
+      for %{host: host} <- list do
+        r = get_by_host(host)
+        preferred_vsn = Map.get(r, :preferred_vsn) |> preferred_vsn()
+
+        if at_preferred_vsn?(r, preferred_vsn) do
+          :at_preferred_vsn
+        else
+          Logger.warn(fn -> "#{host} needs update" end)
+          OTA.send_begin(host, "ota")
+          :need_update
+        end
+      end
+
+    if :need_update in check do
+      :timer.sleep(7 * 1000)
+      OTA.transmit()
+      OTA.send_end()
+      Logger.warn(fn -> "ota complete" end)
+      :ok
+    else
+      :none_needed
     end
   end
 
