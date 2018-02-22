@@ -161,6 +161,7 @@ defmodule Remote do
     if at_preferred_vsn?(r, preferred_vsn) do
       Logger.info(fn -> "#{r.host} already at vsn #{preferred_vsn}" end)
     else
+      Logger.info(fn -> "#{r.host} needs update to vsn #{preferred_vsn}" end)
       Logger.info(fn -> "sending begin cmd" end)
       OTA.send_begin(host, "ota")
       :timer.sleep(10 * 1000)
@@ -179,7 +180,12 @@ defmodule Remote do
 
   # PRIVATE FUNCTIONS
 
-  defp at_preferred_vsn?(%Remote{firmware_vsn: fw_vsn}, vsn), do: ^fw_vsn = vsn
+  defp at_preferred_vsn?(%Remote{firmware_vsn: fw_vsn}, vsn) do
+    case fw_vsn do
+      ^vsn -> true
+      _ -> false
+    end
+  end
 
   defp update_from_external([%Remote{} = rem], eu) do
     # only the feather m0 remote devices need the time
