@@ -484,13 +484,12 @@ void mcrI2c::run(void *task_data) {
   mcrNetwork::waitForTimeset();
   ESP_LOGI(tagEngine(), "time set, proceeding to task loop");
 
-  // delay(3000);
   _last_wake.engine = xTaskGetTickCount();
   for (;;) {
     discover(nullptr);
-    // delay(pdMS_TO_TICKS(1000));
 
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 6; i++) {
+      report(nullptr);
 
       // NOTE: special case due to buggy i2c driver
       //       the normalOpsBit is used to globally signal processes

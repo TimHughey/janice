@@ -28,8 +28,6 @@
 
 #include <esp_log.h>
 #include <esp_ota_ops.h>
-#include <esp_partition.h>
-#include <esp_spi_flash.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/event_groups.h>
 #include <freertos/queue.h>
@@ -37,6 +35,7 @@
 #include <freertos/task.h>
 
 #include "external/mongoose.h"
+#include "misc/mcr_types.hpp"
 #include "readings/readings.hpp"
 
 #define mcr_mqtt_version_1 1
@@ -47,20 +46,18 @@
 #endif
 
 typedef struct {
-  char id[16];
-  char prefix[5];
-  QueueHandle_t q;
-} cmdQueue_t;
-
-typedef struct {
   std::string *topic = nullptr;
-  std::vector<char> *data = nullptr;
+  mcrRawMsg_t *data = nullptr;
 } mqttInMsg_t;
 
 typedef class mcrMQTTin mcrMQTTin_t;
 class mcrMQTTin {
 private:
-  xTaskHandle _mqtt_task = nullptr;
+  mcrTask_t _task = {.handle = nullptr,
+                     .data = nullptr,
+                     .lastWake = 0,
+                     .priority = CONFIG_MCR_MQTT_INBOUND_TASK_PRIORITY,
+                     .stackSize = (5 * 1024)};
   RingbufHandle_t _rb;
   void *_task_data = nullptr;
 
@@ -68,15 +65,6 @@ private:
   struct mg_connection *_connection = nullptr;
   time_t _lastLoop;
   uint16_t _msg_id = 0;
-  std::vector<cmdQueue_t> _cmd_queues;
-
-  const esp_partition_t *_update_part;
-  esp_err_t _ota_err = ESP_OK;
-  size_t _ota_size = 0;
-  uint64_t _ota_first_block = 0;
-  uint64_t _ota_last_block = 0;
-  uint64_t _ota_total_us = 0;
-  esp_ota_handle_t _ota_update;
 
   // Task implementation
   static void runEngine(void *task_instance) {
@@ -84,42 +72,35 @@ private:
     task->run(task->_task_data);
   }
 
-  void __prepForOTA();
-  void __finalizeOTA();
-
 public:
   mcrMQTTin(RingbufHandle_t rb);
   static mcrMQTTin_t *instance();
 
-  static void bootFactoryNext();
-  static void finalizeOTA();
-  static void prepForOTA();
-  void processCmd(std::vector<char> *data);
-  void processOTA(std::vector<char> *data);
-
-  void registerCmdQueue(cmdQueue_t &cmd_q);
+  UBaseType_t changePriority(UBaseType_t priority);
+  void restorePriority();
   void run(void *data);
 
   void delay(int ms) { ::vTaskDelay(pdMS_TO_TICKS(ms)); }
   void start(void *task_data = nullptr) {
-    if (_mqtt_task != nullptr) {
+    if (_task.handle != nullptr) {
       ESP_LOGW(tagEngine(), "there may already be a task running %p",
-               (void *)_mqtt_task);
+               (void *)_task.handle);
     }
 
     // this (object) is passed as the data to the task creation and is
     // used by the static runEngine method to call the implemented run
     // method
-    ::xTaskCreate(&runEngine, tagEngine(), 5 * 1024, this, 10, &_mqtt_task);
+    ::xTaskCreate(&runEngine, tagEngine(), _task.stackSize, this,
+                  _task.priority, &_task.handle);
   }
 
   void stop() {
-    if (_mqtt_task == nullptr) {
+    if (_task.handle == nullptr) {
       return;
     }
 
-    xTaskHandle temp = _mqtt_task;
-    _mqtt_task = nullptr;
+    xTaskHandle temp = _task.handle;
+    _task.handle = nullptr;
     ::vTaskDelete(temp);
   }
 

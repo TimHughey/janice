@@ -72,7 +72,7 @@ typedef struct {
 typedef class mcrI2c mcrI2c_t;
 class mcrI2c : public mcrEngine<i2cDev_t> {
 private:
-  const TickType_t _loop_frequency = pdMS_TO_TICKS(7000);
+  const TickType_t _loop_frequency = pdMS_TO_TICKS(5000);
   static const uint32_t _max_buses = 8;
   bool _use_multiplexer = false;
   i2cLastWakeTime_t _last_wake;

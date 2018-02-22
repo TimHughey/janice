@@ -33,7 +33,8 @@
 #include <freertos/task.h>
 #include <sdkconfig.h>
 
-#include "cmds/cmd.hpp"
+#include "cmds/cmd_queues.hpp"
+#include "cmds/cmd_switch.hpp"
 #include "devs/base.hpp"
 #include "devs/ds_dev.hpp"
 #include "drivers/owb.h"
@@ -50,6 +51,7 @@ mcrDS::mcrDS() {
   // setLoggingLevel(tagConvert(), ESP_LOG_INFO);
   // setLoggingLevel(tagReport(), ESP_LOG_INFO);
   // setLoggingLevel(tagDiscover(), ESP_LOG_INFO);
+  // setLoggingLevel(tagCommand(), ESP_LOG_INFO);
 
   // task setup
   _engine_task_name = tagEngine();
@@ -88,7 +90,7 @@ void mcrDS::command(void *task_data) {
 
   for (;;) {
     BaseType_t queue_rc = pdFALSE;
-    mcrCmd_t *cmd = nullptr;
+    mcrCmdSwitch_t *cmd = nullptr;
 
     xEventGroupClearBits(_ds_evg, needBusBit());
     queue_rc = xQueueReceive(_cmd_q, &cmd, portMAX_DELAY);
@@ -160,7 +162,7 @@ void mcrDS::command(void *task_data) {
   }
 }
 
-bool mcrDS::commandAck(mcrCmd_t &cmd) {
+bool mcrDS::commandAck(mcrCmdSwitch_t &cmd) {
   bool rc = true;
   int64_t start = esp_timer_get_time();
   dsDev_t *dev = findDevice(cmd.dev_id());
@@ -170,8 +172,8 @@ bool mcrDS::commandAck(mcrCmd_t &cmd) {
 
     if (rc == true) {
       setCmdAck(cmd);
-      ESP_LOGD(tagCommand(), "completed cmd: %s", cmd.debug().c_str());
       publish(cmd);
+      ESP_LOGI(tagCommand(), "completed cmd: %s", cmd.debug().c_str());
     }
   } else {
     ESP_LOGW(tagCommand(), "unable to find device for cmd ack %s",
@@ -857,7 +859,7 @@ void mcrDS::run(void *data) {
   ds = owb_rmt_initialize(rmt_driver, W1_PIN, RMT_CHANNEL_0, RMT_CHANNEL_1);
 
   _bus_mutex = xSemaphoreCreateMutex();
-  _cmd_q = xQueueCreate(_max_queue_len, sizeof(mcrCmd_t *));
+  _cmd_q = xQueueCreate(_max_queue_len, sizeof(mcrCmdSwitch_t *));
   _ds_evg = xEventGroupCreate();
 
   // the command task will wait for the queue which is fed by MQTTin
@@ -890,7 +892,7 @@ void mcrDS::run(void *data) {
            (void *)_discoverTask.handle, (void *)_reportTask.handle);
 
   cmdQueue_t cmd_q = {"mcrDS", "ds", _cmd_q};
-  mcrMQTT::instance()->registerCmdQueue(cmd_q);
+  mcrCmdQueues::registerQ(cmd_q);
 
   ESP_LOGI(tagEngine(), "waiting for time to be set...");
   mcrNetwork::waitForTimeset();
@@ -936,7 +938,7 @@ void mcrDS::runReport(void *task_data) {
   ::vTaskDelete(instance->_reportTask.handle);
 }
 
-bool mcrDS::setDS2406(mcrCmd_t &cmd, dsDev_t *dev) {
+bool mcrDS::setDS2406(mcrCmdSwitch_t &cmd, dsDev_t *dev) {
   bool present = false;
   owb_status owb_s;
   bool rc = false;
@@ -1016,7 +1018,7 @@ bool mcrDS::setDS2406(mcrCmd_t &cmd, dsDev_t *dev) {
   return rc;
 }
 
-bool mcrDS::setDS2408(mcrCmd_t &cmd, dsDev_t *dev) {
+bool mcrDS::setDS2408(mcrCmdSwitch_t &cmd, dsDev_t *dev) {
   bool present = false;
   owb_status owb_s;
   bool rc = false;
@@ -1123,7 +1125,7 @@ bool mcrDS::setDS2408(mcrCmd_t &cmd, dsDev_t *dev) {
   return rc;
 }
 
-bool mcrDS::setDS2413(mcrCmd_t &cmd, dsDev_t *dev) {
+bool mcrDS::setDS2413(mcrCmdSwitch_t &cmd, dsDev_t *dev) {
   bool present = false;
   owb_status owb_s;
   bool rc = false;

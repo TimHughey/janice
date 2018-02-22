@@ -38,9 +38,9 @@ void app_main() {
   spi_flash_init();
 
   // must create network first
-  network = new mcrNetwork();
+  network = mcrNetwork::instance(); // singleton, get the instance to create
   timestampTask = new mcrTimestampTask();
-  mqttTask = mcrMQTT::instance();
+  mqttTask = mcrMQTT::instance(); // singleton, get the instance to create
   dsEngineTask = new mcrDS();
   i2cEngineTask = new mcrI2c();
 

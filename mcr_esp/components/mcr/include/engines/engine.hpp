@@ -35,7 +35,7 @@
 #include <freertos/task.h>
 #include <sdkconfig.h>
 
-#include "cmds/cmd.hpp"
+#include "cmds/cmd_switch.hpp"
 #include "devs/base.hpp"
 #include "misc/util.hpp"
 #include "protocols/mqtt.hpp"
@@ -210,17 +210,17 @@ protected:
 
   mcrEngineTagMap_t _tags;
 
-  DEV *getDeviceByCmd(mcrCmd_t &cmd) {
+  DEV *getDeviceByCmd(mcrCmdSwitch_t &cmd) {
     DEV *dev = findDevice(cmd.dev_id());
     return dev;
   };
 
-  DEV *getDeviceByCmd(mcrCmd_t *cmd) {
+  DEV *getDeviceByCmd(mcrCmdSwitch_t *cmd) {
     DEV *dev = findDevice(cmd->dev_id());
     return dev;
   };
 
-  bool publish(mcrCmd_t &cmd) { return publish(cmd.dev_id()); };
+  bool publish(mcrCmdSwitch_t &cmd) { return publish(cmd.dev_id()); };
   bool publish(const mcrDevID_t &dev_id) {
     DEV *search = findDevice(dev_id);
 
@@ -255,7 +255,7 @@ protected:
     return rc;
   };
 
-  bool readDevice(mcrCmd_t &cmd) {
+  bool readDevice(mcrCmdSwitch_t &cmd) {
     mcrDevID_t &dev_id = cmd.dev_id();
 
     return readDevice(dev_id);
@@ -273,7 +273,7 @@ protected:
     return (dev == nullptr) ? false : true;
   }
 
-  void setCmdAck(mcrCmd_t &cmd) {
+  void setCmdAck(mcrCmdSwitch_t &cmd) {
     DEV *dev = findDevice(cmd.dev_id());
 
     if (dev != nullptr) {

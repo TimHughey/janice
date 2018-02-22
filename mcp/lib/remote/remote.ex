@@ -11,7 +11,7 @@ defmodule Remote do
 
   import Ecto.Changeset, only: [change: 2]
   import Ecto.Query, only: [from: 2]
-  import Repo, only: [insert!: 1, one: 1, update: 1]
+  import Repo, only: [all: 1, insert!: 1, one: 1, update: 1]
 
   alias Fact.RunMetric
   alias Fact.StartupAnnouncement
@@ -24,6 +24,7 @@ defmodule Remote do
     field(:name, :string)
     field(:hw, :string)
     field(:firmware_vsn, :string)
+    field(:preferred_vsn, :string)
     field(:last_start_at, Timex.Ecto.DateTime)
     field(:last_seen_at, Timex.Ecto.DateTime)
 
@@ -62,6 +63,14 @@ defmodule Remote do
   def add(no_match) do
     Logger.warn(fn -> "attempt to add non %Remote{} #{inspect(no_match)}" end)
     no_match
+  end
+
+  def all do
+    from(
+      r in Remote,
+      select: %{host: r.host, name: r.name}
+    )
+    |> all()
   end
 
   def change_name(host, new_name) when is_binary(host) and is_binary(new_name) do
@@ -143,27 +152,34 @@ defmodule Remote do
     end
   end
 
-  def ota_update do
-    Logger.info(fn -> "sending begin cmd" end)
-    ota_begin()
-    :timer.sleep(10 * 1000)
+  def ota_update([%{host: host}]), do: ota_update(host)
 
-    Logger.info(fn -> "transmit started" end)
-    OTA.transmit()
-    Logger.info(fn -> "transmit finished" end)
+  def ota_update(host) when is_binary(host) do
+    r = get_by_host(host)
+    preferred_vsn = Map.get(r, :preferred_vsn) |> preferred_vsn()
 
-    Logger.info(fn -> "sending end cmd" end)
-    ota_end()
+    if at_preferred_vsn?(r, preferred_vsn) do
+      Logger.info(fn -> "#{r.host} already at vsn #{preferred_vsn}" end)
+    else
+      Logger.info(fn -> "sending begin cmd" end)
+      OTA.send_begin(host, "ota")
+      :timer.sleep(10 * 1000)
+
+      Logger.info(fn -> "transmit started" end)
+      OTA.transmit()
+      Logger.info(fn -> "transmit finished" end)
+
+      Logger.info(fn -> "sending end cmd" end)
+      OTA.send_end()
+    end
   end
 
-  def ota_begin do
-    OTA.send_begin()
-    :timer.sleep(10)
-  end
+  def preferred_vsn("head"), do: Application.get_env(:mcp, :sha_head)
+  def preferred_vsn("stable"), do: Application.get_env(:mcp, :sha_mcr_stable)
 
-  def ota_end do
-    OTA.send_end()
-  end
+  # PRIVATE FUNCTIONS
+
+  defp at_preferred_vsn?(%Remote{firmware_vsn: fw_vsn}, vsn), do: ^fw_vsn = vsn
 
   defp update_from_external([%Remote{} = rem], eu) do
     # only the feather m0 remote devices need the time

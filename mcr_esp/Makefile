@@ -6,3 +6,7 @@
 PROJECT_NAME := mcr_esp
 
 include $(IDF_PATH)/make/project.mk
+
+#.PHONY: deploy
+deploy: all
+	install -b build/mcr_esp.bin ../mcp/priv

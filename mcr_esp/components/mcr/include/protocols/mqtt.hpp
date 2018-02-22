@@ -47,12 +47,12 @@ public:
 
   void connect(int wait_ms = 0);
   void connectionClosed();
-  void finishOTA();
+
   void handshake(struct mg_connection *nc);
   void incomingMsg(struct mg_str *topic, struct mg_str *payload);
-  void prepForOTA();
+  static void otaFinish() { instance()->__otaFinish(); };
+  static void otaPrep() { instance()->__otaPrep(); };
   void publish(Reading_t *reading);
-  void registerCmdQueue(cmdQueue_t &cmd_q);
   void run(void *data);
   void setSubscribedOTA() { _ota_subscribed = true; };
   void subACK(struct mg_mqtt_message *msg);
@@ -99,6 +99,7 @@ private:
   struct mg_connection *_connection = nullptr;
   uint16_t _msg_id = 0;
   bool _mqtt_ready = false;
+  bool _prefer_outbound_ms = 0;
 
   // mg_mgr uses LWIP and the timeout is specified in ms
   int _inbound_msg_ms = CONFIG_MCR_MQTT_INBOUND_MSG_WAIT_MS;
@@ -109,6 +110,8 @@ private:
       (sizeof(mqttOutMsg_t) * CONFIG_MCR_MQTT_RINGBUFFER_PENDING_MSGS);
   const size_t _rb_in_size =
       (sizeof(mqttInMsg_t) * CONFIG_MCR_MQTT_RINGBUFFER_PENDING_MSGS);
+  size_t _rb_in_lowwater = 0;
+  size_t _rb_in_highwater = 0;
   RingbufHandle_t _rb_out = nullptr;
   RingbufHandle_t _rb_in = nullptr;
 
@@ -129,7 +132,10 @@ private:
   bool _ota_subscribed = false;
 
   void announceStartup();
+  void __otaFinish();
+  void __otaPrep();
   void outboundMsg();
+
   void publish(std::string *json);
 
   // Task implementation

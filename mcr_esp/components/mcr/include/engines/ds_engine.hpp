@@ -33,7 +33,7 @@
 #include <freertos/task.h>
 #include <sdkconfig.h>
 
-#include "cmds/cmd.hpp"
+#include "cmds/cmd_switch.hpp"
 #include "devs/ds_dev.hpp"
 #include "drivers/owb.h"
 #include "drivers/owb_rmt.h"
@@ -127,13 +127,13 @@ private:
   void command(void *data);
 
   bool checkDevicesPowered();
-  bool commandAck(mcrCmd_t &cmd);
+  bool commandAck(mcrCmdSwitch_t &cmd);
 
   bool devicesPowered() { return _devices_powered; }
   EventBits_t needBusBit() { return _event_bits.need_bus; }
 
-  // accept a mcrCmd_t as input to reportDevice
-  // bool readDevice(mcrCmd_t &cmd);
+  // accept a mcrCmdSwitch_t as input to reportDevice
+  // bool readDevice(mcrCmdSwitch_t &cmd);
   // bool readDevice(const mcrDevID_t &id);
   bool readDevice(dsDev_t *dev);
 
@@ -143,9 +143,9 @@ private:
   bool readDS2406(dsDev_t *dev, positionsReading_t **reading);
   bool readDS2413(dsDev_t *dev, positionsReading_t **reading);
 
-  bool setDS2406(mcrCmd_t &cmd, dsDev_t *dev);
-  bool setDS2408(mcrCmd_t &cmd, dsDev_t *dev);
-  bool setDS2413(mcrCmd_t &cmd, dsDev_t *dev);
+  bool setDS2406(mcrCmdSwitch_t &cmd, dsDev_t *dev);
+  bool setDS2408(mcrCmdSwitch_t &cmd, dsDev_t *dev);
+  bool setDS2413(mcrCmdSwitch_t &cmd, dsDev_t *dev);
 
   // FIXME:  hard code there are always temperature devices
   bool tempDevicesPresent() { return _temp_devices_present; }

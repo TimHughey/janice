@@ -7,10 +7,21 @@ defmodule OTA do
 
   alias Mqtt.Client
 
+  @boot_factory_next "boot.factory.next"
   @ota_begin_cmd "ota.begin"
   @ota_end_cmd "ota.end"
   @restart_cmd "restart"
   @block_size 2048
+
+  def boot_factory_next(host) when is_binary(host) do
+    %{}
+    |> Map.put(:vsn, Application.get_env(:mcp, :git_sha))
+    |> Map.put(:cmd, @boot_factory_next)
+    |> Map.put(:mtime, Timex.now() |> Timex.to_unix())
+    |> Map.put(:host, host)
+    |> json()
+    |> Client.publish()
+  end
 
   def fw_file_version do
     fw = Application.app_dir(:mcp, "priv/mcr_esp.bin")
@@ -29,27 +40,31 @@ defmodule OTA do
     |> Map.put_new(:stable, Map.get(vsn, "stable", "0000000"))
   end
 
-  def restart(delay_secs \\ 5) when is_integer(delay_secs) do
+  def restart(host, delay_ms \\ 0) when is_binary(host) and is_integer(delay_ms) do
     %{}
     |> Map.put(:vsn, Application.get_env(:mcp, :git_sha))
     |> Map.put(:cmd, @restart_cmd)
     |> Map.put(:mtime, Timex.now() |> Timex.to_unix())
-    |> Map.put(:delay, delay_secs)
+    |> Map.put(:host, host)
+    |> Map.put(:delay_ms, delay_ms)
     |> json()
     |> Client.publish()
   end
 
-  def send_begin(delay_secs \\ 10) when is_integer(delay_secs) do
+  def send_begin(host, partition, delay_ms \\ 10000)
+      when is_binary(host) and is_binary(partition) and is_integer(delay_ms) do
     fw_file_version()
     |> Map.put(:vsn, Application.get_env(:mcp, :git_sha))
     |> Map.put(:cmd, @ota_begin_cmd)
     |> Map.put(:mtime, Timex.now() |> Timex.to_unix())
-    |> Map.put(:delay, delay_secs)
+    |> Map.put(:host, host)
+    |> Map.put(:partition, partition)
+    |> Map.put(:delay_ms, delay_ms)
     |> json()
     |> Client.publish()
   end
 
-  def send_end(delay_secs \\ 5) when is_integer(delay_secs) do
+  def send_end do
     %{}
     |> Map.put(:vsn, Application.get_env(:mcp, :git_sha))
     |> Map.put(:cmd, @ota_end_cmd)
@@ -83,17 +98,17 @@ defmodule OTA do
     flags =
       if block == :start do
         # if :start was passed in then flag this is the first block
-        <<1::size(8)>>
+        <<0xD1::size(8)>>
       else
         case IO.iodata_length(data) do
           # if the amount of data is equal to a block then we are midstream
           n when n == @block_size ->
-            <<2::size(8)>>
+            <<0xD2::size(8)>>
 
           n ->
             # otherwise this is the final block
             Logger.info(fn -> "ota final block size=#{n}" end)
-            <<4::size(8)>>
+            <<0xD4::size(8)>>
         end
       end
 

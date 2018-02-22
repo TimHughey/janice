@@ -24,12 +24,9 @@
 
 #include "net/mcr_net.hpp"
 
-static const char *TAG = "mcrNetwork";
 static mcrNetwork *__singleton = nullptr;
 
 mcrNetwork::mcrNetwork() {
-  __singleton = this;
-
   ESP_ERROR_CHECK(nvs_flash_init());
 
   tcpip_adapter_init();
@@ -45,7 +42,14 @@ EventBits_t mcrNetwork::timesetBit() { return BIT1; }
 EventBits_t mcrNetwork::normalOpsBit() { return BIT2; }
 
 EventGroupHandle_t mcrNetwork::eventGroup() { return __singleton->_evg; }
-mcrNetwork *mcrNetwork::instance() { return __singleton; }
+
+mcrNetwork *mcrNetwork::instance() {
+  if (__singleton == nullptr) {
+    __singleton = new mcrNetwork();
+  }
+
+  return __singleton;
+}
 
 void mcrNetwork::ensureTimeIsSet() {
   // wait for time to be set
@@ -54,7 +58,7 @@ void mcrNetwork::ensureTimeIsSet() {
   int retry = 0;
   const int retry_count = 10;
   while (timeinfo.tm_year < (2016 - 1900) && ++retry < retry_count) {
-    ESP_LOGI(TAG, "waiting for system time to be set... (%d/%d)", retry,
+    ESP_LOGI(tagEngine(), "waiting for system time to be set... (%d/%d)", retry,
              retry_count);
     vTaskDelay(pdMS_TO_TICKS(2000));
     time(&now);
@@ -75,7 +79,7 @@ const std::string &mcrNetwork::getName() {
 void mcrNetwork::setName(const std::string name) {
 
   __singleton->_name = name;
-  ESP_LOGI(TAG, "network name=%s", __singleton->_name.c_str());
+  ESP_LOGI(tagEngine(), "network name=%s", __singleton->_name.c_str());
 
   xEventGroupSetBits(__singleton->eventGroup(), nameBit());
 }
@@ -102,6 +106,7 @@ void mcrNetwork::resumeNormalOps() {
 }
 
 void mcrNetwork::suspendNormalOps() {
+  ESP_LOGW(tagEngine(), "suspending normal ops");
   xEventGroupClearBits(__singleton->eventGroup(), mcrNetwork::normalOpsBit());
 }
 

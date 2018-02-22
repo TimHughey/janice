@@ -1,5 +1,5 @@
 /*
-    engine.hpp - Master Control Remote Dallas Semiconductor
+    cmd_base.hpp - Master Control Command Network Class
     Copyright (C) 2017  Tim Hughey
 
     This program is free software: you can redistribute it and/or modify
@@ -18,33 +18,38 @@
     https://www.wisslanding.com
 */
 
-#ifndef mcr_type_hpp
-#define mcr_type_hpp
+#ifndef mcr_cmd_network_h
+#define mcr_cmd_network_h
 
+#include <cstdlib>
+#include <sstream>
 #include <string>
-#include <vector>
 
+#include <esp_timer.h>
+#include <external/ArduinoJson.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
-#include <freertos/task.h>
-#include <sdkconfig.h>
+#include <sys/time.h>
+#include <time.h>
 
-typedef struct {
-  TaskHandle_t handle;
-  void *data;
-  TickType_t lastWake;
-  UBaseType_t priority;
-  UBaseType_t stackSize;
-} mcrTask_t;
+#include "cmds/cmd_base.hpp"
+#include "cmds/cmd_types.hpp"
+#include "misc/util.hpp"
+#include "misc/version.hpp"
 
-typedef std::string mcrRefID_t;
+typedef class mcrCmdNetwork mcrCmdNetwork_t;
+class mcrCmdNetwork : public mcrCmdBase {
+private:
+  std::string _host;
+  std::string _name;
 
-typedef struct {
-  char id[16];
-  char prefix[5];
-  QueueHandle_t q;
-} cmdQueue_t;
+public:
+  mcrCmdNetwork(JsonObject &root);
+  ~mcrCmdNetwork(){};
 
-typedef std::vector<char> mcrRawMsg_t;
+  bool process();
+  virtual size_t size() { return sizeof(mcrCmdNetwork_t); };
+  const std::string debug();
+};
 
-#endif // mcr_type_h
+#endif

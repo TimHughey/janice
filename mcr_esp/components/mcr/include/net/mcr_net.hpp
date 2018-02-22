@@ -53,9 +53,10 @@ private:
     }
   };
 
-public:
+  // SINGLETON!  constructor is private
   mcrNetwork();
 
+public:
   void ensureTimeIsSet();
   static EventGroupHandle_t eventGroup();
   static const std::string &getName();
@@ -73,6 +74,8 @@ public:
   static EventBits_t nameBit();
   static EventBits_t timesetBit();
   static EventBits_t normalOpsBit();
+
+  static const char *tagEngine() { return (const char *)"mcrNetwork"; };
 
 private:
   WiFi _wifi;
