@@ -30,10 +30,9 @@ static mcrI2c *i2cEngineTask = nullptr;
 
 void app_main() {
   ESP_LOGI(TAG, "%s entered", __PRETTY_FUNCTION__);
-  ESP_LOGI(TAG, "portTICK_PERIOD_MS=%u and 10ms=%uticks", portTICK_PERIOD_MS,
+  ESP_LOGI(TAG, "portTICK_PERIOD_MS=%u and 10ms=%u ticks", portTICK_PERIOD_MS,
            pdMS_TO_TICKS(10));
-  ESP_LOGI(TAG, "mcr_rev=%s git_rev=%s %s", mcrVersion::mcr_stable(),
-           mcrVersion::git(), embed_vsn_sha);
+  ESP_LOGI(TAG, "%s", embed_vsn_sha);
 
   spi_flash_init();
 

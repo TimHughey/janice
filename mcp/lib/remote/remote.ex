@@ -49,7 +49,7 @@ defmodule Remote do
 
   def add(list) when is_list(list) do
     for %Remote{} = r <- list do
-      case get_by_host(r.host) do
+      case get_by(host: r.host) do
         nil ->
           insert!(r)
 
@@ -67,8 +67,8 @@ defmodule Remote do
 
   def all do
     from(
-      r in Remote,
-      select: %{host: r.host, name: r.name}
+      rem in Remote,
+      select: rem
     )
     |> Repo.all()
   end
@@ -96,19 +96,33 @@ defmodule Remote do
   end
 
   def change_name(host, new_name) when is_binary(host) and is_binary(new_name) do
-    case get_by_host(host) do
-      nil ->
-        :error
+    remote = get_by(host: host)
+    check = get_by(name: new_name)
 
-      found ->
-        new_name = String.replace(new_name, " ", "_")
-        {res, rem} = change(found, name: new_name) |> update()
+    if is_nil(check) do
+      case remote do
+        %Remote{} ->
+          new_name = String.replace(new_name, " ", "_")
+          {res, rem} = change(remote, name: new_name) |> update()
 
-        if res == :ok,
-          do: SetName.new_cmd(rem.host, rem.name) |> SetName.json() |> Client.publish()
+          if res == :ok,
+            do: SetName.new_cmd(rem.host, rem.name) |> SetName.json() |> Client.publish()
 
-        res
+          res
+
+        _nomatch ->
+          :not_found
+      end
+    else
+      :name_in_use
     end
+  end
+
+  def delete_all(:dangerous) do
+    dt = Timex.now()
+
+    from(rem in Remote, where: rem.last_seen_at < ^dt)
+    |> Repo.delete_all()
   end
 
   def external_update(%{host: host, vsn: _vsn, mtime: _mtime, hw: _hw} = eu) do
@@ -140,32 +154,40 @@ defmodule Remote do
   end
 
   def external_update(no_match) do
-    Logger.warn(fn -> "external update received a bad map #{inspect(no_match)}" end)
+    log = is_map(no_match) and Map.get(no_match, :log, true)
+    log && Logger.warn(fn -> "external update received a bad map #{inspect(no_match)}" end)
     :error
   end
 
-  def get_by_host(host) do
-    from(remote in Remote, where: remote.host == ^host) |> one()
-  end
+  def get_by(opts) when is_list(opts) do
+    filter = Keyword.take(opts, [:host, :name])
+    select = Keyword.take(opts, [:only]) |> Keyword.get_values(:only) |> List.flatten()
 
-  def get_name_by_host(host) do
-    case get_by_host(host) do
-      nil -> host
-      rem -> rem.name
+    if Enum.empty?(filter) do
+      Logger.warn(fn -> "get_by bad args: #{inspect(opts)}" end)
+      []
+    else
+      rem = from(remote in Remote, where: ^filter) |> one()
+
+      if is_nil(rem) or Enum.empty?(select), do: rem, else: Map.take(rem, select)
     end
   end
 
-  def mark_as_seen(host, mtime) when is_binary(host) do
-    case get_by_host(host) do
+  # header to define default parameter for multiple functions
+  def mark_as_seen(host, time, threshold_secs \\ 10)
+
+  def mark_as_seen(host, mtime, threshold_secs)
+      when is_binary(host) and is_integer(mtime) do
+    case get_by(host: host) do
       nil -> host
-      rem -> mark_as_seen(rem, Timex.from_unix(mtime))
+      rem -> mark_as_seen(rem, Timex.from_unix(mtime), threshold_secs)
     end
   end
 
-  def mark_as_seen(%Remote{} = rem, %DateTime{} = dt) do
-    # only update last seen if more than 30 seconds different
+  def mark_as_seen(%Remote{} = rem, %DateTime{} = dt, threshold_secs) do
+    # only update last seen if more than threshold_secs  different
     # this is to avoid high rates of updates when a device hosts many sensors
-    if Timex.diff(dt, rem.last_seen_at, :seconds) > 10 do
+    if Timex.diff(dt, rem.last_seen_at, :seconds) >= threshold_secs do
       opts = [last_seen_at: dt]
       {res, updated} = change(rem, opts) |> update()
       if res == :ok, do: updated.name, else: rem.name
@@ -174,59 +196,75 @@ defmodule Remote do
     end
   end
 
+  def mark_as_seen(nil, _, _), do: nil
+
   def ota_update(:all), do: all() |> ota_update()
 
-  def ota_update(list) when is_list(list) do
-    check =
-      for %{host: host} <- list do
-        r = get_by_host(host)
+  def ota_update(list, opts \\ []) when is_list(list) do
+    transmit_delay_ms = Keyword.get(opts, :transmit_delay_ms, 7000)
 
+    check =
+      for %Remote{host: host, name: name} = r <- list do
         if at_preferred_vsn?(r) do
           :at_preferred_vsn
         else
-          Logger.warn(fn -> "#{host} needs update" end)
+          Logger.warn(fn -> "#{name} needs update" end)
           OTA.send_begin(host, "ota")
           :need_update
         end
       end
 
     if :need_update in check do
-      :timer.sleep(7 * 1000)
+      :timer.sleep(transmit_delay_ms)
+      Logger.warn(fn -> "transmit started" end)
       OTA.transmit()
       OTA.send_end()
-      Logger.warn(fn -> "ota complete" end)
+      Logger.warn(fn -> "ota transmit complete, ota end sent" end)
       :ok
     else
       :none_needed
     end
   end
 
-  def ota_update(host) when is_binary(host) do
-    r = get_by_host(host)
+  def ota_update_single(name, opts \\ []) when is_binary(name) do
+    force = Keyword.get(opts, :force, false)
+    transmit_delay_ms = Keyword.get(opts, :transmit_delay_ms, 3000)
 
-    if at_preferred_vsn?(r) do
-      Logger.info(fn -> "#{r.host} already at vsn #{r.firmware_vsn}" end)
-      :at_preferred_vsn
-    else
-      Logger.info(fn -> "#{r.host} needs update" end)
-      Logger.info(fn -> "sending begin cmd" end)
-      OTA.send_begin(host, "ota")
-      :timer.sleep(10 * 1000)
+    r = get_by(name: name)
 
-      Logger.info(fn -> "transmit started" end)
-      OTA.transmit()
-      Logger.info(fn -> "transmit finished" end)
+    cond do
+      is_nil(r) ->
+        Logger.warn(fn -> "#{name} not found" end)
+        :not_found
 
-      Logger.info(fn -> "sending end cmd" end)
-      OTA.send_end()
-      :updated
+      force or not at_preferred_vsn?(r) ->
+        Logger.warn(fn -> "#{r.name} needs update" end)
+        Logger.warn(fn -> "sending begin cmd" end)
+        OTA.send_begin(r.host, "ota")
+        :timer.sleep(transmit_delay_ms)
+
+        Logger.warn(fn -> "transmit started" end)
+        OTA.transmit()
+        OTA.send_end()
+        Logger.warn(fn -> "ota transmit complete, ota end sent" end)
+        :ok
+
+      not force or at_preferred_vsn?(r) ->
+        Logger.info(fn -> "#{r.name} already at vsn #{r.firmware_vsn}" end)
+        :at_preferred_vsn
     end
   end
 
-  def preferred_vsn("head"), do: Application.get_env(:mcp, :sha_head)
-  def preferred_vsn("stable"), do: Application.get_env(:mcp, :sha_mcr_stable)
+  def vsn_preference(opts) do
+    case get_by(opts) do
+      %Remote{preferred_vsn: vsn} -> vsn
+      _notfound -> "not_found"
+    end
+  end
 
+  #
   # PRIVATE FUNCTIONS
+  #
 
   defp update_from_external([%Remote{} = rem], eu) do
     # only the feather m0 remote devices need the time
@@ -235,7 +273,10 @@ defmodule Remote do
     # all devices are sent their name
     SetName.new_cmd(rem.host, rem.name) |> SetName.json() |> Client.publish()
 
-    Logger.warn(fn -> "#{rem.name} started (host=#{rem.host},hw=#{eu.hw},vsn=#{eu.vsn})" end)
+    log = Map.get(eu, :log, true)
+
+    log &&
+      Logger.warn(fn -> "#{rem.name} started (host=#{rem.host},hw=#{eu.hw},vsn=#{eu.vsn})" end)
 
     StartupAnnouncement.record(host: rem.name, vsn: eu.vsn, hw: eu.hw)
 

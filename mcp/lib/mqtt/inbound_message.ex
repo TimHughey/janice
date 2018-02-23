@@ -33,8 +33,9 @@ defmodule Mqtt.InboundMessage do
   end
 
   @log_json_msg :log_json
-  def log_json(args) do
-    GenServer.cast(Mqtt.InboundMessage, {@log_json_msg, args})
+  def log_json(args) when is_list(args) do
+    rc = GenServer.call(Mqtt.InboundMessage, {@log_json_msg, args})
+    if is_pid(rc), do: :log_open, else: :log_closed
   end
 
   # internal work functions
@@ -63,14 +64,15 @@ defmodule Mqtt.InboundMessage do
   # GenServer callbacks
   def handle_cast({:incoming_message, msg}, s)
       when is_binary(msg) and is_map(s) do
-    {elapsed_us, _res} =
+    {elapsed_us, task} =
       :timer.tc(fn ->
-        if is_pid(s.json_log) do
-          log = "#{msg}\n"
-          IO.write(s.json_log, log)
-        end
+        task =
+          if is_pid(s.json_log),
+            do: Task.async(fn -> IO.puts(s.json_log, msg) end),
+            else: nil
 
         Reading.decode(msg) |> decoded_msg(s)
+        task
       end)
 
     s = %{s | messages_dispatched: s.messages_dispatched + 1}
@@ -89,41 +91,38 @@ defmodule Mqtt.InboundMessage do
       val: elapsed_us
     )
 
+    if not is_nil(task), do: Task.await(task)
     {:noreply, s}
   end
 
   # open the json log if not already open
-  def handle_cast({@log_json_msg, true}, %{json_log: nil} = s) do
-    {rc, json_log} = File.open("/tmp/json.log", [:append, :utf8])
+  def handle_call({@log_json_msg, opts}, _from, %{json_log: pid} = s) do
+    log = Keyword.get(opts, :log, false)
 
-    if rc == :ok do
-      Logger.info(fn -> "json log opened" end)
-    end
+    json_log =
+      cond do
+        # log start requested, it isn't open so open it
+        log and is_nil(pid) ->
+          {_, json_log} = File.open("/tmp/json.log", [:append, :utf8, :delayed_write])
+          json_log
+
+        # log stop requested and it is open, close it
+        not log and is_pid(pid) ->
+          File.close(pid)
+          nil
+
+        # log start requested and it's already open
+        log and is_pid(pid) ->
+          pid
+
+        # log stop requested and it isn't open
+        not log and is_nil(pid) ->
+          nil
+      end
 
     s = %{s | json_log: json_log}
 
-    {:noreply, s}
-  end
-
-  # if the json log is already open don't do anything
-  def handle_cast({@log_json_msg, true}, %{json_log: pid} = s)
-      when is_pid(pid) do
-    {:noreply, s}
-  end
-
-  # if the json log is open then close it
-  def handle_cast({@log_json_msg, false}, %{json_log: pid} = s)
-      when is_pid(pid) do
-    :ok = File.close(pid)
-
-    s = %{s | json_log: nil}
-
-    {:noreply, s}
-  end
-
-  # if the json log is already closed then do nothing
-  def handle_cast({@log_json_msg, false}, %{json_log: nil} = s) do
-    {:noreply, s}
+    {:reply, json_log, s}
   end
 
   def handle_info({:startup}, s)
@@ -151,33 +150,26 @@ defmodule Mqtt.InboundMessage do
   defp decoded_msg({:ok, r}, s) do
     log_reading(r, s.log_reading)
 
+    # NOTE: we invoke the module / functions defined in the config
+    #       to process incoming messages.  we also spin up a Task
+    #       for the benefits of parallel processing.
+
     if Reading.startup?(r) do
       {mod, func} = config(:startup_msgs)
-
-      # invoke the configured module to process startup messages
       Task.start(mod, func, [r])
-      # apply(mod, func, [r])
     end
 
     if Reading.temperature?(r) || Reading.relhum?(r) do
       {mod, func} = config(:temperature_msgs)
-
-      # invoke the configured module to process the incoming sensor msg
       Task.start(mod, func, [r])
-      # apply(mod, func, [r])
     end
 
     if Reading.switch?(r) do
       {mod, func} = config(:switch_msgs)
-      # if not Reading.cmdack?(r), do: Logger.info(msg)
-
-      # invoke the configured module to process the incoming switch msg
       Task.start(mod, func, [r])
-      # apply(mod, func, [r])
     end
 
     if Reading.free_ram_stat?(r) do
-      # Logger.info("#{msg}")
       FreeRamStat.record(remote_host: r.host, val: r.freeram)
     end
 

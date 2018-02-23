@@ -163,7 +163,7 @@ defmodule Mqtt.Client do
 
   def handle_call({:publish, feed, payload, pub_opts}, _from, %{autostart: false} = s)
       when is_binary(feed) and is_binary(payload) and is_list(pub_opts) do
-    Logger.warn(fn -> "not started, dropping #{inspect(payload)}" end)
+    Logger.debug(fn -> "not started, dropping #{inspect(payload)}" end)
     {:reply, :not_started, s}
   end
 
