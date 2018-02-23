@@ -74,13 +74,15 @@ defmodule Remote do
   end
 
   def at_preferred_vsn?(%Remote{firmware_vsn: current} = r) do
+    fw_file_vsn = OTA.fw_file_version()
+
     preferred =
       case r.preferred_vsn do
         "head" ->
-          Application.get_env(:mcp, :sha_head)
+          Map.get(fw_file_vsn, :head)
 
         "stable" ->
-          Application.get_env(:mcp, :sha_mcr_stable)
+          Map.get(fw_file_vsn, :stable)
 
         _ ->
           Logger.warn(fn -> "#{r.name} has a bad preferred vsn #{r.preferred_vsn}" end)
