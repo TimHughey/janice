@@ -2,6 +2,7 @@ defmodule RemoteTest do
   use ExUnit.Case, async: true
   use Timex
 
+  def preferred_vsn, do: "b4edefc"
   def test_host1, do: "mcr.0102030405"
   def test_host2, do: "mcr.0102030415"
 
@@ -14,6 +15,14 @@ defmodule RemoteTest do
     }
 
   def test_name2, do: "test_name"
+
+  def test_preferred_vsn,
+    do: %{
+      host: test_host2(),
+      hw: "esp32",
+      vsn: preferred_vsn(),
+      mtime: Timex.now() |> Timex.to_unix()
+    }
 
   setup_all do
     :ok

@@ -23,15 +23,10 @@ defmodule Mcp.Mixfile do
   use Mix.Project
 
   def project do
-    {result, _rc} = System.cmd("git", ["rev-parse", "--short", "HEAD"])
-    sha_head = String.trim(result)
-
-    {result, _rc} = System.cmd("git", ["rev-parse", "--short", "mcr-stable"])
-    sha_mcr_stable = String.trim(result)
 
     [
       app: :mcp,
-      version: "0.1.1-#{sha_head}",
+      version: "0.1.1-#{sha_head()}",
       elixir: "~> 1.6",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
@@ -43,8 +38,8 @@ defmodule Mcp.Mixfile do
       package: package(),
       description: description(),
       escript: escript_config(),
-      sha_head: "#{sha_head}",
-      sha_mcr_stable: "#{sha_mcr_stable}"
+      sha_head: "#{sha_head()}",
+      sha_mcr_stable: "#{sha_mcr_stable()}"
     ]
   end
 
@@ -52,8 +47,8 @@ defmodule Mcp.Mixfile do
   def application do
     args = [
       build_env: "#{Mix.env()}",
-      sha_head: project() |> Keyword.get(:sha_head),
-      sha_mcr_stabl: project() |> Keyword.get(:sha_mcr_stable)
+      sha_head: sha_head(),
+      sha_mcr_stable: sha_mcr_stable()
     ]
 
     [
@@ -124,4 +119,15 @@ defmodule Mcp.Mixfile do
   end
 
   defp escript_config, do: [main_module: Mcp]
+
+
+  defp sha_head do
+    {result, _rc} = System.cmd("git", ["rev-parse", "--short", "HEAD"])
+    String.trim(result)
+  end
+
+  defp sha_mcr_stable do
+    {result, _rc} = System.cmd("git", ["rev-parse", "--short", "mcr-stable"])
+    String.trim(result)
+  end
 end

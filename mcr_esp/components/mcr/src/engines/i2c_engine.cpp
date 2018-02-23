@@ -493,6 +493,8 @@ void mcrI2c::run(void *task_data) {
 
   ESP_LOGI(tagEngine(), "waiting for the time to be set...");
   mcrNetwork::waitForTimeset();
+  delay(7000);
+
   ESP_LOGI(tagEngine(), "time set, proceeding to task loop");
 
   _last_wake.engine = xTaskGetTickCount();

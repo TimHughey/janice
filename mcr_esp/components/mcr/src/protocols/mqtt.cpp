@@ -48,7 +48,6 @@ static void _ev_handler(struct mg_connection *nc, int ev, void *);
 mcrMQTT_t *mcrMQTT::instance() {
   if (__singleton == nullptr) {
     __singleton = new mcrMQTT();
-    __singleton->start();
   }
 
   return __singleton;

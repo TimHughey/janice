@@ -73,6 +73,26 @@ defmodule Remote do
     |> Repo.all()
   end
 
+  def at_preferred_vsn?(%Remote{firmware_vsn: current} = r) do
+    preferred =
+      case r.preferred_vsn do
+        "head" ->
+          Application.get_env(:mcp, :sha_head)
+
+        "stable" ->
+          Application.get_env(:mcp, :sha_mcr_stable)
+
+        _ ->
+          Logger.warn(fn -> "#{r.name} has a bad preferred vsn #{r.preferred_vsn}" end)
+          "0000000"
+      end
+
+    case current do
+      ^preferred -> true
+      _ -> false
+    end
+  end
+
   def change_name(host, new_name) when is_binary(host) and is_binary(new_name) do
     case get_by_host(host) do
       nil ->
@@ -158,9 +178,8 @@ defmodule Remote do
     check =
       for %{host: host} <- list do
         r = get_by_host(host)
-        preferred_vsn = Map.get(r, :preferred_vsn) |> preferred_vsn()
 
-        if at_preferred_vsn?(r, preferred_vsn) do
+        if at_preferred_vsn?(r) do
           :at_preferred_vsn
         else
           Logger.warn(fn -> "#{host} needs update" end)
@@ -182,13 +201,12 @@ defmodule Remote do
 
   def ota_update(host) when is_binary(host) do
     r = get_by_host(host)
-    preferred_vsn = Map.get(r, :preferred_vsn) |> preferred_vsn()
 
-    if at_preferred_vsn?(r, preferred_vsn) do
-      Logger.info(fn -> "#{r.host} already at vsn #{preferred_vsn}" end)
+    if at_preferred_vsn?(r) do
+      Logger.info(fn -> "#{r.host} already at vsn #{r.firmware_vsn}" end)
       :at_preferred_vsn
     else
-      Logger.info(fn -> "#{r.host} needs update to vsn #{preferred_vsn}" end)
+      Logger.info(fn -> "#{r.host} needs update" end)
       Logger.info(fn -> "sending begin cmd" end)
       OTA.send_begin(host, "ota")
       :timer.sleep(10 * 1000)
@@ -207,13 +225,6 @@ defmodule Remote do
   def preferred_vsn("stable"), do: Application.get_env(:mcp, :sha_mcr_stable)
 
   # PRIVATE FUNCTIONS
-
-  defp at_preferred_vsn?(%Remote{firmware_vsn: fw_vsn}, vsn) do
-    case fw_vsn do
-      ^vsn -> true
-      _ -> false
-    end
-  end
 
   defp update_from_external([%Remote{} = rem], eu) do
     # only the feather m0 remote devices need the time

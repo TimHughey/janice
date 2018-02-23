@@ -29,7 +29,7 @@ config :mcp, Mqtt.Client,
   broker: [
     host: 'jophiel.wisslanding.com',
     client_id: "merc-dev",
-    clean_sess: false,
+    clean_sess: true,
     # keepalive: 30_000,
     username: "mqtt",
     password: "mqtt",

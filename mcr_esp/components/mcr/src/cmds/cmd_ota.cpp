@@ -41,9 +41,10 @@ void mcrCmdOTA::begin() {
     ESP_LOGW(TAG, "ota already in-progress, ignoring spurious begin");
     return;
   }
-  mcrMQTT::otaPrep();
 
   mcrNetwork::suspendNormalOps();
+
+  mcrMQTT::otaPrep();
 
   if (_partition.compare("ota") == 0) {
     _update_part = esp_ota_get_next_update_partition(nullptr);
@@ -108,6 +109,8 @@ void mcrCmdOTA::end() {
   if (_ota_err == ESP_OK) {
     ESP_LOGI(TAG, "next boot part label=%-8s addr=0x%x", _update_part->label,
              _update_part->address);
+    ESP_LOGI(TAG, "will restart in 5s");
+    vTaskDelay(pdMS_TO_TICKS(5000));
     ESP_LOGI(TAG, "JUMP!");
     esp_restart();
   }

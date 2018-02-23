@@ -48,7 +48,7 @@ void app_main() {
   // NOTE: task implementation handles syncronization
 
   timestampTask->start();
-  // mqttTask->start();
+  mqttTask->start();
   dsEngineTask->start();
   i2cEngineTask->start();
 

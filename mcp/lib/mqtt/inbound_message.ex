@@ -155,14 +155,16 @@ defmodule Mqtt.InboundMessage do
       {mod, func} = config(:startup_msgs)
 
       # invoke the configured module to process startup messages
-      apply(mod, func, [r])
+      Task.start(mod, func, [r])
+      # apply(mod, func, [r])
     end
 
     if Reading.temperature?(r) || Reading.relhum?(r) do
       {mod, func} = config(:temperature_msgs)
 
       # invoke the configured module to process the incoming sensor msg
-      apply(mod, func, [r])
+      Task.start(mod, func, [r])
+      # apply(mod, func, [r])
     end
 
     if Reading.switch?(r) do
@@ -170,7 +172,8 @@ defmodule Mqtt.InboundMessage do
       # if not Reading.cmdack?(r), do: Logger.info(msg)
 
       # invoke the configured module to process the incoming switch msg
-      apply(mod, func, [r])
+      Task.start(mod, func, [r])
+      # apply(mod, func, [r])
     end
 
     if Reading.free_ram_stat?(r) do
