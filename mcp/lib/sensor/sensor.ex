@@ -150,12 +150,9 @@ defmodule Sensor do
     case type do
       "temp" ->
         Logger.debug(fn ->
-          tf = s.temperature.tf
-          tf = Float.to_string(tf) |> String.pad_leading(8)
-
-          tc = s.temperature.tc
-          tc = Float.to_string(tc) |> String.pad_leading(8)
-          ~s/#{s.name} #{tf}F #{tc}C/
+          "#{s.name} " <>
+            "#{String.pad_leading(Float.to_string(s.temperature.tf), 8)}F " <>
+            "#{String.pad_leading(Float.to_string(s.temperature.tc), 8)}C"
         end)
 
         Fahrenheit.record(
@@ -176,15 +173,10 @@ defmodule Sensor do
 
       "relhum" ->
         Logger.debug(fn ->
-          tf = s.temperature.tf
-          tf = Float.to_string(tf) |> String.pad_leading(8)
-
-          tc = s.temperature.tc
-          tc = Float.to_string(tc) |> String.pad_leading(8)
-
-          rh = s.relhum.rh
-          rh = Float.to_string(rh) |> String.pad_leading(8)
-          ~s/#{s.name} #{tf}F #{tc}C #{rh}RH/
+          "#{s.name} " <>
+            "#{String.pad_leading(Float.to_string(s.temperature.tf), 8)}F " <>
+            "#{String.pad_leading(Float.to_string(s.temperature.tc), 8)}C " <>
+            "#{String.pad_leading(Float.to_string(s.relhum.rh), 8)}RH"
         end)
 
         Fahrenheit.record(
@@ -287,69 +279,47 @@ defmodule Sensor do
   ###
 
   defp ensure_relhum(%Sensor{relhum: relhum} = s) do
-    if not Ecto.assoc_loaded?(relhum) do
-      %{s | relhum: %SensorRelHum{}}
-    else
-      s
-    end
+    if Ecto.assoc_loaded?(relhum),
+      do: s,
+      else: %{s | relhum: %SensorRelHum{}}
   end
 
   defp ensure_temperature(%Sensor{temperature: temp} = s) do
-    if not Ecto.assoc_loaded?(temp) do
-      %{s | temperature: %SensorTemperature{}}
-    else
-      s
-    end
+    if Ecto.assoc_loaded?(temp),
+      do: s,
+      else: %{s | temperature: %SensorTemperature{}}
   end
 
   defp update_reading(%Sensor{type: "temp"} = s, r)
        when is_map(r) do
-    tcs = update_temperature(s, r)
-
-    measured_dt = Timex.from_unix(r.mtime)
-    latency = Timex.diff(r.msg_recv_dt, measured_dt)
-    reading_dt = Timex.now()
-
-    map = %{
-      last_seen_at: measured_dt,
-      reading_at: reading_dt,
-      dev_latency: latency,
-      temperature: tcs
-    }
-
-    change(s, map) |> update!()
+    change(s, %{
+      last_seen_at: Timex.from_unix(r.mtime),
+      reading_at: Timex.now(),
+      dev_latency: Map.get(r, :read_us, Timex.diff(r.msg_recv_dt, Timex.from_unix(r.mtime))),
+      temperature: update_temperature(s, r)
+    })
+    |> update!()
   end
 
   defp update_reading(%Sensor{type: "relhum"} = s, r)
        when is_map(r) do
-    tcs = update_temperature(s, r)
-    rcs = update_relhum(s, r)
-
-    measured_dt = Timex.from_unix(r.mtime)
-    latency = Timex.diff(r.msg_recv_dt, measured_dt)
-    reading_dt = Timex.now()
-
-    map = %{
-      last_seen_at: measured_dt,
-      reading_at: reading_dt,
-      dev_latency: latency,
-      temperature: tcs,
-      relhum: rcs
-    }
-
-    change(s, map) |> update!()
+    change(s, %{
+      last_seen_at: Timex.from_unix(r.mtime),
+      reading_at: Timex.now(),
+      dev_latency: Map.get(r, :read_us, Timex.diff(r.msg_recv_dt, Timex.from_unix(r.mtime))),
+      temperature: update_temperature(s, r),
+      relhum: update_relhum(s, r)
+    })
+    |> update!()
   end
 
   defp update_relhum(%Sensor{relhum: relhum}, r)
        when is_map(r) do
-    rh = Float.round(r.rh * 1.0, 2)
-    change(relhum, %{rh: rh})
+    change(relhum, %{rh: Float.round(r.rh * 1.0, 2)})
   end
 
   defp update_temperature(%Sensor{temperature: temp}, r)
        when is_map(r) do
-    tc = Float.round(r.tc * 1.0, 2)
-    tf = Float.round(r.tf * 1.0, 2)
-    change(temp, %{tc: tc, tf: tf})
+    change(temp, %{tc: Float.round(r.tc * 1.0, 2), tf: Float.round(r.tf * 1.0, 2)})
   end
 end
