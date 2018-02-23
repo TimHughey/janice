@@ -38,7 +38,7 @@
 #include "misc/version.hpp"
 
 typedef class mcrCmdNetwork mcrCmdNetwork_t;
-class mcrCmdNetwork : public mcrCmdBase {
+class mcrCmdNetwork : public mcrCmd {
 private:
   std::string _host;
   std::string _name;

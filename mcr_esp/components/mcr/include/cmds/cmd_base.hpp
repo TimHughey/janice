@@ -36,8 +36,8 @@
 #include "misc/util.hpp"
 #include "misc/version.hpp"
 
-typedef class mcrCmdBase mcrCmdBase_t;
-class mcrCmdBase {
+typedef class mcrCmd mcrCmd_t;
+class mcrCmd {
 private:
   mcrCmdType_t _type;
   std::string _vsn;
@@ -51,17 +51,17 @@ protected:
   uint64_t _latency = esp_timer_get_time();
 
 public:
-  mcrCmdBase(mcrCmdType_t type);
-  mcrCmdBase(JsonObject &root);
-  mcrCmdBase(mcrCmdType_t type, JsonObject &root);
-  virtual ~mcrCmdBase(){};
+  mcrCmd(mcrCmdType_t type);
+  mcrCmd(JsonObject &root);
+  mcrCmd(mcrCmdType_t type, JsonObject &root);
+  virtual ~mcrCmd(){};
 
   virtual time_t latency();
   virtual bool process() { return false; };
   void recordCreateMetric(int64_t create_us) { _create_us = create_us; };
   void recordParseMetric(int64_t parse_us) { _parse_us = parse_us; };
   virtual bool sendToQueue(cmdQueue_t &cmd_q) { return false; };
-  virtual size_t size() { return sizeof(mcrCmdBase_t); };
+  virtual size_t size() { return sizeof(mcrCmd_t); };
   mcrCmdType_t type() { return _type; };
 
   virtual const std::string debug();

@@ -5,7 +5,7 @@
 const static char *TAG = "mcrCmdSwitch";
 
 mcrCmdSwitch::mcrCmdSwitch(JsonObject &root)
-    : mcrCmdBase(mcrCmdType::setswitch, root) {
+    : mcrCmd(mcrCmdType::setswitch, root) {
   // json format of states command:
   // {"vsn":1,
   //   "switch":"ds/29463408000000",
@@ -87,7 +87,7 @@ bool mcrCmdSwitch::sendToQueue(cmdQueue_t &cmd_q) {
 const std::string mcrCmdSwitch::debug() {
   std::ostringstream debug_str;
 
-  debug_str << mcrCmdBase::debug() << " mcrCmdSwitch(" << _dev_id << " mask=0b"
+  debug_str << mcrCmd::debug() << " mcrCmdSwitch(" << _dev_id << " mask=0b"
             << _mask << " state=0b" << _state << ((_ack) ? " ACK" : "") << ")";
 
   return debug_str.str();

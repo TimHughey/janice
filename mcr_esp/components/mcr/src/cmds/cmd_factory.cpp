@@ -11,8 +11,8 @@ static const int _jsonBufferCapacity =
 
 // static const int _jsonBufferCapacity = 1024;
 
-mcrCmdBase_t *mcrCmdFactory::fromRaw(mcrRawMsg_t *raw) {
-  mcrCmdBase_t *cmd = nullptr;
+mcrCmd_t *mcrCmdFactory::fromRaw(mcrRawMsg_t *raw) {
+  mcrCmd_t *cmd = nullptr;
 
   if (raw->size() == 0) {
     ESP_LOGW(TAG, "zero length msg");
@@ -28,9 +28,9 @@ mcrCmdBase_t *mcrCmdFactory::fromRaw(mcrRawMsg_t *raw) {
   return cmd;
 }
 
-mcrCmdBase_t *mcrCmdFactory::fromJSON(mcrRawMsg_t *raw) {
+mcrCmd_t *mcrCmdFactory::fromJSON(mcrRawMsg_t *raw) {
   StaticJsonBuffer<_jsonBufferCapacity> jsonBuffer;
-  mcrCmdBase_t *cmd = nullptr;
+  mcrCmd_t *cmd = nullptr;
   mcrCmdType_t cmd_type = mcrCmdType::unknown;
 
   // ensure the raw data is null terminated
@@ -53,7 +53,7 @@ mcrCmdBase_t *mcrCmdFactory::fromJSON(mcrRawMsg_t *raw) {
   case mcrCmdType::none:
   case mcrCmdType::heartbeat:
   case mcrCmdType::timesync:
-    cmd = new mcrCmdBase(root);
+    cmd = new mcrCmd(root);
     break;
 
   case mcrCmdType::setswitch:
@@ -78,8 +78,8 @@ mcrCmdBase_t *mcrCmdFactory::fromJSON(mcrRawMsg_t *raw) {
   return cmd;
 }
 
-mcrCmdBase_t *mcrCmdFactory::fromOTA(mcrRawMsg_t *raw) {
-  mcrCmdBase_t *cmd = nullptr;
+mcrCmd_t *mcrCmdFactory::fromOTA(mcrRawMsg_t *raw) {
+  mcrCmd_t *cmd = nullptr;
   mcrCmdType_t cmd_type = mcrCmdType::unknown;
 
   cmd_type = mcrCmdTypeMap::fromByte(raw->at(0));

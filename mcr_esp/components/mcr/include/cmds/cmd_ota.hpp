@@ -38,7 +38,7 @@
 #include "misc/version.hpp"
 
 typedef class mcrCmdOTA mcrCmdOTA_t;
-class mcrCmdOTA : public mcrCmdBase {
+class mcrCmdOTA : public mcrCmd {
 private:
   mcrRawMsg_t *_raw = nullptr;
   std::string _host;
@@ -55,7 +55,7 @@ private:
 public:
   mcrCmdOTA(mcrCmdType_t type, JsonObject &root);
   mcrCmdOTA(mcrCmdType_t type, mcrRawMsg_t *raw)
-      : mcrCmdBase(type), _raw(raw){};
+      : mcrCmd(type), _raw(raw){};
   ~mcrCmdOTA(){};
 
   bool process();

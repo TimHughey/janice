@@ -39,7 +39,7 @@
 typedef std::bitset<8> cmd_bitset_t;
 
 typedef class mcrCmdSwitch mcrCmdSwitch_t;
-class mcrCmdSwitch : public mcrCmdBase {
+class mcrCmdSwitch : public mcrCmd {
 private:
   mcrDevID_t _dev_id;
   cmd_bitset_t _mask;
@@ -49,11 +49,11 @@ private:
 
 public:
   mcrCmdSwitch(const mcrCmdSwitch_t *cmd)
-      : mcrCmdBase(mcrCmdType::setswitch), _dev_id(cmd->_dev_id),
+      : mcrCmd(mcrCmdType::setswitch), _dev_id(cmd->_dev_id),
         _mask(cmd->_mask), _state(cmd->_state), _refid(cmd->_refid){};
   mcrCmdSwitch(JsonObject &root);
   mcrCmdSwitch(const mcrDevID_t &id, cmd_bitset_t mask, cmd_bitset_t state)
-      : mcrCmdBase(mcrCmdType::setswitch), _dev_id(id), _mask(mask),
+      : mcrCmd(mcrCmdType::setswitch), _dev_id(id), _mask(mask),
         _state(state){};
 
   void ack(bool ack) { _ack = ack; }

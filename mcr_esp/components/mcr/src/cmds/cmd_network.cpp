@@ -6,7 +6,7 @@ static const char *k_host = "host";
 static const char *k_name = "name";
 
 mcrCmdNetwork::mcrCmdNetwork(JsonObject &root)
-    : mcrCmdBase(mcrCmdType::setname, root) {
+    : mcrCmd(mcrCmdType::setname, root) {
 
   if (root.success()) {
     _host = root[k_host] | "no_host";

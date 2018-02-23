@@ -93,7 +93,7 @@ void mcrMQTTin::run(void *data) {
 
     // done with message, give it back to ringbuffer
     vRingbufferReturnItem(_rb, msg);
-    mcrCmdBase_t *cmd = factory.fromRaw(entry.data);
+    mcrCmd_t *cmd = factory.fromRaw(entry.data);
 
     if (entry.topic->find("command") != std::string::npos) {
       cmd && cmd->process();

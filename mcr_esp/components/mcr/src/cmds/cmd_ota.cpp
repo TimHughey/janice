@@ -23,7 +23,7 @@ static uint64_t _ota_last_block = 0;
 static uint64_t _ota_total_us = 0;
 
 mcrCmdOTA::mcrCmdOTA(mcrCmdType_t type, JsonObject &root)
-    : mcrCmdBase(type, root) {
+    : mcrCmd(type, root) {
   if (root.success()) {
     _host = root[k_host] | "no_host";
     _head = root[k_head] | "0000000";

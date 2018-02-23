@@ -43,13 +43,13 @@
 typedef class mcrCmdFactory mcrCmdFactory_t;
 class mcrCmdFactory {
 private:
-  mcrCmdBase_t *fromJSON(mcrRawMsg_t *raw);
-  mcrCmdBase_t *fromOTA(mcrRawMsg_t *raw);
+  mcrCmd_t *fromJSON(mcrRawMsg_t *raw);
+  mcrCmd_t *fromOTA(mcrRawMsg_t *raw);
 
 public:
   mcrCmdFactory(){};
 
-  mcrCmdBase_t *fromRaw(mcrRawMsg_t *raw);
+  mcrCmd_t *fromRaw(mcrRawMsg_t *raw);
 };
 
 #endif
