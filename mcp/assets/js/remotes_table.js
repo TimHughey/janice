@@ -5,7 +5,7 @@ import {
 }
   from './merc_util';
 
-function columns() {
+function remotesColumns() {
   return [{
     data: 'id',
     class: 'col-center',
@@ -46,7 +46,7 @@ const refreshButton = {
   },
 };
 
-function create() {
+function createRemotesTable() {
   const remoteTable = jQuery('#remotesTable').DataTable({
     dom: 'Bfrtip',
     ajax: 'mcp/api/remote',
@@ -61,7 +61,7 @@ function create() {
     order: [
       [1, 'asc'],
     ],
-    columns: columns(),
+    columns: remotesColumns(),
     columnDefs: [
       {
         targets: [0],
@@ -241,5 +241,5 @@ function create() {
 }
 
 export default {
-  create,
+  createRemotesTable,
 };

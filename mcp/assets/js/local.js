@@ -1,24 +1,659 @@
-import * as mercUtil
+import {
+  prettyUs,
+  prettySeconds,
+  displayStatus,
+  autoRefresh,
+  dataTableErrorHandler,
+  humanizeState,
+  prettyLastCommand,
+
+}
   from './merc_util';
 
-import * as mercSensorsTable
-  from './sensors_table';
+function sensorsColumns() {
+  return [{
+    data: 'id',
+    class: 'col-center',
+  }, {
+    data: 'name',
+  }, {
+    data: 'device',
+  }, {
+    data: 'description',
+  },
+  {
+    data: 'dev_latency',
+    class: 'col-center',
+    render: prettyUs,
+  }, {
+    data: 'last_seen_secs',
+    class: 'col-center',
+    render: prettySeconds,
+  }, {
+    data: 'reading_secs',
+    class: 'col-center',
+    render: prettySeconds,
+  }, {
+    data: 'celsius',
+    class: 'col-center',
+  },
+  ];
+}
 
-import * as mercSwitchesTable
-  from './switches_table';
+function createSensorsTable() {
+  const sensorTable = jQuery('#sensorsTable').DataTable({
+    dom: 'Bfrtip',
+    ajax: 'mcp/api/sensor',
+    scrollY: '50vh',
+    // deferRender: true,
+    scroller: true,
+    select: {
+      style: 'single',
+      items: 'row',
+      // selector: 'td:nth-child(1)', // only allow devices to be selected
+    },
+    order: [
+      [1, 'asc'],
+    ],
+    columns: sensorsColumns(),
+    columnDefs: [
+      {
+        targets: [0],
+        visible: false,
+        searchable: false,
+      },
+    ],
+    buttons: [{
+      text: 'Refresh',
+      attr: {
+        id: 'sensorRefreshButton',
+      },
+      action(e, dt, node, config) {
+        if (sensorTable.button(0).active()) {
+          sensorTable.button(0).active(false);
+        } else {
+          sensorTable.button(0).active(true);
+          autoRefresh();
+        }
+      },
+    },
+    {
+      text: 'Rename',
+      extend: 'selected',
+      attr: {
+        id: 'sensorRenameButton',
+      },
+      action(e, dt, node, config) {
+        const {
+          name,
+          id,
+        } = sensorTable.rows({
+          selected: true,
+        }).data()[0];
 
-import * as mercRemotesTable
-  from './remotes_table';
+        const newName = jQuery('#generalInputBox').val();
+
+        sensorTable.button(1).processing(true);
+        jQuery.ajax({
+          url: `mcp/api/sensor/${id}`,
+          type: 'PATCH',
+          data: {
+            name: newName,
+          },
+          dateType: 'json',
+          beforeSend(xhr) {
+            // send the CSRF token included as a meta on the HTML page
+            const token = jQuery("meta[name='csrf-token']").attr('content');
+            xhr.setRequestHeader('X-CSRF-Token', token);
+          },
+          error(xhr, status, error) {
+            console.log('error xhr:', xhr);
+            displayStatus(`Error changing name of ${name}`);
+          },
+          success(data, status, jqXHR) {
+            console.log(data, status, jqXHR);
+            displayStatus(`Sensor name changed to ${data.name}`);
+            // const response = jqXHR.responseJSON();
+            // displayStatus(`Sensor name changed to ${response}`);
+          },
+          complete(xhr, status) {
+            sensorTable.ajax.reload(null, false);
+            sensorTable.button(1).processing(false);
+            jQuery('#generalPurposeForm').fadeToggle();
+            sensorTable.button(0).active(true);
+          },
+        });
+      },
+    }, {
+      text: 'Delete',
+      extend: 'selected',
+      attr: {
+        id: 'sensorDeleteButton',
+      },
+      action(e, dt, node, config) {
+        const {
+          name,
+          id,
+        } = sensorTable.rows({
+          selected: true,
+        }).data()[0];
+
+        sensorTable.button(2).processing(true);
+        jQuery.ajax({
+          url: `mcp/api/sensor/${id}`,
+          type: 'DELETE',
+          beforeSend(xhr) {
+            // send the CSRF token included as a meta on the HTML page
+            const token = jQuery("meta[name='csrf-token']").attr('content');
+            xhr.setRequestHeader('X-CSRF-Token', token);
+          },
+          error(xhr, status, error) {
+            console.log('error xhr:', xhr);
+            displayStatus(`Error deleting ${name}`);
+          },
+          success(xhr, status) {
+            displayStatus(`Deleted sensor ${name}`);
+          },
+          complete(xhr, status) {
+            sensorTable.ajax.reload(null, false);
+            sensorTable.button(2).processing(false);
+            jQuery('#generalPurposeForm').fadeToggle();
+            sensorTable.button(0).active(true);
+          },
+        });
+      },
+    },
+    ],
+  });
+
+  sensorTable.on('select', (e, dt, type, indexes) => {
+    sensorTable.button(0).active(false);
+
+    const inputBox = jQuery('#generalPurposeForm');
+
+    jQuery('#generalInputBox').attr(
+      'placeholder',
+      'Enter new sensor name here then press Rename',
+    );
+    inputBox.fadeIn('fast');
+  });
+
+  sensorTable.on('deselect', (e, dt, type, indexes) => {
+    const inputBox = jQuery('#generalPurposeForm');
+    sensorTable.button(0).active(true);
+
+    inputBox.fadeOut('fast');
+  });
+
+  sensorTable.button(0).active(true);
+}
+
+function switchesColumns() {
+  return [{
+    data: 'id',
+    class: 'col-center',
+  },
+  {
+    data: 'name',
+  }, {
+    data: 'device',
+  }, {
+    data: 'description',
+  },
+  {
+    data: 'dev_latency',
+    class: 'col-center',
+    render: prettyUs,
+  }, {
+    data: 'rt_latency',
+    class: 'col-center',
+    render: prettyUs,
+  }, {
+    data: 'last_cmd_secs',
+    class: 'col-center',
+    render: prettyLastCommand,
+  }, {
+    data: 'last_seen_secs',
+    class: 'col-center',
+    render: prettySeconds,
+  }, {
+    data: 'state',
+    class: 'col-state-off',
+    render: humanizeState,
+  },
+  ];
+}
+
+function createSwitchesTable() {
+  const switchTable = jQuery('#switchesTable').DataTable({
+    dom: 'Bfrtip',
+    ajax: 'mcp/api/switch',
+    scrollY: '50vh',
+    // deferRender: true,
+    scroller: true,
+    select: {
+      style: 'single',
+      items: 'row',
+    },
+    order: [
+      [1, 'asc'],
+    ],
+    columns: switchesColumns(),
+    columnDefs: [
+      {
+        targets: [0],
+        visible: false,
+        searchable: false,
+      },
+    ],
+    buttons: [{
+      text: 'Refresh',
+      action(e, dt, node, config) {
+        if (switchTable.button(0).active()) {
+          switchTable.button(0).active(false);
+        } else {
+          switchTable.button(0).active(true);
+          autoRefresh();
+        }
+      },
+    },
+    {
+      text: 'Rename',
+      extend: 'selected',
+      attr: {
+        id: 'switchRenameButton',
+      },
+      action(e, dt, node, config) {
+        const {
+          name,
+          id,
+        } = switchTable.rows({
+          selected: true,
+        }).data()[0];
+
+        const newName = jQuery('#generalInputBox').val();
+
+        switchTable.button(1).processing(true);
+        jQuery.ajax({
+          url: `mcp/api/switch/${id}`,
+          type: 'PATCH',
+          data: {
+            name: newName,
+          },
+          dataType: 'json',
+          beforeSend(xhr) {
+            // send the CSRF token included as a meta on the HTML page
+            const token = jQuery("meta[name='csrf-token']").attr('content');
+            xhr.setRequestHeader('X-CSRF-Token', token);
+          },
+          error(xhr, status, error) {
+            console.log('error xhr:', xhr);
+            displayStatus(`Error changing name of ${name}`);
+          },
+          success(data, status, jqXHR) {
+            console.log(data, status, jqXHR);
+            displayStatus(`Switch name changed to ${data.name}`);
+            // const response = jqXHR.responseJSON();
+            // displayStatus(`Switch name changed to ${response.name}`);
+          },
+          complete(xhr, status) {
+            switchTable.ajax.reload(null, false);
+            switchTable.button(1).processing(false);
+            jQuery('#generalPurposeForm').fadeToggle();
+            switchTable.button(0).active(true);
+          },
+        });
+      },
+    },
+    {
+      text: 'Delete',
+      extend: 'selected',
+      attr: {
+        id: 'switchDeleteButton',
+      },
+      action(e, dt, node, config) {
+        const {
+          device,
+        } = switchTable.rows({
+          selected: true,
+        }).data()[0];
+
+        switchTable.button(2).processing(true);
+        jQuery.ajax({
+          url: `mcp/api/switch/${encodeURIComponent(device)}`,
+          type: 'DELETE',
+          beforeSend(xhr) {
+            // send the CSRF token included as a meta on the HTML page
+            const token = jQuery("meta[name='csrf-token']").attr('content');
+            xhr.setRequestHeader('X-CSRF-Token', token);
+          },
+          error(xhr, status, error) {
+            console.log('error xhr:', xhr);
+            displayStatus(`Error deleting ${device}`);
+          },
+          success(xhr, status) {
+            displayStatus(`Deleted switch ${device}`);
+          },
+          complete(xhr, status) {
+            switchTable.ajax.reload(null, false);
+            switchTable.button(2).processing(false);
+            jQuery('#generalPurposeForm').fadeToggle();
+            switchTable.button(0).active(true);
+          },
+        });
+      },
+    },
+    {
+      text: 'Toggle',
+      extend: 'selected',
+      attr: {
+        id: 'switchToggleButton',
+      },
+      action(e, dt, node, config) {
+        const {
+          name,
+          id,
+        } = switchTable.rows({
+          selected: true,
+        }).data()[0];
+
+        switchTable.button(3).processing(true);
+
+        jQuery.ajax({
+          url: `mcp/api/switch/${id}`,
+          type: 'PATCH',
+          data: {
+            toggle: true,
+          },
+          beforeSend(xhr) {
+            // send the CSRF token included as a meta on the HTML page
+            const token = jQuery("meta[name='csrf-token']").attr('content');
+            xhr.setRequestHeader('X-CSRF-Token', token);
+          },
+          error(jqXHR, status, error) {
+            console.log('error xhr:', jqXHR);
+            displayStatus(`Error toggling ${name}`);
+          },
+          success(data, status, jqXHR) {
+            displayStatus(`Toggled switch ${name}`);
+          },
+          complete(xhr, status) {
+            switchTable.ajax.reload(null, false);
+            switchTable.button(3).processing(false);
+            jQuery('#generalPurposeForm').fadeToggle();
+            switchTable.button(0).active(true);
+          },
+        });
+      },
+    }],
+  });
+
+  switchTable.button(0).active(true);
+
+  switchTable.on('select', (e, dt, type, indexes) => {
+    switchTable.button(0).active(false);
+
+    const inputBox = jQuery('#generalPurposeForm');
+
+    jQuery('#generalInputBox').attr(
+      'placeholder',
+      'Enter new switch name then click Rename',
+    );
+    inputBox.fadeIn('fast');
+  });
+
+  switchTable.on('deselect', (e, dt, type, indexes) => {
+    const inputBox = jQuery('#generalPurposeForm');
+    switchTable.button(0).active(true);
+
+    inputBox.fadeOut('fast');
+  });
+}
+
+function remotesColumns() {
+  return [{
+    data: 'id',
+    class: 'col-center',
+  }, {
+    data: 'name',
+  }, {
+    data: 'host',
+  }, {
+    data: 'hw',
+  },
+  {
+    data: 'firmware_vsn',
+    class: 'col-center',
+  }, {
+    data: 'preferred_vsn',
+    class: 'col-center',
+  }, {
+    data: 'last_start_secs',
+    class: 'col-center',
+    render: prettySeconds,
+  }, {
+    data: 'last_seen_secs',
+    class: 'col-center',
+    render: prettySeconds,
+  }, {
+    data: 'at_preferred_vsn',
+    class: 'col-center',
+  },
+  ];
+}
+
+const refreshButton = {
+  id() {
+    return 'remoteRefreshButton';
+  },
+  num() {
+    return 0;
+  },
+};
+
+function createRemotesTable() {
+  const remoteTable = jQuery('#remotesTable').DataTable({
+    dom: 'Bfrtip',
+    ajax: 'mcp/api/remote',
+    scrollY: '50vh',
+    // deferRender: true,
+    scroller: true,
+    select: {
+      style: 'single',
+      items: 'row',
+      // selector: 'td:nth-child(1)', // only allow devices to be selected
+    },
+    order: [
+      [1, 'asc'],
+    ],
+    columns: remotesColumns(),
+    columnDefs: [
+      {
+        targets: [0],
+        visible: false,
+        searchable: false,
+      },
+    ],
+    buttons: [{
+      text: 'Refresh',
+      attr: {
+        id: 'remoteRefreshButton',
+      },
+      action(e, dt, node, config) {
+        if (remoteTable.button(0).active()) {
+          remoteTable.button(0).active(false);
+        } else {
+          remoteTable.button(0).active(true);
+          autoRefresh();
+        }
+      },
+    },
+    {
+      text: 'Rename',
+      extend: 'selected',
+      attr: {
+        id: 'remoteRenameButton',
+      },
+      action(e, dt, node, config) {
+        const {
+          name,
+          id,
+        } = remoteTable.rows({
+          selected: true,
+        }).data()[0];
+
+        const newName = jQuery('#generalInputBox').val();
+
+        remoteTable.button(1).processing(true);
+        jQuery.ajax({
+          url: `mcp/api/remote/${id}`,
+          type: 'PATCH',
+          data: {
+            name: newName,
+          },
+          dateType: 'json',
+          beforeSend(xhr) {
+            // send the CSRF token included as a meta on the HTML page
+            const token = jQuery("meta[name='csrf-token']").attr('content');
+            xhr.setRequestHeader('X-CSRF-Token', token);
+          },
+          error(xhr, status, error) {
+            console.log('error xhr:', xhr);
+            displayStatus(`Error changing name of ${name}`);
+          },
+          success(data, status, jqXHR) {
+            console.log(data, status, jqXHR);
+            displayStatus(`Remote name changed to ${data.name}`);
+            // const response = jqXHR.responseJSON();
+            // displayStatus(`Sensor name changed to ${response}`);
+          },
+          complete(xhr, status) {
+            remoteTable.ajax.reload(null, false);
+            remoteTable.button(1).processing(false);
+            jQuery('#generalPurposeForm').fadeToggle();
+            remoteTable.button(0).active(true);
+          },
+        });
+      },
+    }, {
+      text: 'Delete',
+      extend: 'selected',
+      attr: {
+        id: 'remoteDeleteButton',
+      },
+      action(e, dt, node, config) {
+        const {
+          name,
+          id,
+        } = remoteTable.rows({
+          selected: true,
+        }).data()[0];
+
+        remoteTable.button(2).processing(true);
+        jQuery.ajax({
+          url: `mcp/api/remote/${id}`,
+          type: 'DELETE',
+          beforeSend(xhr) {
+            // send the CSRF token included as a meta on the HTML page
+            const token = jQuery("meta[name='csrf-token']").attr('content');
+            xhr.setRequestHeader('X-CSRF-Token', token);
+          },
+          error(xhr, status, error) {
+            console.log('error xhr:', xhr);
+            displayStatus(`Error deleting ${name}`);
+          },
+          success(xhr, status) {
+            displayStatus(`Deleted remote ${name}`);
+          },
+          complete(xhr, status) {
+            remoteTable.ajax.reload(null, false);
+            remoteTable.button(2).processing(false);
+            jQuery('#generalPurposeForm').fadeToggle();
+            remoteTable.button(0).active(true);
+          },
+        });
+      },
+    },
+    {
+      text: 'OTA Update',
+      extend: 'selected',
+      attr: {
+        id: 'remoteOtaUpdateButton',
+      },
+      action(e, dt, node, config) {
+        const {
+          name,
+          id,
+        } = remoteTable.rows({
+          selected: true,
+        }).data()[0];
+
+        remoteTable.button(1).processing(true);
+        jQuery.ajax({
+          url: `mcp/api/remote/${id}`,
+          type: 'PATCH',
+          data: {
+            ota_update: true,
+          },
+          dateType: 'json',
+          beforeSend(xhr) {
+            // send the CSRF token included as a meta on the HTML page
+            const token = jQuery("meta[name='csrf-token']").attr('content');
+            xhr.setRequestHeader('X-CSRF-Token', token);
+          },
+          error(xhr, status, error) {
+            console.log('error xhr:', xhr);
+            displayStatus(`Error triggering ota update for ${name}`);
+          },
+          success(data, status, jqXHR) {
+            console.log(data, status, jqXHR);
+            displayStatus(`OTA update triggered for ${data.name}`);
+            // const response = jqXHR.responseJSON();
+            // displayStatus(`Sensor name changed to ${response}`);
+          },
+          complete(xhr, status) {
+            remoteTable.ajax.reload(null, false);
+            remoteTable.button(1).processing(false);
+            jQuery('#generalPurposeForm').fadeToggle();
+            remoteTable.button(0).active(true);
+          },
+        });
+      },
+    },
+    ],
+  });
+
+  remoteTable.on('select', (e, dt, type, indexes) => {
+    remoteTable.button(0).active(false);
+
+    const inputBox = jQuery('#generalPurposeForm');
+
+    jQuery('#generalInputBox').attr(
+      'placeholder',
+      'Enter new remote name here then press Rename',
+    );
+    inputBox.fadeIn('fast');
+  });
+
+  remoteTable.on('deselect', (e, dt, type, indexes) => {
+    const inputBox = jQuery('#generalPurposeForm');
+    remoteTable.button(0).active(true);
+
+    inputBox.fadeOut('fast');
+  });
+
+  remoteTable.button(0).active(true);
+}
 
 function pageReady(jQuery) {
   /* eslint-disable no-param-reassign */
-  jQuery.fn.dataTable.ext.errMode = mercUtil.dataTableErrorHandler;
+  jQuery.fn.dataTable.ext.errMode = dataTableErrorHandler;
   /* eslint-enable no-param-reassign */
 
-  mercSensorsTable.create();
-  mercSwitchesTable.create();
-  mercRemotesTable.create();
-  mercUtil.autoRefresh();
+  createSensorsTable();
+  createSwitchesTable();
+  createRemotesTable();
+  autoRefresh();
 
   jQuery('#mixtankProfile,dropdown-item').on('click', (event) => {
     const parent = event.target.parentNode;
@@ -40,10 +675,10 @@ function pageReady(jQuery) {
       },
       error(xhr, status, error) {
         console.log('error xhr:', xhr);
-        mercUtil.displayStatus(`Error activating profile ${newProfile}`);
+        displayStatus(`Error activating profile ${newProfile}`);
       },
     }).done((data) => {
-      mercUtil.displayStatus(`Activated profile ${data.active_profile}`);
+      displayStatus(`Activated profile ${data.active_profile}`);
       // console.log(data);
     });
 
@@ -58,8 +693,12 @@ function pageReady(jQuery) {
     $('#sensorsTable').DataTable().ajax.reload(null, false);
   });
 
+  jQuery('a[href="#remotesTab"]').on('shown.bs.tab', (event) => {
+    $('#remotesTab').DataTable().ajax.reload(null, false);
+  });
+
   document.addEventListener(
-    'visibilitychange', mercUtil.autoRefresh,
+    'visibilitychange', autoRefresh,
     false,
   );
 }

@@ -8,7 +8,7 @@ import {
 }
   from './merc_util';
 
-function columns() {
+function switchesColumns() {
   return [{
     data: 'id',
     class: 'col-center',
@@ -58,7 +58,7 @@ function create() {
     order: [
       [1, 'asc'],
     ],
-    columns: columns(),
+    columns: switchesColumns(),
     columnDefs: [
       {
         targets: [0],

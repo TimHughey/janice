@@ -36,7 +36,7 @@ function columns() {
   ];
 }
 
-function create() {
+function createSensorsTable() {
   const sensorTable = jQuery('#sensorsTable').DataTable({
     dom: 'Bfrtip',
     ajax: 'mcp/api/sensor',
@@ -185,5 +185,5 @@ function create() {
 }
 
 export default {
-  create,
+  createSensorsTable,
 };
