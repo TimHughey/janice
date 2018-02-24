@@ -64,13 +64,14 @@ export function autoRefresh() {
       if (document.visibilityState === 'visible') {
         const tabs = ['switches', 'sensors', 'remotes'];
         tabs.forEach((elem) => {
-          const table = jQuery(`#${elem}Table`).DataTable;
-          const button = table().button(0).button();
+          const tabActive = jQuery(`#${elem}Tab`).hasClass('active');
+          const table = jQuery(`#${elem}Table`).DataTable();
+          const button = table.button(0);
 
-          if (jQuery(`#${elem}Tab`).hasClass('active') && (table().button(0).active())) {
+          if (tabActive && (button.active())) {
             button.processing(true);
-            table().ajax.reload(() => {
-              table().button(0).processing(false);
+            table.ajax.reload(() => {
+              button.processing(false);
             }, false);
           }
         });

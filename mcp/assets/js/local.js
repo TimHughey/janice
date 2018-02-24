@@ -21,10 +21,11 @@ function refreshButton(tableID) {
       id: 'refreshButton',
     },
     action(e, dt, node, config) {
-      if (jQuery(tableID).DataTable.button(0).active()) {
-        jQuery(tableID).DataTable.button(0).active(false);
+      const button = jQuery(tableID).DataTable().button(0);
+      if (button.active()) {
+        button.active(false);
       } else {
-        jQuery(tableID).DataTable.button(0).active(true);
+        button.active(true);
         autoRefresh();
       }
     },
@@ -39,16 +40,20 @@ function renameButton(tableID, api) {
       id: 'renameButton',
     },
     action(e, dt, node, config) {
+      const table = jQuery(tableID).DataTable();
+      const refresh = table.button(0);
+      const rename = table.button(1);
+
       const {
         name,
         id,
-      } = jQuery(tableID).DataTable().rows({
+      } = table.rows({
         selected: true,
       }).data()[0];
 
       const newName = jQuery('#generalInputBox').val();
 
-      jQuery(tableID).DataTable().button(1).processing(true);
+      rename.processing(true);
       jQuery.ajax({
         url: `mcp/api/${api}/${id}`,
         type: 'PATCH',
@@ -67,15 +72,15 @@ function renameButton(tableID, api) {
         },
         success(data, status, jqXHR) {
           console.log(data, status, jqXHR);
-          displayStatus(`Sensor name changed to ${data.name}`);
+          displayStatus(`Name changed to ${data.name}`);
           // const response = jqXHR.responseJSON();
           // displayStatus(`Sensor name changed to ${response}`);
         },
         complete(xhr, status) {
-          jQuery(tableID).DataTable().ajax.reload(null, false);
-          jQuery(tableID).DataTable().button(1).processing(false);
+          table.ajax.reload(null, false);
+          rename.processing(false);
           jQuery('#generalPurposeForm').fadeToggle();
-          jQuery(tableID).DataTable().button(0).active(true);
+          refresh.active(true);
         },
       });
     },
@@ -84,21 +89,24 @@ function renameButton(tableID, api) {
 
 function deleteButton(tableID, api) {
   return {
-
     text: 'Delete',
     extend: 'selected',
     attr: {
       id: 'deleteButton',
     },
     action(e, dt, node, config) {
+      const table = jQuery(tableID).DataTable();
+      const refresh = table.button(0);
+      const button = table.button(2);
+
       const {
         name,
         id,
-      } = jQuery(tableID).DataTable().rows({
+      } = table.rows({
         selected: true,
       }).data()[0];
 
-      jQuery(tableID).DataTable().button(2).processing(true);
+      button.processing(true);
       jQuery.ajax({
         url: `mcp/api/${api}/${id}`,
         type: 'DELETE',
@@ -112,13 +120,13 @@ function deleteButton(tableID, api) {
           displayStatus(`Error deleting ${name}`);
         },
         success(xhr, status) {
-          displayStatus(`Deleted sensor ${name}`);
+          displayStatus(`Deleted ${name}`);
         },
         complete(xhr, status) {
-          jQuery(tableID).DataTable().ajax.reload(null, false);
-          jQuery(tableID).DataTable().button(2).processing(false);
+          table.ajax.reload(null, false);
+          button.processing(false);
           jQuery('#generalPurposeForm').fadeToggle();
-          jQuery(tableID).DataTable().button(0).active(true);
+          refresh.active(true);
         },
       });
     },
@@ -133,14 +141,18 @@ function toggleButton(tableID, api) {
       id: 'toggleButton',
     },
     action(e, dt, node, config) {
+      const table = jQuery(tableID).DataTable();
+      const refresh = table.button(0);
+      const toggle = table.button(3);
+
       const {
         name,
         id,
-      } = jQuery(tableID).DataTable().rows({
+      } = table.rows({
         selected: true,
       }).data()[0];
 
-      jQuery(tableID).DataTable().button(3).processing(true);
+      toggle.processing(true);
 
       jQuery.ajax({
         url: `mcp/api/${api}/${id}`,
@@ -161,10 +173,10 @@ function toggleButton(tableID, api) {
           displayStatus(`Toggled switch ${name}`);
         },
         complete(xhr, status) {
-          jQuery(tableID).DataTable().ajax.reload(null, false);
-          jQuery(tableID).DataTable().button(3).processing(false);
+          table.ajax.reload(null, false);
+          toggle.processing(false);
           jQuery('#generalPurposeForm').fadeToggle();
-          jQuery(tableID).DataTable().button(0).active(true);
+          refresh.active(true);
         },
       });
     },
@@ -179,14 +191,18 @@ function otaButton(tableID, api) {
       id: 'otaButton',
     },
     action(e, dt, node, config) {
+      const table = jQuery(tableID).DataTable();
+      const refresh = table.button(0);
+      const ota = table.button(3);
+
       const {
         name,
         id,
-      } = jQuery(tableID).DataTable().rows({
+      } = table.rows({
         selected: true,
       }).data()[0];
 
-      jQuery(tableID).DataTable().button(3).processing(true);
+      ota.processing(true);
 
       jQuery.ajax({
         url: `mcp/api/${api}/${id}`,
@@ -207,10 +223,10 @@ function otaButton(tableID, api) {
           displayStatus(`Triggered ota for ${name}`);
         },
         complete(xhr, status) {
-          jQuery(tableID).DataTable().ajax.reload(null, false);
-          jQuery(tableID).DataTable().button(3).processing(false);
+          table.ajax.reload(null, false);
+          ota.processing(false);
           jQuery('#generalPurposeForm').fadeToggle();
-          jQuery(tableID).DataTable().button(0).active(true);
+          refresh.active(true);
         },
       });
     },
@@ -361,11 +377,12 @@ function createSwitchesTable() {
       deleteButton(switchesID, 'switch'),
       toggleButton(switchesID, 'switch')],
   });
+  const refresh = switchTable.button(0);
 
-  switchTable.button(0).active(true);
+  refresh.active(true);
 
   switchTable.on('select', (e, dt, type, indexes) => {
-    switchTable.button(0).active(false);
+    refresh.active(false);
 
     const inputBox = jQuery('#generalPurposeForm');
 
@@ -378,7 +395,7 @@ function createSwitchesTable() {
 
   switchTable.on('deselect', (e, dt, type, indexes) => {
     const inputBox = jQuery('#generalPurposeForm');
-    switchTable.button(0).active(true);
+    refresh.active(true);
 
     inputBox.fadeOut('fast');
   });
@@ -483,8 +500,6 @@ function pageReady(jQuery) {
     const parent = event.target.parentNode;
     const mixtankName = parent.attributes.mixtankName.value;
     const newProfile = event.target.text;
-    // console.log('via div ->', mixtankName, newProfile);
-    // console.log(parent);
 
     jQuery.ajax({
       url: `mcp/api/mixtank/${mixtankName}`,
@@ -513,11 +528,11 @@ function pageReady(jQuery) {
 function pageFullyLoaded() {
   const tabs = ['switches', 'sensors', 'remotes'];
   tabs.forEach((elem) => {
-    const href = `a[href="#${elem}Tab"]`;
-    const table = `#${elem}Table`;
+    const href = jQuery(`a[href="#${elem}Tab"]`);
+    const table = jQuery(`#${elem}Table`).DataTable();
 
-    jQuery(href).on('shown.bs.tab', (event) => {
-      jQuery(table).DataTable().ajax.reload(null, false);
+    href.on('shown.bs.tab', (event) => {
+      table.ajax.reload(null, false);
     });
   });
 
