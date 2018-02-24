@@ -14,14 +14,18 @@ const switchesID = '#switchesTable';
 const remotesID = '#remotesTable';
 const gScrollY = '50vh';
 
-function refreshButton(tableID) {
+function refreshButton() {
   return {
     text: 'Refresh',
     attr: {
       id: 'refreshButton',
     },
     action(e, dt, node, config) {
-      const button = jQuery(tableID).DataTable().button(0);
+      console.log(
+        'refresh action()', e, dt.settings(), node,
+        config,
+      );
+      const button = dt.button(0);
       if (button.active()) {
         button.active(false);
       } else {
@@ -32,7 +36,7 @@ function refreshButton(tableID) {
   };
 }
 
-function renameButton(tableID, api) {
+function renameButton(api) {
   return {
     text: 'Rename',
     extend: 'selected',
@@ -40,7 +44,7 @@ function renameButton(tableID, api) {
       id: 'renameButton',
     },
     action(e, dt, node, config) {
-      const table = jQuery(tableID).DataTable();
+      const table = dt;
       const refresh = table.button(0);
       const rename = table.button(1);
 
@@ -87,7 +91,7 @@ function renameButton(tableID, api) {
   };
 }
 
-function deleteButton(tableID, api) {
+function deleteButton(api) {
   return {
     text: 'Delete',
     extend: 'selected',
@@ -95,7 +99,7 @@ function deleteButton(tableID, api) {
       id: 'deleteButton',
     },
     action(e, dt, node, config) {
-      const table = jQuery(tableID).DataTable();
+      const table = dt;
       const refresh = table.button(0);
       const button = table.button(2);
 
@@ -133,7 +137,7 @@ function deleteButton(tableID, api) {
   };
 }
 
-function toggleButton(tableID, api) {
+function toggleButton(api) {
   return {
     text: 'Toggle',
     extend: 'selected',
@@ -141,7 +145,7 @@ function toggleButton(tableID, api) {
       id: 'toggleButton',
     },
     action(e, dt, node, config) {
-      const table = jQuery(tableID).DataTable();
+      const table = dt;
       const refresh = table.button(0);
       const toggle = table.button(3);
 
@@ -183,7 +187,7 @@ function toggleButton(tableID, api) {
   };
 }
 
-function otaButton(tableID, api) {
+function otaButton(api) {
   return {
     text: 'OTA (Single)',
     extend: 'selected',
@@ -191,7 +195,7 @@ function otaButton(tableID, api) {
       id: 'otaButton',
     },
     action(e, dt, node, config) {
-      const table = jQuery(tableID).DataTable();
+      const table = dt;
       const refresh = table.button(0);
       const ota = table.button(3);
 
@@ -236,7 +240,6 @@ function otaButton(tableID, api) {
 function sensorsColumns() {
   return [{
     data: 'id',
-    class: 'col-center',
   }, {
     data: 'name',
   }, {
@@ -270,6 +273,9 @@ function createSensorsTable() {
     scrollY: gScrollY,
     // deferRender: true,
     scroller: true,
+    attr: [{
+      api_frag: 'sensor',
+    }],
     select: {
       style: 'single',
       items: 'row',
@@ -286,11 +292,14 @@ function createSensorsTable() {
         searchable: false,
       },
     ],
-    buttons: [refreshButton(sensorsID),
-      renameButton(sensorsID, 'sensor'),
-      deleteButton(sensorsID, 'sensor'),
-    ],
+    buttons: [refreshButton(),
+      renameButton('sensor'),
+      deleteButton('sensor')],
   });
+
+  // sensorTable.button().add(0, refreshButton(sensorsID));
+  // sensorTable.button().add(1, renameButton(sensorsID, 'sensor'));
+  // sensorTable.button().add(2, deleteButton(sensorsID, 'sensor'));
 
   sensorTable.on('select', (e, dt, type, indexes) => {
     sensorTable.button(0).active(false);
@@ -372,11 +381,13 @@ function createSwitchesTable() {
         searchable: false,
       },
     ],
-    buttons: [refreshButton(switchesID),
-      renameButton(switchesID, 'switch'),
-      deleteButton(switchesID, 'switch'),
-      toggleButton(switchesID, 'switch')],
+    buttons: [refreshButton(),
+      renameButton('switch'),
+      deleteButton('switch'),
+      toggleButton('switch'),
+    ],
   });
+
   const refresh = switchTable.button(0);
 
   refresh.active(true);
@@ -457,11 +468,10 @@ function createRemotesTable() {
         searchable: false,
       },
     ],
-    buttons: [refreshButton(remotesID),
-      renameButton(remotesID, 'remote'),
-      deleteButton(remotesID, 'remote'),
-      otaButton(remotesID, 'remote'),
-    ],
+    buttons: [refreshButton(),
+      renameButton('remote'),
+      deleteButton('remote'),
+      otaButton('remote')],
   });
 
   remoteTable.on('select', (e, dt, type, indexes) => {
@@ -523,9 +533,8 @@ function pageReady(jQuery) {
 
     jQuery('#dropdownMenuButton').text(newProfile);
   });
-}
 
-function pageFullyLoaded() {
+  // this must be the last thing -- after all tables created
   const tabs = ['switches', 'sensors', 'remotes'];
   tabs.forEach((elem) => {
     const href = jQuery(`a[href="#${elem}Tab"]`);
@@ -535,7 +544,9 @@ function pageFullyLoaded() {
       table.ajax.reload(null, false);
     });
   });
+}
 
+function pageFullyLoaded() {
   setTimeout(() => {
     const masthead = jQuery('#mastheadText');
     masthead.removeClass('text-muted').addClass('text-ready');

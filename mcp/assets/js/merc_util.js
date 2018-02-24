@@ -49,7 +49,7 @@ export function displayStatus(text) {
 
 /* eslint-disable no-console */
 export function dataTableErrorHandler(settings, techNote, message) {
-  displayStatus(techNote);
+  displayStatus(message);
   console.log(settings, techNote, message);
 }
 
