@@ -36,7 +36,7 @@ function prettyUs(data, type, row) {
   return '-';
 }
 
-const gScrollY = 400;
+const gScrollY = 600;
 
 function displayStatus(text) {
   const navBarAlert = jQuery('#navbarAlert');
@@ -513,14 +513,14 @@ function remotesColumns() {
   ];
 }
 
-const refreshButton = {
-  id() {
-    return 'remoteRefreshButton';
-  },
-  num() {
-    return 0;
-  },
-};
+// const refreshButton = {
+//   id() {
+//     return 'remoteRefreshButton';
+//   },
+//   num() {
+//     return 0;
+//   },
+// };
 
 function createRemotesTable() {
   const remoteTable = jQuery('#remotesTable').DataTable({
