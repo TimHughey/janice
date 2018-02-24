@@ -58,7 +58,7 @@ function autoRefresh() {
   ari = setInterval(
     () => {
       if (document.visibilityState === 'visible') {
-        const tabs = ['switches', 'sensors'];
+        const tabs = ['switches', 'sensors', 'remotes'];
         tabs.forEach((elem) => {
           const table = jQuery(`#${elem}Table`).DataTable();
           const button = table.button(0).button();
