@@ -14,6 +14,7 @@
     <a class="nav-link active" id="nav-switches-tab" data-toggle="pill" href="#switchesTab" role="tab" aria-controls="v-pills-home" aria-selected="true">Switches</a>
     <a class="nav-link" id="nav-sensors-tab" data-toggle="pill" href="#sensorsTab" role="tab" aria-controls="v-pills-profile" aria-selected="false">Sensors</a>
     <a class="nav-link" id="nav-mixtanks-tab" data-toggle="pill" href="#mixtanksTab" role="tab" aria-controls="v-pills-profile" aria-selected="false">Mixtanks</a>
+    <a class="nav-link" id="nav-remotes-tab" data-toggle="pill" href="#remotesTab" role="tab" aria-controls="v-pills-profile" aria-selected="false">Remotes</a>
   </div>
 </div>
 
@@ -92,6 +93,22 @@
       <% end %>
       </div>
     </div>
+        <div class="tab-pane fade" role="tabpanel" id="remotesTab">
+          <table class="table display device-table" cellspacing="0" width="100%" id="remotesTable">
+            <thead>
+              <tr>
+                <th>Id</th>
+                <th>Name</th>
+                <th>Host</th>
+                <th>Hardware</th>
+                <th>Firmware</th>
+                <th>OTA Pref</th>
+                <th>Startup</th>
+                <th>Seen</th>
+              </tr>
+            </thead>
+          </table>
+        </div>
   </div>
 </div>
 </div>

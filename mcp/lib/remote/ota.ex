@@ -32,7 +32,7 @@ defmodule OTA do
 
     vsn = Regex.named_captures(rx, block)
 
-    Logger.info(fn -> "mcr_esp.bin versions: #{inspect(vsn)}" end)
+    Logger.debug(fn -> "mcr_esp.bin versions: #{inspect(vsn)}" end)
     File.close(file)
 
     %{}

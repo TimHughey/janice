@@ -7,81 +7,14 @@ defmodule RemoteTest do
   use Timex
 
   def preferred_vsn, do: "b4edefc"
-  def test_host1, do: "mcr.0102030401"
-  def test_host2, do: "mcr.0102030402"
-  def test_host3, do: "mcr.0102030403"
-  def test_host4, do: "mcr.0102030404"
-  def test_host5, do: "mcr.0102030405"
-  def test_host6, do: "mcr.0102030406"
-  def test_host7, do: "mcr.0102030407"
+  def host(num), do: "mcr.010203040" <> Integer.to_string(num)
+  def name(num), do: "test_name" <> Integer.to_string(num)
 
-  def test_name1, do: "test_name1"
-  def test_name2, do: "test_name2"
-  def test_name3, do: "test_name3"
-  def test_name4, do: "test_name4"
-  def test_name5, do: "test_name5"
-  def test_name6, do: "test_name6"
-  def test_name7, do: "test_name7"
-
-  def test_ext1,
+  def ext(num),
     do: %{
-      host: test_host1(),
+      host: host(num),
       hw: "esp32",
       vsn: "1234567",
-      mtime: Timex.now() |> Timex.to_unix(),
-      log: false
-    }
-
-  def test_ext2,
-    do: %{
-      host: test_host2(),
-      hw: "esp32",
-      vsn: "1234567",
-      mtime: Timex.now() |> Timex.to_unix(),
-      log: false
-    }
-
-  def test_ext3,
-    do: %{
-      host: test_host3(),
-      hw: "esp32",
-      vsn: preferred_vsn(),
-      mtime: Timex.now() |> Timex.to_unix(),
-      log: false
-    }
-
-  def test_ext4,
-    do: %{
-      host: test_host4(),
-      hw: "esp32",
-      vsn: preferred_vsn(),
-      mtime: Timex.now() |> Timex.to_unix(),
-      log: false
-    }
-
-  def test_ext5,
-    do: %{
-      host: test_host5(),
-      hw: "esp32",
-      vsn: preferred_vsn(),
-      mtime: Timex.now() |> Timex.to_unix(),
-      log: false
-    }
-
-  def test_ext6,
-    do: %{
-      host: test_host6(),
-      hw: "esp32",
-      vsn: preferred_vsn(),
-      mtime: Timex.now() |> Timex.to_unix(),
-      log: false
-    }
-
-  def test_preferred_vsn,
-    do: %{
-      host: test_host7(),
-      hw: "esp32",
-      vsn: preferred_vsn(),
       mtime: Timex.now() |> Timex.to_unix(),
       log: false
     }
@@ -92,69 +25,93 @@ defmodule RemoteTest do
   end
 
   test "process well formed external remote update" do
-    res = test_ext1() |> Remote.external_update()
+    res = ext(1) |> Remote.external_update()
 
     assert res === :ok
   end
 
   test "process poorly formed external remote update" do
-    eu = %{host: test_host1(), log: false}
+    eu = %{host: host(1), log: false}
     res = Remote.external_update(eu)
 
     assert res === :error
   end
 
   test "mark as seen (default threshold)" do
-    test_ext6() |> Remote.external_update()
-    before_mark = Remote.get_by(host: test_host6())
+    ext(6) |> Remote.external_update()
+    before_mark = Remote.get_by(host: host(6))
 
-    Remote.mark_as_seen(test_host1(), Timex.now() |> Timex.to_unix())
+    Remote.mark_as_seen(host(1), Timex.now() |> Timex.to_unix())
 
-    after_mark = Remote.get_by(host: test_host6())
+    after_mark = Remote.get_by(host: host(6))
 
     assert before_mark.last_seen_at === after_mark.last_seen_at
   end
 
   test "mark as seen (zero threshold)" do
-    test_ext5() |> Remote.external_update()
-    before_mark = Remote.get_by(host: test_host5())
+    ext(5) |> Remote.external_update()
+    before_mark = Remote.get_by(host: host(5))
     :timer.sleep(1500)
-    Remote.mark_as_seen(test_host5(), Timex.now() |> Timex.to_unix(), 0)
-    after_mark = Remote.get_by(host: test_host5())
+    Remote.mark_as_seen(host(5), Timex.now() |> Timex.to_unix(), 0)
+    after_mark = Remote.get_by(host: host(5))
 
     assert Timex.compare(after_mark.last_seen_at, before_mark.last_seen_at) == 1
   end
 
   test "change a name" do
-    test_ext2() |> Remote.external_update()
+    ext(2) |> Remote.external_update()
 
-    res = Remote.change_name(test_host2(), test_name2())
-    %Remote{name: name} = Remote.get_by(name: test_name2())
+    res = Remote.change_name(host(2), name(2))
+    %Remote{name: name} = Remote.get_by(name: name(2))
 
-    assert res === :ok and name === test_name2()
+    assert res === :ok and name === name(2)
   end
 
   test "change a name (name in use)" do
-    test_ext1() |> Remote.external_update()
+    ext(1) |> Remote.external_update()
 
-    Remote.change_name(test_host1(), test_name1())
-    res = Remote.change_name(test_host2(), test_name1())
+    Remote.change_name(host(1), name(1))
+    res = Remote.change_name(host(2), name(1))
 
     assert res === :name_in_use
   end
 
+  test "change a name (by id)" do
+    ext(8) |> Remote.external_update()
+    r = Remote.get_by(host: host(8))
+    res = Remote.change_name(r.id, name(8))
+
+    assert res === name(8)
+  end
+
+  test "change vsn preference to head" do
+    ext(9) |> Remote.external_update()
+    r = Remote.get_by(host: host(9))
+    res = Remote.change_vsn_preference(r.id, "head")
+
+    assert res === "head"
+  end
+
+  test "change vsn preference to bad preference" do
+    ext(9) |> Remote.external_update()
+    r = Remote.get_by(host: host(9))
+    res = Remote.change_vsn_preference(r.id, "bad")
+
+    assert res === :error
+  end
+
   test "get_by(name: name)" do
-    test_ext3() |> Remote.external_update()
+    ext(3) |> Remote.external_update()
 
-    Remote.change_name(test_host3(), test_name3())
-    %Remote{name: name} = Remote.get_by(name: test_name3())
+    Remote.change_name(host(3), name(3))
+    %Remote{name: name} = Remote.get_by(name: name(3))
 
-    assert name === test_name3()
+    assert name === name(3)
   end
 
   test "get_by(name: name, only: [:last_seen_at, :last_start_at])" do
-    test_ext3() |> Remote.external_update()
-    result = Remote.get_by(host: test_host3(), only: [:last_seen_at, :last_start_at])
+    ext(3) |> Remote.external_update()
+    result = Remote.get_by(host: host(3), only: [:last_seen_at, :last_start_at])
 
     seen = if is_map(result), do: Map.get(result, :last_seen_at, nil), else: result
     start = if is_map(result), do: Map.get(result, :last_start_at, nil), else: result
@@ -163,8 +120,8 @@ defmodule RemoteTest do
   end
 
   test "get_by(name: name, only: :last_seen_at)" do
-    test_ext3() |> Remote.external_update()
-    result = Remote.get_by(host: test_host3(), only: :last_seen_at)
+    ext(3) |> Remote.external_update()
+    result = Remote.get_by(host: host(3), only: :last_seen_at)
 
     last = if is_map(result), do: Map.get(result, :last_seen_at, nil), else: result
 
@@ -178,9 +135,9 @@ defmodule RemoteTest do
   end
 
   test "get vsn preference" do
-    test_ext4() |> Remote.external_update()
-    Remote.change_name(test_host4(), test_name4())
-    pref = Remote.vsn_preference(name: test_name4())
+    ext(4) |> Remote.external_update()
+    Remote.change_name(host(4), name(4))
+    pref = Remote.vsn_preference(name: name(4))
 
     assert(pref === "stable")
   end
@@ -190,14 +147,14 @@ defmodule RemoteTest do
   end
 
   test "external update started log message" do
-    fun = fn -> Map.put(test_ext4(), :log, true) |> Remote.external_update() end
+    fun = fn -> Map.put(ext(4), :log, true) |> Remote.external_update() end
     msg = capture_log(fun)
 
     assert msg =~ "started"
   end
 
   test "all Remote" do
-    test_ext1() |> Remote.external_update()
+    ext(1) |> Remote.external_update()
     remotes = Remote.all()
 
     is_remote = if Enum.empty?(remotes), do: nil, else: %Remote{} = hd(remotes)

@@ -84,7 +84,7 @@ defmodule Sensor do
       |> changeset(%{name: tobe, description: comment})
       |> update()
     else
-      Logger.info(fn -> "change name failed" end)
+      Logger.warn(fn -> "change name failed" end)
       {:error, :not_found}
     end
   end

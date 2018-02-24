@@ -51,6 +51,7 @@ defmodule Web.Router do
     resources("/mixtank", MixtankController, only: [:index, :update])
     resources("/sensor", SensorController, only: [:delete, :index, :update])
     resources("/switch", SwitchController, only: [:delete, :index, :update])
+    resources("/remote", RemoteController, only: [:delete, :index, :update])
   end
 
   scope "/mercurial", Web do

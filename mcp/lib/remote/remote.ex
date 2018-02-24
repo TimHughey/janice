@@ -9,7 +9,7 @@ defmodule Remote do
   use Timex.Ecto.Timestamps
   use Ecto.Schema
 
-  import Ecto.Changeset, only: [change: 2]
+  import Ecto.Changeset
   import Ecto.Query, only: [from: 2]
   import Repo, only: [insert!: 1, one: 1, update: 1]
 
@@ -95,6 +95,28 @@ defmodule Remote do
     end
   end
 
+  def changeset(ss, params \\ %{}) do
+    ss
+    |> cast(params, [:name, :preferred_vsn])
+    |> validate_required([:name])
+    |> validate_inclusion(:preferred_vsn, ["head", "stable"])
+    |> validate_format(:name, ~r/^[\w]+[\w ]{1,}[\w]$/)
+    |> unique_constraint(:name)
+  end
+
+  def change_name(id, new_name) when is_integer(id) and is_binary(new_name) do
+    remote = Repo.get(Remote, id)
+
+    if remote do
+      case change_name(remote.host, new_name) do
+        :ok -> new_name
+        failed -> failed
+      end
+    else
+      :not_found
+    end
+  end
+
   def change_name(host, new_name) when is_binary(host) and is_binary(new_name) do
     remote = get_by(host: host)
     check = get_by(name: new_name)
@@ -103,7 +125,7 @@ defmodule Remote do
       case remote do
         %Remote{} ->
           new_name = String.replace(new_name, " ", "_")
-          {res, rem} = change(remote, name: new_name) |> update()
+          {res, rem} = changeset(remote, %{name: new_name}) |> update()
 
           if res == :ok,
             do: SetName.new_cmd(rem.host, rem.name) |> SetName.json() |> Client.publish()
@@ -116,6 +138,17 @@ defmodule Remote do
     else
       :name_in_use
     end
+  end
+
+  def change_name(_, _), do: {:error, :bad_args}
+
+  def change_vsn_preference(id, preference) when is_integer(id) and is_binary(preference) do
+    {res, rem} = Repo.get(Remote, id) |> changeset(%{preferred_vsn: preference}) |> update()
+    if res == :ok, do: rem.preferred_vsn, else: res
+  end
+
+  def delete(id) when is_integer(id) do
+    from(s in Remote, where: s.id == ^id) |> Repo.delete_all()
   end
 
   def delete_all(:dangerous) do
