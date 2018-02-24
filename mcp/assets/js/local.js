@@ -9,6 +9,11 @@ import {
 }
   from './merc_util';
 
+const sensorsID = '#sensorsTable';
+const switchesID = '#switchesTable';
+const remotesID = '#remotesTable';
+const gScrollY = '50vh';
+
 function refreshButton(tableID) {
   return {
     text: 'Refresh',
@@ -211,11 +216,6 @@ function otaButton(tableID, api) {
     },
   };
 }
-
-const sensorsID = '#sensorsTable';
-const switchesID = '#switchesTable';
-const remotesID = '#remotesTable';
-const gScrollY = '50vh';
 
 function sensorsColumns() {
   return [{
@@ -508,30 +508,28 @@ function pageReady(jQuery) {
 
     jQuery('#dropdownMenuButton').text(newProfile);
   });
+}
 
-  jQuery('a[href="#switchesTab"]').on('shown.bs.tab', (event) => {
-    $('#switchesTable').DataTable().ajax.reload(null, false);
+function pageFullyLoaded() {
+  const tabs = ['switches', 'sensors', 'remotes'];
+  tabs.forEach((elem) => {
+    const href = `a[href="#${elem}Tab"]`;
+    const table = `#${elem}Table`;
+
+    jQuery(href).on('shown.bs.tab', (event) => {
+      jQuery(table).DataTable().ajax.reload(null, false);
+    });
   });
 
-  jQuery('a[href="#sensorsTab"]').on('shown.bs.tab', (event) => {
-    $('#sensorsTable').DataTable().ajax.reload(null, false);
-  });
-
-  jQuery('a[href="#remotesTab"]').on('shown.bs.tab', (event) => {
-    $('#remotesTable').DataTable().ajax.reload(null, false);
-  });
+  setTimeout(() => {
+    const masthead = jQuery('#mastheadText');
+    masthead.removeClass('text-muted').addClass('text-ready');
+  }, 10);
 
   document.addEventListener(
     'visibilitychange', autoRefresh,
     false,
   );
-}
-
-function pageFullyLoaded() {
-  setTimeout(() => {
-    const masthead = jQuery('#mastheadText');
-    masthead.removeClass('text-muted').addClass('text-ready');
-  }, 10);
 }
 
 jQuery(document).ready(pageReady);
