@@ -1,14 +1,82 @@
-import {
-  prettyUs,
-  prettySeconds,
-  displayStatus,
-  autoRefresh,
-  dataTableErrorHandler,
-  humanizeState,
-  prettyLastCommand,
+function humanizeState(data, type, row) {
+  if (data) {
+    return 'active';
+  }
 
+  return 'off';
 }
-  from './merc_util';
+
+function prettySeconds(data, type, row) {
+  if (data > 0) {
+    return prettyMs((data * 1000), {
+      compact: true,
+    });
+  }
+
+  return 'now';
+}
+
+function prettyLastCommand(data, type, row) {
+  if (data > 0) {
+    return prettyMs((data * 1000), {
+      compact: true,
+    });
+  }
+
+  return '-';
+}
+
+function prettyUs(data, type, row) {
+  if (data > 0) {
+    return prettyMs((data / 1000), {
+      compact: true,
+    });
+  }
+
+  return '-';
+}
+
+function displayStatus(text) {
+  const navBarAlert = jQuery('#navbarAlert');
+  navBarAlert.text(text);
+  navBarAlert.fadeToggle();
+  navBarAlert.fadeOut(3000);
+}
+
+/* eslint-disable no-console */
+function dataTableErrorHandler(settings, techNote, message) {
+  displayStatus(techNote);
+  console.log(settings, techNote, message);
+}
+
+function autoRefresh() {
+  let ari = sessionStorage.getItem('autoRefreshInterval');
+  if (ari !== 'undefined') {
+    clearInterval(ari);
+  }
+
+  ari = setInterval(
+    () => {
+      if (document.visibilityState === 'visible') {
+        const tabs = ['switches', 'sensors'];
+        tabs.forEach((elem) => {
+          const table = jQuery(`#${elem}Table`).DataTable();
+          const button = table.button(0).button();
+
+          if (jQuery(`#${elem}Tab`).hasClass('active') && (table.button(0).active())) {
+            button.processing(true);
+            table.ajax.reload(() => {
+              table.button(0).processing(false);
+            }, false);
+          }
+        });
+      }
+    },
+    3000,
+  );
+
+  sessionStorage.setItem('autoRefreshInterval', ari);
+}
 
 function sensorsColumns() {
   return [{
@@ -574,52 +642,7 @@ function createRemotesTable() {
         });
       },
     },
-    {
-      text: 'OTA Update',
-      extend: 'selected',
-      attr: {
-        id: 'remoteOtaUpdateButton',
-      },
-      action(e, dt, node, config) {
-        const {
-          name,
-          id,
-        } = remoteTable.rows({
-          selected: true,
-        }).data()[0];
 
-        remoteTable.button(1).processing(true);
-        jQuery.ajax({
-          url: `mcp/api/remote/${id}`,
-          type: 'PATCH',
-          data: {
-            ota_update: true,
-          },
-          dateType: 'json',
-          beforeSend(xhr) {
-            // send the CSRF token included as a meta on the HTML page
-            const token = jQuery("meta[name='csrf-token']").attr('content');
-            xhr.setRequestHeader('X-CSRF-Token', token);
-          },
-          error(xhr, status, error) {
-            console.log('error xhr:', xhr);
-            displayStatus(`Error triggering ota update for ${name}`);
-          },
-          success(data, status, jqXHR) {
-            console.log(data, status, jqXHR);
-            displayStatus(`OTA update triggered for ${data.name}`);
-            // const response = jqXHR.responseJSON();
-            // displayStatus(`Sensor name changed to ${response}`);
-          },
-          complete(xhr, status) {
-            remoteTable.ajax.reload(null, false);
-            remoteTable.button(1).processing(false);
-            jQuery('#generalPurposeForm').fadeToggle();
-            remoteTable.button(0).active(true);
-          },
-        });
-      },
-    },
     ],
   });
 
