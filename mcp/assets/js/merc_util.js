@@ -2,7 +2,7 @@
 //   return typeof value === 'number' && Number.isFinite(value);
 // }
 
-function humanizeState(data, type, row) {
+export function humanizeState(data, type, row) {
   if (data) {
     return 'active';
   }
@@ -10,7 +10,7 @@ function humanizeState(data, type, row) {
   return 'off';
 }
 
-function prettySeconds(data, type, row) {
+export function prettySeconds(data, type, row) {
   if (data > 0) {
     return prettyMs((data * 1000), {
       compact: true,
@@ -20,7 +20,7 @@ function prettySeconds(data, type, row) {
   return 'now';
 }
 
-function prettyLastCommand(data, type, row) {
+export function prettyLastCommand(data, type, row) {
   if (data > 0) {
     return prettyMs((data * 1000), {
       compact: true,
@@ -30,7 +30,7 @@ function prettyLastCommand(data, type, row) {
   return '-';
 }
 
-function prettyUs(data, type, row) {
+export function prettyUs(data, type, row) {
   if (data > 0) {
     return prettyMs((data / 1000), {
       compact: true,
@@ -40,7 +40,7 @@ function prettyUs(data, type, row) {
   return '-';
 }
 
-function displayStatus(text) {
+export function displayStatus(text) {
   const navBarAlert = jQuery('#navbarAlert');
   navBarAlert.text(text);
   navBarAlert.fadeToggle();
@@ -48,12 +48,12 @@ function displayStatus(text) {
 }
 
 /* eslint-disable no-console */
-function dataTableErrorHandler(settings, techNote, message) {
+export function dataTableErrorHandler(settings, techNote, message) {
   displayStatus(techNote);
   console.log(settings, techNote, message);
 }
 
-function autoRefresh() {
+export function autoRefresh() {
   let ari = sessionStorage.getItem('autoRefreshInterval');
   if (ari !== 'undefined') {
     clearInterval(ari);
@@ -62,15 +62,15 @@ function autoRefresh() {
   ari = setInterval(
     () => {
       if (document.visibilityState === 'visible') {
-        const tabs = ['switches', 'sensors'];
+        const tabs = ['switches', 'sensors', 'remotes'];
         tabs.forEach((elem) => {
-          const table = jQuery(`#${elem}Table`).DataTable();
-          const button = table.button(0).button();
+          const table = jQuery(`#${elem}Table`).DataTable;
+          const button = table().button(0).button();
 
-          if (jQuery(`#${elem}Tab`).hasClass('active') && (table.button(0).active())) {
+          if (jQuery(`#${elem}Tab`).hasClass('active') && (table().button(0).active())) {
             button.processing(true);
-            table.ajax.reload(() => {
-              table.button(0).processing(false);
+            table().ajax.reload(() => {
+              table().button(0).processing(false);
             }, false);
           }
         });
@@ -82,12 +82,12 @@ function autoRefresh() {
   sessionStorage.setItem('autoRefreshInterval', ari);
 }
 
-export default {
-  humanizeState,
-  prettySeconds,
-  prettyLastCommand,
-  prettyUs,
-  displayStatus,
-  dataTableErrorHandler,
-  autoRefresh,
-};
+// export default {
+//   humanizeState,
+//   prettySeconds,
+//   prettyLastCommand,
+//   prettyUs,
+//   displayStatus,
+//   dataTableErrorHandler,
+//   autoRefresh,
+// };

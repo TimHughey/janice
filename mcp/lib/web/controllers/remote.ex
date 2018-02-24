@@ -47,7 +47,10 @@ defmodule Web.RemoteController do
     new_preference = Map.get(params, "preferred_vsn", nil)
     prefer_res = if new_preference, do: Remote.change_vsn_preference(id, new_preference)
 
-    json(conn, %{name: name_res, preferred_vsn: prefer_res})
+    ota = Map.get(params, "ota", false)
+    ota_res = if ota, do: Remote.ota_update(id)
+
+    json(conn, %{name: name_res, preferred_vsn: prefer_res, ota: ota_res})
   end
 
   defp to_seconds(dt) do

@@ -231,6 +231,11 @@ defmodule Remote do
 
   def mark_as_seen(nil, _, _), do: nil
 
+  def ota_update(id) when is_integer(id) do
+    rem = Repo.get(Remote, id)
+    ota_update([rem])
+  end
+
   def ota_update(:all), do: all() |> ota_update()
 
   def ota_update(list, opts \\ []) when is_list(list) do
