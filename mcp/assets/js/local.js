@@ -36,6 +36,8 @@ function prettyUs(data, type, row) {
   return '-';
 }
 
+const gScrollY = 400;
+
 function displayStatus(text) {
   const navBarAlert = jQuery('#navbarAlert');
   navBarAlert.text(text);
@@ -112,7 +114,7 @@ function createSensorsTable() {
   const sensorTable = jQuery('#sensorsTable').DataTable({
     dom: 'Bfrtip',
     ajax: 'mcp/api/sensor',
-    scrollY: '50vh',
+    scrollY: gScrollY,
     // deferRender: true,
     scroller: true,
     select: {
@@ -296,7 +298,7 @@ function createSwitchesTable() {
   const switchTable = jQuery('#switchesTable').DataTable({
     dom: 'Bfrtip',
     ajax: 'mcp/api/switch',
-    scrollY: '50vh',
+    scrollY: gScrollY,
     // deferRender: true,
     scroller: true,
     select: {
@@ -488,6 +490,7 @@ function remotesColumns() {
     data: 'host',
   }, {
     data: 'hw',
+    class: 'col-center',
   },
   {
     data: 'firmware_vsn',
@@ -523,7 +526,7 @@ function createRemotesTable() {
   const remoteTable = jQuery('#remotesTable').DataTable({
     dom: 'Bfrtip',
     ajax: 'mcp/api/remote',
-    scrollY: '50vh',
+    scrollY: 200,
     // deferRender: true,
     scroller: true,
     select: {

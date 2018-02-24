@@ -218,7 +218,7 @@ defmodule Remote do
   end
 
   def mark_as_seen(%Remote{} = rem, %DateTime{} = dt, threshold_secs) do
-    # only update last seen if more than threshold_secs  different
+    # only update last seen if more than threshold_secs different
     # this is to avoid high rates of updates when a device hosts many sensors
     if Timex.diff(dt, rem.last_seen_at, :seconds) >= threshold_secs do
       opts = [last_seen_at: dt]
