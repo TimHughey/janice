@@ -21,10 +21,6 @@ function refreshButton() {
       id: 'refreshButton',
     },
     action(e, dt, node, config) {
-      console.log(
-        'refresh action()', e, dt.settings(), node,
-        config,
-      );
       const button = dt.button(0);
       if (button.active()) {
         button.active(false);
@@ -36,7 +32,7 @@ function refreshButton() {
   };
 }
 
-function renameButton(api) {
+function renameButton() {
   return {
     text: 'Rename',
     extend: 'selected',
@@ -44,14 +40,14 @@ function renameButton(api) {
       id: 'renameButton',
     },
     action(e, dt, node, config) {
-      const table = dt;
-      const refresh = table.button(0);
-      const rename = table.button(1);
+      const refresh = dt.button(0);
+      const rename = dt.button(1);
+      const url = dt.ajax.url();
 
       const {
         name,
         id,
-      } = table.rows({
+      } = dt.rows({
         selected: true,
       }).data()[0];
 
@@ -59,7 +55,7 @@ function renameButton(api) {
 
       rename.processing(true);
       jQuery.ajax({
-        url: `mcp/api/${api}/${id}`,
+        url: `${url}/${id}`,
         type: 'PATCH',
         data: {
           name: newName,
@@ -81,7 +77,7 @@ function renameButton(api) {
           // displayStatus(`Sensor name changed to ${response}`);
         },
         complete(xhr, status) {
-          table.ajax.reload(null, false);
+          dt.ajax.reload(null, false);
           rename.processing(false);
           jQuery('#generalPurposeForm').fadeToggle();
           refresh.active(true);
@@ -91,7 +87,7 @@ function renameButton(api) {
   };
 }
 
-function deleteButton(api) {
+function deleteButton() {
   return {
     text: 'Delete',
     extend: 'selected',
@@ -99,20 +95,20 @@ function deleteButton(api) {
       id: 'deleteButton',
     },
     action(e, dt, node, config) {
-      const table = dt;
-      const refresh = table.button(0);
-      const button = table.button(2);
+      const refresh = dt.button(0);
+      const button = dt.button(2);
+      const url = dt.ajax.url();
 
       const {
         name,
         id,
-      } = table.rows({
+      } = dt.rows({
         selected: true,
       }).data()[0];
 
       button.processing(true);
       jQuery.ajax({
-        url: `mcp/api/${api}/${id}`,
+        url: `${url}/${id}`,
         type: 'DELETE',
         beforeSend(xhr) {
           // send the CSRF token included as a meta on the HTML page
@@ -127,7 +123,7 @@ function deleteButton(api) {
           displayStatus(`Deleted ${name}`);
         },
         complete(xhr, status) {
-          table.ajax.reload(null, false);
+          dt.ajax.reload(null, false);
           button.processing(false);
           jQuery('#generalPurposeForm').fadeToggle();
           refresh.active(true);
@@ -137,7 +133,7 @@ function deleteButton(api) {
   };
 }
 
-function toggleButton(api) {
+function toggleButton() {
   return {
     text: 'Toggle',
     extend: 'selected',
@@ -145,21 +141,21 @@ function toggleButton(api) {
       id: 'toggleButton',
     },
     action(e, dt, node, config) {
-      const table = dt;
-      const refresh = table.button(0);
-      const toggle = table.button(3);
+      const refresh = dt.button(0);
+      const toggle = dt.button(3);
+      const url = dt.ajax.url();
 
       const {
         name,
         id,
-      } = table.rows({
+      } = dt.rows({
         selected: true,
       }).data()[0];
 
       toggle.processing(true);
 
       jQuery.ajax({
-        url: `mcp/api/${api}/${id}`,
+        url: `${url}/${id}`,
         type: 'PATCH',
         data: {
           toggle: true,
@@ -177,7 +173,7 @@ function toggleButton(api) {
           displayStatus(`Toggled switch ${name}`);
         },
         complete(xhr, status) {
-          table.ajax.reload(null, false);
+          dt.ajax.reload(null, false);
           toggle.processing(false);
           jQuery('#generalPurposeForm').fadeToggle();
           refresh.active(true);
@@ -187,7 +183,7 @@ function toggleButton(api) {
   };
 }
 
-function otaButton(api) {
+function otaButton() {
   return {
     text: 'OTA (Single)',
     extend: 'selected',
@@ -195,21 +191,21 @@ function otaButton(api) {
       id: 'otaButton',
     },
     action(e, dt, node, config) {
-      const table = dt;
-      const refresh = table.button(0);
-      const ota = table.button(3);
+      const refresh = dt.button(0);
+      const ota = dt.button(3);
+      const url = dt.ajax.url();
 
       const {
         name,
         id,
-      } = table.rows({
+      } = dt.rows({
         selected: true,
       }).data()[0];
 
       ota.processing(true);
 
       jQuery.ajax({
-        url: `mcp/api/${api}/${id}`,
+        url: `${url}/${id}`,
         type: 'PATCH',
         data: {
           ota: true,
@@ -227,7 +223,7 @@ function otaButton(api) {
           displayStatus(`Triggered ota for ${name}`);
         },
         complete(xhr, status) {
-          table.ajax.reload(null, false);
+          dt.ajax.reload(null, false);
           ota.processing(false);
           jQuery('#generalPurposeForm').fadeToggle();
           refresh.active(true);
@@ -269,7 +265,19 @@ function sensorsColumns() {
 function createSensorsTable() {
   const sensorTable = jQuery(sensorsID).DataTable({
     dom: 'Bfrtip',
-    ajax: 'mcp/api/sensor',
+    ajax: {
+      url: 'mcp/api/sensor',
+      complete(jqXHR, textStatus) {
+        const {
+          status,
+          statusText,
+        } = jqXHR;
+        if (status !== 200) {
+          console.log(sensorsID, jqXHR);
+          displayStatus(`Refresh Error: ${statusText}`);
+        }
+      },
+    },
     scrollY: gScrollY,
     // deferRender: true,
     scroller: true,
@@ -293,13 +301,9 @@ function createSensorsTable() {
       },
     ],
     buttons: [refreshButton(),
-      renameButton('sensor'),
-      deleteButton('sensor')],
+      renameButton(),
+      deleteButton()],
   });
-
-  // sensorTable.button().add(0, refreshButton(sensorsID));
-  // sensorTable.button().add(1, renameButton(sensorsID, 'sensor'));
-  // sensorTable.button().add(2, deleteButton(sensorsID, 'sensor'));
 
   sensorTable.on('select', (e, dt, type, indexes) => {
     sensorTable.button(0).active(false);
@@ -362,7 +366,19 @@ function switchesColumns() {
 function createSwitchesTable() {
   const switchTable = jQuery(switchesID).DataTable({
     dom: 'Bfrtip',
-    ajax: 'mcp/api/switch',
+    ajax: {
+      url: 'mcp/api/switch',
+      complete(jqXHR, textStatus) {
+        const {
+          status,
+          statusText,
+        } = jqXHR;
+        if (status !== 200) {
+          console.log(switchesID, jqXHR);
+          displayStatus(`Refresh Error: ${statusText}`);
+        }
+      },
+    },
     scrollY: gScrollY,
     // deferRender: true,
     scroller: true,
@@ -382,9 +398,9 @@ function createSwitchesTable() {
       },
     ],
     buttons: [refreshButton(),
-      renameButton('switch'),
-      deleteButton('switch'),
-      toggleButton('switch'),
+      renameButton(),
+      deleteButton(),
+      toggleButton(),
     ],
   });
 
@@ -448,7 +464,19 @@ function remotesColumns() {
 function createRemotesTable() {
   const remoteTable = jQuery(remotesID).DataTable({
     dom: 'Bfrtip',
-    ajax: 'mcp/api/remote',
+    ajax: {
+      url: 'mcp/api/remote',
+      complete(jqXHR, textStatus) {
+        const {
+          status,
+          statusText,
+        } = jqXHR;
+        if (status !== 200) {
+          console.log(remotesID, jqXHR);
+          displayStatus(`Refresh Error: ${statusText}`);
+        }
+      },
+    },
     scrollY: 200,
     // deferRender: true,
     scroller: true,
@@ -469,13 +497,14 @@ function createRemotesTable() {
       },
     ],
     buttons: [refreshButton(),
-      renameButton('remote'),
-      deleteButton('remote'),
-      otaButton('remote')],
+      renameButton(),
+      deleteButton(),
+      otaButton()],
   });
 
   remoteTable.on('select', (e, dt, type, indexes) => {
-    remoteTable.button(0).active(false);
+    const refresh = dt.button(0);
+    refresh.active(false);
 
     const inputBox = jQuery('#generalPurposeForm');
 
@@ -487,8 +516,9 @@ function createRemotesTable() {
   });
 
   remoteTable.on('deselect', (e, dt, type, indexes) => {
+    const refresh = dt.refresh(0);
     const inputBox = jQuery('#generalPurposeForm');
-    remoteTable.button(0).active(true);
+    refresh.active(true);
 
     inputBox.fadeOut('fast');
   });
@@ -528,7 +558,6 @@ function pageReady(jQuery) {
       },
     }).done((data) => {
       displayStatus(`Activated profile ${data.active_profile}`);
-      // console.log(data);
     });
 
     jQuery('#dropdownMenuButton').text(newProfile);
