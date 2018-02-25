@@ -31,7 +31,7 @@
 
 #include "devs/base.hpp"
 #include "devs/i2c_dev.hpp"
-#include "misc/util.hpp"
+#include "misc/mcr_types.hpp"
 #include "net/mcr_net.hpp"
 
 const char *i2cDev::i2cDevDesc(uint8_t addr) {
@@ -73,7 +73,7 @@ i2cDev::i2cDev(mcrDevAddr_t &addr, bool use_multiplexer, uint8_t bus)
 const mcrDevID_t &i2cDev::externalName() {
   std::stringstream ext_id;
 
-  ext_id << "i2c/" << mcrNetwork::getName() << ".";
+  ext_id << "i2c/" << mcr::Net::getName() << ".";
   ext_id << std::setw(sizeof(uint8_t) * 2) << std::setfill('0') << std::hex
          << static_cast<unsigned>(this->bus());
   ext_id << "." << description();

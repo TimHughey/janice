@@ -37,7 +37,7 @@
 #include "cmds/cmd_ota.hpp"
 #include "cmds/cmd_switch.hpp"
 #include "cmds/cmd_types.hpp"
-#include "misc/util.hpp"
+#include "misc/mcr_types.hpp"
 #include "misc/version.hpp"
 
 typedef class mcrCmdFactory mcrCmdFactory_t;

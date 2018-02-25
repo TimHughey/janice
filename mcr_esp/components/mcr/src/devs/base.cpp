@@ -33,7 +33,7 @@
 #include "devs/addr.hpp"
 #include "devs/base.hpp"
 #include "devs/id.hpp"
-#include "misc/util.hpp"
+#include "misc/mcr_types.hpp"
 #include "readings/readings.hpp"
 
 // construct a new mcrDev with only an address

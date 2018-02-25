@@ -29,7 +29,7 @@
 #include <time.h>
 
 #include "devs/id.hpp"
-#include "misc/util.hpp"
+#include "misc/mcr_types.hpp"
 #include "misc/version.hpp"
 
 typedef class Reading Reading_t;

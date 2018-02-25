@@ -10,7 +10,6 @@
 #include "engines/ds_engine.hpp"
 #include "engines/i2c_engine.hpp"
 #include "misc/timestamp_task.hpp"
-#include "misc/util.hpp"
 #include "misc/version.hpp"
 #include "net/mcr_net.hpp"
 #include "protocols/mqtt.hpp"
@@ -22,7 +21,7 @@ void app_main(void);
 static const char *embed_vsn_sha = mcrVersion::embed_vsn_sha();
 static const char *TAG = "mcr_esp";
 
-static mcrNetwork *network = nullptr;
+static mcr::Net *network = nullptr;
 static mcrTimestampTask *timestampTask = nullptr;
 static mcrMQTT *mqttTask = nullptr;
 static mcrDS *dsEngineTask = nullptr;
@@ -36,8 +35,20 @@ void app_main() {
 
   spi_flash_init();
 
+  esp_err_t nvs_rc = ESP_OK;
+  nvs_rc = nvs_flash_init();
+
+  if (nvs_rc == ESP_ERR_NVS_NO_FREE_PAGES) {
+    ESP_LOGW(TAG, "nvs no free pages, erasing");
+    nvs_rc = nvs_flash_erase();
+  }
+
+  if (nvs_rc == ESP_OK) {
+    ESP_LOGI(TAG, "nvs initialized");
+  }
+
   // must create network first
-  network = mcrNetwork::instance(); // singleton, get the instance to create
+  network = mcr::Net::instance(); // singleton, get the instance to create
   timestampTask = new mcrTimestampTask();
   mqttTask = mcrMQTT::instance(); // singleton, get the instance to create
   dsEngineTask = new mcrDS();

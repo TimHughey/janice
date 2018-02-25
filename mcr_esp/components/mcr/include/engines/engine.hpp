@@ -37,7 +37,7 @@
 
 #include "cmds/cmd_switch.hpp"
 #include "devs/base.hpp"
-#include "misc/util.hpp"
+#include "misc/mcr_types.hpp"
 #include "protocols/mqtt.hpp"
 
 typedef std::map<std::string, std::string> mcrEngineTagMap_t;

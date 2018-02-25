@@ -41,7 +41,7 @@
 #include "drivers/owb_gpio.h"
 #include "engines/ds_engine.hpp"
 #include "engines/engine.hpp"
-#include "misc/util.hpp"
+#include "misc/mcr_types.hpp"
 #include "net/mcr_net.hpp"
 #include "protocols/mqtt.hpp"
 
@@ -894,9 +894,9 @@ void mcrDS::run(void *data) {
   cmdQueue_t cmd_q = {"mcrDS", "ds", _cmd_q};
   mcrCmdQueues::registerQ(cmd_q);
 
-  ESP_LOGI(tagEngine(), "waiting for time to be set...");
-  mcrNetwork::waitForTimeset();
-  ESP_LOGI(tagEngine(), "time set, proceeding to task loop");
+  ESP_LOGI(tagEngine(), "waiting for normal ops...");
+  mcr::Net::waitForNormalOps();
+  ESP_LOGI(tagEngine(), "normal ops, proceeding to task loop");
 
   _engineTask.lastWake = xTaskGetTickCount();
 

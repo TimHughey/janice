@@ -22,8 +22,7 @@ static uint64_t _ota_first_block = 0;
 static uint64_t _ota_last_block = 0;
 static uint64_t _ota_total_us = 0;
 
-mcrCmdOTA::mcrCmdOTA(mcrCmdType_t type, JsonObject &root)
-    : mcrCmd(type, root) {
+mcrCmdOTA::mcrCmdOTA(mcrCmdType_t type, JsonObject &root) : mcrCmd(type, root) {
   if (root.success()) {
     _host = root[k_host] | "no_host";
     _head = root[k_head] | "0000000";
@@ -42,7 +41,7 @@ void mcrCmdOTA::begin() {
     return;
   }
 
-  mcrNetwork::suspendNormalOps();
+  mcr::Net::suspendNormalOps();
 
   mcrMQTT::otaPrep();
 
@@ -123,7 +122,7 @@ void mcrCmdOTA::end() {
 }
 
 bool mcrCmdOTA::process() {
-  bool this_host = (_host.compare(mcrUtil::hostID()) == 0) ? true : false;
+  bool this_host = (_host.compare(mcr::Net::hostID()) == 0) ? true : false;
 
   // 1. if _raw is nullptr then this is a cmd (not a data block)
   // 2. check this command is addressed to this host

@@ -33,7 +33,7 @@
 
 #include "devs/addr.hpp"
 #include "devs/id.hpp"
-#include "misc/util.hpp"
+#include "misc/mcr_types.hpp"
 #include "readings/readings.hpp"
 
 typedef class mcrDev mcrDev_t;

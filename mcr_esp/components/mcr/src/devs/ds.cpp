@@ -32,7 +32,7 @@
 #include "devs/base.hpp"
 #include "devs/ds_dev.hpp"
 #include "drivers/owb.h"
-#include "misc/util.hpp"
+#include "misc/mcr_types.hpp"
 
 dsDev::dsDev(mcrDevAddr_t &addr, bool power) : mcrDev(addr) {
   char buff[_id_len] = {0x00};

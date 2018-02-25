@@ -34,7 +34,7 @@
 #include <time.h>
 
 #include "devs/base.hpp"
-#include "misc/util.hpp"
+#include "misc/mcr_types.hpp"
 
 typedef enum class mcrCmdType {
   unknown,

@@ -39,7 +39,7 @@
 #include "external/mongoose.h"
 #include "protocols/mqtt.hpp"
 // #include "readings/readings.hpp"
-#include "misc/util.hpp"
+#include "misc/mcr_types.hpp"
 
 #define mcr_i2c_version_1 1
 

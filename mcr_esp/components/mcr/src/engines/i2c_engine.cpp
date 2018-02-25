@@ -40,7 +40,7 @@
 #include "devs/id.hpp"
 #include "engines/engine.hpp"
 #include "engines/i2c_engine.hpp"
-#include "misc/util.hpp"
+#include "misc/mcr_types.hpp"
 #include "net/mcr_net.hpp"
 #include "protocols/mqtt.hpp"
 #include "readings/readings.hpp"
@@ -52,7 +52,7 @@ mcrI2c::mcrI2c() {
 
   _engine_task_name = tagEngine();
   _engine_stack_size = 5 * 1024;
-  _engine_priority = 14;
+  _engine_priority = 13;
 
   // TODO: do we need to assign a GPIO to power up the i2c devices?
   // power up the i2c devices
@@ -199,7 +199,7 @@ void mcrI2c::discover(void *task_data) {
   //       the normalOpsBit is used to globally signal processes
   //       should pause because a critical operation is underway (e.g. ota
   //       update)
-  mcrNetwork::waitForNormalOps();
+  mcr::Net::waitForNormalOps();
 
   trackDiscover(true);
   detectMultiplexer();
@@ -430,12 +430,12 @@ bool mcrI2c::readSHT31(i2cDev_t *dev, humidityReading_t **reading) {
 }
 
 void mcrI2c::report(void *task_data) {
-  mcrNetwork::waitForName(10000);
+  mcr::Net::waitForName(10000);
   // NOTE: special case due to buggy i2c driver
   //       the normalOpsBit is used to globally signal processes
   //       should pause because a critical operation is underway (e.g. ota
   //       update)
-  mcrNetwork::waitForNormalOps();
+  mcr::Net::waitForNormalOps();
 
   trackReport(true);
 
@@ -491,11 +491,9 @@ void mcrI2c::run(void *task_data) {
 
   ESP_LOGI(tagEngine(), "i2c driver installed");
 
-  ESP_LOGI(tagEngine(), "waiting for the time to be set...");
-  mcrNetwork::waitForTimeset();
-  delay(7000);
-
-  ESP_LOGI(tagEngine(), "time set, proceeding to task loop");
+  ESP_LOGI(tagEngine(), "waiting for normal ops...");
+  mcr::Net::waitForNormalOps();
+  ESP_LOGI(tagEngine(), "normal ops, proceeding to task loop");
 
   _last_wake.engine = xTaskGetTickCount();
   for (;;) {

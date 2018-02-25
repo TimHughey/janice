@@ -29,7 +29,7 @@
 
 #include "devs/addr.hpp"
 #include "devs/id.hpp"
-#include "misc/util.hpp"
+#include "misc/mcr_types.hpp"
 
 bool mcrDevID::matchPrefix(const std::string &prefix) {
   return ((_id.substr(0, prefix.length())) == prefix);

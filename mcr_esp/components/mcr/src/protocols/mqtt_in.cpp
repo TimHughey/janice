@@ -24,20 +24,16 @@
 #include <cstring>
 #include <vector>
 
-#include <FreeRTOS.h>
-#include <System.h>
-#include <Task.h>
-#include <WiFi.h>
-#include <WiFiEventHandler.h>
 #include <esp_log.h>
 #include <forward_list>
+#include <freertos/FreeRTOS.h>
 #include <freertos/event_groups.h>
 #include <freertos/ringbuf.h>
 
 // MCR specific includes
 #include "cmds/cmd_factory.hpp"
 #include "external/mongoose.h"
-#include "misc/util.hpp"
+#include "misc/mcr_types.hpp"
 #include "misc/version.hpp"
 #include "net/mcr_net.hpp"
 #include "protocols/mqtt_in.hpp"

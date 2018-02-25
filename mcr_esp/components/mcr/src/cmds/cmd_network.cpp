@@ -15,8 +15,8 @@ mcrCmdNetwork::mcrCmdNetwork(JsonObject &root)
 }
 
 bool mcrCmdNetwork::process() {
-  if (_host == mcrUtil::hostID()) {
-    mcrNetwork::setName(_name);
+  if (_host == mcr::Net::hostID()) {
+    mcr::Net::setName(_name);
     return true;
   }
 

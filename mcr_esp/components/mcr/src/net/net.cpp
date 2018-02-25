@@ -1,4 +1,6 @@
 #include <cstdlib>
+#include <iomanip>
+#include <sstream>
 #include <string>
 
 #include <esp_attr.h>
@@ -14,124 +16,285 @@
 #include <sys/time.h>
 #include <time.h>
 
-#include <System.h>
-#include <Task.h>
-#include <WiFi.h>
-#include <WiFiEventHandler.h>
-
 #include "apps/sntp/sntp.h"
 #include "lwip/err.h"
 
 #include "net/mcr_net.hpp"
 
-static mcrNetwork *__singleton = nullptr;
+namespace mcr {
 
-mcrNetwork::mcrNetwork() {
-  ESP_ERROR_CHECK(nvs_flash_init());
+static Net_t *__singleton__ = nullptr;
 
-  tcpip_adapter_init();
-  _evg = xEventGroupCreate();
+Net::Net() { evg_ = xEventGroupCreate(); }
 
-  _event_handler = new mcrWiFiEventHandler(_evg);
-  _wifi.setWifiEventHandler(_event_handler);
+void Net::acquiredIP(system_event_t *event) {
+  vTaskDelay(pdMS_TO_TICKS(3000));
+  xEventGroupSetBits(evg_, ipBit());
 }
 
-EventBits_t mcrNetwork::connectedBit() { return BIT0; }
-EventBits_t mcrNetwork::nameBit() { return BIT2; }
-EventBits_t mcrNetwork::timesetBit() { return BIT1; }
-EventBits_t mcrNetwork::normalOpsBit() { return BIT2; }
+// STATIC!!
+void Net::checkError(const char *func, esp_err_t err) {
+  if (err != ESP_OK) {
+    vTaskDelay(pdMS_TO_TICKS(3000)); // let things settle
+    ESP_LOGE(tagEngine(), "%s err=%02x, core dump", func, err);
 
-EventGroupHandle_t mcrNetwork::eventGroup() { return __singleton->_evg; }
+    int *ptr = (int *)0xdead0000;
+    *ptr = 0;
 
-mcrNetwork *mcrNetwork::instance() {
-  if (__singleton == nullptr) {
-    __singleton = new mcrNetwork();
+    // should never get here
+    ESP_LOGE(tagEngine(), "core dump failed");
+    vTaskDelay(pdMS_TO_TICKS(3000)); // let things settle
+    esp_restart();
+  }
+}
+
+void Net::connected(system_event_t *event) {
+  xEventGroupSetBits(evg_, connectedBit());
+}
+
+void Net::disconnected(system_event_t *event) {
+  esp_err_t rc = ESP_OK;
+  EventBits_t clear_bits =
+      connectedBit() | ipBit() | normalOpsBit() | readyBit();
+
+  xEventGroupClearBits(evg_, clear_bits);
+  sntp_stop();
+  rc = ::esp_wifi_stop();
+  checkError(__PRETTY_FUNCTION__, rc);
+
+  start();
+}
+
+// STATIC!!
+esp_err_t Net::evHandler(void *ctx, system_event_t *event) {
+  esp_err_t rc = ESP_OK;
+  Net_t *net = (Net_t *)ctx;
+
+  if (ctx == nullptr) {
+    ESP_LOGE(tagEngine(), "%s ctx==nullptr", __PRETTY_FUNCTION__);
+    return rc;
   }
 
-  return __singleton;
+  switch (event->event_id) {
+  case SYSTEM_EVENT_STA_CONNECTED:
+    net->connected(event);
+    break;
+
+  case SYSTEM_EVENT_STA_GOT_IP:
+    net->acquiredIP(event);
+    break;
+
+  case SYSTEM_EVENT_STA_LOST_IP:
+  case SYSTEM_EVENT_STA_DISCONNECTED:
+    net->disconnected(event);
+    break;
+
+  case SYSTEM_EVENT_STA_START:
+    break;
+
+  default:
+    ESP_LOGW(tagEngine(), "%s unhandled event 0x%02x", __PRETTY_FUNCTION__,
+             event->event_id);
+    break;
+  }
+
+  return rc;
 }
 
-void mcrNetwork::ensureTimeIsSet() {
+EventGroupHandle_t Net::eventGroup() { return instance()->evg_; }
+
+Net_t *Net::instance() {
+  if (__singleton__ == nullptr) {
+    __singleton__ = new Net();
+  }
+
+  return __singleton__;
+}
+
+void Net::init() {
+  esp_err_t rc = ESP_OK;
+
+  if (init_done_)
+    return;
+
+  rc = ::esp_event_loop_init(evHandler, instance());
+
+  if (rc == ESP_OK) {
+    ::tcpip_adapter_init();
+    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+
+    rc = ::esp_wifi_init(&cfg);
+    if (rc == ESP_OK) {
+      rc = esp_wifi_set_storage(WIFI_STORAGE_RAM);
+    }
+  }
+
+  checkError(__PRETTY_FUNCTION__, rc);
+}
+
+void Net::ensureTimeIsSet() {
   // wait for time to be set
   time_t now = 0;
   struct tm timeinfo = {};
   int retry = 0;
   const int retry_count = 10;
+
+  ESP_LOGI(tagEngine(), "waiting for time to be set...");
   while (timeinfo.tm_year < (2016 - 1900) && ++retry < retry_count) {
-    ESP_LOGI(tagEngine(), "waiting for system time to be set... (%d/%d)", retry,
-             retry_count);
-    vTaskDelay(pdMS_TO_TICKS(2000));
+    if (retry > 3) {
+      ESP_LOGW(tagEngine(), "waiting for system time to be set... (%d/%d)",
+               retry, retry_count);
+    }
+    vTaskDelay(pdMS_TO_TICKS(1000));
     time(&now);
     localtime_r(&now, &timeinfo);
   }
 
-  xEventGroupSetBits(_evg, timesetBit());
+  if (retry == retry_count) {
+    ESP_LOGE(tagEngine(), "timeout while acquiring time");
+    checkError(__PRETTY_FUNCTION__, 0xFE);
+  } else {
+    xEventGroupSetBits(evg_, timesetBit());
+  }
 }
 
-const std::string &mcrNetwork::getName() {
-  if (__singleton->_name.length() == 0) {
-    return mcrUtil::macAddress();
+const std::string &Net::getName() {
+  if (instance()->_name.length() == 0) {
+    return macAddress();
   }
 
-  return __singleton->_name;
+  return instance()->_name;
 }
 
-void mcrNetwork::setName(const std::string name) {
+const std::string &Net::hostID() {
+  static std::string _host_id;
 
-  __singleton->_name = name;
-  ESP_LOGI(tagEngine(), "network name=%s", __singleton->_name.c_str());
+  if (_host_id.length() == 0) {
+    _host_id = "mcr.";
+    _host_id += macAddress();
+  }
 
-  xEventGroupSetBits(__singleton->eventGroup(), nameBit());
+  return _host_id;
 }
 
-bool mcrNetwork::start() {
+const std::string &Net::macAddress() {
+  static std::string _mac;
 
-  _wifi.connectAP(CONFIG_WIFI_SSID, CONFIG_WIFI_PASSWORD);
-  ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
+  if (_mac.length() == 0) {
+    std::stringstream bytes;
+    uint8_t mac[6];
 
-  waitForConnection();
+    esp_wifi_get_mac(WIFI_IF_STA, mac);
 
-  sntp_setoperatingmode(SNTP_OPMODE_POLL);
-  sntp_setservername(0, (char *)"jophiel.wisslanding.com");
-  sntp_setservername(1, (char *)"loki.wisslanding.com");
-  sntp_init();
+    bytes << std::hex << std::setfill('0');
+    for (int i = 0; i <= 5; i++) {
+      bytes << std::setw(sizeof(uint8_t) * 2) << static_cast<unsigned>(mac[i]);
+    }
 
-  ensureTimeIsSet();
+    _mac = bytes.str();
+  }
+
+  return _mac;
+};
+
+void Net::setName(const std::string name) {
+
+  instance()->_name = name;
+  ESP_LOGI(tagEngine(), "network name=%s", instance()->_name.c_str());
+
+  xEventGroupSetBits(instance()->eventGroup(), nameBit());
+}
+
+bool Net::start() {
+  esp_err_t rc = ESP_OK;
+  init();
+
+  rc = ::esp_wifi_set_mode(WIFI_MODE_STA);
+  checkError(__PRETTY_FUNCTION__, rc);
+
+  wifi_config_t cfg;
+  ::memset(&cfg, 0, sizeof(cfg));
+  cfg.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;
+  cfg.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
+  cfg.sta.bssid_set = 0;
+  ::strncpy((char *)cfg.sta.ssid, CONFIG_WIFI_SSID, sizeof(cfg.sta.ssid));
+  ::strncpy((char *)cfg.sta.password, CONFIG_WIFI_PASSWORD,
+            sizeof(cfg.sta.password));
+
+  rc = ::esp_wifi_set_config(WIFI_IF_STA, &cfg);
+  if (rc == ESP_OK) {
+    rc = ::esp_wifi_start();
+
+    if (rc == ESP_OK) {
+      rc = ::esp_wifi_connect();
+    }
+  }
+  checkError(__PRETTY_FUNCTION__, rc);
+
+  if (waitForIP()) {
+    sntp_setoperatingmode(SNTP_OPMODE_POLL);
+    sntp_setservername(0, (char *)"jophiel.wisslanding.com");
+    sntp_setservername(1, (char *)"loki.wisslanding.com");
+    sntp_init();
+
+    ensureTimeIsSet();
+    tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ipInfo_);
+    uint8_t *ip = (uint8_t *)&(ipInfo_.ip);
+    ESP_LOGI(tagEngine(), "connected, acquired ip address %u.%u.%u.%u", ip[0],
+             ip[1], ip[2], ip[3]);
+
+    // NOTE: once we've reached here the network is connected, ip address
+    //       acquired and the time is set -- signal to other tasks
+    //       we are ready for normal operations
+    xEventGroupSetBits(evg_, (readyBit() | normalOpsBit()));
+  } else {
+    // reuse checkError for IP address failure
+    checkError(__PRETTY_FUNCTION__, 0xFF);
+  }
 
   return true;
 }
 
-void mcrNetwork::resumeNormalOps() {
-  xEventGroupSetBits(__singleton->eventGroup(), mcrNetwork::normalOpsBit());
+void Net::resumeNormalOps() {
+  xEventGroupSetBits(instance()->eventGroup(), Net::normalOpsBit());
 }
 
-void mcrNetwork::suspendNormalOps() {
+void Net::suspendNormalOps() {
   ESP_LOGW(tagEngine(), "suspending normal ops");
-  xEventGroupClearBits(__singleton->eventGroup(), mcrNetwork::normalOpsBit());
+  xEventGroupClearBits(instance()->eventGroup(), Net::normalOpsBit());
 }
 
-bool mcrNetwork::waitForConnection() {
-  xEventGroupWaitBits(__singleton->eventGroup(), connectedBit(), false, true,
-                      portMAX_DELAY);
+bool Net::waitForConnection(int wait_ms) {
+  xEventGroupWaitBits(instance()->eventGroup(), connectedBit(), false, true,
+                      wait_ms);
   return true;
 }
 
-bool mcrNetwork::waitForName(int wait_ms) {
-  esp_err_t res = xEventGroupWaitBits(__singleton->eventGroup(), nameBit(),
-                                      false, true, pdMS_TO_TICKS(wait_ms));
+bool Net::waitForIP(int wait_ms) {
+  esp_err_t res = ESP_OK;
+
+  res = xEventGroupWaitBits(eventGroup(), ipBit(), false, true,
+                            pdMS_TO_TICKS(wait_ms));
 
   return (res == ESP_OK) ? true : false;
 }
 
-bool mcrNetwork::waitForNormalOps() {
-  esp_err_t res = xEventGroupWaitBits(__singleton->eventGroup(), nameBit(),
-                                      false, true, portMAX_DELAY);
+bool Net::waitForName(int wait_ms) {
+  esp_err_t res = xEventGroupWaitBits(eventGroup(), nameBit(), false, true,
+                                      pdMS_TO_TICKS(wait_ms));
 
   return (res == ESP_OK) ? true : false;
 }
 
-bool mcrNetwork::waitForTimeset() {
-  xEventGroupWaitBits(__singleton->eventGroup(), timesetBit(), false, true,
-                      portMAX_DELAY);
+bool Net::waitForNormalOps() {
+  esp_err_t res = xEventGroupWaitBits(eventGroup(), normalOpsBit(), false, true,
+                                      portMAX_DELAY);
+
+  return (res == ESP_OK) ? true : false;
+}
+
+bool Net::waitForTimeset() {
+  xEventGroupWaitBits(eventGroup(), timesetBit(), false, true, portMAX_DELAY);
   return true;
 }
+} // namespace mcr

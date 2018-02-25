@@ -3,8 +3,6 @@
 #include <esp_attr.h>
 #include <esp_event_loop.h>
 #include <esp_log.h>
-// #include <esp_sleep.h>
-#include <esp_log.h>
 #include <esp_system.h>
 #include <esp_wifi.h>
 #include <freertos/FreeRTOS.h>
@@ -15,71 +13,53 @@
 #include <sys/time.h>
 #include <time.h>
 
-#include <System.h>
-#include <WiFi.h>
-#include <WiFiEventHandler.h>
+#include "misc/mcr_types.hpp"
 
-#include "misc/util.hpp"
+namespace mcr {
 
-class mcrNetwork {
-private:
-  class mcrWiFiEventHandler : public WiFiEventHandler {
-  private:
-    EventGroupHandle_t _event_group = nullptr;
-
-  public:
-    mcrWiFiEventHandler(EventGroupHandle_t event_group) {
-      _event_group = event_group;
-    }
-
-    esp_err_t staGotIp(system_event_sta_got_ip_t event_sta_got_ip) {
-      ESP_LOGI("WiFiEventHandler", "got IP address");
-      ESP_LOGI("WiFiEventHandler", "host_id: %s", mcrUtil::hostID().c_str());
-
-      // once connected set the wait group bit so other waiting tasks
-      // are allowed to run
-      xEventGroupSetBits(_event_group, (mcrNetwork::connectedBit() &&
-                                        mcrNetwork::normalOpsBit()));
-
-      return ESP_OK;
-    }
-
-    esp_err_t staDisconnected(system_event_sta_disconnected_t info) {
-      xEventGroupClearBits(_event_group, mcrNetwork::connectedBit());
-      mcrNetwork *net = mcrNetwork::instance();
-      net->_wifi.connectAP(CONFIG_WIFI_SSID, CONFIG_WIFI_PASSWORD);
-
-      return ESP_OK;
-    }
-  };
-
-  // SINGLETON!  constructor is private
-  mcrNetwork();
-
+typedef class Net Net_t;
+class Net {
 public:
   void ensureTimeIsSet();
   static EventGroupHandle_t eventGroup();
   static const std::string &getName();
-  static mcrNetwork *instance();
+
+  static const std::string &hostID();
+  static Net_t *instance();
+  static const std::string &macAddress();
   static void setName(const std::string name);
   bool start();
   static void resumeNormalOps();
   static void suspendNormalOps();
-  static bool waitForConnection();
+  static bool waitForConnection(int wait_ms = portMAX_DELAY);
+  static bool waitForIP(int wait_ms = pdMS_TO_TICKS(10000));
   static bool waitForName(int wait_ms = 0);
   static bool waitForNormalOps();
   static bool waitForTimeset();
 
-  static EventBits_t connectedBit();
-  static EventBits_t nameBit();
-  static EventBits_t timesetBit();
-  static EventBits_t normalOpsBit();
+  static EventBits_t connectedBit() { return BIT0; };
+  static EventBits_t ipBit() { return BIT1; };
+  static EventBits_t nameBit() { return BIT2; };
+  static EventBits_t normalOpsBit() { return BIT3; };
+  static EventBits_t readyBit() { return BIT4; };
+  static EventBits_t timesetBit() { return BIT5; };
 
-  static const char *tagEngine() { return (const char *)"mcrNetwork"; };
+  static const char *tagEngine() { return (const char *)"mcrNet"; };
+
+private: // member functions
+  Net(); // SINGLETON!  constructor is private
+  void acquiredIP(system_event_t *event);
+  static void checkError(const char *func, esp_err_t err);
+  void connected(system_event_t *event);
+  void disconnected(system_event_t *event);
+  void init();
+  static esp_err_t evHandler(void *ctx, system_event_t *event);
 
 private:
-  WiFi _wifi;
-  EventGroupHandle_t _evg;
-  mcrWiFiEventHandler *_event_handler = nullptr;
+  EventGroupHandle_t evg_;
+  bool init_done_ = false;
+  tcpip_adapter_ip_info_t ipInfo_;
+
   std::string _name;
 };
+} // namespace mcr

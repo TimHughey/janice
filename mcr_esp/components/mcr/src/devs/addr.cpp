@@ -28,7 +28,7 @@
 #include <time.h>
 
 #include "devs/addr.hpp"
-#include "misc/util.hpp"
+#include "misc/mcr_types.hpp"
 
 mcrDevAddr::mcrDevAddr(uint8_t addr) {
   _addr.resize(1);

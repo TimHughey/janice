@@ -29,6 +29,7 @@
 #include <sys/time.h>
 #include <time.h>
 
+#include "net/mcr_net.hpp"
 #include "readings/reading.hpp"
 
 Reading::Reading(time_t mtime) { _mtime = mtime; }
@@ -47,7 +48,7 @@ Reading::~Reading() {
 
 void Reading::commonJSON(JsonObject &root) {
   root["vsn"] = _version;
-  root["host"] = mcrUtil::hostID();
+  root["host"] = mcr::Net::hostID();
   root["mtime"] = _mtime;
 
   if (_id.valid()) {

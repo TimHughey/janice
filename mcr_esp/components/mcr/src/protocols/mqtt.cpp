@@ -32,7 +32,7 @@
 
 // MCR specific includes
 #include "external/mongoose.h"
-#include "misc/util.hpp"
+#include "misc/mcr_types.hpp"
 #include "misc/version.hpp"
 #include "net/mcr_net.hpp"
 #include "protocols/mqtt.hpp"
@@ -85,12 +85,12 @@ void mcrMQTT::connect(int wait_ms) {
 
   // establish the client id
   if (_client_id.length() == 0) {
-    _client_id = "esp-" + mcrUtil::macAddress();
+    _client_id = "esp-" + mcr::Net::macAddress();
   }
 
   TickType_t last_wake = xTaskGetTickCount();
 
-  mcrNetwork::waitForConnection();
+  mcr::Net::waitForConnection();
 
   // struct mg_mgr_init_opts opts;
   //
@@ -155,7 +155,8 @@ void mcrMQTT::incomingMsg(struct mg_str *in_topic, struct mg_str *in_payload) {
   }
 
   if (_prefer_outbound_ms && (avail_bytes > _rb_in_highwater)) {
-    ESP_LOGI(tagEngine(), "inbound rb recovered, returning to normal ops");
+    ESP_LOGI(tagEngine(),
+             "inbound rb drained, returning to standard in/out processing");
     vTaskPrioritySet(_task.handle, _task.priority);
     _prefer_outbound_ms = 0;
   }
@@ -278,8 +279,8 @@ void mcrMQTT::run(void *data) {
   ESP_LOGI(tagEngine(), "started, created mcrMQTTin task %p", (void *)_mqtt_in);
   _mqtt_in->start();
 
-  ESP_LOGD(tagEngine(), "waiting for network connection...");
-  mcrNetwork::waitForConnection();
+  ESP_LOGD(tagEngine(), "waiting for ip address...");
+  mcr::Net::waitForIP();
 
   bzero(&opts, sizeof(opts));
   opts.nameserver = _dns_server;
@@ -288,9 +289,9 @@ void mcrMQTT::run(void *data) {
 
   connect();
 
-  ESP_LOGI(tagEngine(), "waiting for time to be set...");
-  mcrNetwork::waitForTimeset();
-  ESP_LOGI(tagEngine(), "time set, proceeding to task loop")
+  ESP_LOGI(tagEngine(), "waiting for normal ops...");
+  mcr::Net::waitForNormalOps();
+  ESP_LOGI(tagEngine(), "normal ops, proceeding to task loop")
 
   for (;;) {
     // we wait here AND we wait in outboundMsg -- this alternates between
