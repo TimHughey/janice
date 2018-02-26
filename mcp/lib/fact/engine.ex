@@ -2,6 +2,7 @@ defmodule Fact.EngineMetric do
   @moduledoc """
   """
 
+  require Logger
   use Timex
 
   import(Fact.Influx, only: [write: 2])
