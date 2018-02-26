@@ -3,6 +3,7 @@ defmodule FactEngineMetricTest do
   """
 
   use ExUnit.Case, async: true
+  import ExUnit.CaptureLog
   use Timex
 
   def preferred_vsn, do: "b4edefc"
@@ -11,9 +12,9 @@ defmodule FactEngineMetricTest do
 
   def ext(num, engine),
     do: %{
-      vsn: "1234567",
+      vsn: preferred_vsn(),
       host: host(num),
-      type: "mcr_stat",
+      type: "mcr_engine",
       metric: "engine_phase",
       engine: engine,
       discover_us: 0,
@@ -24,9 +25,13 @@ defmodule FactEngineMetricTest do
     }
 
   test "bad input reading" do
-    pt = ext(0, "dsTest") |> Map.delete(:type) |> Fact.EngineMetric.make_point()
+    msg =
+      capture_log(fn ->
+        ext(0, "dsTest") |> Map.delete(:type)
+        |> Fact.EngineMetric.make_point()
+      end)
 
-    assert Map.keys(pt) === []
+    assert msg =~ "no match"
   end
 
   test "reading is a valid EngineMetric?" do

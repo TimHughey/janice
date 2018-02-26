@@ -2,6 +2,7 @@ defmodule Fact.EngineMetric do
   @moduledoc """
   """
 
+  require Logger
   use Timex
 
   use Instream.Series
@@ -12,7 +13,7 @@ defmodule Fact.EngineMetric do
   series do
     database(Application.get_env(:mcp, Fact.Influx) |> Keyword.get(:database))
     # 'type' maps to the measurement
-    measurement("mcr_stat")
+    measurement("mcr_engine")
 
     tag(:application, default: "mercurial")
     tag(:env, default: Application.get_env(:mcp, :build_env, "dev"))
@@ -25,7 +26,7 @@ defmodule Fact.EngineMetric do
     field(:report_us)
   end
 
-  def make_point(%{type: "mcr_stat", metric: _, engine: _} = r) do
+  def make_point(%{type: "mcr_engine", metric: _, engine: _} = r) do
     filtered = Enum.filter(r, &wanted?/1)
 
     # Logger.info(fn -> "filter: #{inspect(filtered)}" end)
@@ -46,7 +47,10 @@ defmodule Fact.EngineMetric do
   end
 
   # trap when the input map doesn't match
-  def make_point(%{}), do: %{}
+  def make_point(%{} = r) do
+    Logger.warn(fn -> "no match for #{inspect(r)}" end)
+    %{}
+  end
 
   def record(%{} = r) do
     db = Application.get_env(:mcp, Fact.Influx) |> Keyword.get(:database)
@@ -55,10 +59,10 @@ defmodule Fact.EngineMetric do
 
   defp field?({k, _v}), do: k in [:convert_us, :discover_us, :report_us]
 
-  defp tag?({k, _v}), do: k in [:vsn, :host, :engine, :mtime]
+  defp tag?({k, _v}), do: k in [:vsn, :host, :engine, :metric]
 
   defp wanted?({k, v}) do
-    keep = k in [:vsn, :host, :engine, :metric, :discover_us, :convert_us, :report_us, :mtime]
+    keep = k in [:vsn, :host, :engine, :metric, :discover_us, :convert_us, :report_us]
 
     if keep do
       cond do
@@ -87,6 +91,6 @@ defmodule Fact.EngineMetric do
   def valid?(%{} = r) do
     type = Map.get(r, :type, nil)
     metric = Map.get(r, :metric, nil)
-    type === "mcr_stat" and metric === "engine_phase" and has_key?(r, :engine)
+    type === "mcr_engine" and metric === "engine_phase" and has_key?(r, :engine)
   end
 end

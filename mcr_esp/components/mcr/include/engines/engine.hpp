@@ -401,6 +401,8 @@ protected:
 
     if (reading.hasNonZeroValues()) {
       publish(&reading);
+    } else {
+      ESP_LOGW(tagEngine(), "all metrics are zero");
     }
   }
 
