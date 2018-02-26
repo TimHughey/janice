@@ -11,6 +11,9 @@ defmodule Fact.EngineMetric do
   alias Fact.EngineMetric
 
   @metric_type "mcr_stat"
+  @metric_name "engine_phase"
+  @metric_tags [:vsn, :host, :name, :engine, :metric, :discover_us, :convert_us, :report_us]
+  @metric_fields [:convert_us, :discover_us, :report_us]
 
   series do
     database(Application.get_env(:mcp, Fact.Influx) |> Keyword.get(:database))
@@ -21,7 +24,7 @@ defmodule Fact.EngineMetric do
     tag(:env, default: Application.get_env(:mcp, :build_env, "dev"))
     tag(:host)
     tag(:name)
-    tag(:metric, default: "engine_phase")
+    tag(:metric, default: @metric_name)
     tag(:engine)
 
     field(:convert_us)
@@ -61,12 +64,12 @@ defmodule Fact.EngineMetric do
     make_point(r) |> write(database: db, async: true, precision: :seconds)
   end
 
-  defp field?({k, _v}), do: k in [:convert_us, :discover_us, :report_us]
+  defp field?({k, _v}), do: k in @metric_fields
 
-  defp tag?({k, _v}), do: k in [:vsn, :host, :name, :engine, :metric]
+  defp tag?({k, _v}), do: k in @metric_tags
 
   defp wanted?({k, v}) do
-    keep = k in [:vsn, :host, :engine, :metric, :discover_us, :convert_us, :report_us]
+    keep = k in (@metric_tags ++ @metric_fields)
 
     if keep do
       cond do
@@ -95,6 +98,6 @@ defmodule Fact.EngineMetric do
   def valid?(%{} = r) do
     type = Map.get(r, :type, nil)
     metric = Map.get(r, :metric, nil)
-    type === @metric_type and metric === "engine_phase" and has_key?(r, :engine)
+    type === @metric_type and metric === @metric_name and has_key?(r, :engine)
   end
 end
