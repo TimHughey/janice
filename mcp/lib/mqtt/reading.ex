@@ -170,7 +170,7 @@ defmodule Mqtt.Reading do
     metadata?(r) and r.type == @mcr_stat_t and is_integer(r.freeram)
   end
 
-  def engine_metric?({} = r) do
+  def engine_metric?(%{} = r) do
     engine = Map.get(r, @engine_tag_t, nil)
     metadata?(r) and r.type == @engine_t and is_binary(engine)
   end
