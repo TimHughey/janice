@@ -12,7 +12,9 @@ defmodule Fact.EngineMetric do
     filtered = Enum.take_while(r, &wanted?/1)
     filtered = Keyword.put_new(filtered, :mtime, Timex.now() |> Timex.to_unix())
 
-    tags = [application: "mercurial", env: "#{Mix.env()}"] ++ Enum.take_while(filtered, &tag?/1)
+    env = Application.get_env(:map, :build_env, "dev")
+
+    tags = [application: "mercurial", env: env] ++ Enum.take_while(filtered, &tag?/1)
 
     fields = Enum.take_while(filtered, &field?/1)
 
