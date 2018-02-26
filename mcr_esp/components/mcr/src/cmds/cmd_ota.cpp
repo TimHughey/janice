@@ -37,7 +37,7 @@ void mcrCmdOTA::begin() {
   const esp_partition_t *run_part = esp_ota_get_running_partition();
 
   if (_ota_update != 0) {
-    ESP_LOGW(TAG, "ota already in-progress, ignoring spurious begin");
+    ESP_LOGI(TAG, "ota already in-progress, ignoring spurious begin");
     return;
   }
 

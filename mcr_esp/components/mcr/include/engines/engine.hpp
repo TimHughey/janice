@@ -401,6 +401,9 @@ protected:
 
     if (reading.hasNonZeroValues()) {
       publish(&reading);
+      metrics.convert.elapsed_us = 0LL;
+      metrics.discover.elapsed_us = 0LL;
+      metrics.report.elapsed_us = 0LL;
     } else {
       ESP_LOGW(tagEngine(), "all metrics are zero");
     }
