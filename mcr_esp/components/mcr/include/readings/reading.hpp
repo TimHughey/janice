@@ -65,7 +65,7 @@ public:
   // default constructor, Reading type undefined
   Reading(){};
   Reading(const mcrDevID_t &id, time_t mtime = time(nullptr));
-  Reading(time_t mtime = time(nullptr));
+  Reading(time_t mtime);
   virtual ~Reading();
 
   std::string *json(char *buffer = nullptr, size_t len = 0);

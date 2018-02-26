@@ -289,9 +289,9 @@ void mcrMQTT::run(void *data) {
 
   connect();
 
-  ESP_LOGI(tagEngine(), "waiting for normal ops...");
-  mcr::Net::waitForNormalOps();
-  ESP_LOGI(tagEngine(), "normal ops, proceeding to task loop")
+  // ESP_LOGI(tagEngine(), "waiting for normal ops...");
+  // mcr::Net::waitForNormalOps();
+  // ESP_LOGI(tagEngine(), "normal ops, proceeding to task loop")
 
   for (;;) {
     // we wait here AND we wait in outboundMsg -- this alternates between

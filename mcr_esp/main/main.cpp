@@ -55,7 +55,7 @@ void app_main() {
   i2cEngineTask = new mcrI2c();
 
   // create and start our tasks
-  // NOTE: task implementation handles syncronization
+  // NOTE: each task implementation handles syncronization
 
   timestampTask->start();
   mqttTask->start();

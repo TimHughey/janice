@@ -502,6 +502,8 @@ void mcrI2c::run(void *task_data) {
     for (int i = 0; i < 6; i++) {
       report(nullptr);
 
+      reportMetrics();
+
       vTaskDelayUntil(&(_last_wake.engine), _loop_frequency);
       runtimeMetricsReport();
     }

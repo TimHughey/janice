@@ -9,6 +9,7 @@ defmodule Mqtt.InboundMessage do
   alias Mqtt.Reading
   alias Fact.FreeRamStat
   alias Fact.RunMetric
+  alias Fact.EngineMetric
 
   def start_link(s) do
     GenServer.start_link(Mqtt.InboundMessage, s, name: Mqtt.InboundMessage)
@@ -169,9 +170,9 @@ defmodule Mqtt.InboundMessage do
       Task.start(mod, func, [r])
     end
 
-    if Reading.free_ram_stat?(r) do
-      FreeRamStat.record(remote_host: r.host, val: r.freeram)
-    end
+    if Reading.free_ram_stat?(r), do: FreeRamStat.record(remote_host: r.host, val: r.freeram)
+
+    if Reading.engine_metric?(r), do: EngineMetric.record(r)
 
     nil
   end

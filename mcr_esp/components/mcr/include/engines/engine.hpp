@@ -39,6 +39,7 @@
 #include "devs/base.hpp"
 #include "misc/mcr_types.hpp"
 #include "protocols/mqtt.hpp"
+#include "readings/readings.hpp"
 
 typedef std::map<std::string, std::string> mcrEngineTagMap_t;
 typedef std::pair<std::string, std::string> mcrEngineTagItem_t;
@@ -393,6 +394,15 @@ protected:
   time_t lastDiscoverTimestamp() { return metrics.discover.last_time; };
   time_t lastReportTimestamp() { return metrics.report.last_time; };
   time_t lastSwitchCmdTimestamp() { return metrics.switch_cmd.last_time; };
+
+  void reportMetrics() {
+    mcr::EngineReading reading(tagEngine(), discoverUS(), convertUS(),
+                               reportUS());
+
+    if (reading.hasNonZeroValues()) {
+      publish(&reading);
+    }
+  }
 
   void runtimeMetricsReport() {
     typedef struct {

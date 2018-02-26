@@ -1,5 +1,5 @@
 /*
-    readings/all.hpp - Readings used within Master Control Remote
+    celsius.cpp - Master Control Remote Celsius Reading
     Copyright (C) 2017  Tim Hughey
 
     This program is free software: you can redistribute it and/or modify
@@ -18,9 +18,28 @@
     https://www.wisslanding.com
 */
 
-#include "readings/celsius.hpp"
+#include <cstdlib>
+#include <ctime>
+
+#include <external/ArduinoJson.h>
+
 #include "readings/engine.hpp"
-#include "readings/humidity.hpp"
-#include "readings/positions.hpp"
-#include "readings/ramutil.hpp"
-#include "readings/startup_reading.hpp"
+
+namespace mcr {
+EngineReading::EngineReading(std::string engine, uint64_t discover_us,
+                             uint64_t convert_us, uint64_t report_us)
+    : Reading(), engine_(engine), discover_us_(discover_us),
+      convert_us_(convert_us), report_us_(report_us){};
+
+bool EngineReading::hasNonZeroValues() {
+  return (discover_us_ > 0) || (convert_us_ > 0) || (report_us_ > 0);
+}
+
+void EngineReading::populateJSON(JsonObject &root) {
+  root["type"] = "metric";
+  root["engine"] = engine_;
+  root["discover_us"] = discover_us_;
+  root["convert_us"] = convert_us_;
+  root["report_us"] = report_us_;
+};
+} // namespace mcr

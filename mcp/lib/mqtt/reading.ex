@@ -12,6 +12,8 @@ defmodule Mqtt.Reading do
   @switch_t "switch"
   @relhum_t "relhum"
   @mcr_stat_t "stats"
+  @engine_t "engine"
+  @engine_tag_t :engine
 
   @doc ~S"""
   Parse a JSON into a Reading
@@ -166,6 +168,11 @@ defmodule Mqtt.Reading do
 
   def free_ram_stat?(%{} = r) do
     metadata?(r) and r.type == @mcr_stat_t and is_integer(r.freeram)
+  end
+
+  def engine_metric?({} = r) do
+    engine = Map.get(r, @engine_tag_t, nil)
+    metadata?(r) and r.type == @engine_t and is_binary(engine)
   end
 
   @doc ~S"""

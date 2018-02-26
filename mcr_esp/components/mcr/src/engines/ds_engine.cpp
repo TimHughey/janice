@@ -492,6 +492,7 @@ void mcrDS::report(void *task_data) {
     });
 
     trackReport(false);
+    reportMetrics();
 
     // case b:  wait a present duration (no temp devices)
     if (!_temp_devices_present) {
