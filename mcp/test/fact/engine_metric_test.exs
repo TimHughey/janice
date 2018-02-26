@@ -14,7 +14,7 @@ defmodule FactEngineMetricTest do
     do: %{
       vsn: preferred_vsn(),
       host: host(num),
-      type: "mcr_engine",
+      type: "mcr_stat",
       metric: "engine_phase",
       engine: engine,
       discover_us: 0,

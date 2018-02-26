@@ -13,7 +13,7 @@ defmodule Fact.EngineMetric do
   series do
     database(Application.get_env(:mcp, Fact.Influx) |> Keyword.get(:database))
     # 'type' maps to the measurement
-    measurement("mcr_engine")
+    measurement("mcr_stat")
 
     tag(:application, default: "mercurial")
     tag(:env, default: Application.get_env(:mcp, :build_env, "dev"))
@@ -26,7 +26,7 @@ defmodule Fact.EngineMetric do
     field(:report_us)
   end
 
-  def make_point(%{type: "mcr_engine", metric: _, engine: _} = r) do
+  def make_point(%{type: "mcr_stat", metric: _, engine: _} = r) do
     filtered = Enum.filter(r, &wanted?/1)
 
     # Logger.info(fn -> "filter: #{inspect(filtered)}" end)
@@ -91,6 +91,6 @@ defmodule Fact.EngineMetric do
   def valid?(%{} = r) do
     type = Map.get(r, :type, nil)
     metric = Map.get(r, :metric, nil)
-    type === "mcr_engine" and metric === "engine_phase" and has_key?(r, :engine)
+    type === "mcr_stat" and metric === "engine_phase" and has_key?(r, :engine)
   end
 end

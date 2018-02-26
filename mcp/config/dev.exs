@@ -43,9 +43,9 @@ config :mcp, Mqtt.InboundMessage,
   periodic_log_ms: 120 * 60 * 1000
 
 config :mcp, Fact.Influx,
-  database: "mcp_repo",
+  database: "merc_dev",
   host: "jophiel.wisslanding.com",
-  auth: [method: :basic, username: "mcp_test", password: "mcp_test"],
+  auth: [method: :basic, username: "merc_test", password: "merc_test"],
   http_opts: [insecure: true],
   pool: [max_overflow: 10, size: 5, timeout: 150_000, max_connections: 10],
   port: 8086,

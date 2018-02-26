@@ -44,7 +44,7 @@ config :mcp, Mqtt.InboundMessage,
   periodic_log_ms: 120 * 60 * 1000
 
 config :mcp, Fact.Influx,
-  database: "mcp_repo",
+  database: "merc_repo",
   host: "** set in prod.secret.exs",
   auth: [
     method: :basic,
