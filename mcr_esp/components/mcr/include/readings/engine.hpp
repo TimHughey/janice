@@ -40,10 +40,11 @@ private:
   uint32_t discover_us_;
   uint32_t convert_us_;
   uint32_t report_us_;
+  uint32_t switch_cmd_us_;
 
 public:
   EngineReading(std::string engine, uint64_t discover_us, uint64_t convert_us,
-                uint64_t report_us);
+                uint64_t report_us, uint64_t switch_cmd_us_);
   bool hasNonZeroValues();
 
 protected:

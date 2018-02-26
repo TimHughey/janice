@@ -27,9 +27,11 @@
 
 namespace mcr {
 EngineReading::EngineReading(std::string engine, uint64_t discover_us,
-                             uint64_t convert_us, uint64_t report_us)
+                             uint64_t convert_us, uint64_t report_us,
+                             uint64_t switch_cmd_us)
     : Reading(), engine_(engine), discover_us_(discover_us),
-      convert_us_(convert_us), report_us_(report_us){};
+      convert_us_(convert_us), report_us_(report_us),
+      switch_cmd_us_(switch_cmd_us){};
 
 bool EngineReading::hasNonZeroValues() {
   return (discover_us_ > 0) || (convert_us_ > 0) || (report_us_ > 0);
@@ -42,5 +44,6 @@ void EngineReading::populateJSON(JsonObject &root) {
   root["discover_us"] = discover_us_;
   root["convert_us"] = convert_us_;
   root["report_us"] = report_us_;
+  root["switch_cmd_us"] = switch_cmd_us_;
 };
 } // namespace mcr

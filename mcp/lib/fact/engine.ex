@@ -13,7 +13,7 @@ defmodule Fact.EngineMetric do
   @metric_type "mcr_stat"
   @metric_name "engine_phase"
   @metric_tags [:vsn, :host, :name, :engine, :metric, :discover_us, :convert_us, :report_us]
-  @metric_fields [:convert_us, :discover_us, :report_us]
+  @metric_fields [:convert_us, :discover_us, :report_us, :switch_cmd_us]
 
   series do
     database(Application.get_env(:mcp, Fact.Influx) |> Keyword.get(:database))
@@ -30,6 +30,7 @@ defmodule Fact.EngineMetric do
     field(:convert_us)
     field(:discover_us)
     field(:report_us)
+    field(:switch_cmd_us)
   end
 
   def make_point(%{type: @metric_type, metric: _, engine: _} = r) do
@@ -49,6 +50,7 @@ defmodule Fact.EngineMetric do
     pt = set_field(pt, fields, :convert_us)
     pt = set_field(pt, fields, :discover_us)
     pt = set_field(pt, fields, :report_us)
+    pt = set_field(pt, fields, :switch_cmd_us)
 
     %{pt | timestamp: Map.get(r, :mtime, Timex.now() |> Timex.to_unix())}
   end
@@ -73,10 +75,10 @@ defmodule Fact.EngineMetric do
 
     if keep do
       cond do
-        k == :discover_us and v == 0 -> false
-        k == :convert_us and v == 0 -> false
-        k == :report_us and v == 0 -> false
-        true -> true
+        k in @metric_fields and v == 0 -> false
+        k in @metric_fields and v > 0 -> true
+        k not in @metric_fields -> true
+        true -> false
       end
     end
   end

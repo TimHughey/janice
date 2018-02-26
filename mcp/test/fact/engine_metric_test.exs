@@ -21,6 +21,7 @@ defmodule FactEngineMetricTest do
       discover_us: 0,
       convert_us: 0,
       report_us: 0,
+      switch_cmd_us: 0,
       mtime: Timex.now() |> Timex.to_unix(),
       log: false
     }
@@ -78,10 +79,21 @@ defmodule FactEngineMetricTest do
     assert pt.fields.report_us > 0 and res == :ok
   end
 
+  test "reading with switch_cmd_us > 0" do
+    raw = ext(0, "dsTest") |> Map.put(:switch_cmd_us, 1_000_000)
+    pt = Fact.EngineMetric.make_point(raw)
+    res = Fact.EngineMetric.record(raw)
+
+    assert pt.fields.switch_cmd_us > 0 and res == :ok
+  end
+
   test "reading with all fields > 0" do
     raw =
-      ext(0, "dsTest") |> Map.put(:convert_us, 2_000_000) |> Map.put(:discover_us, 2_000_000)
+      ext(0, "dsTest")
+      |> Map.put(:convert_us, 2_000_000)
+      |> Map.put(:discover_us, 2_000_000)
       |> Map.put(:report_us, 2_000_000)
+      |> Map.put(:switch_cmd_us, 2_000_000)
 
     pt = Fact.EngineMetric.make_point(raw)
     res = Fact.EngineMetric.record(raw)
