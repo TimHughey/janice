@@ -49,6 +49,7 @@ Reading::~Reading() {
 void Reading::commonJSON(JsonObject &root) {
   root["vsn"] = _version;
   root["host"] = mcr::Net::hostID();
+  root["name"] = mcr::Net::getName();
   root["mtime"] = _mtime;
 
   if (_id.valid()) {

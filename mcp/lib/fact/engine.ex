@@ -10,14 +10,17 @@ defmodule Fact.EngineMetric do
   import(Map, only: [has_key?: 2])
   alias Fact.EngineMetric
 
+  @metric_type "mcr_stat"
+
   series do
     database(Application.get_env(:mcp, Fact.Influx) |> Keyword.get(:database))
     # 'type' maps to the measurement
-    measurement("mcr_stat")
+    measurement(@metric_type)
 
     tag(:application, default: "mercurial")
     tag(:env, default: Application.get_env(:mcp, :build_env, "dev"))
     tag(:host)
+    tag(:name)
     tag(:metric, default: "engine_phase")
     tag(:engine)
 
@@ -26,7 +29,7 @@ defmodule Fact.EngineMetric do
     field(:report_us)
   end
 
-  def make_point(%{type: "mcr_stat", metric: _, engine: _} = r) do
+  def make_point(%{type: @metric_type, metric: _, engine: _} = r) do
     filtered = Enum.filter(r, &wanted?/1)
 
     # Logger.info(fn -> "filter: #{inspect(filtered)}" end)
@@ -36,6 +39,7 @@ defmodule Fact.EngineMetric do
 
     pt = %EngineMetric{}
     pt = set_tag(pt, tags, :host)
+    pt = set_tag(pt, tags, :name)
     pt = set_tag(pt, tags, :metric)
     pt = set_tag(pt, tags, :engine)
 
@@ -59,7 +63,7 @@ defmodule Fact.EngineMetric do
 
   defp field?({k, _v}), do: k in [:convert_us, :discover_us, :report_us]
 
-  defp tag?({k, _v}), do: k in [:vsn, :host, :engine, :metric]
+  defp tag?({k, _v}), do: k in [:vsn, :host, :name, :engine, :metric]
 
   defp wanted?({k, v}) do
     keep = k in [:vsn, :host, :engine, :metric, :discover_us, :convert_us, :report_us]
@@ -91,6 +95,6 @@ defmodule Fact.EngineMetric do
   def valid?(%{} = r) do
     type = Map.get(r, :type, nil)
     metric = Map.get(r, :metric, nil)
-    type === "mcr_stat" and metric === "engine_phase" and has_key?(r, :engine)
+    type === @metric_type and metric === "engine_phase" and has_key?(r, :engine)
   end
 end
