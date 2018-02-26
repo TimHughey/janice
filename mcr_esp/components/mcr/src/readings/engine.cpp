@@ -36,7 +36,7 @@ bool EngineReading::hasNonZeroValues() {
 }
 
 void EngineReading::populateJSON(JsonObject &root) {
-  root["type"] = "metric";
+  root["type"] = "engine";
   root["engine"] = engine_;
   root["discover_us"] = discover_us_;
   root["convert_us"] = convert_us_;

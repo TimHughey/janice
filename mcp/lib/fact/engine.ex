@@ -35,6 +35,7 @@ defmodule Fact.EngineMetric do
         k == :discover_us and v == 0 -> false
         k == :convert_us and v == 0 -> false
         k == :report_us and v == 0 -> false
+        _keep -> true
       end
     end
   end
