@@ -2,10 +2,9 @@
 # and its dependencies with the aid of the Mix.Config module.
 use Mix.Config
 
-config :logger,
-  # level: :debug
-  # level: :warn
-  level: :info
+config :logger, level: :info
+# level: :warn
+# level: :info
 
 config :mcp,
   feeds: [
@@ -47,7 +46,7 @@ config :mcp, Mqtt.InboundMessage,
   cmd_feed: "mcr/f/command"
 
 config :mcp, Fact.Influx,
-  database: "mcp_repo",
+  database: "merc_test",
   host: "jophiel.wisslanding.com",
   auth: [method: :basic, username: "mcp_test", password: "mcp_test"],
   http_opts: [insecure: true],

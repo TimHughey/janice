@@ -141,7 +141,7 @@ void Net::ensureTimeIsSet() {
 
   ESP_LOGI(tagEngine(), "waiting for time to be set...");
   while (timeinfo.tm_year < (2016 - 1900) && ++retry < retry_count) {
-    if (retry > 3) {
+    if (retry > 6) {
       ESP_LOGW(tagEngine(), "waiting for system time to be set... (%d/%d)",
                retry, retry_count);
     }

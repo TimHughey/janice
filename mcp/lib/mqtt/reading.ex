@@ -5,6 +5,7 @@ defmodule Mqtt.Reading do
   require Logger
 
   alias Jason
+  alias Fact.EngineMetric
 
   @boot_t "boot"
   @startup_t "startup"
@@ -12,8 +13,6 @@ defmodule Mqtt.Reading do
   @switch_t "switch"
   @relhum_t "relhum"
   @mcr_stat_t "stats"
-  @engine_t "engine"
-  @engine_tag_t :engine
 
   @doc ~S"""
   Parse a JSON into a Reading
@@ -171,8 +170,7 @@ defmodule Mqtt.Reading do
   end
 
   def engine_metric?(%{} = r) do
-    engine = Map.get(r, @engine_tag_t, nil)
-    metadata?(r) and r.type == @engine_t and is_binary(engine) and false
+    metadata?(r) and EngineMetric.valid?(r)
   end
 
   @doc ~S"""
