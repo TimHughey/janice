@@ -4,7 +4,6 @@ defmodule Fact.EngineMetric do
 
   use Timex
 
-  alias Fact.EngineMetric
   import(Fact.Influx, only: [write: 2])
 
   def record(%{} = r) do
@@ -17,6 +16,8 @@ defmodule Fact.EngineMetric do
     fields = Enum.take_while(filtered, &field?/1)
 
     pt = %{tags: tags, fields: fields, timestamp: Keyword.get(filtered, :mtime)}
+
+    Logger.warn(fn -> inspect(pt) end)
 
     write(pt, database: db, async: true, precision: :seconds)
   end
