@@ -397,7 +397,7 @@ protected:
 
   void reportMetrics() {
     mcr::EngineReading reading(tagEngine(), discoverUS(), convertUS(),
-                               reportUS());
+                               reportUS(), switchCmdUS());
 
     if (reading.hasNonZeroValues()) {
       publish(&reading);
