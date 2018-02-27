@@ -109,7 +109,7 @@ defmodule Dutycycle.State do
   def set_stopped(nil), do: {:not_found}
 
   def set_stopped(%Dutycycle{} = dc) do
-    SwitchState.state(dc.device, position: false, lazy: true)
+    SwitchState.state(dc.device, position: false, lazy: true, ack: false)
     now = Timex.now()
 
     from(
