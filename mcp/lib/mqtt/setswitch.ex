@@ -17,16 +17,20 @@ defmodule Mqtt.SetSwitch do
     ...> (cmd_time > 0) and Map.has_key?(c, :states)
     true
   """
-  def new_cmd(device, states, refid)
-      when is_binary(device) and is_list(states) and is_binary(refid) do
-    cmd =
-      %{}
-      |> Map.put(:vsn, 1)
-      |> Map.put(:cmd, @setswitch_cmd)
-      |> Map.put(:mtime, Timex.now() |> Timex.to_unix())
-      |> Map.put_new(:switch, device)
-      |> Map.put_new(:states, states)
-      |> Map.put_new(:refid, refid)
+  def new_cmd(device, states, refid, opts \\ [])
+      when is_binary(device) and is_list(states) and is_binary(refid) and is_list(opts) do
+    ack = Keyword.get(opts, :ack, true)
+
+    cmd = %{
+      vsn: 1,
+      cmd: @setswitch_cmd,
+      mtime: Timex.now() |> Timex.to_unix(),
+      switch: device,
+      states: states,
+      refid: refid
+    }
+
+    cmd = if ack, do: cmd, else: Map.put(cmd, :ack, false)
 
     Logger.debug(fn -> "sw_cmd: #{inspect(cmd)}" end)
     cmd

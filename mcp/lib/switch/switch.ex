@@ -28,7 +28,17 @@ defmodule Switch do
   import UUID, only: [uuid1: 0]
   import Ecto.Changeset, only: [change: 2]
   import Ecto.Query, only: [from: 2]
-  import Repo, only: [all: 2, delete_all: 1, insert: 1, insert!: 1, one: 1, update: 1, update!: 1]
+
+  import Repo,
+    only: [
+      all: 2,
+      insert: 1,
+      insert!: 1,
+      one: 1,
+      update: 1,
+      update!: 1,
+      update_all: 2
+    ]
 
   alias Fact.RunMetric
 
@@ -79,6 +89,24 @@ defmodule Switch do
     end
   end
 
+  def add_cmd(name, %Switch{} = sw, %DateTime{} = dt) when is_binary(name) do
+    refid = uuid1()
+
+    Ecto.build_assoc(
+      sw,
+      :cmds,
+      refid: refid,
+      name: name,
+      sent_at: dt
+    )
+    |> insert!()
+
+    update_last_cmd(sw, dt)
+
+    # return the newly created refid
+    refid
+  end
+
   def all(:everything) do
     last_cmds =
       from(
@@ -109,12 +137,16 @@ defmodule Switch do
 
   def delete(id) when is_integer(id) do
     from(s in Switch, where: s.id == ^id)
-    |> delete_all()
+    |> Repo.delete_all()
   end
 
   def delete(device) when is_binary(device) do
     from(s in Switch, where: s.device == ^device)
-    |> delete_all()
+    |> Repo.delete_all()
+  end
+
+  def delete_all(:dangerous) do
+    from(sw in Switch, where: sw.id >= 0) |> Repo.delete_all()
   end
 
   def external_update(%{host: host, device: device, mtime: mtime} = r) do
@@ -158,6 +190,12 @@ defmodule Switch do
     :error
   end
 
+  def pending_cmds(device, opts \\ []) when is_binary(device) do
+    sw = get_by_device(device)
+
+    if sw, do: SwitchCmd.pending_cmds(sw, opts), else: nil
+  end
+
   ##
   ## Internal / private functions
   ##
@@ -189,6 +227,20 @@ defmodule Switch do
       Map.put(sw, :states, create_states(%{device: sw.device, pio_count: 2}))
     else
       sw
+    end
+  end
+
+  def get_by(opts) when is_list(opts) do
+    filter = Keyword.take(opts, [:name, :device])
+    select = Keyword.take(opts, [:only]) |> Keyword.get_values(:only) |> List.flatten()
+
+    if Enum.empty?(filter) do
+      Logger.warn(fn -> "get_by bad args: #{inspect(opts)}" end)
+      []
+    else
+      sw = from(sw in Switch, where: ^filter) |> one()
+
+      if is_nil(sw) or Enum.empty?(select), do: sw, else: Map.take(sw, select)
     end
   end
 
@@ -248,7 +300,19 @@ defmodule Switch do
     end
   end
 
+  def update_last_cmd(%Switch{} = sw, %DateTime{} = dt) do
+    # update the switch device last cmd timestamp
+    from(
+      s in Switch,
+      update: [set: [last_cmd_at: ^dt]],
+      where: s.id == ^sw.id
+    )
+    |> update_all([])
+  end
+
   defp update_states_from_reading(%Switch{} = sw, %{} = r) do
+    log = Map.get(r, :log, false)
+
     for new <- r.states do
       # PIO numbers always start at zero they can be easily used as list index ids
       ss = Enum.at(sw.states, new.pio)
@@ -262,13 +326,15 @@ defmodule Switch do
         # if there aren't pending commands and the stored state doesn't match the
         # incoming state then we have a problem.  so, force an update.
         if pending == 0 do
-          Logger.warn(fn ->
-            "[#{ss.name}] forcing to reported state=#{inspect(new.state)}"
-          end)
+          log &&
+            Logger.warn(fn ->
+              "[#{ss.name}] forcing to reported state=#{inspect(new.state)}"
+            end)
 
-          Logger.warn(fn ->
-            "^^^ hint: the mcr device may have lost power and restarted"
-          end)
+          log &&
+            Logger.warn(fn ->
+              "^^^ hint: the mcr device may have lost power and restarted"
+            end)
 
           # ok, update the switch state -- it truly doesn't match
           change(ss, %{state: new.state}) |> update!()

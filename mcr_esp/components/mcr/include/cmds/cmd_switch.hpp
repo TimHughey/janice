@@ -45,12 +45,12 @@ private:
   cmd_bitset_t _mask;
   cmd_bitset_t _state;
   mcrRefID_t _refid;
-  bool _ack = false;
+  bool _ack = true; // default to true if ack is not set
 
 public:
   mcrCmdSwitch(const mcrCmdSwitch_t *cmd)
-      : mcrCmd(mcrCmdType::setswitch), _dev_id(cmd->_dev_id),
-        _mask(cmd->_mask), _state(cmd->_state), _refid(cmd->_refid){};
+      : mcrCmd(mcrCmdType::setswitch), _dev_id(cmd->_dev_id), _mask(cmd->_mask),
+        _state(cmd->_state), _refid(cmd->_refid){};
   mcrCmdSwitch(JsonObject &root);
   mcrCmdSwitch(const mcrDevID_t &id, cmd_bitset_t mask, cmd_bitset_t state)
       : mcrCmd(mcrCmdType::setswitch), _dev_id(id), _mask(mask),

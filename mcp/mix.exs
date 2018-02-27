@@ -23,7 +23,6 @@ defmodule Mcp.Mixfile do
   use Mix.Project
 
   def project do
-
     [
       app: :mcp,
       version: "0.1.1-#{sha_head()}",
@@ -39,7 +38,11 @@ defmodule Mcp.Mixfile do
       description: description(),
       escript: escript_config(),
       sha_head: "#{sha_head()}",
-      sha_mcr_stable: "#{sha_mcr_stable()}"
+      sha_mcr_stable: "#{sha_mcr_stable()}",
+      test_coverage: [
+        tool: Coverex.Task,
+        ignore_modules: [Mcp.Chamber, Web.Router.Helpers]
+      ]
     ]
   end
 
@@ -93,7 +96,8 @@ defmodule Mcp.Mixfile do
       {:ueberauth_github, "~> 0.4"},
       {:ueberauth_identity, "~> 0.2"},
       {:distillery, "~> 1.0"},
-      {:credo, "> 0.0.0", only: [:dev, :test]}
+      {:credo, "> 0.0.0", only: [:dev, :test]},
+      {:coverex, "~> 1.4.10", only: :test}
     ]
   end
 
@@ -119,7 +123,6 @@ defmodule Mcp.Mixfile do
   end
 
   defp escript_config, do: [main_module: Mcp]
-
 
   defp sha_head do
     {result, _rc} = System.cmd("git", ["rev-parse", "--short", "HEAD"])

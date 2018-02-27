@@ -26,6 +26,12 @@ defmodule FactEngineMetricTest do
       log: false
     }
 
+  test "can create Fact.EngineMetric series" do
+    s = %Fact.EngineMetric{}
+
+    assert is_map(s)
+  end
+
   test "bad input reading" do
     msg =
       capture_log(fn ->
