@@ -170,15 +170,16 @@ bool mcrDS::commandAck(mcrCmdSwitch_t &cmd) {
   if (dev != nullptr) {
     rc = readDevice(dev);
 
-    if (rc == true) {
+    if (rc && cmd.ack()) {
       setCmdAck(cmd);
       publish(cmd);
-      ESP_LOGI(tagCommand(), "completed cmd: %s", cmd.debug().c_str());
     }
   } else {
     ESP_LOGW(tagCommand(), "unable to find device for cmd ack %s",
              cmd.debug().c_str());
   }
+
+  ESP_LOGI(tagCommand(), "completed cmd: %s", cmd.debug().c_str());
 
   int64_t elapsed_us = esp_timer_get_time() - start;
   if (elapsed_us > 100000) { // 100ms

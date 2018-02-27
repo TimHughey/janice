@@ -88,7 +88,8 @@ const std::string mcrCmdSwitch::debug() {
   std::ostringstream debug_str;
 
   debug_str << mcrCmd::debug() << " mcrCmdSwitch(" << _dev_id << " mask=0b"
-            << _mask << " state=0b" << _state << ((_ack) ? " ACK" : "") << ")";
+            << _mask << " state=0b" << _state << ((_ack) ? " ACK" : "NOACK")
+            << ")";
 
   return debug_str.str();
 }
