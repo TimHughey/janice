@@ -101,6 +101,8 @@ defmodule Mqtt.Client do
     payload = Keyword.get(opts, :message, nil)
     pub_opts = Keyword.get(opts, :pub_opts, [])
 
+    MessageSave.save(:out, payload)
+
     if is_nil(feed) or is_nil(payload) do
       Logger.warn(fn ->
         "can't publish: feed=#{inspect(feed)} payload=#{inspect(payload)}"
@@ -111,7 +113,7 @@ defmodule Mqtt.Client do
       :ok
     else
       Logger.debug(fn -> "outbound: #{payload}" end)
-      # MessageSave.save(:out, payload)
+
       GenServer.call(__MODULE__, {:publish, feed, payload, pub_opts})
     end
   end

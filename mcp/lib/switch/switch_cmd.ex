@@ -212,7 +212,7 @@ defmodule SwitchCmd do
         # if the publish option is true or does not exist
         if Keyword.get(opts, :publish, true) do
           state_map = SwitchState.as_map(ss)
-          remote_cmd = SetSwitch.new_cmd(ss.switch.device, [state_map], refid)
+          remote_cmd = SetSwitch.new_cmd(ss.switch.device, [state_map], refid, opts)
           publish_switch_cmd(SetSwitch.json(remote_cmd))
         end
 
