@@ -47,12 +47,17 @@ defmodule Dutycycle.Control do
 
     opts = get_env(:mcp, Dutycycle.Control, defs) |> Enum.into(%{})
     s = Map.merge(%{opts: opts, tasks: %{}}, args)
+    s = Map.put(s, :initial_args, args)
 
     GenServer.start_link(__MODULE__, s, name: __MODULE__)
   end
 
   def init(s) when is_map(s) do
     Logger.info(fn -> "init() state: #{inspect(s)}" end)
+
+    {:ok, mixtank_pid} = Mixtank.Control.start_link(s.initial_args)
+
+    s = Map.put(s, :mixtank_pid, mixtank_pid)
 
     # all_dcs = Dutycycle.all()
     # all_switches = Enum.map(all_dcs, fn(x) -> x.device end)

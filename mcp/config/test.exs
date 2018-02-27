@@ -35,7 +35,7 @@ config :mcp, Mqtt.Client,
     auto_resub: true,
     reconnect: 2
   ],
-  timesync: [frequency: 5 * 1000, loops: 5, forever: false, log: true]
+  timesync: [frequency: 5 * 1000, loops: 5, forever: false, log: false]
 
 config :mcp, Mqtt.InboundMessage,
   log_reading: true,

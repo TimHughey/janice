@@ -2,13 +2,13 @@ defmodule RemoteTest do
   @moduledoc """
 
   """
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   import ExUnit.CaptureLog
   use Timex
 
   def preferred_vsn, do: "b4edefc"
-  def host(num), do: "mcr.010203040" <> Integer.to_string(num)
-  def name(num), do: "test_name" <> Integer.to_string(num)
+  def host(num), do: "mcr.110203040" <> String.pad_leading(Integer.to_string(num), 3, "0")
+  def name(num), do: "test_name" <> String.pad_leading(Integer.to_string(num), 3, "0")
 
   def ext(num),
     do: %{
@@ -21,6 +21,7 @@ defmodule RemoteTest do
 
   setup_all do
     Remote.delete_all(:dangerous)
+    ext(99) |> Remote.external_update()
     :ok
   end
 
@@ -77,11 +78,12 @@ defmodule RemoteTest do
   end
 
   test "change a name (by id)" do
-    ext(8) |> Remote.external_update()
-    r = Remote.get_by(host: host(8))
-    res = Remote.change_name(r.id, name(8))
+    n = 13
+    ext(n) |> Remote.external_update()
+    r = Remote.get_by(host: host(n))
+    res = Remote.change_name(r.id, name(n))
 
-    assert res === name(8)
+    assert res === name(n)
   end
 
   test "change vsn preference to head" do
@@ -160,5 +162,31 @@ defmodule RemoteTest do
     is_remote = if Enum.empty?(remotes), do: nil, else: %Remote{} = hd(remotes)
 
     assert is_list(remotes) and is_remote
+  end
+
+  test "OTA update all" do
+    msg = capture_log(fn -> Remote.ota_update(:all, transmit_delay_ms: 1) end)
+
+    assert msg =~ "needs update"
+  end
+
+  test "OTA update by name" do
+    n = 10
+    ext(n) |> Remote.external_update()
+    rem = Remote.get_by(host: host(n))
+    msg = capture_log(fn -> Remote.ota_update(rem.id, transmit_delay_ms: 1) end)
+
+    assert msg =~ "needs update"
+  end
+
+  test "OTA single (by name, force)" do
+    n = 11
+    ext(n) |> Remote.external_update()
+    rem = Remote.get_by(host: host(n))
+
+    msg =
+      capture_log(fn -> Remote.ota_update_single(rem.name, force: true, transmit_delay_ms: 1) end)
+
+    assert msg =~ "needs update"
   end
 end

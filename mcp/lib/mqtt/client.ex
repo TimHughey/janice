@@ -37,7 +37,7 @@ defmodule Mqtt.Client do
       # prepare the opts that will be passed to emqttc (erlang) including logger config and
       # start it up
       opts = config(:broker)
-      opts = Keyword.merge([logger: :warning], opts)
+      opts = Keyword.merge([logger: :error], opts)
       {:ok, mqtt_pid} = :emqttc.start_link(opts)
 
       # start-up MsgSaver
@@ -180,15 +180,15 @@ defmodule Mqtt.Client do
   def handle_call({:timesync_msg}, _from, s) do
     {feed, qos} = get_env(:mcp, :feeds, []) |> Keyword.get(:cmd, {nil, nil})
 
-    if not is_nil(feed) and not is_nil(qos) do
+    if is_nil(feed) or is_nil(qos) do
+      Logger.warn(fn -> "can't send timesync, feed configuration missing" end)
+      {:reply, {:failed}, s}
+    else
       payload = Timesync.new_cmd() |> Timesync.json()
       pub_opts = [qos]
 
       res = :emqttc.publish(s.mqtt_pid, feed, payload, pub_opts)
       {:reply, {res}, s}
-    else
-      Logger.warn(fn -> "can't send timesync, feed configuration missing" end)
-      {:reply, {:failed}, s}
     end
   end
 

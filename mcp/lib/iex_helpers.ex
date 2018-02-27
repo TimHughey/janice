@@ -9,6 +9,12 @@ defmodule Mcp.IExHelpers do
   # end
 
   def server_state(mod), do: :sys.get_state(mod)
+  def server_status(mod), do: :sys.get_status(mod)
+
+  def server_pid(mod) do
+    {:status, pid, _} = :sys.get_status(mod)
+    pid
+  end
 
   def make_mtime_current(json) do
     mtime = Timex.now() |> Timex.to_unix()

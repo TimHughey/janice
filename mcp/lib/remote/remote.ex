@@ -231,14 +231,20 @@ defmodule Remote do
 
   def mark_as_seen(nil, _, _), do: nil
 
-  def ota_update(id) when is_integer(id) do
-    rem = Repo.get(Remote, id)
-    ota_update([rem])
+  # ota_update() header
+  def ota_update(id, opts \\ [])
+
+  def ota_update(:all, opts) when is_list(opts) do
+    all() |> ota_update(opts)
   end
 
-  def ota_update(:all), do: all() |> ota_update()
+  def ota_update(id, opts)
+      when is_integer(id) do
+    rem = Repo.get(Remote, id)
+    ota_update([rem], opts)
+  end
 
-  def ota_update(list, opts \\ []) when is_list(list) do
+  def ota_update(list, opts) when is_list(list) do
     transmit_delay_ms = Keyword.get(opts, :transmit_delay_ms, 7000)
 
     check =

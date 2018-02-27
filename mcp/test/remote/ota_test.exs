@@ -2,7 +2,7 @@ defmodule OTATest do
   @moduledoc """
 
   """
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   import ExUnit.CaptureLog
   use Timex
 

@@ -28,8 +28,8 @@ defmodule SwitchStateTest do
       log: false
     }
 
-  def common_ext_update do
-    ext(0, 8, false) |> Switch.external_update()
+  def common_ext_update(num \\ 0) do
+    ext(num, 8, false) |> Switch.external_update()
   end
 
   setup do
@@ -191,6 +191,10 @@ defmodule SwitchStateTest do
   end
 
   test "create a map of states from a list" do
+    common_ext_update(0)
+    common_ext_update(1)
+    common_ext_update(2)
+
     everything = SwitchState.all(:everything)
 
     maps = SwitchState.as_list_of_maps(everything)

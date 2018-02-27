@@ -24,17 +24,23 @@ defmodule Mcp.Application do
     initial = %{autostart: autostart}
 
     # List all child processes to be supervised
-    children = [
-      {Repo, []},
-      {Fact.Supervisor, initial},
-      {Mqtt.Supervisor, initial},
-      {Janitor, initial},
-      {Dutycycle.Control, initial},
-      {Mixtank.Control, initial},
-      {Web.Supervisor, initial}
-      # {Mcp.SoakTest, initial},
-      # {Mcp.Chamber, initial}
-    ]
+    children =
+      if initial.autostart,
+        do: [
+          {Repo, []},
+          {Fact.Supervisor, initial},
+          {Mqtt.Supervisor, initial},
+          {Janitor, initial},
+          {Dutycycle.Control, initial},
+          # {Mixtank.Control, initial},
+          {Web.Supervisor, initial}
+          # {Mcp.SoakTest, initial},
+          # {Mcp.Chamber, initial}
+        ],
+        else: [
+          {Repo, []},
+          {Web.Supervisor, initial}
+        ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
