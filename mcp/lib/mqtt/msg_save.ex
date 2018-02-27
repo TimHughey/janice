@@ -73,15 +73,21 @@ defmodule MessageSave do
   end
 
   def handle_cast({@save_msg, direction, payload, dropped}, %{opts: %{save: true}} = s) do
-    %MessageSave{direction: Atom.to_string(direction), payload: payload, dropped: dropped}
-    |> insert!()
+    <<first_byte::size(8), _rest::binary>> = payload
 
-    older_dt =
-      Timex.to_datetime(Timex.now(), "UTC")
-      |> Timex.shift(hours: s.opts.delete_older_than_hrs * -1)
+    if first_byte in OTA.header_bytes() do
+      # this is OTA data, skip it!!
+    else
+      %MessageSave{direction: Atom.to_string(direction), payload: payload, dropped: dropped}
+      |> insert!()
 
-    from(ms in MessageSave, where: ms.inserted_at < ^older_dt)
-    |> delete_all()
+      older_dt =
+        Timex.to_datetime(Timex.now(), "UTC")
+        |> Timex.shift(hours: s.opts.delete_older_than_hrs * -1)
+
+      from(ms in MessageSave, where: ms.inserted_at < ^older_dt)
+      |> delete_all()
+    end
 
     {:noreply, s}
   end

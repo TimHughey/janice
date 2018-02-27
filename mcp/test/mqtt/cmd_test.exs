@@ -3,7 +3,6 @@ defmodule MqttSetSwitchTest do
 
   """
   use ExUnit.Case, async: true
-  import ExUnit.CaptureLog
   use Timex
   alias Mqtt.SetSwitch
 

@@ -40,6 +40,8 @@ defmodule OTA do
     |> Map.put_new(:stable, Map.get(vsn, "stable", "0000000"))
   end
 
+  def header_bytes, do: [0xD1, 0xD2, 0xD3, 0xD4]
+
   def restart(host, delay_ms \\ 0) when is_binary(host) and is_integer(delay_ms) do
     %{}
     |> Map.put(:vsn, Application.get_env(:mcp, :git_sha))

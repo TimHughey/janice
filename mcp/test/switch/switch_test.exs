@@ -123,6 +123,8 @@ defmodule SwitchStateTest do
   end
 
   test "get all SwitchState (names and everything)" do
+    common_ext_update()
+
     names = SwitchState.all(:names)
     everything = SwitchState.all(:everything)
     is_struct = if not Enum.empty?(everything), do: %SwitchState{} = hd(everything), else: false
