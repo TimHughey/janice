@@ -58,6 +58,6 @@ defmodule Web.DutycycleController do
   end
 
   defp to_seconds(dt) do
-    if is_nil(dt), do: 0, else: Timex.diff(Timex.now(), dt, :seconds)
+    if is_nil(dt), do: nil, else: Timex.diff(Timex.now(), dt, :seconds)
   end
 end

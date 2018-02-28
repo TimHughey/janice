@@ -11,6 +11,10 @@ export function humanizeState(data, type, row) {
 }
 
 export function prettySeconds(data, type, row) {
+  if (data === null) {
+    return '-';
+  }
+
   if (data === 0) {
     return 'now';
   }
