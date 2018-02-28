@@ -7,8 +7,8 @@ defmodule OTATest do
   use Timex
 
   def preferred_vsn, do: "b4edefc"
-  def host(num), do: "mcr.010203040" <> Integer.to_string(num)
-  def name(num), do: "test_name" <> Integer.to_string(num)
+  def host(num), do: "mcr.ota" <> Integer.to_string(num)
+  def name(num), do: "ota" <> Integer.to_string(num)
 
   def ext(num),
     do: %{
@@ -20,7 +20,6 @@ defmodule OTATest do
     }
 
   setup_all do
-    Remote.delete_all(:dangerous)
     :ok
   end
 

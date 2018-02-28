@@ -42,7 +42,9 @@ defmodule OTA do
 
   def header_bytes, do: [0xD1, 0xD2, 0xD3, 0xD4]
 
-  def restart(host, delay_ms \\ 0) when is_binary(host) and is_integer(delay_ms) do
+  def restart(host, opts \\ []) when is_binary(host) do
+    delay_ms = Keyword.get(opts, :delay_ms, 0)
+
     %{}
     |> Map.put(:vsn, Application.get_env(:mcp, :git_sha))
     |> Map.put(:cmd, @restart_cmd)

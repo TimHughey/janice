@@ -37,7 +37,6 @@ defmodule SwitchStateTest do
   end
 
   setup_all do
-    Switch.delete_all(:dangerous)
     :ok
   end
 

@@ -14,6 +14,147 @@ const switchesID = '#switchesTable';
 const remotesID = '#remotesTable';
 const gScrollY = '50vh';
 
+function deleteButton() {
+  return {
+    text: 'Delete',
+    extend: 'selected',
+    attr: {
+      id: 'deleteButton',
+    },
+    action(e, dt, node, config) {
+      const refresh = dt.button(0);
+      const button = dt.button(2);
+      const url = dt.ajax.url();
+
+      const {
+        name,
+        id,
+      } = dt.rows({
+        selected: true,
+      }).data()[0];
+
+      button.processing(true);
+      jQuery.ajax({
+        url: `${url}/${id}`,
+        type: 'DELETE',
+        beforeSend(xhr) {
+          // send the CSRF token included as a meta on the HTML page
+          const token = jQuery("meta[name='csrf-token']").attr('content');
+          xhr.setRequestHeader('X-CSRF-Token', token);
+        },
+        error(xhr, status, error) {
+          console.log('error xhr:', xhr);
+          displayStatus(`Error deleting ${name}`);
+        },
+        success(xhr, status) {
+          displayStatus(`Deleted ${name}`);
+        },
+        complete(xhr, status) {
+          dt.ajax.reload(null, false);
+          button.processing(false);
+          jQuery('#generalPurposeForm').fadeToggle();
+          refresh.active(true);
+        },
+      });
+    },
+  };
+}
+
+function otaAllButton() {
+  return {
+    text: 'OTA (All)',
+    attr: {
+      id: 'otaAllButton',
+    },
+    action(e, dt, node, config) {
+      const refresh = dt.button(0);
+      const button = dt.button(4);
+      const url = dt.ajax.url();
+
+      button.processing(true);
+
+      jQuery.ajax({
+        url,
+        data: {
+          ota_all: true,
+        },
+        beforeSend(xhr) {
+          // send the CSRF token included as a meta on the HTML page
+          const token = jQuery("meta[name='csrf-token']").attr('content');
+          xhr.setRequestHeader('X-CSRF-Token', token);
+        },
+        error(jqXHR, status, error) {
+          console.log('error xhr:', jqXHR);
+          displayStatus('Error triggering ota for all');
+        },
+        success(data, status, jqXHR) {
+          if (data.ota_all_res === 'ok') {
+            displayStatus('Triggered ota for all');
+          } else {
+            displayStatus('Failed triggering ota for all');
+          }
+        },
+        complete(xhr, status) {
+          dt.ajax.reload(null, false);
+          button.processing(false);
+          jQuery('#generalPurposeForm').fadeToggle();
+          refresh.active(true);
+        },
+      });
+    },
+  };
+}
+
+function otaSingleButton() {
+  return {
+    text: 'OTA (Single)',
+    extend: 'selected',
+    attr: {
+      id: 'otaSingleButton',
+    },
+    action(e, dt, node, config) {
+      const refresh = dt.button(0);
+      const ota = dt.button(4);
+      const url = dt.ajax.url();
+
+      const {
+        name,
+        id,
+      } = dt.rows({
+        selected: true,
+      }).data()[0];
+
+      ota.processing(true);
+
+      jQuery.ajax({
+        url: `${url}/${id}`,
+        type: 'PATCH',
+        data: {
+          ota: true,
+        },
+        beforeSend(xhr) {
+          // send the CSRF token included as a meta on the HTML page
+          const token = jQuery("meta[name='csrf-token']").attr('content');
+          xhr.setRequestHeader('X-CSRF-Token', token);
+        },
+        error(jqXHR, status, error) {
+          console.log('error xhr:', jqXHR);
+          displayStatus(`Error triggering ota for ${name}`);
+        },
+        success(data, status, jqXHR) {
+          displayStatus(`Triggered ota for ${name}`);
+        },
+        complete(xhr, status) {
+          dt.ajax.reload(null, false);
+          ota.processing(false);
+          jQuery('#generalPurposeForm').fadeToggle();
+          refresh.active(true);
+        },
+      });
+    },
+  };
+}
+
 function refreshButton() {
   return {
     text: 'Refresh',
@@ -87,16 +228,16 @@ function renameButton() {
   };
 }
 
-function deleteButton() {
+function restartButton() {
   return {
-    text: 'Delete',
+    text: 'Restart',
     extend: 'selected',
     attr: {
-      id: 'deleteButton',
+      id: 'restartButton',
     },
     action(e, dt, node, config) {
       const refresh = dt.button(0);
-      const button = dt.button(2);
+      const restart = dt.button(5);
       const url = dt.ajax.url();
 
       const {
@@ -106,25 +247,34 @@ function deleteButton() {
         selected: true,
       }).data()[0];
 
-      button.processing(true);
+      restart.processing(true);
+
       jQuery.ajax({
         url: `${url}/${id}`,
-        type: 'DELETE',
+        type: 'PATCH',
+        data: {
+          restart: true,
+        },
         beforeSend(xhr) {
           // send the CSRF token included as a meta on the HTML page
           const token = jQuery("meta[name='csrf-token']").attr('content');
           xhr.setRequestHeader('X-CSRF-Token', token);
         },
-        error(xhr, status, error) {
-          console.log('error xhr:', xhr);
-          displayStatus(`Error deleting ${name}`);
+        error(jqXHR, status, error) {
+          console.log('error xhr:', jqXHR);
+          displayStatus(`Error triggering restart for ${name}`);
         },
-        success(xhr, status) {
-          displayStatus(`Deleted ${name}`);
+        success(data, status, jqXHR) {
+          console.log('restart:', data);
+          if (data.restart === 'ok') {
+            displayStatus(`Restart triggered for ${name}`);
+          } else {
+            displayStatus(`Restart trigger failed for ${name}`);
+          }
         },
         complete(xhr, status) {
           dt.ajax.reload(null, false);
-          button.processing(false);
+          restart.processing(false);
           jQuery('#generalPurposeForm').fadeToggle();
           refresh.active(true);
         },
@@ -175,56 +325,6 @@ function toggleButton() {
         complete(xhr, status) {
           dt.ajax.reload(null, false);
           toggle.processing(false);
-          jQuery('#generalPurposeForm').fadeToggle();
-          refresh.active(true);
-        },
-      });
-    },
-  };
-}
-
-function otaButton() {
-  return {
-    text: 'OTA (Single)',
-    extend: 'selected',
-    attr: {
-      id: 'otaButton',
-    },
-    action(e, dt, node, config) {
-      const refresh = dt.button(0);
-      const ota = dt.button(3);
-      const url = dt.ajax.url();
-
-      const {
-        name,
-        id,
-      } = dt.rows({
-        selected: true,
-      }).data()[0];
-
-      ota.processing(true);
-
-      jQuery.ajax({
-        url: `${url}/${id}`,
-        type: 'PATCH',
-        data: {
-          ota: true,
-        },
-        beforeSend(xhr) {
-          // send the CSRF token included as a meta on the HTML page
-          const token = jQuery("meta[name='csrf-token']").attr('content');
-          xhr.setRequestHeader('X-CSRF-Token', token);
-        },
-        error(jqXHR, status, error) {
-          console.log('error xhr:', jqXHR);
-          displayStatus(`Error triggering ota for ${name}`);
-        },
-        success(data, status, jqXHR) {
-          displayStatus(`Triggered ota for ${name}`);
-        },
-        complete(xhr, status) {
-          dt.ajax.reload(null, false);
-          ota.processing(false);
           jQuery('#generalPurposeForm').fadeToggle();
           refresh.active(true);
         },
@@ -499,7 +599,9 @@ function createRemotesTable() {
     buttons: [refreshButton(),
       renameButton(),
       deleteButton(),
-      otaButton()],
+      otaSingleButton(),
+      otaAllButton(),
+      restartButton()],
   });
 
   remoteTable.on('select', (e, dt, type, indexes) => {

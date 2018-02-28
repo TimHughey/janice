@@ -193,7 +193,7 @@ defmodule Remote do
   end
 
   def get_by(opts) when is_list(opts) do
-    filter = Keyword.take(opts, [:host, :name])
+    filter = Keyword.take(opts, [:id, :host, :name])
     select = Keyword.take(opts, [:only]) |> Keyword.get_values(:only) |> List.flatten()
 
     if Enum.empty?(filter) do
@@ -296,6 +296,18 @@ defmodule Remote do
       not force or at_preferred_vsn?(r) ->
         Logger.info(fn -> "#{r.name} already at vsn #{r.firmware_vsn}" end)
         :at_preferred_vsn
+    end
+  end
+
+  def restart(id, opts \\ []) when is_integer(id) do
+    r = get_by(id: id)
+
+    if is_nil(r) do
+      Logger.warn(fn -> "#{id} not found, can't trigger restart" end)
+      :not_found
+    else
+      OTA.restart(r.host, opts)
+      :ok
     end
   end
 

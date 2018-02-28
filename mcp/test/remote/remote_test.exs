@@ -7,8 +7,8 @@ defmodule RemoteTest do
   use Timex
 
   def preferred_vsn, do: "b4edefc"
-  def host(num), do: "mcr.110203040" <> String.pad_leading(Integer.to_string(num), 3, "0")
-  def name(num), do: "test_name" <> String.pad_leading(Integer.to_string(num), 3, "0")
+  def host(num), do: "mcr.remote" <> String.pad_leading(Integer.to_string(num), 3, "0")
+  def name(num), do: "remote" <> String.pad_leading(Integer.to_string(num), 3, "0")
 
   def ext(num),
     do: %{
@@ -20,7 +20,6 @@ defmodule RemoteTest do
     }
 
   setup_all do
-    Remote.delete_all(:dangerous)
     ext(99) |> Remote.external_update()
     :ok
   end
@@ -130,6 +129,17 @@ defmodule RemoteTest do
     refute is_nil(last)
   end
 
+  test "get_by(id: id)" do
+    num = 14
+    host = host(num)
+    ext(num) |> Remote.external_update()
+
+    rem1 = Remote.get_by(host: host)
+    rem2 = Remote.get_by(id: rem1.id)
+
+    assert rem1.id === rem2.id
+  end
+
   test "get_by bad params" do
     msg = capture_log(fn -> Remote.get_by(foo: "foo") end)
 
@@ -188,5 +198,15 @@ defmodule RemoteTest do
       capture_log(fn -> Remote.ota_update_single(rem.name, force: true, transmit_delay_ms: 1) end)
 
     assert msg =~ "needs update"
+  end
+
+  test "remote restart" do
+    n = 12
+    ext(n) |> Remote.external_update()
+    rem = Remote.get_by(host: host(n))
+
+    res = Remote.restart(rem.id, delay_ms: 0)
+
+    assert res == :ok
   end
 end

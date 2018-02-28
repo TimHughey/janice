@@ -5,6 +5,19 @@ defmodule Web.RemoteController do
   use Timex
   use Web, :controller
 
+  def index(conn, %{"ota_all" => "true"} = _params) do
+    ota_all_res = Remote.ota_update(:all)
+
+    resp = %{
+      data: [],
+      items: 0,
+      mtime: Timex.local() |> Timex.to_unix(),
+      ota_all_res: ota_all_res
+    }
+
+    json(conn, resp)
+  end
+
   def index(conn, _params) do
     remotes = Remote.all()
 
@@ -50,7 +63,17 @@ defmodule Web.RemoteController do
     ota = Map.get(params, "ota", false)
     ota_res = if ota, do: Remote.ota_update(id)
 
-    json(conn, %{name: name_res, preferred_vsn: prefer_res, ota: ota_res})
+    restart = Map.get(params, "restart", false)
+    restart_res = if restart, do: Remote.restart(id, delay_ms: 0)
+
+    resp = %{
+      name: name_res,
+      preferred_vsn: prefer_res,
+      ota: ota_res,
+      restart: restart_res
+    }
+
+    json(conn, resp)
   end
 
   defp to_seconds(dt) do

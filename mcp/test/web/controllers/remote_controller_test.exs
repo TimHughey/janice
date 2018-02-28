@@ -6,7 +6,7 @@ defmodule WebRemoteControllerTest do
   use Web.ConnCase
   use Timex
 
-  alias Web.RemoteController, as: RC
+  alias Web.RemoteController, as: Controller
 
   def preferred_vsn, do: "b4edefc"
   def host(num), do: "mcr.webremote" <> Integer.to_string(num) <> "0"
@@ -25,47 +25,83 @@ defmodule WebRemoteControllerTest do
     :ok
   end
 
-  test "update name" do
-    ext(0) |> Remote.external_update()
-    id = Remote.all() |> hd() |> Map.get(:id, 0)
-
-    conn = build_conn() |> Map.merge(%{method: "PATCH"})
-    params = %{"id" => "#{id}", "name" => name(0)}
-    res = RC.update(conn, params)
-
-    assert res.status === 200 and String.contains?(res.resp_body, name(0))
-  end
-
-  test "update preferred vsn" do
-    ext(0) |> Remote.external_update()
-    id = Remote.all() |> hd() |> Map.get(:id, 0)
-
-    conn = build_conn() |> Map.merge(%{method: "PATCH"})
-    params = %{"id" => "#{id}", "preferred_vsn" => "head"}
-    res = RC.update(conn, params)
-
-    assert res.status === 200 and String.contains?(res.resp_body, "head")
-  end
-
   test "delete by id" do
-    ext(1) |> Remote.external_update()
-    id = Remote.all() |> hd() |> Map.get(:id, 0)
+    num = 2
+    ext(num) |> Remote.external_update()
+    id = Remote.get_by(host: host(num)) |> Map.get(:id)
 
     conn = build_conn()
     params = %{"id" => "#{id}"}
-    res = RC.delete(conn, params)
+    res = Controller.delete(conn, params)
 
     assert res.resp_body === "{\"rows\":1}"
   end
 
   test "index" do
-    ext(1) |> Remote.external_update()
+    num = 3
+    ext(num) |> Remote.external_update()
 
     conn = build_conn()
     params = %{}
-    res = RC.index(conn, params)
+    res = Controller.index(conn, params)
     {rc, json} = Jason.decode(res.resp_body)
 
-    assert rc === :ok and Map.has_key?(json, "data") and Map.has_key?(json, "items")
+    assert rc === :ok
+    assert Map.has_key?(json, "data")
+    assert Map.has_key?(json, "items")
+  end
+
+  test "ota all" do
+    num = 4
+    ext(num) |> Remote.external_update()
+
+    conn = build_conn() |> Map.merge(%{method: "GET"})
+    params = %{"ota_all" => "true"}
+    res = Controller.index(conn, params)
+
+    assert res.status === 200
+    assert String.contains?(res.resp_body, "ota_all")
+    assert String.contains?(res.resp_body, "ok")
+  end
+
+  test "restart trigger" do
+    num = 5
+    ext(num) |> Remote.external_update()
+    id = Remote.get_by(host: host(num)) |> Map.get(:id)
+
+    conn = build_conn() |> Map.merge(%{method: "PATCH"})
+    params = %{"id" => "#{id}", "restart" => true}
+    res = Controller.update(conn, params)
+
+    assert res.status === 200
+    assert String.contains?(res.resp_body, "restart")
+    assert String.contains?(res.resp_body, "ok")
+  end
+
+  test "update name" do
+    num = 0
+    name = name(num)
+    ext(num) |> Remote.external_update()
+    id = Remote.get_by(host: host(num)) |> Map.get(:id)
+
+    conn = build_conn() |> Map.merge(%{method: "PATCH"})
+    params = %{"id" => "#{id}", "name" => name}
+    res = Controller.update(conn, params)
+
+    assert res.status === 200
+    assert String.contains?(res.resp_body, name)
+  end
+
+  test "update preferred vsn" do
+    num = 1
+    ext(num) |> Remote.external_update()
+    id = Remote.get_by(host: host(num)) |> Map.get(:id)
+
+    conn = build_conn() |> Map.merge(%{method: "PATCH"})
+    params = %{"id" => "#{id}", "preferred_vsn" => "head"}
+    res = Controller.update(conn, params)
+
+    assert res.status === 200
+    assert String.contains?(res.resp_body, "head")
   end
 end
