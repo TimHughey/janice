@@ -2,29 +2,100 @@ defmodule MqttInboundMessageTest do
   @moduledoc """
 
   """
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   # import ExUnit.CaptureLog
   use Timex
 
   def preferred_vsn, do: "b4edefc"
-  def test_host1, do: "mcr.0102030401"
-  def test_host2, do: "mcr.0102030402"
-  def test_host3, do: "mcr.0102030403"
-  def test_host4, do: "mcr.0102030404"
-  def test_host5, do: "mcr.0102030405"
-  def test_host6, do: "mcr.0102030406"
-  def test_host7, do: "mcr.0102030407"
 
-  def test_name1, do: "test_name1"
-  def test_name2, do: "test_name2"
-  def test_name3, do: "test_name3"
-  def test_name4, do: "test_name4"
-  def test_name5, do: "test_name5"
-  def test_name6, do: "test_name6"
-  def test_name7, do: "test_name7"
+  def num(n), do: String.pad_leading(Integer.to_string(n), 3, "0")
+  def host(n), do: "mcr.inbound" <> num(n)
+  def name(n), do: "inbound" <> num(n)
 
-  def test_ext1 do
-    ~S({"vsn":"a8f350a","host":"mcr.30aea4288200","mtime":1519362603,"device":"ds/12606e21000000","read_us":14331,"type":"switch","pio_count":2,"states":[{"pio":0,"state":false},{"pio":1,"state":false}]})
+  def device(n), do: "ds/inbound" <> num(n)
+  def device_pio(n, pio), do: device(n) <> ":#{pio}"
+
+  def pios(n, pos), do: for(i <- 0..(n - 1), do: %{pio: i, state: pos})
+
+  def base_ext(num),
+    do: %{
+      host: host(num),
+      name: name(num),
+      hw: "esp32",
+      vsn: preferred_vsn(),
+      mtime: Timex.now() |> Timex.to_unix(),
+      log: false
+    }
+
+  def freeram_ext(num) do
+    base = base_ext(num)
+
+    freeram = %{type: "stats", freeram: :rand.uniform(100_000)}
+
+    Map.merge(base, freeram)
+  end
+
+  def freeram_ext_msg(n) do
+    freeram_ext(n) |> Jason.encode!() |> Mqtt.InboundMessage.process()
+  end
+
+  def random_float do
+    a = :rand.uniform(25)
+    b = :rand.uniform(100)
+
+    a + b * 0.1
+  end
+
+  def rh_ext(num) do
+    temp = temp_ext(num)
+    rh = random_float()
+
+    sensor = %{
+      type: "relhum",
+      rh: rh
+    }
+
+    Map.merge(temp, sensor)
+  end
+
+  def rh_ext_msg(n \\ 0) do
+    rh_ext(n) |> Jason.encode!() |> Mqtt.InboundMessage.process()
+  end
+
+  def switch_ext(num, num_pios, pos) do
+    base = base_ext(num)
+
+    sw = %{
+      type: "switch",
+      device: device(num),
+      pio_count: num_pios,
+      states: pios(8, pos)
+    }
+
+    Map.merge(base, sw)
+  end
+
+  def switch_ext_msg(n \\ 0) do
+    switch_ext(n, 8, false) |> Jason.encode!() |> Mqtt.InboundMessage.process()
+  end
+
+  def temp_ext(num) do
+    base = base_ext(num)
+    tc = random_float()
+    tf = tc * (9.0 / 5.0) + 32.0
+
+    sensor = %{
+      type: "temp",
+      device: device(num),
+      tc: tc,
+      tf: tf
+    }
+
+    Map.merge(base, sensor)
+  end
+
+  def temp_ext_msg(n \\ 0) do
+    temp_ext(n) |> Jason.encode!() |> Mqtt.InboundMessage.process()
   end
 
   setup_all do
@@ -32,15 +103,32 @@ defmodule MqttInboundMessageTest do
   end
 
   test "inbound Switch message" do
-    res = :ok
-    # res = test_ext1() |> Mqtt.InboundMessage.process()
+    res = switch_ext_msg(0)
+
+    assert res === :ok
+  end
+
+  test "inbound Sensor (temperature) message" do
+    res = temp_ext_msg(2)
+
+    assert res === :ok
+  end
+
+  test "inbound Sensor (relhum) message" do
+    res = rh_ext_msg(3)
+
+    assert res === :ok
+  end
+
+  test "inbound freeram message" do
+    res = freeram_ext_msg(4)
 
     assert res === :ok
   end
 
   test "inbound message logging" do
     start = Mqtt.InboundMessage.log_json(log: true)
-    test_ext1() |> Mqtt.InboundMessage.process()
+    switch_ext_msg(1)
     stop = Mqtt.InboundMessage.log_json(log: false)
 
     assert start === :log_open and stop === :log_closed

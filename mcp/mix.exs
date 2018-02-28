@@ -41,7 +41,40 @@ defmodule Mcp.Mixfile do
       sha_mcr_stable: "#{sha_mcr_stable()}",
       test_coverage: [
         tool: Coverex.Task,
-        ignore_modules: [Mcp.Chamber, Web.Router.Helpers]
+        ignore_modules: [
+          Mcp.Chamber,
+          Mcp.Chamber.AutoPopulate,
+          Mcp.Chamber.Device,
+          Mcp.Chamber.RunState,
+          Mcp.Chamber.ServerState,
+          Mcp.IExHelpers,
+          Fact.Celsius.Fields,
+          Fact.Celsius.Tags,
+          Fact.EngineMetric.Fields,
+          Fact.EngineMetric.Tags,
+          Fact.Fahrenheit.Fields,
+          Fact.Fahrenheit.Tags,
+          Fact.DevMetric.Fields,
+          Fact.DevMetric.Tags,
+          Fact.FreeRamStat.Fields,
+          Fact.FreeRamStat.Tags,
+          Fact.LedFlashes.Fields,
+          Fact.LedFlashes.Tags,
+          Fact.RelativeHumidity.Fields,
+          Fact.RelativeHumidity.Tags,
+          Fact.RunMetric.Fields,
+          Fact.RunMetric.Tags,
+          Fact.StartupAnnouncement.Fields,
+          Fact.StartupAnnouncement.Tags,
+          Mix.Tasks.Seed,
+          Seed.Chambers,
+          Seed.Dutycycles,
+          Seed.Mixtanks,
+          Seed.Sensors,
+          Seed.Switches,
+          Web.Router.Helpers,
+          Repo
+        ]
       ]
     ]
   end

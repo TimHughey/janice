@@ -148,8 +148,11 @@ defmodule Mqtt.InboundMessage do
     get_env(:mcp, Mqtt.InboundMessage) |> Keyword.get(key)
   end
 
-  defp decoded_msg({:ok, r}, s) do
-    log_reading(r, s.log_reading)
+  defp decoded_msg({:ok, %{metadata: :fail}}, _s), do: nil
+
+  defp decoded_msg({:ok, %{metadata: :ok} = r}, s) do
+    log = Map.get(r, :log, s.log_reading)
+    log_reading(r, log)
 
     # NOTE: we invoke the module / functions defined in the config
     #       to process incoming messages.  we also spin up a Task

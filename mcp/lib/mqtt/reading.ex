@@ -14,6 +14,10 @@ defmodule Mqtt.Reading do
   @relhum_t "relhum"
   @mcr_stat_t "stats"
 
+  def check_metadata(%{} = r) do
+    if metadata?(r), do: Map.put_new(r, :metadata, :ok), else: Map.put_new(r, :metadata, :fail)
+  end
+
   @doc ~S"""
   Parse a JSON into a Reading
 
@@ -29,11 +33,11 @@ defmodule Mqtt.Reading do
     case Jason.decode(json, keys: :atoms) do
       {:ok, r} ->
         r =
-          r
-          |> Map.put(:json, json)
+          Map.put(r, :json, json)
           |> Map.put(:msg_recv_dt, Timex.now())
           |> Map.put_new(:vsn, Map.get(r, :version, "novsn"))
           |> Map.put_new(:hw, "m0")
+          |> check_metadata()
 
         {:ok, r}
 
@@ -60,8 +64,11 @@ defmodule Mqtt.Reading do
 
   """
   def metadata?(%{} = r) do
+    mtime = Map.get(r, :mtime, nil)
+    type = Map.get(r, :type, nil)
+
     proper =
-      is_integer(r.mtime) and String.starts_with?(r.host, "mcr") and is_binary(r.type) and
+      is_integer(mtime) and String.starts_with?(r.host, "mcr") and is_binary(type) and
         (Map.has_key?(r, :vsn) or Map.has_key?(r, :version))
 
     not proper && Logger.warn(fn -> "bad metadata #{inspect(r)}" end)
@@ -127,7 +134,9 @@ defmodule Mqtt.Reading do
     true
   """
   def temperature?(%{} = r) do
-    metadata?(r) and r.type === @temp_t and is_number(r.tc) and is_number(r.tf)
+    tc = Map.get(r, :tc)
+    tf = Map.get(r, :tf)
+    metadata?(r) and r.type === @temp_t and is_number(tc) and is_number(tf)
   end
 
   @doc ~S"""
@@ -143,7 +152,8 @@ defmodule Mqtt.Reading do
    true
   """
   def relhum?(%{} = r) do
-    metadata?(r) and r.type === @relhum_t and is_number(r.rh)
+    rh = Map.get(r, :rh)
+    metadata?(r) and r.type === @relhum_t and is_number(rh)
   end
 
   @doc ~S"""
@@ -161,12 +171,17 @@ defmodule Mqtt.Reading do
     true
   """
   def switch?(%{} = r) do
-    metadata?(r) and r.type === @switch_t and is_binary(r.device) and is_list(r.states) and
-      r.pio_count > 0
+    device = Map.get(r, :device)
+    states = Map.get(r, :states)
+    pio_count = Map.get(r, :pio_count)
+
+    metadata?(r) and r.type === @switch_t and is_binary(device) and is_list(states) and
+      pio_count > 0
   end
 
   def free_ram_stat?(%{} = r) do
-    metadata?(r) and r.type == @mcr_stat_t and is_integer(r.freeram)
+    freeram = Map.get(r, :freeram)
+    metadata?(r) and r.type == @mcr_stat_t and is_integer(freeram)
   end
 
   def engine_metric?(%{} = r) do
@@ -189,10 +204,10 @@ defmodule Mqtt.Reading do
     true
   """
   def cmdack?(%{} = r) do
-    switch?(r) and r.cmdack === true and r.latency > 0 and is_binary(r.refid)
-  end
+    cmdack = Map.get(r, :cmdack)
+    latency = Map.get(r, :latency)
+    refid = Map.get(r, :refid)
 
-  def device(%{} = r), do: r.device
-  def states(%{} = r), do: {r.device, r.states}
-  def cmdack(%{} = r), do: {r.device, r.states, r.refid, r.latency}
+    switch?(r) and cmdack === true and latency > 0 and is_binary(refid)
+  end
 end

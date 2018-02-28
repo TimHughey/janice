@@ -9,8 +9,8 @@ defmodule WebRemoteControllerTest do
   alias Web.RemoteController, as: RC
 
   def preferred_vsn, do: "b4edefc"
-  def host(num), do: "mcr.01020304" <> Integer.to_string(num) <> "0"
-  def name(num), do: "test_name1" <> Integer.to_string(num)
+  def host(num), do: "mcr.webremote" <> Integer.to_string(num) <> "0"
+  def name(num), do: "webremote" <> Integer.to_string(num)
 
   def ext(num),
     do: %{

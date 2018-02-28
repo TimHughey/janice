@@ -32,7 +32,6 @@ defmodule Mcp.Application do
           {Mqtt.Supervisor, initial},
           {Janitor, initial},
           {Dutycycle.Control, initial},
-          # {Mixtank.Control, initial},
           {Web.Supervisor, initial}
           # {Mcp.SoakTest, initial},
           # {Mcp.Chamber, initial}

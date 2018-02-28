@@ -67,7 +67,7 @@ config :mcp, Repo,
   username: "merc_prod",
   password: "** set in prod.secret.exs",
   hostname: "** set in prod.secret.exs",
-  pool_size: 10
+  pool_size: 20
 
 config :mcp, Mcp.SoakTest,
   # don't start
