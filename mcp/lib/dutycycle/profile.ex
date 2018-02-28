@@ -38,6 +38,22 @@ defmodule Dutycycle.Profile do
     |> update_all([])
   end
 
+  def as_map(list) when is_list(list) do
+    for dcp <- list, do: as_map(dcp)
+  end
+
+  def as_map(%Dutycycle.Profile{} = dcp) do
+    keys = [
+      :id,
+      :name,
+      :active,
+      :run_ms,
+      :idle_ms
+    ]
+
+    Map.take(dcp, keys)
+  end
+
   def change(nil, _, _), do: %Dutycycle.Profile{}
 
   def change(%Dutycycle{} = dc, profile, opts)

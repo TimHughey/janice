@@ -24,6 +24,22 @@ defmodule Dutycycle.State do
     timestamps(usec: true)
   end
 
+  def as_map(%Dutycycle.State{} = dcs) do
+    keys = [
+      :id,
+      :state,
+      :dev_state,
+      :run_at,
+      :run_end_at,
+      :idle_at,
+      :idle_end_at,
+      :started_at,
+      :state_at
+    ]
+
+    Map.take(dcs, keys)
+  end
+
   def set_idling(%Dutycycle{} = dc) do
     SwitchState.state(dc.device, position: false, lazy: true)
 

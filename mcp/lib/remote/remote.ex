@@ -154,7 +154,7 @@ defmodule Remote do
   def delete_all(:dangerous) do
     dt = Timex.now()
 
-    from(rem in Remote, where: rem.last_seen_at < ^dt)
+    from(rem in Remote, where: rem.id >= 0)
     |> Repo.delete_all()
   end
 

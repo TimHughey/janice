@@ -52,6 +52,7 @@ defmodule Web.Router do
     resources("/sensor", SensorController, only: [:delete, :index, :update])
     resources("/switch", SwitchController, only: [:delete, :index, :update])
     resources("/remote", RemoteController, only: [:delete, :index, :update])
+    resources("/dutycycle", DutycycleController, only: [:delete, :index, :update])
   end
 
   scope "/mercurial", Web do

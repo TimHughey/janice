@@ -12,6 +12,7 @@ import {
 const sensorsID = '#sensorsTable';
 const switchesID = '#switchesTable';
 const remotesID = '#remotesTable';
+const dutycyclesID = '#dutycyclesTable';
 const gScrollY = '50vh';
 
 function deleteButton() {
@@ -43,7 +44,6 @@ function deleteButton() {
           xhr.setRequestHeader('X-CSRF-Token', token);
         },
         error(xhr, status, error) {
-          console.log('error xhr:', xhr);
           displayStatus(`Error deleting ${name}`);
         },
         success(xhr, status) {
@@ -84,7 +84,6 @@ function otaAllButton() {
           xhr.setRequestHeader('X-CSRF-Token', token);
         },
         error(jqXHR, status, error) {
-          console.log('error xhr:', jqXHR);
           displayStatus('Error triggering ota for all');
         },
         success(data, status, jqXHR) {
@@ -138,7 +137,6 @@ function otaSingleButton() {
           xhr.setRequestHeader('X-CSRF-Token', token);
         },
         error(jqXHR, status, error) {
-          console.log('error xhr:', jqXHR);
           displayStatus(`Error triggering ota for ${name}`);
         },
         success(data, status, jqXHR) {
@@ -208,11 +206,9 @@ function renameButton() {
           xhr.setRequestHeader('X-CSRF-Token', token);
         },
         error(xhr, status, error) {
-          console.log('error xhr:', xhr);
           displayStatus(`Error changing name of ${name}`);
         },
         success(data, status, jqXHR) {
-          console.log(data, status, jqXHR);
           displayStatus(`Name changed to ${data.name}`);
           // const response = jqXHR.responseJSON();
           // displayStatus(`Sensor name changed to ${response}`);
@@ -261,11 +257,9 @@ function restartButton() {
           xhr.setRequestHeader('X-CSRF-Token', token);
         },
         error(jqXHR, status, error) {
-          console.log('error xhr:', jqXHR);
           displayStatus(`Error triggering restart for ${name}`);
         },
         success(data, status, jqXHR) {
-          console.log('restart:', data);
           if (data.restart === 'ok') {
             displayStatus(`Restart triggered for ${name}`);
           } else {
@@ -316,7 +310,6 @@ function toggleButton() {
           xhr.setRequestHeader('X-CSRF-Token', token);
         },
         error(jqXHR, status, error) {
-          console.log('error xhr:', jqXHR);
           displayStatus(`Error toggling ${name}`);
         },
         success(data, status, jqXHR) {
@@ -373,14 +366,13 @@ function createSensorsTable() {
           statusText,
         } = jqXHR;
         if (status !== 200) {
-          console.log(sensorsID, jqXHR);
           displayStatus(`Refresh Error: ${statusText}`);
         }
       },
     },
     scrollY: gScrollY,
-    // deferRender: true,
-    scroller: true,
+    scrollCollapse: true,
+    paging: false,
     attr: [{
       api_frag: 'sensor',
     }],
@@ -474,14 +466,13 @@ function createSwitchesTable() {
           statusText,
         } = jqXHR;
         if (status !== 200) {
-          console.log(switchesID, jqXHR);
           displayStatus(`Refresh Error: ${statusText}`);
         }
       },
     },
     scrollY: gScrollY,
-    // deferRender: true,
-    scroller: true,
+    scrollCollapse: true,
+    paging: false,
     select: {
       style: 'single',
       items: 'row',
@@ -572,14 +563,15 @@ function createRemotesTable() {
           statusText,
         } = jqXHR;
         if (status !== 200) {
-          console.log(remotesID, jqXHR);
           displayStatus(`Refresh Error: ${statusText}`);
         }
       },
     },
-    scrollY: 200,
+    scrollY: gScrollY,
     // deferRender: true,
-    scroller: true,
+    // scroller: true,
+    scrollCollapse: true,
+    paging: false,
     select: {
       style: 'single',
       items: 'row',
@@ -628,6 +620,103 @@ function createRemotesTable() {
   remoteTable.button(0).active(true);
 }
 
+function dutycyclesColumns() {
+  return [{
+    data: 'id',
+    class: 'col-center',
+  }, {
+    data: 'name',
+  }, {
+    data: 'comment',
+  }, {
+    data: 'enable',
+    class: 'col-center',
+  },
+  {
+    data: 'standalone',
+    class: 'col-center',
+  }, {
+    data: 'device',
+    class: 'col-center',
+  }, {
+    data: 'state.state_at_secs',
+    class: 'col-center',
+    render: prettySeconds,
+  }, {
+    data: 'state.run_at_secs',
+    class: 'col-center',
+    render: prettySeconds,
+  }, {
+    data: 'state.idle_at_secs',
+    class: 'col-center',
+    render: prettySeconds,
+  },
+  ];
+}
+
+function createDutycyclesTable() {
+  const table = jQuery(dutycyclesID).DataTable({
+    dom: 'Bfrtip',
+    ajax: {
+      url: 'mcp/api/dutycycle',
+      complete(jqXHR, textStatus) {
+        const {
+          status,
+          statusText,
+        } = jqXHR;
+        if (status !== 200) {
+          displayStatus(`Refresh Error: ${statusText}`);
+        }
+      },
+    },
+    class: 'compact',
+    scrollY: gScrollY,
+    scrollCollapse: true,
+    paging: false,
+    select: {
+      style: 'single',
+      items: 'row',
+      // selector: 'td:nth-child(1)', // only allow devices to be selected
+    },
+    order: [
+      [1, 'asc'],
+    ],
+    columns: dutycyclesColumns(),
+    columnDefs: [
+      {
+        targets: [0, 2],
+        visible: false,
+        searchable: false,
+      },
+    ],
+    buttons: [refreshButton(),
+    ],
+  });
+
+  table.on('select', (e, dt, type, indexes) => {
+    const refresh = dt.button(0);
+    refresh.active(false);
+
+    const inputBox = jQuery('#generalPurposeForm');
+
+    jQuery('#generalInputBox').attr(
+      'placeholder',
+      'Enter new remote name here then press Rename',
+    );
+    inputBox.fadeIn('fast');
+  });
+
+  table.on('deselect', (e, dt, type, indexes) => {
+    const refresh = dt.refresh(0);
+    const inputBox = jQuery('#generalPurposeForm');
+    refresh.active(true);
+
+    inputBox.fadeOut('fast');
+  });
+
+  table.button(0).active(true);
+}
+
 function pageReady(jQuery) {
   /* eslint-disable no-param-reassign */
   jQuery.fn.dataTable.ext.errMode = dataTableErrorHandler;
@@ -636,6 +725,7 @@ function pageReady(jQuery) {
   createSensorsTable();
   createSwitchesTable();
   createRemotesTable();
+  createDutycyclesTable();
   autoRefresh();
 
   jQuery('#mixtankProfile,dropdown-item').on('click', (event) => {
@@ -655,7 +745,6 @@ function pageReady(jQuery) {
         xhr.setRequestHeader('X-CSRF-Token', token);
       },
       error(xhr, status, error) {
-        console.log('error xhr:', xhr);
         displayStatus(`Error activating profile ${newProfile}`);
       },
     }).done((data) => {

@@ -48,6 +48,36 @@ defmodule Dutycycle do
     timestamps(usec: true)
   end
 
+  def activate_profile(dc_name, profile_name, opts \\ :none)
+      when is_binary(dc_name) and is_binary(profile_name) do
+    dc = from(d in Dutycycle, where: d.name == ^dc_name) |> one()
+
+    if opts == :enable, do: enable(dc_name)
+
+    if dc do
+      Profile.activate(dc, profile_name)
+    else
+      Logger.warn(fn ->
+        "dutycycle [#{dc_name}] does not " <> "exist, can't activate profile"
+      end)
+
+      :not_found
+    end
+  end
+
+  def active_profile(name) do
+    from(
+      d in Dutycycle,
+      join: m in assoc(d, :profiles),
+      join: s in assoc(d, :state),
+      where: m.active == true,
+      where: d.name == ^name,
+      select: d,
+      preload: [state: s, profiles: m]
+    )
+    |> one()
+  end
+
   def add([]), do: []
 
   def add([%Dutycycle{} = dc | rest]) do
@@ -90,31 +120,19 @@ defmodule Dutycycle do
     |> all()
   end
 
-  def activate_profile(dc_name, profile_name, opts \\ :none)
-      when is_binary(dc_name) and is_binary(profile_name) do
-    dc = from(d in Dutycycle, where: d.name == ^dc_name) |> one()
+  def as_map(nil), do: %{}
 
-    if opts == :enable, do: enable(dc_name)
-
-    if dc != nil,
-      do: Profile.activate(dc, profile_name),
-      else:
-        Logger.warn(fn ->
-          "dutycycle [#{dc_name}] does not " <> "exist, can't activate profile"
-        end)
-  end
-
-  def active_profile(name) do
-    from(
-      d in Dutycycle,
-      join: m in assoc(d, :profiles),
-      join: s in assoc(d, :state),
-      where: m.active == true,
-      where: d.name == ^name,
-      select: d,
-      preload: [state: s, profiles: m]
-    )
-    |> one()
+  def as_map(%Dutycycle{} = dc) do
+    %{
+      id: dc.id,
+      name: dc.name,
+      comment: dc.comment,
+      enable: dc.enable,
+      standalone: dc.standalone,
+      device: dc.device,
+      profiles: Profile.as_map(dc.profiles),
+      state: State.as_map(dc.state)
+    }
   end
 
   def available_profiles(name) when is_binary(name) do
@@ -155,5 +173,32 @@ defmodule Dutycycle do
       preload: [state: s, profiles: p]
     )
     |> one()
+  end
+
+  def get_by(opts) when is_list(opts) do
+    filter = Keyword.take(opts, [:id, :device, :name])
+    select = Keyword.take(opts, [:only]) |> Keyword.get_values(:only) |> List.flatten()
+
+    if Enum.empty?(filter) do
+      Logger.warn(fn -> "get_by bad args: #{inspect(opts)}" end)
+      []
+    else
+      dc =
+        from(
+          d in Dutycycle,
+          join: p in assoc(d, :profiles),
+          join: s in assoc(d, :state),
+          where: ^filter,
+          preload: [state: s, profiles: p]
+        )
+        |> one()
+
+      if is_nil(dc) or Enum.empty?(select), do: dc, else: Map.take(dc, select)
+    end
+  end
+
+  def delete_all(:dangerous) do
+    from(dc in Dutycycle, where: dc.id >= 0)
+    |> Repo.delete_all()
   end
 end

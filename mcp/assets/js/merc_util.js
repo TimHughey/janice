@@ -11,13 +11,13 @@ export function humanizeState(data, type, row) {
 }
 
 export function prettySeconds(data, type, row) {
-  if (data > 0) {
-    return prettyMs((data * 1000), {
-      compact: true,
-    });
+  if (data === 0) {
+    return 'now';
   }
 
-  return 'now';
+  return prettyMs((data * 1000), {
+    compact: true,
+  });
 }
 
 export function prettyLastCommand(data, type, row) {
@@ -62,7 +62,7 @@ export function autoRefresh() {
   ari = setInterval(
     () => {
       if (document.visibilityState === 'visible') {
-        const tabs = ['switches', 'sensors', 'remotes'];
+        const tabs = ['switches', 'sensors', 'remotes', 'dutycycles'];
         tabs.forEach((elem) => {
           const tabActive = jQuery(`#${elem}Tab`).hasClass('active');
           const table = jQuery(`#${elem}Table`).DataTable();
