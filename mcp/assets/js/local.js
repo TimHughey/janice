@@ -17,16 +17,41 @@ const dutycyclesID = '#dutycyclesTable';
 const mixtanksID = '#mixtanksTable';
 const gScrollY = '50vh';
 
-function deleteButton() {
+function deleteButton(dt) {
+  return dt.buttons('__delete:name');
+}
+
+function refreshButton(dt) {
+  return dt.buttons('__refresh:name');
+}
+
+function otaAllButton(dt) {
+  return dt.buttons('__otaAll:name');
+}
+
+function otaSingleButton(dt) {
+  return dt.buttons('__otaSingle:name');
+}
+
+function renameButton(dt) {
+  return dt.buttons('__rename:name');
+}
+
+function restartButton(dt) {
+  return dt.buttons('__restart:name');
+}
+
+function newDeleteButton(tableName) {
   return {
     text: 'Delete',
     extend: 'selected',
+    name: '__delete',
     attr: {
       id: 'deleteButton',
     },
     action(e, dt, node, config) {
-      const refresh = dt.button(0);
-      const button = dt.button(2);
+      const refresh = refreshButton(dt);
+      const button = deleteButton(dt);
       const url = dt.ajax.url();
 
       const {
@@ -62,15 +87,16 @@ function deleteButton() {
   };
 }
 
-function otaAllButton() {
+function newOtaAllButton(tableName) {
   return {
     text: 'OTA (All)',
+    name: '__otaAll',
     attr: {
-      id: 'otaAllButton',
+      id: `${tableName}OtaAllButtonID`,
     },
     action(e, dt, node, config) {
-      const refresh = dt.button(0);
-      const button = dt.button(4);
+      const refresh = refreshButton(dt);
+      const button = otaAllButton(dt);
       const url = dt.ajax.url();
 
       button.processing(true);
@@ -106,16 +132,17 @@ function otaAllButton() {
   };
 }
 
-function otaSingleButton() {
+function newOtaSingleButton(tableName) {
   return {
     text: 'OTA (Single)',
+    name: '__otaSingle',
     extend: 'selected',
     attr: {
-      id: 'otaSingleButton',
+      id: `${tableName}OtaSingleButtonID`,
     },
     action(e, dt, node, config) {
-      const refresh = dt.button(0);
-      const ota = dt.button(4);
+      const refresh = refreshButton(dt);
+      const ota = otaSingleButton(dt);
       const url = dt.ajax.url();
 
       const {
@@ -155,14 +182,18 @@ function otaSingleButton() {
   };
 }
 
-function refreshButton() {
+function newRefreshButton(tableName) {
+  // const buttonName = `${tableName}RefreshButton`;
+  const buttonName = '__refresh';
   return {
     text: 'Refresh',
+    name: buttonName,
     attr: {
-      id: 'refreshButton',
+      id: `${tableName}RefreshButtonID`,
     },
     action(e, dt, node, config) {
-      const button = dt.button(0);
+      const button = refreshButton(dt);
+
       if (button.active()) {
         button.active(false);
       } else {
@@ -173,16 +204,17 @@ function refreshButton() {
   };
 }
 
-function renameButton() {
+function newRenameButton(tableName) {
   return {
     text: 'Rename',
+    name: '__rename',
     extend: 'selected',
     attr: {
-      id: 'renameButton',
+      id: `${tableName}RenameButtonID`,
     },
     action(e, dt, node, config) {
-      const refresh = dt.button(0);
-      const rename = dt.button(1);
+      const refresh = refreshButton(dt);
+      const rename = renameButton(dt);
       const url = dt.ajax.url();
 
       const {
@@ -226,16 +258,17 @@ function renameButton() {
   };
 }
 
-function restartButton() {
+function newRestartButton(tableName) {
   return {
     text: 'Restart',
+    name: '__restart',
     extend: 'selected',
     attr: {
-      id: 'restartButton',
+      id: `${tableName}RestartButtonID`,
     },
     action(e, dt, node, config) {
-      const refresh = dt.button(0);
-      const restart = dt.button(5);
+      const refresh = refreshButton(dt);
+      const restart = restartButton(dt);
       const url = dt.ajax.url();
 
       const {
@@ -279,16 +312,17 @@ function restartButton() {
   };
 }
 
-function toggleButton() {
+function toggleButton(tableName) {
   return {
     text: 'Toggle',
+    name: '__toggle',
     extend: 'selected',
     attr: {
       id: 'toggleButton',
     },
     action(e, dt, node, config) {
-      const refresh = dt.button(0);
-      const toggle = dt.button(3);
+      const refresh = refreshButton(dt);
+      const toggle = toggleButton(dt);
       const url = dt.ajax.url();
 
       const {
@@ -358,7 +392,8 @@ function sensorsColumns() {
 }
 
 function createSensorsTable() {
-  const sensorTable = jQuery(sensorsID).DataTable({
+  const tableName = 'Sensors';
+  const table = jQuery(sensorsID).DataTable({
     dom: 'Bfrtip',
     ajax: {
       url: 'mcp/api/sensor',
@@ -394,31 +429,35 @@ function createSensorsTable() {
         searchable: false,
       },
     ],
-    buttons: [refreshButton(),
-      renameButton(),
-      deleteButton()],
+    buttons: [newRefreshButton(tableName),
+      newRenameButton(tableName),
+      newDeleteButton(tableName)],
   });
 
-  sensorTable.on('select', (e, dt, type, indexes) => {
-    sensorTable.button(0).active(false);
+  refreshButton(table).active(true);
 
-    const inputBox = jQuery('#generalPurposeForm');
+  table.on('select', (e, dt, type, indexes) => {
+    refreshButton(dt).active(false);
+
+    const inputForm = jQuery('#generalPurposeForm');
+
+    jQuery('#generalInputTextLabel').text('New Sensor Name');
 
     jQuery('#generalInputBox').attr(
       'placeholder',
       'Enter new sensor name here then press Rename',
     );
-    inputBox.fadeIn('fast');
+
+    jQuery('#generalInputBox').focus();
+    inputForm.fadeIn('fast');
   });
 
-  sensorTable.on('deselect', (e, dt, type, indexes) => {
+  table.on('deselect', (e, dt, type, indexes) => {
     const inputBox = jQuery('#generalPurposeForm');
-    sensorTable.button(0).active(true);
+    refreshButton(dt).active(true);
 
     inputBox.fadeOut('fast');
   });
-
-  sensorTable.button(0).active(true);
 }
 
 function switchesColumns() {
@@ -458,7 +497,8 @@ function switchesColumns() {
 }
 
 function createSwitchesTable() {
-  const switchTable = jQuery(switchesID).DataTable({
+  const tableName = 'Switches';
+  const table = jQuery(switchesID).DataTable({
     dom: 'Bfrtip',
     ajax: {
       url: 'mcp/api/switch',
@@ -490,32 +530,34 @@ function createSwitchesTable() {
         searchable: false,
       },
     ],
-    buttons: [refreshButton(),
-      renameButton(),
-      deleteButton(),
-      toggleButton(),
+    buttons: [newRefreshButton(tableName),
+      newRenameButton(tableName),
+      newDeleteButton(tableName),
+      toggleButton(tableName),
     ],
   });
 
-  const refresh = switchTable.button(0);
+  refreshButton(table).active(true);
 
-  refresh.active(true);
+  table.on('select', (e, dt, type, indexes) => {
+    refreshButton(dt).active(false);
 
-  switchTable.on('select', (e, dt, type, indexes) => {
-    refresh.active(false);
+    const inputForm = jQuery('#generalPurposeForm');
 
-    const inputBox = jQuery('#generalPurposeForm');
+    jQuery('#generalInputTextLabel').text('RENAME');
 
     jQuery('#generalInputBox').attr(
       'placeholder',
-      'Enter new switch name then click Rename',
+      'Enter new switch name here then click Rename',
     );
-    inputBox.fadeIn('fast');
+
+    jQuery('#generalInputBox').focus();
+    inputForm.fadeIn('fast');
   });
 
-  switchTable.on('deselect', (e, dt, type, indexes) => {
+  table.on('deselect', (e, dt, type, indexes) => {
     const inputBox = jQuery('#generalPurposeForm');
-    refresh.active(true);
+    refreshButton(dt).active(true);
 
     inputBox.fadeOut('fast');
   });
@@ -555,7 +597,8 @@ function remotesColumns() {
 }
 
 function createRemotesTable() {
-  const remoteTable = jQuery(remotesID).DataTable({
+  const tableName = 'Remotes';
+  const table = jQuery(remotesID).DataTable({
     dom: 'Bfrtip',
     ajax: {
       url: 'mcp/api/remote',
@@ -590,36 +633,38 @@ function createRemotesTable() {
         searchable: false,
       },
     ],
-    buttons: [refreshButton(),
-      renameButton(),
-      deleteButton(),
-      otaSingleButton(),
-      otaAllButton(),
-      restartButton()],
+    buttons: [newRefreshButton(tableName),
+      newRenameButton(tableName),
+      newDeleteButton(tableName),
+      newOtaSingleButton(tableName),
+      newOtaAllButton(tableName),
+      newRestartButton(tableName)],
   });
 
-  remoteTable.on('select', (e, dt, type, indexes) => {
-    const refresh = dt.button(0);
-    refresh.active(false);
+  refreshButton(table).active(true);
 
-    const inputBox = jQuery('#generalPurposeForm');
+  table.on('select', (e, dt, type, indexes) => {
+    refreshButton(dt).active(false);
+
+    const inputForm = jQuery('#generalPurposeForm');
+
+    jQuery('#generalInputTextLabel').text('RENAME');
 
     jQuery('#generalInputBox').attr(
       'placeholder',
-      'Enter new remote name here then press Rename',
+      'Enter new remote name here then click Rename',
     );
-    inputBox.fadeIn('fast');
+
+    jQuery('#generalInputBox').focus();
+    inputForm.fadeIn('fast');
   });
 
-  remoteTable.on('deselect', (e, dt, type, indexes) => {
-    const refresh = dt.refresh(0);
+  table.on('deselect', (e, dt, type, indexes) => {
     const inputBox = jQuery('#generalPurposeForm');
-    refresh.active(true);
+    refreshButton(dt).active(true);
 
     inputBox.fadeOut('fast');
   });
-
-  remoteTable.button(0).active(true);
 }
 
 function dutycyclesColumns() {
@@ -659,6 +704,7 @@ function dutycyclesColumns() {
 }
 
 function createDutycyclesTable() {
+  const tableName = 'Dutycycles';
   const table = jQuery(dutycyclesID).DataTable({
     dom: 'Bfrtip',
     ajax: {
@@ -688,37 +734,39 @@ function createDutycyclesTable() {
     columns: dutycyclesColumns(),
     columnDefs: [
       {
-        targets: [0],
+        targets: [0, 2],
         visible: false,
         searchable: false,
       },
     ],
-    buttons: [refreshButton(),
+    buttons: [newRefreshButton(tableName),
     ],
   });
 
-  table.on('select', (e, dt, type, indexes) => {
-    const refresh = dt.button(0);
-    refresh.active(false);
+  refreshButton(table).active(true);
 
-    const inputBox = jQuery('#generalPurposeForm');
+  table.on('select', (e, dt, type, indexes) => {
+    refreshButton(dt).active(false);
+
+    const inputForm = jQuery('#generalPurposeForm');
+
+    jQuery('#generalInputTextLabel').text('RENAME');
 
     jQuery('#generalInputBox').attr(
       'placeholder',
-      'Enter new remote name here then press Rename',
+      'Enter new dutycycle name here then click Rename',
     );
-    inputBox.fadeIn('fast');
+
+    jQuery('#generalInputBox').focus();
+    inputForm.fadeIn('fast');
   });
 
   table.on('deselect', (e, dt, type, indexes) => {
-    const refresh = dt.refresh(0);
     const inputBox = jQuery('#generalPurposeForm');
-    refresh.active(true);
+    refreshButton(dt).active(true);
 
     inputBox.fadeOut('fast');
   });
-
-  table.button(0).active(true);
 }
 
 function mixtanksColumns() {
@@ -757,6 +805,7 @@ function mixtanksColumns() {
 }
 
 function createMixtanksTable() {
+  const tableName = 'Mixtanks';
   const table = jQuery(mixtanksID).DataTable({
     dom: 'Bfrtip',
     ajax: {
@@ -791,32 +840,34 @@ function createMixtanksTable() {
         searchable: false,
       },
     ],
-    buttons: [refreshButton(),
+    buttons: [newRefreshButton(tableName),
     ],
   });
 
-  table.on('select', (e, dt, type, indexes) => {
-    const refresh = dt.button(0);
-    refresh.active(false);
+  refreshButton(table).active(true);
 
-    const inputBox = jQuery('#generalPurposeForm');
+  table.on('select', (e, dt, type, indexes) => {
+    refreshButton(dt).active(false);
+
+    const inputForm = jQuery('#generalPurposeForm');
+
+    jQuery('#generalInputTextLabel').text('RENAME');
 
     jQuery('#generalInputBox').attr(
       'placeholder',
-      'Enter new remote name here then press Rename',
+      'Enter new mixtank name here then click Rename',
     );
-    inputBox.fadeIn('fast');
+
+    jQuery('#generalInputBox').focus();
+    inputForm.fadeIn('fast');
   });
 
   table.on('deselect', (e, dt, type, indexes) => {
-    const refresh = dt.refresh(0);
     const inputBox = jQuery('#generalPurposeForm');
-    refresh.active(true);
+    refreshButton(dt).active(true);
 
     inputBox.fadeOut('fast');
   });
-
-  table.button(0).active(true);
 }
 
 function pageReady(jQuery) {
@@ -831,37 +882,17 @@ function pageReady(jQuery) {
   createMixtanksTable();
   autoRefresh();
 
-  jQuery('#mixtankProfile,dropdown-item').on('click', (event) => {
-    const parent = event.target.parentNode;
-    const mixtankName = parent.attributes.mixtankName.value;
-    const newProfile = event.target.text;
-
-    jQuery.ajax({
-      url: `mcp/api/mixtank/${mixtankName}`,
-      type: 'PATCH',
-      data: {
-        newprofile: newProfile,
-      },
-      beforeSend(xhr) {
-        // send the CSRF token included as a meta on the HTML page
-        const token = jQuery("meta[name='csrf-token']").attr('content');
-        xhr.setRequestHeader('X-CSRF-Token', token);
-      },
-      error(xhr, status, error) {
-        displayStatus(`Error activating profile ${newProfile}`);
-      },
-    }).done((data) => {
-      displayStatus(`Activated profile ${data.active_profile}`);
-    });
-
-    jQuery('#dropdownMenuButton').text(newProfile);
-  });
-
   // this must be the last thing -- after all tables created
-  const tabs = ['switches', 'sensors', 'remotes', 'dutycycles', 'mixtanks'];
+  const tabs = ['switches', 'sensors', 'remotes', 'dutycycles',
+    'mixtanks'];
   tabs.forEach((elem) => {
     const href = jQuery(`a[href="#${elem}Tab"]`);
     const table = jQuery(`#${elem}Table`).DataTable();
+
+    href.on('hide.bs.tab', (event) => {
+      const inputBox = jQuery('#generalPurposeForm');
+      inputBox.fadeOut('fast');
+    });
 
     href.on('shown.bs.tab', (event) => {
       table.ajax.reload(null, false);

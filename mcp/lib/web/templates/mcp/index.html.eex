@@ -16,8 +16,7 @@
     <a class="nav-link" id="nav-remotes-tab" data-toggle="pill" href="#remotesTab" role="tab" aria-controls="v-pills-profile" aria-selected="false">Remotes</a>
     <a class="nav-link" id="nav-dutycycles-tab" data-toggle="pill" href="#dutycyclesTab" role="tab" aria-controls="v-pills-profile" aria-selected="false">Dutycycles</a>
     <a class="nav-link" id="nav-mixtanks-tab" data-toggle="pill" href="#mixtanksTab" role="tab" aria-controls="v-pills-profile" aria-selected="false">Mixtanks</a>
-    <a class="nav-link" id="nav-mixtanks-old-tab" data-toggle="pill" href="#mixtanksOldTab" role="tab" aria-controls="v-pills-profile" aria-selected="false">__Mixtanks</a>
-  </div>
+    </div>
 </div>
 
 <div class="container col-10">
@@ -106,46 +105,10 @@
         </thead>
       </table>
     </div>
-    <div class="tab-pane fade" role="tabpanel" id="mixtanksOldTab">
-      <div class="container mixtank-wrapper" style="border:1px solid #cecece;">
-        <div class="row align-items-center justify-content-start" style="border-bottom: 1px solid;">
-          <div class="col-3">
-            <span class="border-bottom-1">
-              <h5>Mixtank Name</h5>
-            </span>
-          </div>
-          <div class="col-3">
-            <h5>Profile</h5>
-          </div>
-          <div class="col-3">
-            <h5>Status</h5>
-          </div>
-        </div>
-        <%= for m <- @mixtanks do %>
-
-          <div class="row align-items-center" style="border-bottom: 1px solid;">
-            <div class="col-3">
-            <%= m.mixtank %>
-          </div>
-          <div class="col-3 dropdown" style="margin:5px 0px 5px 0px;">
-            <button class="btn btn-dark dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-              <%= m.active %>
-            </button>
-            <div class="dropdown-menu" mixtankName="reefwater" id="mixtankProfile" aria-labelledby="dropdownMenuButton">
-              <%= dropdown_items(m.profiles) %>
-            </div>
-          </div>
-          <div class="col-3">
-            <%= m.state %>
-          </div>
-        </div>
-        <% end %>
-      </div>
-    </div>
   </div>
   <div class="row" id="generalPurposeForm" style="display:none;">
     <div class="col-12">
-      <div class="input-group mb-3 border border-danger">
+      <div class="input-group mb-3">
         <div class="input-group-prepend">
           <span class="input-group-text" id="generalInputTextLabel">General Input</span>
         </div>
