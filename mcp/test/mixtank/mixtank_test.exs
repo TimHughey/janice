@@ -138,4 +138,41 @@ defmodule MixtankTest do
 
     assert mt.id === id
   end
+
+  test "active profile name is 'none' when mixtank disabled" do
+    mt = new_mixtank(1) |> Mixtank.add()
+
+    profile = Mixtank.active_profile_name(mt.id)
+
+    assert profile === "none"
+  end
+
+  test "disable a mixtank by id" do
+    mt = new_mixtank(2) |> Mixtank.add()
+    rc = Mixtank.disable(id: mt.id)
+
+    assert rc === :ok
+  end
+
+  test "Mixtank.disable() handles an non-existant id" do
+    rc = Mixtank.disable(id: 1_000_000)
+
+    assert rc === :error
+  end
+
+  test "enable a mixtank by id" do
+    mt = new_mixtank(3) |> Mixtank.add()
+    rc = Mixtank.enable(id: mt.id)
+
+    assert rc === :ok
+  end
+
+  test "disabled mixtank returns 'none' as active profile" do
+    mt = new_mixtank(4) |> Mixtank.add()
+
+    Mixtank.disable(id: mt.id)
+    profile = Mixtank.active_profile_name(mt.id)
+
+    assert profile === "none"
+  end
 end

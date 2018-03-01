@@ -27,9 +27,14 @@ export function prettySeconds(data, type, row) {
     return 'now';
   }
 
-  return prettyMs((data * 1000), {
-    compact: true,
-  });
+  let opts = {};
+  if (data > (60 * 60)) {
+    opts = {
+      compact: true,
+    };
+  }
+
+  return prettyMs((data * 1000), opts);
 }
 
 export function prettyLastCommand(data, type, row) {

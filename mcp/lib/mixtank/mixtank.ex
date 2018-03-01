@@ -104,6 +104,19 @@ defmodule Mixtank do
     |> one()
   end
 
+  def active_profile_name(id) when is_integer(id) do
+    mt = get_by(id: id)
+    state = mt.state.state
+
+    if state === "stopped" do
+      "none"
+    else
+      profile = for p <- mt.profiles, p.active == true, do: p.name
+
+      if Enum.empty?(profile), do: "none", else: hd(profile)
+    end
+  end
+
   def as_map(%Mixtank{} = mt) do
     keys = [
       :id,
@@ -149,6 +162,16 @@ defmodule Mixtank do
     |> update_all([])
   end
 
+  def disable(opts) when is_list(opts) do
+    opts = Keyword.put(opts, :enable, false)
+    set_enable(opts)
+  end
+
+  def enable(opts) when is_list(opts) do
+    opts = Keyword.put(opts, :enable, true)
+    set_enable(opts)
+  end
+
   def enable(name) when is_binary(name) do
     from(
       mt in Mixtank,
@@ -178,9 +201,25 @@ defmodule Mixtank do
       Logger.warn(fn -> "get_by bad args: #{inspect(opts)}" end)
       []
     else
-      mt = from(m in Mixtank, where: ^filter) |> one()
+      mt = from(m in Mixtank, where: ^filter, preload: [:profiles, :state]) |> one()
 
       if is_nil(mt) or Enum.empty?(select), do: mt, else: Map.take(mt, select)
     end
+  end
+
+  def set_enable(opts) when is_list(opts) do
+    filter = Keyword.take(opts, [:id, :name, :sensor, :ref_sensor])
+    # default to false if not specified
+    enable = Keyword.get(opts, :enable, false)
+
+    {count, nil} =
+      from(
+        mt in Mixtank,
+        where: ^filter,
+        update: [set: [enable: ^enable]]
+      )
+      |> update_all([])
+
+    if count === 1, do: :ok, else: :error
   end
 end

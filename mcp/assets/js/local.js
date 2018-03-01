@@ -147,7 +147,7 @@ function newMixtankProfileButton(tableName, profileName) {
   };
 }
 
-function newMixtankProfilesButton(tableName, profiles) {
+function newMixtankProfilesButton(tableName, profiles, activeProfile) {
   const b = [];
   const len = profiles.length;
 
@@ -790,7 +790,17 @@ function dutycyclesColumns() {
     class: 'col-center',
     render: prettySeconds,
   }, {
+    data: 'state.run_at_end_secs',
+    class: 'col-center',
+    render: prettySeconds,
+  },
+  {
     data: 'state.idle_at_secs',
+    class: 'col-center',
+    render: prettySeconds,
+  },
+  {
+    data: 'state.idle_at_end_secs',
     class: 'col-center',
     render: prettySeconds,
   },
@@ -879,14 +889,28 @@ function mixtanksColumns() {
   {
     data: 'state.state',
     class: 'col-center',
+
+  },
+  {
+    data: 'activeProfile',
+    class: 'col-center',
+    render: (val) => {
+      if (val === 'none') {
+        return '-';
+      }
+
+      return val;
+    },
   },
   {
     data: 'sensor',
     class: 'col-center',
-  }, {
+  },
+  {
     data: 'ref_sensor',
     class: 'col-center',
-  }, {
+  },
+  {
     data: 'state.state_at_secs',
     class: 'col-center',
     render: prettySeconds,
@@ -930,7 +954,7 @@ function createMixtanksTable() {
     columns: mixtanksColumns(),
     columnDefs: [
       {
-        targets: [0, 2],
+        targets: [0, 2, 6, 7],
         visible: false,
         searchable: false,
       },
@@ -959,11 +983,17 @@ function createMixtanksTable() {
     // jQuery('#generalInputBox').focus();
     // inputForm.fadeIn('fast');
     const data = table.data();
-    const profileNames = data[0].profile_names;
+    const {
+      profileNames,
+      activeProfile,
+    } = data[0];
+
     dt.button().add(1, newMixtankProfilesButton(
       tableName,
       profileNames,
     ));
+
+    dt.buttons(`__${activeProfile}:name`).disable();
   });
 
   table.on('deselect', (e, dt, type, indexes) => {

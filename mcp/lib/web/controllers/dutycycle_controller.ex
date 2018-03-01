@@ -28,7 +28,9 @@ defmodule Web.DutycycleController do
         state =
           Map.put_new(m.state, :started_at_secs, to_seconds(m.state.started_at))
           |> Map.put_new(:run_at_secs, to_seconds(m.state.run_at))
+          |> Map.put_new(:run_at_end_secs, to_seconds(m.state.run_end_at))
           |> Map.put_new(:idle_at_secs, to_seconds(m.state.idle_at))
+          |> Map.put_new(:idle_at_end_secs, to_seconds(m.state.idle_end_at))
           |> Map.put_new(:state_at_secs, to_seconds(m.state.state_at))
 
         Map.put(m, :state, state)
@@ -58,6 +60,8 @@ defmodule Web.DutycycleController do
   end
 
   defp to_seconds(dt) do
-    if is_nil(dt), do: nil, else: Timex.diff(Timex.now(), dt, :seconds)
+    secs = if is_nil(dt), do: nil, else: Timex.diff(Timex.now(), dt, :seconds)
+
+    if secs < 0, do: secs * -1, else: secs
   end
 end

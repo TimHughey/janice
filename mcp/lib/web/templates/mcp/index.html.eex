@@ -82,8 +82,10 @@
             <th>Standalone</th>
             <th>Device</th>
             <th>State</th>
-            <th>Run</th>
-            <th>Idle</th>
+            <th>Run Start</th>
+            <th>Run End</th>
+            <th>Idle Start</th>
+            <th>Idle End</th>
           </tr>
         </thead>
       </table>
@@ -97,6 +99,7 @@
             <th>Comment</th>
             <th>Enabled?</th>
             <th>State</th>
+            <th>Profile</th>
             <th>Sensor</th>
             <th>Ref Sensor</th>
             <th>State At</th>

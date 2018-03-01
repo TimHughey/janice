@@ -6,7 +6,7 @@ defmodule Web.RemoteController do
   use Web, :controller
 
   def index(conn, %{"ota_all" => "true"} = _params) do
-    ota_all_res = Remote.ota_update(:all)
+    ota_all_res = Remote.ota_update(:all, transmit_delay_ms: 100)
 
     resp = %{
       data: [],
@@ -61,7 +61,7 @@ defmodule Web.RemoteController do
     prefer_res = if new_preference, do: Remote.change_vsn_preference(id, new_preference)
 
     ota = Map.get(params, "ota", false)
-    ota_res = if ota, do: Remote.ota_update(id)
+    ota_res = if ota, do: Remote.ota_update(id, transmit_delay_ms: 100)
 
     restart = Map.get(params, "restart", false)
     restart_res = if restart, do: Remote.restart(id, delay_ms: 0)
