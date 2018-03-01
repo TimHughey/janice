@@ -145,6 +145,11 @@ defmodule Dutycycle do
     |> all()
   end
 
+  def delete_all(:dangerous) do
+    from(dc in Dutycycle, where: dc.id >= 0)
+    |> Repo.delete_all()
+  end
+
   def disable(name) when is_binary(name) do
     from(
       d in Dutycycle,
@@ -195,10 +200,5 @@ defmodule Dutycycle do
 
       if is_nil(dc) or Enum.empty?(select), do: dc, else: Map.take(dc, select)
     end
-  end
-
-  def delete_all(:dangerous) do
-    from(dc in Dutycycle, where: dc.id >= 0)
-    |> Repo.delete_all()
   end
 end

@@ -14,6 +14,7 @@ defmodule Mixtank do
   import Ecto.Query, only: [from: 2]
 
   alias Mixtank.Profile
+  alias Mixtank.State
 
   schema "mixtank" do
     field(:name)
@@ -80,8 +81,7 @@ defmodule Mixtank do
 
     if mt != nil,
       do: Profile.activate(mt, profile_name),
-      else:
-        Logger.warn(fn -> "mixtank [#{mt_name}] does not " <> "exist, can't activate profile" end)
+      else: Logger.warn(fn -> "mixtank [#{mt_name}] does not exist, can't activate profile" end)
   end
 
   def active_profile(name, :name) do
@@ -104,6 +104,25 @@ defmodule Mixtank do
     |> one()
   end
 
+  def as_map(%Mixtank{} = mt) do
+    keys = [
+      :id,
+      :name,
+      :comment,
+      :enable,
+      :sensor,
+      :ref_sensor,
+      :pump,
+      :air,
+      :heater,
+      :fill,
+      :replenish
+    ]
+
+    mt |> Map.take(keys) |> Map.put_new(:state, State.as_map(mt.state))
+    |> Map.put_new(:profiles, Profile.as_map(mt.profiles))
+  end
+
   def available_profiles(name) when is_binary(name) do
     from(
       mt in Mixtank,
@@ -112,6 +131,11 @@ defmodule Mixtank do
       select: p.name
     )
     |> all()
+  end
+
+  def delete_all(:dangerous) do
+    from(mt in Mixtank, where: mt.id >= 0)
+    |> Repo.delete_all()
   end
 
   def disable(%Mixtank{name: name}), do: disable(name)
@@ -144,5 +168,19 @@ defmodule Mixtank do
       preload: [state: s, profiles: p]
     )
     |> one()
+  end
+
+  def get_by(opts) when is_list(opts) do
+    filter = Keyword.take(opts, [:id, :name, :sensor, :ref_sensor])
+    select = Keyword.take(opts, [:only]) |> Keyword.get_values(:only) |> List.flatten()
+
+    if Enum.empty?(filter) do
+      Logger.warn(fn -> "get_by bad args: #{inspect(opts)}" end)
+      []
+    else
+      mt = from(m in Mixtank, where: ^filter) |> one()
+
+      if is_nil(mt) or Enum.empty?(select), do: mt, else: Map.take(mt, select)
+    end
   end
 end

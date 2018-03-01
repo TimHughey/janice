@@ -21,6 +21,12 @@ defmodule Mixtank.State do
     timestamps(usec: true)
   end
 
+  def as_map(%State{} = mts) do
+    keys = [:id, :state, :started_at, :state_at]
+
+    Map.take(mts, keys)
+  end
+
   def set_started(%Mixtank{} = mt) do
     now = Timex.now()
 

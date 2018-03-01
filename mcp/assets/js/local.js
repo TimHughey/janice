@@ -1,4 +1,5 @@
 import {
+  boolToYesNo,
   humanizeState,
   prettySeconds,
   prettyLastCommand,
@@ -13,6 +14,7 @@ const sensorsID = '#sensorsTable';
 const switchesID = '#switchesTable';
 const remotesID = '#remotesTable';
 const dutycyclesID = '#dutycyclesTable';
+const mixtanksID = '#mixtanksTable';
 const gScrollY = '50vh';
 
 function deleteButton() {
@@ -631,10 +633,12 @@ function dutycyclesColumns() {
   }, {
     data: 'enable',
     class: 'col-center',
+    render: boolToYesNo,
   },
   {
     data: 'standalone',
     class: 'col-center',
+    render: boolToYesNo,
   }, {
     data: 'device',
     class: 'col-center',
@@ -684,6 +688,104 @@ function createDutycyclesTable() {
     columns: dutycyclesColumns(),
     columnDefs: [
       {
+        targets: [0],
+        visible: false,
+        searchable: false,
+      },
+    ],
+    buttons: [refreshButton(),
+    ],
+  });
+
+  table.on('select', (e, dt, type, indexes) => {
+    const refresh = dt.button(0);
+    refresh.active(false);
+
+    const inputBox = jQuery('#generalPurposeForm');
+
+    jQuery('#generalInputBox').attr(
+      'placeholder',
+      'Enter new remote name here then press Rename',
+    );
+    inputBox.fadeIn('fast');
+  });
+
+  table.on('deselect', (e, dt, type, indexes) => {
+    const refresh = dt.refresh(0);
+    const inputBox = jQuery('#generalPurposeForm');
+    refresh.active(true);
+
+    inputBox.fadeOut('fast');
+  });
+
+  table.button(0).active(true);
+}
+
+function mixtanksColumns() {
+  return [{
+    data: 'id',
+    class: 'col-center',
+  }, {
+    data: 'name',
+  }, {
+    data: 'comment',
+  }, {
+    data: 'enable',
+    class: 'col-center',
+    render: boolToYesNo,
+  },
+  {
+    data: 'state.state',
+    class: 'col-center',
+  },
+  {
+    data: 'sensor',
+    class: 'col-center',
+  }, {
+    data: 'ref_sensor',
+    class: 'col-center',
+  }, {
+    data: 'state.state_at_secs',
+    class: 'col-center',
+    render: prettySeconds,
+  }, {
+    data: 'state.started_at_secs',
+    class: 'col-center',
+    render: prettySeconds,
+  },
+  ];
+}
+
+function createMixtanksTable() {
+  const table = jQuery(mixtanksID).DataTable({
+    dom: 'Bfrtip',
+    ajax: {
+      url: 'mcp/api/mixtank',
+      complete(jqXHR, textStatus) {
+        const {
+          status,
+          statusText,
+        } = jqXHR;
+        if (status !== 200) {
+          displayStatus(`Refresh Error: ${statusText}`);
+        }
+      },
+    },
+    class: 'compact',
+    scrollY: gScrollY,
+    scrollCollapse: true,
+    paging: false,
+    select: {
+      style: 'single',
+      items: 'row',
+      // selector: 'td:nth-child(1)', // only allow devices to be selected
+    },
+    order: [
+      [1, 'asc'],
+    ],
+    columns: mixtanksColumns(),
+    columnDefs: [
+      {
         targets: [0, 2],
         visible: false,
         searchable: false,
@@ -726,6 +828,7 @@ function pageReady(jQuery) {
   createSwitchesTable();
   createRemotesTable();
   createDutycyclesTable();
+  createMixtanksTable();
   autoRefresh();
 
   jQuery('#mixtankProfile,dropdown-item').on('click', (event) => {
@@ -755,7 +858,7 @@ function pageReady(jQuery) {
   });
 
   // this must be the last thing -- after all tables created
-  const tabs = ['switches', 'sensors', 'remotes'];
+  const tabs = ['switches', 'sensors', 'remotes', 'dutycycles', 'mixtanks'];
   tabs.forEach((elem) => {
     const href = jQuery(`a[href="#${elem}Tab"]`);
     const table = jQuery(`#${elem}Table`).DataTable();

@@ -16,13 +16,14 @@
     <a class="nav-link" id="nav-remotes-tab" data-toggle="pill" href="#remotesTab" role="tab" aria-controls="v-pills-profile" aria-selected="false">Remotes</a>
     <a class="nav-link" id="nav-dutycycles-tab" data-toggle="pill" href="#dutycyclesTab" role="tab" aria-controls="v-pills-profile" aria-selected="false">Dutycycles</a>
     <a class="nav-link" id="nav-mixtanks-tab" data-toggle="pill" href="#mixtanksTab" role="tab" aria-controls="v-pills-profile" aria-selected="false">Mixtanks</a>
+    <a class="nav-link" id="nav-mixtanks-old-tab" data-toggle="pill" href="#mixtanksOldTab" role="tab" aria-controls="v-pills-profile" aria-selected="false">__Mixtanks</a>
   </div>
 </div>
 
 <div class="container col-10">
   <div class="tab-content" id="nav-mcpSubsystemsTabContent">
     <div class="tab-pane fade show active" role="tabpanel" id="switchesTab">
-      <table class="table display device-table" cellspacing="0" width="100%" id="switchesTable">
+      <table class="table display device-table compact" cellspacing="0" width="100%" id="switchesTable">
         <thead>
           <tr>
             <th>Id</th>
@@ -39,7 +40,7 @@
       </table>
     </div>
     <div class="tab-pane fade" role="tabpanel" id="sensorsTab">
-      <table class="table display device-table" cellspacing="0" width="100%" id="sensorsTable">
+      <table class="table display device-table compact" cellspacing="0" width="100%" id="sensorsTable">
         <thead>
           <tr>
             <th>Id</th>
@@ -55,7 +56,7 @@
       </table>
     </div>
     <div class="tab-pane fade" role="tabpanel" id="remotesTab">
-      <table class="table display device-table" cellspacing="0" width="100%" id="remotesTable">
+      <table class="table display device-table compact" cellspacing="0" width="100%" id="remotesTable">
         <thead>
           <tr>
             <th>Id</th>
@@ -72,7 +73,7 @@
       </table>
     </div>
     <div class="tab-pane fade" role="tabpanel" id="dutycyclesTab">
-      <table class="table display device-table" cellspacing="0" width="100%" id="dutycyclesTable">
+      <table class="table display device-table compact" cellspacing="0" width="100%" id="dutycyclesTable">
         <thead>
           <tr>
             <th>Id</th>
@@ -89,8 +90,24 @@
       </table>
     </div>
     <div class="tab-pane fade" role="tabpanel" id="mixtanksTab">
+      <table class="table display device-table compact" cellspacing="0" width="100%" id="mixtanksTable">
+        <thead>
+          <tr>
+            <th>Id</th>
+            <th>Name</th>
+            <th>Comment</th>
+            <th>Enabled?</th>
+            <th>State</th>
+            <th>Sensor</th>
+            <th>Ref Sensor</th>
+            <th>State At</th>
+            <th>Started</th>
+          </tr>
+        </thead>
+      </table>
+    </div>
+    <div class="tab-pane fade" role="tabpanel" id="mixtanksOldTab">
       <div class="container mixtank-wrapper" style="border:1px solid #cecece;">
-
         <div class="row align-items-center justify-content-start" style="border-bottom: 1px solid;">
           <div class="col-3">
             <span class="border-bottom-1">
@@ -104,7 +121,6 @@
             <h5>Status</h5>
           </div>
         </div>
-
         <%= for m <- @mixtanks do %>
 
           <div class="row align-items-center" style="border-bottom: 1px solid;">
@@ -123,7 +139,7 @@
             <%= m.state %>
           </div>
         </div>
-      <% end %>
+        <% end %>
       </div>
     </div>
   </div>
@@ -139,8 +155,6 @@
 </div>
 </div>
 </div>
-
-
 
 </div>
 

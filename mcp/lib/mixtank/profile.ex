@@ -7,6 +7,8 @@ defmodule Mixtank.Profile do
   use Timex.Ecto.Timestamps
   use Ecto.Schema
 
+  alias Mixtank.Profile
+
   import Repo, only: [update_all: 2]
   import Ecto.Query, only: [from: 2]
 
@@ -39,5 +41,13 @@ defmodule Mixtank.Profile do
       update: [set: [active: true]]
     )
     |> update_all([])
+  end
+
+  def as_map(l) when is_list(l), do: for(p <- l, do: as_map(p))
+
+  def as_map(%Profile{} = mtp) do
+    keys = [:id, :name, :active, :pump, :air, :fill, :replenish, :temp_diff]
+
+    Map.take(mtp, keys)
   end
 end

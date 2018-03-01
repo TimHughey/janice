@@ -2,6 +2,14 @@
 //   return typeof value === 'number' && Number.isFinite(value);
 // }
 
+export function boolToYesNo(data) {
+  if (data) {
+    return 'yes';
+  }
+
+  return 'no';
+}
+
 export function humanizeState(data, type, row) {
   if (data) {
     return 'active';
@@ -66,7 +74,8 @@ export function autoRefresh() {
   ari = setInterval(
     () => {
       if (document.visibilityState === 'visible') {
-        const tabs = ['switches', 'sensors', 'remotes', 'dutycycles'];
+        const tabs = ['switches', 'sensors', 'remotes', 'dutycycles',
+          'mixtanks'];
         tabs.forEach((elem) => {
           const tabActive = jQuery(`#${elem}Tab`).hasClass('active');
           const table = jQuery(`#${elem}Table`).DataTable();

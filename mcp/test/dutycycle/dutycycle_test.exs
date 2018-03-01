@@ -3,7 +3,7 @@ defmodule DutycycleTest do
 
   """
   use ExUnit.Case, async: false
-  import ExUnit.CaptureLog
+  # import ExUnit.CaptureLog
   use Timex
 
   setup do
