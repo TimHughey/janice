@@ -5,10 +5,11 @@ defmodule Web.MixtankController do
   use Timex
   use Web, :controller
 
-  def update(%{method: "PATCH"} = conn, %{"id" => mixtank, "newprofile" => profile} = _params)
-      when is_binary(mixtank) do
-    Mixtank.Control.activate_profile(mixtank, profile)
-    active_profile = Mixtank.active_profile(mixtank, :name)
+  def update(%{method: "PATCH"} = conn, %{"id" => id_str, "newProfile" => profile} = _params)
+      when is_binary(id_str) do
+    id = String.to_integer(id_str)
+    Mixtank.Control.activate_profile(id, profile)
+    active_profile = Mixtank.active_profile(id, :name)
 
     json(conn, %{active_profile: active_profile})
   end

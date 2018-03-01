@@ -47,9 +47,9 @@ defmodule Mixtank.Control do
   # Public Functions #
   ####################
 
-  def activate_profile(name, profile_name)
-      when is_binary(name) and is_binary(profile_name) do
-    GenServer.call(Control, {:activate_profile_msg, name, profile_name})
+  def activate_profile(id, profile_name)
+      when is_integer(id) and is_binary(profile_name) do
+    GenServer.call(Control, {:activate_profile_msg, id, profile_name})
   end
 
   def change_profile(name, profile, opts) do
@@ -76,8 +76,8 @@ defmodule Mixtank.Control do
   # GenServer callbacks #
   #######################
 
-  def handle_call({:activate_profile_msg, name, profile_name}, _from, s) do
-    s = do_activate_profile(name, profile_name, s)
+  def handle_call({:activate_profile_msg, id, profile_name}, _from, s) do
+    s = do_activate_profile(id, profile_name, s)
 
     {:reply, {:ok}, s}
   end
@@ -187,15 +187,15 @@ defmodule Mixtank.Control do
     {:noreply, state}
   end
 
-  defp do_activate_profile(name, profile, %{tasks: tasks, opts: opts} = s) do
+  defp do_activate_profile(id, profile, %{tasks: tasks, opts: opts} = s) do
     tasks =
-      Mixtank.get(name)
+      Mixtank.get_by(id: id)
       |> stop_single(tasks, opts)
 
-    Mixtank.activate_profile(name, profile)
+    Mixtank.activate_profile(id, profile)
 
     tasks =
-      Mixtank.active_profile(name)
+      Mixtank.active_profile(id)
       |> start_single(tasks, opts)
 
     Map.put(s, :tasks, tasks)

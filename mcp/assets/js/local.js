@@ -29,9 +29,13 @@ function otaAllButton(dt) {
   return dt.buttons('__otaAll:name');
 }
 
-function otaSingleButton(dt) {
-  return dt.buttons('__otaSingle:name');
+function otaButtonGroup(dt) {
+  return dt.buttons('__otaGroup:name');
 }
+
+// function otaSingleButton(dt) {
+//   return dt.buttons('__otaSingle:name');
+// }
 
 function renameButton(dt) {
   return dt.buttons('__rename:name');
@@ -87,19 +91,96 @@ function newDeleteButton(tableName) {
   };
 }
 
+function newMixtankProfileButton(tableName, profileName) {
+  return {
+    text: profileName,
+    name: `__${profileName}`,
+    attr: {
+      id: `${tableName}${profileName}ButtonID`,
+    },
+    action(e, dt, node, config) {
+      const refresh = refreshButton(dt);
+      const groupButton = dt.buttons('__ProfileGroup:name');
+      const profileButton = dt.buttons(`__${profileName}:name`);
+      const url = dt.ajax.url();
+
+      const {
+        name,
+        id,
+      } = dt.rows({
+        selected: true,
+      }).data()[0];
+
+      groupButton.processing(true);
+      const newProfile = profileButton.text()[0];
+
+      jQuery.ajax({
+        url: `${url}/${id}`,
+        type: 'PATCH',
+        data: {
+          name,
+          newProfile,
+        },
+        beforeSend(xhr) {
+          // send the CSRF token included as a meta on the HTML page
+          const token = jQuery("meta[name='csrf-token']").attr('content');
+          xhr.setRequestHeader('X-CSRF-Token', token);
+        },
+        error(jqXHR, status, error) {
+          displayStatus(`Error changing profile to ${newProfile}`);
+        },
+        success(data, status, jqXHR) {
+          if (data.restart === 'ok') {
+            displayStatus(`Error changing profile to ${newProfile}`);
+          } else {
+            displayStatus(`Profile changed to ${newProfile}`);
+          }
+        },
+        complete(xhr, status) {
+          groupButton.processing(false);
+          dt.rows().deselect();
+          dt.ajax.reload(null, false);
+          refresh.active(true);
+        },
+      });
+    },
+  };
+}
+
+function newMixtankProfilesButton(tableName, profiles) {
+  const b = [];
+  const len = profiles.length;
+
+  for (let i = 0; i < len; i += 1) {
+    b.push(newMixtankProfileButton(tableName, profiles[i]));
+  }
+
+  const a = {
+    extend: 'collection',
+    text: 'Profile',
+    name: '__ProfileGroup',
+    buttons: b,
+    fade: true,
+    autoClose: true,
+  };
+
+  return a;
+}
+
 function newOtaAllButton(tableName) {
   return {
-    text: 'OTA (All)',
+    text: 'All',
     name: '__otaAll',
     attr: {
       id: `${tableName}OtaAllButtonID`,
     },
     action(e, dt, node, config) {
       const refresh = refreshButton(dt);
-      const button = otaAllButton(dt);
+      const button = otaButtonGroup(dt);
       const url = dt.ajax.url();
 
       button.processing(true);
+      jQuery('#generalPurposeForm').fade('fast');
 
       jQuery.ajax({
         url,
@@ -124,7 +205,6 @@ function newOtaAllButton(tableName) {
         complete(xhr, status) {
           dt.ajax.reload(null, false);
           button.processing(false);
-          jQuery('#generalPurposeForm').fadeToggle();
           refresh.active(true);
         },
       });
@@ -134,7 +214,7 @@ function newOtaAllButton(tableName) {
 
 function newOtaSingleButton(tableName) {
   return {
-    text: 'OTA (Single)',
+    text: 'Single',
     name: '__otaSingle',
     extend: 'selected',
     attr: {
@@ -142,7 +222,7 @@ function newOtaSingleButton(tableName) {
     },
     action(e, dt, node, config) {
       const refresh = refreshButton(dt);
-      const ota = otaSingleButton(dt);
+      const button = otaButtonGroup(dt);
       const url = dt.ajax.url();
 
       const {
@@ -152,7 +232,8 @@ function newOtaSingleButton(tableName) {
         selected: true,
       }).data()[0];
 
-      ota.processing(true);
+      button.processing(true);
+      jQuery('#generalPurposeForm').fadeToggle();
 
       jQuery.ajax({
         url: `${url}/${id}`,
@@ -173,8 +254,8 @@ function newOtaSingleButton(tableName) {
         },
         complete(xhr, status) {
           dt.ajax.reload(null, false);
-          ota.processing(false);
-          jQuery('#generalPurposeForm').fadeToggle();
+          button.processing(false);
+
           refresh.active(true);
         },
       });
@@ -613,10 +694,9 @@ function createRemotesTable() {
       },
     },
     scrollY: gScrollY,
-    // deferRender: true,
-    // scroller: true,
     scrollCollapse: true,
     paging: false,
+    searching: false,
     select: {
       style: 'single',
       items: 'row',
@@ -636,8 +716,18 @@ function createRemotesTable() {
     buttons: [newRefreshButton(tableName),
       newRenameButton(tableName),
       newDeleteButton(tableName),
-      newOtaSingleButton(tableName),
-      newOtaAllButton(tableName),
+      {
+        extend: 'collection',
+        text: 'OTA',
+        name: '__otaGroup',
+        buttons: [
+          newOtaSingleButton(tableName),
+          newOtaAllButton(tableName),
+        ],
+        fade: true,
+        autoClose: true,
+      },
+
       newRestartButton(tableName)],
   });
 
@@ -645,6 +735,8 @@ function createRemotesTable() {
 
   table.on('select', (e, dt, type, indexes) => {
     refreshButton(dt).active(false);
+    otaAllButton(dt).disable();
+    restartButton(dt).enable();
 
     const inputForm = jQuery('#generalPurposeForm');
 
@@ -662,6 +754,8 @@ function createRemotesTable() {
   table.on('deselect', (e, dt, type, indexes) => {
     const inputBox = jQuery('#generalPurposeForm');
     refreshButton(dt).active(true);
+    otaAllButton(dt).enable();
+    restartButton(dt).disable();
 
     inputBox.fadeOut('fast');
   });
@@ -824,6 +918,7 @@ function createMixtanksTable() {
     scrollY: gScrollY,
     scrollCollapse: true,
     paging: false,
+    searching: false,
     select: {
       style: 'single',
       items: 'row',
@@ -844,22 +939,31 @@ function createMixtanksTable() {
     ],
   });
 
+  // table.button().add(newMixtankProfileButton(tableName, data.profile_names[
+  //   0]));
+
   refreshButton(table).active(true);
 
   table.on('select', (e, dt, type, indexes) => {
     refreshButton(dt).active(false);
 
-    const inputForm = jQuery('#generalPurposeForm');
-
-    jQuery('#generalInputTextLabel').text('RENAME');
-
-    jQuery('#generalInputBox').attr(
-      'placeholder',
-      'Enter new mixtank name here then click Rename',
-    );
-
-    jQuery('#generalInputBox').focus();
-    inputForm.fadeIn('fast');
+    // const inputForm = jQuery('#generalPurposeForm');
+    //
+    // jQuery('#generalInputTextLabel').text('RENAME');
+    //
+    // jQuery('#generalInputBox').attr(
+    //   'placeholder',
+    //   'Enter new mixtank name here then click Rename',
+    // );
+    //
+    // jQuery('#generalInputBox').focus();
+    // inputForm.fadeIn('fast');
+    const data = table.data();
+    const profileNames = data[0].profile_names;
+    dt.button().add(1, newMixtankProfilesButton(
+      tableName,
+      profileNames,
+    ));
   });
 
   table.on('deselect', (e, dt, type, indexes) => {
@@ -867,6 +971,8 @@ function createMixtanksTable() {
     refreshButton(dt).active(true);
 
     inputBox.fadeOut('fast');
+
+    dt.button(1).remove();
   });
 }
 

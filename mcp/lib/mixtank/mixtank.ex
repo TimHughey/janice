@@ -75,13 +75,13 @@ defmodule Mixtank do
     |> all()
   end
 
-  def activate_profile(mt_name, profile_name)
-      when is_binary(mt_name) and is_binary(profile_name) do
-    mt = from(mt in Mixtank, where: mt.name == ^mt_name) |> one()
+  def activate_profile(id, profile_name)
+      when is_integer(id) and is_binary(profile_name) do
+    mt = from(mt in Mixtank, where: mt.id == ^id) |> one()
 
     if mt != nil,
       do: Profile.activate(mt, profile_name),
-      else: Logger.warn(fn -> "mixtank [#{mt_name}] does not exist, can't activate profile" end)
+      else: Logger.warn(fn -> "mixtank [#{id}] does not exist, can't activate profile" end)
   end
 
   def active_profile(name, :name) do
@@ -91,13 +91,13 @@ defmodule Mixtank do
     |> Map.get(:name)
   end
 
-  def active_profile(name) do
+  def active_profile(id) do
     from(
       mt in Mixtank,
       join: p in assoc(mt, :profiles),
       join: s in assoc(mt, :state),
       where: p.active == true,
-      where: mt.name == ^name,
+      where: mt.id == ^id,
       select: mt,
       preload: [state: s, profiles: p]
     )
