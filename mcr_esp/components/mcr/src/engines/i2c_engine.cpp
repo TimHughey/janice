@@ -493,6 +493,7 @@ void mcrI2c::run(void *task_data) {
 
   ESP_LOGI(tagEngine(), "waiting for normal ops...");
   mcr::Net::waitForNormalOps();
+  delay(pdMS_TO_TICKS(2500));
   ESP_LOGI(tagEngine(), "normal ops, proceeding to task loop");
 
   _last_wake.engine = xTaskGetTickCount();
