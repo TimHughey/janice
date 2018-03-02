@@ -106,12 +106,13 @@ defmodule Mixtank do
 
   def active_profile_name(id) when is_integer(id) do
     mt = get_by(id: id)
-    state = mt.state.state
+    state = Map.get(mt, :state, "none")
 
     if state === "stopped" do
       "none"
     else
-      profile = for p <- mt.profiles, p.active == true, do: p.name
+      profiles = Map.get(mt, :profiles, [])
+      profile = for p <- profiles, p.active == true, do: p.name
 
       if Enum.empty?(profile), do: "none", else: hd(profile)
     end

@@ -6,11 +6,11 @@ defmodule Fact.FreeRamStat do
   import(Fact.Influx, only: [write: 2])
 
   series do
-    database("merc_repo")
+    database(Application.get_env(:mcp, Fact.Influx) |> Keyword.get(:database))
     measurement("mcr_stat")
 
-    tag(:remote_host, default: "unknown-host")
-    tag(:env, default: "#{Mix.env()}")
+    tag(:remote_host)
+    tag(:env, default: Application.get_env(:mcp, :build_env, "dev"))
     tag(:mcr_stat, default: "freeram")
 
     field(:val)

@@ -80,6 +80,7 @@
             <th>Comment</th>
             <th>Enabled?</th>
             <th>Standalone</th>
+            <th>Profile</th>
             <th>Device</th>
             <th>State</th>
             <th>Run Start</th>

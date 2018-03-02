@@ -8,13 +8,13 @@ defmodule Fact.StartupAnnouncement do
   import(Fact.Influx, only: [write: 2])
 
   series do
-    database("merc_repo")
+    database(Application.get_env(:mcp, Fact.Influx) |> Keyword.get(:database))
     measurement("run_metric")
 
     tag(:application, default: "mercurial")
     tag(:metric, default: "startup_announcement")
-    tag(:env, default: "#{Mix.env()}")
-    tag(:host, default: "unknown-host")
+    tag(:env, default: Application.get_env(:mcp, :build_env, "dev"))
+    tag(:host)
     tag(:vsn, default: "unknown-vsn")
     tag(:hw, default: "unknown-hw")
 

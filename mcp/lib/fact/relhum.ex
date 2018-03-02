@@ -6,13 +6,13 @@ defmodule Fact.RelativeHumidity do
   import(Fact.Influx, only: [write: 2])
 
   series do
-    database("merc_repo")
+    database(Application.get_env(:mcp, Fact.Influx) |> Keyword.get(:database))
     measurement("relative_humidity")
 
-    tag(:remote_host, default: "unknown_host")
-    tag(:device, default: "unknown_device")
-    tag(:name, default: "unknown_name")
-    tag(:env, default: "#{Mix.env()}")
+    tag(:remote_host)
+    tag(:device)
+    tag(:name)
+    tag(:env, default: Application.get_env(:mcp, :build_env, "dev"))
 
     field(:val)
   end

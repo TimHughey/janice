@@ -33,8 +33,6 @@ defmodule Dutycycle do
   alias Dutycycle.Profile
   alias Dutycycle.State
 
-  @vsn 3
-
   schema "dutycycle" do
     field(:name)
     field(:comment)
@@ -62,6 +60,21 @@ defmodule Dutycycle do
       end)
 
       :not_found
+    end
+  end
+
+  def active_profile_name(opts) when is_list(opts) do
+    dc = get_by(opts)
+
+    state = Map.get(dc, :state, "none")
+
+    if state === "stopped" do
+      "none"
+    else
+      profiles = Map.get(dc, :profiles, [])
+      profile = for p <- profiles, p.active == true, do: p.name
+
+      if Enum.empty?(profile), do: "none", else: hd(profile)
     end
   end
 

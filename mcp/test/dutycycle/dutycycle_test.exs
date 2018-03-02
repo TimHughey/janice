@@ -108,4 +108,12 @@ defmodule DutycycleTest do
     assert count === 1
     assert active_name === profile
   end
+
+  test "get dutycycle active profile name" do
+    dc = shared_dc()
+
+    active = Dutycycle.active_profile_name(id: dc.id)
+
+    assert is_binary(active)
+  end
 end

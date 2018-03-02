@@ -8,12 +8,12 @@ defmodule Fact.LedFlashes do
   import(Fact.Influx, only: [write: 2])
 
   series do
-    database("merc_repo")
+    database(Application.get_env(:mcp, Fact.Influx) |> Keyword.get(:database))
     measurement("led_flashes")
 
     tag(:name, default: "unknown-friendly")
     tag(:application, default: "unknown-application")
-    tag(:env, default: "#{Mix.env()}")
+    tag(:env, default: Application.get_env(:mcp, :build_env, "dev"))
 
     field(:val)
   end

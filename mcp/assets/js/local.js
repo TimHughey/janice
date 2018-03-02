@@ -778,6 +778,10 @@ function dutycyclesColumns() {
     data: 'standalone',
     class: 'col-center',
     render: boolToYesNo,
+  },
+  {
+    data: 'activeProfile',
+    class: 'col-center',
   }, {
     data: 'device',
     class: 'col-center',
@@ -838,7 +842,7 @@ function createDutycyclesTable() {
     columns: dutycyclesColumns(),
     columnDefs: [
       {
-        targets: [0, 2],
+        targets: [0, 2, 6],
         visible: false,
         searchable: false,
       },

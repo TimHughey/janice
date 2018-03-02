@@ -8,12 +8,12 @@ defmodule Fact.DevMetric do
   # import(Fact.Influx, only: [write: 2])
 
   series do
-    database("merc_repo")
+    database(Application.get_env(:mcp, Fact.Influx) |> Keyword.get(:database))
     measurement("dev_metric")
 
-    tag(:remote_host, default: "unknown_host")
-    tag(:device, default: "unknown_device")
-    tag(:env, default: "#{Mix.env()}")
+    tag(:remote_host)
+    tag(:device)
+    tag(:env, default: Application.get_env(:mcp, :build_env, "dev"))
 
     field(:val)
   end

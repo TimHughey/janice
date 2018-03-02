@@ -8,14 +8,14 @@ defmodule Fact.RunMetric do
   import(Fact.Influx, only: [write: 2])
 
   series do
-    database("merc_repo")
+    database(Application.get_env(:mcp, Fact.Influx) |> Keyword.get(:database))
     measurement("run_metric")
 
-    tag(:module, default: "unknown-module")
+    tag(:module)
     tag(:application, default: "mercurial")
-    tag(:metric, default: "unknown-metric")
-    tag(:env, default: "#{Mix.env()}")
-    tag(:device, default: "none")
+    tag(:metric)
+    tag(:env, default: Application.get_env(:mcp, :build_env, "dev"))
+    tag(:device)
 
     field(:val)
   end

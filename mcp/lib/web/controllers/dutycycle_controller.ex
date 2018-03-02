@@ -26,14 +26,17 @@ defmodule Web.DutycycleController do
         m = Dutycycle.as_map(dc) |> Map.put_new(:type, "dutycycle")
 
         state =
-          Map.put_new(m.state, :started_at_secs, to_seconds(m.state.started_at))
+          m.state
+          |> Map.put_new(:started_at_secs, to_seconds(m.state.started_at))
           |> Map.put_new(:run_at_secs, to_seconds(m.state.run_at))
           |> Map.put_new(:run_at_end_secs, to_seconds(m.state.run_end_at))
           |> Map.put_new(:idle_at_secs, to_seconds(m.state.idle_at))
           |> Map.put_new(:idle_at_end_secs, to_seconds(m.state.idle_end_at))
           |> Map.put_new(:state_at_secs, to_seconds(m.state.state_at))
 
-        Map.put(m, :state, state)
+        active_profile = Dutycycle.active_profile_name(id: m.id)
+
+        Map.put(m, :state, state) |> Map.put(:activeProfile, active_profile)
       end
 
     resp = %{data: data, items: Enum.count(data), mtime: Timex.local() |> Timex.to_unix()}
@@ -49,7 +52,7 @@ defmodule Web.DutycycleController do
     json(conn, %{rows: rows})
   end
 
-  def update(%{method: "PATCH"} = conn, %{"id" => id_str} = params) do
+  def update(%{method: "PATCH"} = conn, %{"id" => id_str} = _params) do
     Logger.debug(fn -> ~s(#{conn.method} #{conn.request_path}) end)
     id = String.to_integer(id_str)
     dc = Dutycycle.get_by(id: id)
