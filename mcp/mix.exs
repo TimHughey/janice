@@ -39,54 +39,12 @@ defmodule Mcp.Mixfile do
       escript: escript_config(),
       sha_head: "#{sha_head()}",
       sha_mcr_stable: "#{sha_mcr_stable()}",
-      test_coverage: [
-        tool: Coverex.Task,
-        ignore_modules: [
-          Mcp.Chamber,
-          Mcp.Chamber.AutoPopulate,
-          Mcp.Chamber.Device,
-          Mcp.Chamber.RunState,
-          Mcp.Chamber.ServerState,
-          Mcp.IExHelpers,
-          Fact.Celsius.Fields,
-          Fact.Celsius.Tags,
-          Fact.EngineMetric.Fields,
-          Fact.EngineMetric.Tags,
-          Fact.Fahrenheit.Fields,
-          Fact.Fahrenheit.Tags,
-          Fact.DevMetric.Fields,
-          Fact.DevMetric.Tags,
-          Fact.FreeRamStat.Fields,
-          Fact.FreeRamStat.Tags,
-          Fact.LedFlashes.Fields,
-          Fact.LedFlashes.Tags,
-          Fact.RelativeHumidity.Fields,
-          Fact.RelativeHumidity.Tags,
-          Fact.RunMetric.Fields,
-          Fact.RunMetric.Tags,
-          Fact.StartupAnnouncement.Fields,
-          Fact.StartupAnnouncement.Tags,
-          Mix.Tasks.Seed,
-          Seed.Chambers,
-          Seed.Dutycycles,
-          Seed.Mixtanks,
-          Seed.Sensors,
-          Seed.Switches,
-          Web.Router.Helpers,
-          Repo
-        ]
-      ]
+      test_coverage: test_coverage()
     ]
   end
 
   # Run "mix help compile.app" to learn about applications.
   def application do
-    args = [
-      build_env: "#{Mix.env()}",
-      sha_head: sha_head(),
-      sha_mcr_stable: sha_mcr_stable()
-    ]
-
     [
       extra_applications: [
         :logger,
@@ -95,7 +53,7 @@ defmodule Mcp.Mixfile do
         :ueberauth_github,
         :lager
       ],
-      mod: {Mcp.Application, args}
+      mod: {Mcp.Application, args()}
     ]
   end
 
@@ -143,6 +101,14 @@ defmodule Mcp.Mixfile do
     ]
   end
 
+  defp args do
+    [
+      build_env: "#{Mix.env()}",
+      sha_head: sha_head(),
+      sha_mcr_stable: sha_mcr_stable()
+    ]
+  end
+
   defp description do
     "Master Control Program for Wiss Landing"
   end
@@ -165,5 +131,45 @@ defmodule Mcp.Mixfile do
   defp sha_mcr_stable do
     {result, _rc} = System.cmd("git", ["rev-parse", "--short", "mcr-stable"])
     String.trim(result)
+  end
+
+  defp test_coverage do
+    [
+      tool: Coverex.Task,
+      ignore_modules: [
+        Mcp.Chamber,
+        Mcp.Chamber.AutoPopulate,
+        Mcp.Chamber.Device,
+        Mcp.Chamber.RunState,
+        Mcp.Chamber.ServerState,
+        Mcp.IExHelpers,
+        Fact.Celsius.Fields,
+        Fact.Celsius.Tags,
+        Fact.EngineMetric.Fields,
+        Fact.EngineMetric.Tags,
+        Fact.Fahrenheit.Fields,
+        Fact.Fahrenheit.Tags,
+        Fact.DevMetric.Fields,
+        Fact.DevMetric.Tags,
+        Fact.FreeRamStat.Fields,
+        Fact.FreeRamStat.Tags,
+        Fact.LedFlashes.Fields,
+        Fact.LedFlashes.Tags,
+        Fact.RelativeHumidity.Fields,
+        Fact.RelativeHumidity.Tags,
+        Fact.RunMetric.Fields,
+        Fact.RunMetric.Tags,
+        Fact.StartupAnnouncement.Fields,
+        Fact.StartupAnnouncement.Tags,
+        Mix.Tasks.Seed,
+        Seed.Chambers,
+        Seed.Dutycycles,
+        Seed.Mixtanks,
+        Seed.Sensors,
+        Seed.Switches,
+        Web.Router.Helpers,
+        Repo
+      ]
+    ]
   end
 end

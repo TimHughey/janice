@@ -1,4 +1,4 @@
-defmodule Mqtt.Supervisor do
+defmodule Dutycycle.Supervisor do
   @moduledoc false
 
   require Logger
@@ -9,9 +9,8 @@ defmodule Mqtt.Supervisor do
 
     # List all child processes to be supervised
     children = [
-      {Mqtt.Client, args},
-      {MessageSave, args},
-      {Mqtt.InboundMessage, args}
+      {Dutycycle.Control, args},
+      {Mixtank.Control, args}
     ]
 
     # Starts a worker by calling: Mqtt.Worker.start_link(arg)
@@ -19,11 +18,11 @@ defmodule Mqtt.Supervisor do
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
-    opts = [strategy: :rest_for_one, name: Mqtt.Supervisor]
+    opts = [strategy: :rest_for_one, name: Dutycycle.Supervisor]
     Supervisor.init(children, opts)
   end
 
-  def start_link(arg) do
-    Supervisor.start_link(__MODULE__, arg, name: __MODULE__)
+  def start_link(args) do
+    Supervisor.start_link(__MODULE__, args, name: __MODULE__)
   end
 end

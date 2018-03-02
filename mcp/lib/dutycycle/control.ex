@@ -55,10 +55,6 @@ defmodule Dutycycle.Control do
   def init(s) when is_map(s) do
     Logger.info(fn -> "init() state: #{inspect(s)}" end)
 
-    {:ok, mixtank_pid} = Mixtank.Control.start_link(s.initial_args)
-
-    s = Map.put(s, :mixtank_pid, mixtank_pid)
-
     # all_dcs = Dutycycle.all()
     # all_switches = Enum.map(all_dcs, fn(x) -> x.device end)
     #
@@ -69,7 +65,15 @@ defmodule Dutycycle.Control do
 
     Process.flag(:trap_exit, true)
 
-    if s.autostart, do: send_after(self(), {:startup}, 0)
+    all_dcs = Dutycycle.all()
+    stop_all(s, all_dcs, s.opts)
+
+    active_dcs = Dutycycle.all_active()
+    tasks = start_all(active_dcs, %{}, s.opts)
+
+    s = Map.put(s, :tasks, tasks)
+
+    # if s.autostart, do: send_after(self(), {:startup}, 0)
 
     # opts = [strategy: :one_for_all, name: Dutycycle.CycleTask]
     # Supervisor.init([], opts)
@@ -232,22 +236,31 @@ defmodule Dutycycle.Control do
 
   def handle_info({ref, result}, %{tasks: tasks} = s)
       when is_reference(ref) do
-    Logger.debug(fn -> "ref: #{inspect(ref)} result: #{inspect(result)}" end)
-    Logger.debug(fn -> "tasks: #{tasks}" end)
+    Logger.info(fn -> "ref: #{inspect(ref)} result: #{inspect(result)}" end)
 
-    for %{ref: ^ref} = task <- tasks do
-      Logger.debug(fn -> "[#{task.name}] ended " <> "with result #{inspect(result)}" end)
-    end
+    # FIXME: capture the result
 
     {:noreply, s}
   end
 
   def handle_info({:DOWN, ref, :process, pid, reason}, %{tasks: tasks} = s) do
-    Logger.debug(fn ->
-      "ref: #{inspect(ref)} pid: #{inspect(pid)} " <> "reason: #{reason}\n" <> "tasks: #{tasks}"
+    Logger.info(fn ->
+      "ref: #{inspect(ref)} pid: #{inspect(pid)} reason: #{reason}"
     end)
 
-    tasks = Enum.filter(tasks, fn x -> x.ref != ref end)
+    keys = Map.keys(tasks)
+
+    match_ref? = fn k ->
+      r = Map.get(tasks, k) |> Map.get(:task) |> Map.get(:ref)
+
+      IO.puts("looking at #{inspect(k)} #{inspect(r)}")
+
+      if ref == r, do: k, else: false
+    end
+
+    to_remove = for k <- keys, match_ref?.(k), do: k
+
+    tasks = if Enum.empty?(to_remove), do: tasks, else: Map.delete(tasks, hd(to_remove))
 
     s = Map.put(s, :tasks, tasks)
 
@@ -255,7 +268,7 @@ defmodule Dutycycle.Control do
   end
 
   def handle_info({:EXIT, pid, reason}, state) do
-    Logger.debug(fn -> ":EXIT message " <> "pid: #{inspect(pid)} reason: #{inspect(reason)}" end)
+    Logger.debug(fn -> ":EXIT message pid: #{inspect(pid)} reason: #{inspect(reason)}" end)
 
     {:noreply, state}
   end

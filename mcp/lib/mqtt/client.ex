@@ -28,11 +28,6 @@ defmodule Mqtt.Client do
   def init(s) when is_map(s) do
     Logger.info(fn -> "init()" end)
 
-    # pass the same initial state (opts) to Mqtt.InboundMessage and allow it to
-    # figure out what to do.  ultimately all that is passed is autostart which will
-    # be the same
-    {:ok, dispatcher_pid} = Mqtt.InboundMessage.start_link(s)
-
     if Map.get(s, :autostart, false) do
       # prepare the opts that will be passed to emqttc (erlang) including logger config and
       # start it up
@@ -40,18 +35,14 @@ defmodule Mqtt.Client do
       opts = Keyword.merge([logger: :error], opts)
       {:ok, mqtt_pid} = :emqttc.start_link(opts)
 
-      # start-up MsgSaver
-      {:ok, msgsave_pid} = MessageSave.start_link(s)
-
       # populate the state and construct init() return
-      s = Map.put_new(s, :dispatcher_pid, dispatcher_pid)
       s = Map.put_new(s, :mqtt_pid, mqtt_pid)
-      s = Map.put_new(s, :messagesave_pid, msgsave_pid)
+
+      Logger.info(fn -> "emqttc #{inspect(mqtt_pid)}" end)
 
       {:ok, s}
     else
       # when we don't autostart the mqtt pid will be nil
-      s = Map.put_new(s, :dispatcher_pid, dispatcher_pid)
       s = Map.put_new(s, :mqtt_pid, nil)
 
       {:ok, s}

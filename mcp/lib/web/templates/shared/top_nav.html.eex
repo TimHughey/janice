@@ -1,7 +1,7 @@
 
 <div class="container">
   <nav class="navbar navbar-expand-lg navbar-light bg-light">
-    <%= link("Mercurial", to: home_path(@conn, :index), class: "navbar-brand text-muted", id: "mastheadText") %>
+    <%= link("Janice", to: home_path(@conn, :index), class: "navbar-brand text-muted", id: "mastheadText") %>
     <!-- <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarText" aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button> -->

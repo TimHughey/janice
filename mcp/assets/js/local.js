@@ -1,14 +1,4 @@
-import {
-  boolToYesNo,
-  humanizeState,
-  prettySeconds,
-  prettyLastCommand,
-  prettyUs,
-  displayStatus,
-  dataTableErrorHandler,
-  autoRefresh,
-}
-  from './merc_util';
+import JanUtil from './util';
 
 const sensorsID = '#sensorsTable';
 const switchesID = '#switchesTable';
@@ -32,10 +22,6 @@ function otaAllButton(dt) {
 function otaButtonGroup(dt) {
   return dt.buttons('__otaGroup:name');
 }
-
-// function otaSingleButton(dt) {
-//   return dt.buttons('__otaSingle:name');
-// }
 
 function renameButton(dt) {
   return dt.buttons('__rename:name');
@@ -75,10 +61,10 @@ function newDeleteButton(tableName) {
           xhr.setRequestHeader('X-CSRF-Token', token);
         },
         error(xhr, status, error) {
-          displayStatus(`Error deleting ${name}`);
+          JanUtil.displayStatus(`Error deleting ${name}`);
         },
         success(xhr, status) {
-          displayStatus(`Deleted ${name}`);
+          JanUtil.displayStatus(`Deleted ${name}`);
         },
         complete(xhr, status) {
           dt.ajax.reload(null, false);
@@ -127,13 +113,13 @@ function newMixtankProfileButton(tableName, profileName) {
           xhr.setRequestHeader('X-CSRF-Token', token);
         },
         error(jqXHR, status, error) {
-          displayStatus(`Error changing profile to ${newProfile}`);
+          JanUtil.displayStatus(`Error changing profile to ${newProfile}`);
         },
         success(data, status, jqXHR) {
           if (data.restart === 'ok') {
-            displayStatus(`Error changing profile to ${newProfile}`);
+            JanUtil.displayStatus(`Error changing profile to ${newProfile}`);
           } else {
-            displayStatus(`Profile changed to ${newProfile}`);
+            JanUtil.displayStatus(`Profile changed to ${newProfile}`);
           }
         },
         complete(xhr, status) {
@@ -193,13 +179,13 @@ function newOtaAllButton(tableName) {
           xhr.setRequestHeader('X-CSRF-Token', token);
         },
         error(jqXHR, status, error) {
-          displayStatus('Error triggering ota for all');
+          JanUtil.displayStatus('Error triggering ota for all');
         },
         success(data, status, jqXHR) {
           if (data.ota_all_res === 'ok') {
-            displayStatus('Triggered ota for all');
+            JanUtil.displayStatus('Triggered ota for all');
           } else {
-            displayStatus('Failed triggering ota for all');
+            JanUtil.displayStatus('Failed triggering ota for all');
           }
         },
         complete(xhr, status) {
@@ -247,10 +233,10 @@ function newOtaSingleButton(tableName) {
           xhr.setRequestHeader('X-CSRF-Token', token);
         },
         error(jqXHR, status, error) {
-          displayStatus(`Error triggering ota for ${name}`);
+          JanUtil.displayStatus(`Error triggering ota for ${name}`);
         },
         success(data, status, jqXHR) {
-          displayStatus(`Triggered ota for ${name}`);
+          JanUtil.displayStatus(`Triggered ota for ${name}`);
         },
         complete(xhr, status) {
           dt.ajax.reload(null, false);
@@ -279,7 +265,7 @@ function newRefreshButton(tableName) {
         button.active(false);
       } else {
         button.active(true);
-        autoRefresh();
+        JanUtil.autoRefresh();
       }
     },
   };
@@ -321,12 +307,12 @@ function newRenameButton(tableName) {
           xhr.setRequestHeader('X-CSRF-Token', token);
         },
         error(xhr, status, error) {
-          displayStatus(`Error changing name of ${name}`);
+          JanUtil.displayStatus(`Error changing name of ${name}`);
         },
         success(data, status, jqXHR) {
-          displayStatus(`Name changed to ${data.name}`);
+          JanUtil.displayStatus(`Name changed to ${data.name}`);
           // const response = jqXHR.responseJSON();
-          // displayStatus(`Sensor name changed to ${response}`);
+          // JanUtil.displayStatus(`Sensor name changed to ${response}`);
         },
         complete(xhr, status) {
           dt.ajax.reload(null, false);
@@ -373,13 +359,13 @@ function newRestartButton(tableName) {
           xhr.setRequestHeader('X-CSRF-Token', token);
         },
         error(jqXHR, status, error) {
-          displayStatus(`Error triggering restart for ${name}`);
+          JanUtil.displayStatus(`Error triggering restart for ${name}`);
         },
         success(data, status, jqXHR) {
           if (data.restart === 'ok') {
-            displayStatus(`Restart triggered for ${name}`);
+            JanUtil.displayStatus(`Restart triggered for ${name}`);
           } else {
-            displayStatus(`Restart trigger failed for ${name}`);
+            JanUtil.displayStatus(`Restart trigger failed for ${name}`);
           }
         },
         complete(xhr, status) {
@@ -427,10 +413,10 @@ function toggleButton(tableName) {
           xhr.setRequestHeader('X-CSRF-Token', token);
         },
         error(jqXHR, status, error) {
-          displayStatus(`Error toggling ${name}`);
+          JanUtil.displayStatus(`Error toggling ${name}`);
         },
         success(data, status, jqXHR) {
-          displayStatus(`Toggled switch ${name}`);
+          JanUtil.displayStatus(`Toggled switch ${name}`);
         },
         complete(xhr, status) {
           dt.ajax.reload(null, false);
@@ -456,15 +442,15 @@ function sensorsColumns() {
   {
     data: 'dev_latency',
     class: 'col-center',
-    render: prettyUs,
+    render: JanUtil.prettyUs,
   }, {
     data: 'last_seen_secs',
     class: 'col-center',
-    render: prettySeconds,
+    render: JanUtil.prettySeconds,
   }, {
     data: 'reading_secs',
     class: 'col-center',
-    render: prettySeconds,
+    render: JanUtil.prettySeconds,
   }, {
     data: 'celsius',
     class: 'col-center',
@@ -484,7 +470,7 @@ function createSensorsTable() {
           statusText,
         } = jqXHR;
         if (status !== 200) {
-          displayStatus(`Refresh Error: ${statusText}`);
+          JanUtil.displayStatus(`Refresh Error: ${statusText}`);
         }
       },
     },
@@ -556,23 +542,23 @@ function switchesColumns() {
   {
     data: 'dev_latency',
     class: 'col-center',
-    render: prettyUs,
+    render: JanUtil.prettyUs,
   }, {
     data: 'rt_latency',
     class: 'col-center',
-    render: prettyUs,
+    render: JanUtil.prettyUs,
   }, {
     data: 'last_cmd_secs',
     class: 'col-center',
-    render: prettyLastCommand,
+    render: JanUtil.prettyLastCommand,
   }, {
     data: 'last_seen_secs',
     class: 'col-center',
-    render: prettySeconds,
+    render: JanUtil.prettySeconds,
   }, {
     data: 'state',
     class: 'col-state-off',
-    render: humanizeState,
+    render: JanUtil.humanSize,
   },
   ];
 }
@@ -589,7 +575,7 @@ function createSwitchesTable() {
           statusText,
         } = jqXHR;
         if (status !== 200) {
-          displayStatus(`Refresh Error: ${statusText}`);
+          JanUtil.displayStatus(`Refresh Error: ${statusText}`);
         }
       },
     },
@@ -665,11 +651,11 @@ function remotesColumns() {
   }, {
     data: 'last_start_secs',
     class: 'col-center',
-    render: prettySeconds,
+    render: JanUtil.prettySeconds,
   }, {
     data: 'last_seen_secs',
     class: 'col-center',
-    render: prettySeconds,
+    render: JanUtil.prettySeconds,
   }, {
     data: 'at_preferred_vsn',
     class: 'col-center',
@@ -689,7 +675,7 @@ function createRemotesTable() {
           statusText,
         } = jqXHR;
         if (status !== 200) {
-          displayStatus(`Refresh Error: ${statusText}`);
+          JanUtil.displayStatus(`Refresh Error: ${statusText}`);
         }
       },
     },
@@ -772,12 +758,12 @@ function dutycyclesColumns() {
   }, {
     data: 'enable',
     class: 'col-center',
-    render: boolToYesNo,
+    render: JanUtil.boolToYesNo,
   },
   {
     data: 'standalone',
     class: 'col-center',
-    render: boolToYesNo,
+    render: JanUtil.boolToYesNo,
   },
   {
     data: 'activeProfile',
@@ -788,25 +774,25 @@ function dutycyclesColumns() {
   }, {
     data: 'state.state_at_secs',
     class: 'col-center',
-    render: prettySeconds,
+    render: JanUtil.prettySeconds,
   }, {
     data: 'state.run_at_secs',
     class: 'col-center',
-    render: prettySeconds,
+    render: JanUtil.prettySeconds,
   }, {
     data: 'state.run_at_end_secs',
     class: 'col-center',
-    render: prettySeconds,
+    render: JanUtil.prettySeconds,
   },
   {
     data: 'state.idle_at_secs',
     class: 'col-center',
-    render: prettySeconds,
+    render: JanUtil.prettySeconds,
   },
   {
     data: 'state.idle_at_end_secs',
     class: 'col-center',
-    render: prettySeconds,
+    render: JanUtil.prettySeconds,
   },
   ];
 }
@@ -823,7 +809,7 @@ function createDutycyclesTable() {
           statusText,
         } = jqXHR;
         if (status !== 200) {
-          displayStatus(`Refresh Error: ${statusText}`);
+          JanUtil.displayStatus(`Refresh Error: ${statusText}`);
         }
       },
     },
@@ -888,7 +874,7 @@ function mixtanksColumns() {
   }, {
     data: 'enable',
     class: 'col-center',
-    render: boolToYesNo,
+    render: JanUtil.boolToYesNo,
   },
   {
     data: 'state.state',
@@ -917,11 +903,11 @@ function mixtanksColumns() {
   {
     data: 'state.state_at_secs',
     class: 'col-center',
-    render: prettySeconds,
+    render: JanUtil.prettySeconds,
   }, {
     data: 'state.started_at_secs',
     class: 'col-center',
-    render: prettySeconds,
+    render: JanUtil.prettySeconds,
   },
   ];
 }
@@ -938,7 +924,7 @@ function createMixtanksTable() {
           statusText,
         } = jqXHR;
         if (status !== 200) {
-          displayStatus(`Refresh Error: ${statusText}`);
+          JanUtil.displayStatus(`Refresh Error: ${statusText}`);
         }
       },
     },
@@ -1012,7 +998,7 @@ function createMixtanksTable() {
 
 function pageReady(jQuery) {
   /* eslint-disable no-param-reassign */
-  jQuery.fn.dataTable.ext.errMode = dataTableErrorHandler;
+  jQuery.fn.dataTable.ext.errMode = JanUtil.dataTableErrorHandler;
   /* eslint-enable no-param-reassign */
 
   createSensorsTable();
@@ -1020,7 +1006,7 @@ function pageReady(jQuery) {
   createRemotesTable();
   createDutycyclesTable();
   createMixtanksTable();
-  autoRefresh();
+  JanUtil.autoRefresh();
 
   // this must be the last thing -- after all tables created
   const tabs = ['switches', 'sensors', 'remotes', 'dutycycles',
@@ -1047,7 +1033,7 @@ function pageFullyLoaded() {
   }, 10);
 
   document.addEventListener(
-    'visibilitychange', autoRefresh,
+    'visibilitychange', JanUtil.autoRefresh,
     false,
   );
 }

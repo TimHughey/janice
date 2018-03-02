@@ -14,7 +14,7 @@ defmodule Fact.Supervisor do
       Influx.child_spec()
     ]
 
-    opts = [strategy: :one_for_all, name: Fact.Supervisor]
+    opts = [strategy: :rest_for_one, name: Fact.Supervisor]
     Supervisor.init(children, opts)
   end
 

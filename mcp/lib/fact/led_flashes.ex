@@ -11,8 +11,8 @@ defmodule Fact.LedFlashes do
     database(Application.get_env(:mcp, Fact.Influx) |> Keyword.get(:database))
     measurement("led_flashes")
 
-    tag(:name, default: "unknown-friendly")
-    tag(:application, default: "unknown-application")
+    tag(:name)
+    tag(:application, default: "mercurial")
     tag(:env, default: Application.get_env(:mcp, :build_env, "dev"))
 
     field(:val)

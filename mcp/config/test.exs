@@ -50,13 +50,10 @@ config :mcp, Fact.Influx,
   host: "jophiel.wisslanding.com",
   auth: [method: :basic, username: "merc_test", password: "merc_test"],
   http_opts: [insecure: true],
-  pool: [max_overflow: 10, size: 5, timeout: 150_000, max_connections: 10],
+  pool: [max_overflow: 10, size: 10, timeout: 60_000, max_connections: 30],
   port: 8086,
   scheme: "http",
-  writer: Instream.Writer.Line,
-  startup_delay_ms: 1000,
-  periodic_log_first_ms: 1 * 60 * 1000,
-  periodic_log_ms: 15 * 60 * 1000
+  writer: Instream.Writer.Line
 
 config :mcp, Mixtank.Control, control_temp_ms: 1000
 
