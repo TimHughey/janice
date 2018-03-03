@@ -146,19 +146,20 @@ void mcrMQTT::incomingMsg(struct mg_str *in_topic, struct mg_str *in_payload) {
 
   size_t avail_bytes = xRingbufferGetCurFreeSize(_rb_in);
 
-  if ((!_prefer_outbound_ms) && (avail_bytes < _rb_in_lowwater)) {
+  if ((!_prefer_outbound_ticks) && (avail_bytes < _rb_in_lowwater)) {
     ESP_LOGW(tagEngine(),
-             "inbound rb overloaded (%u < %u), preferring outbound msgs",
-             avail_bytes, _rb_in_lowwater);
+             "inbound ringbuff overload %u,%u,%u (avail,low,total bytes)",
+             avail_bytes, _rb_in_lowwater, _rb_in_size);
 
-    _prefer_outbound_ms = 130;
+    _prefer_outbound_ticks = pdMS_TO_TICKS(200);
   }
 
-  if (_prefer_outbound_ms && (avail_bytes > _rb_in_highwater)) {
+  if (_prefer_outbound_ticks && (avail_bytes > _rb_in_highwater)) {
     ESP_LOGI(tagEngine(),
-             "inbound rb drained, returning to standard in/out processing");
+             "inbound ringbuff drained %u,%u,%u (avail,high,total bytes)",
+             avail_bytes, _rb_in_highwater, _rb_in_size);
     vTaskPrioritySet(_task.handle, _task.priority);
-    _prefer_outbound_ms = 0;
+    _prefer_outbound_ticks = 0;
   }
 
   if (rb_rc) {
@@ -217,7 +218,7 @@ void mcrMQTT::outboundMsg() {
   mqttOutMsg_t *entry = nullptr;
 
   entry =
-      (mqttOutMsg_t *)xRingbufferReceive(_rb_out, &len, _prefer_outbound_ms);
+      (mqttOutMsg_t *)xRingbufferReceive(_rb_out, &len, _prefer_outbound_ticks);
 
   while (entry) {
     int64_t start_us = esp_timer_get_time();

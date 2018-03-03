@@ -99,7 +99,7 @@ private:
   struct mg_connection *_connection = nullptr;
   uint16_t _msg_id = 0;
   bool _mqtt_ready = false;
-  bool _prefer_outbound_ms = 0;
+  bool _prefer_outbound_ticks = 0;
 
   // mg_mgr uses LWIP and the timeout is specified in ms
   int _inbound_msg_ms = CONFIG_MCR_MQTT_INBOUND_MSG_WAIT_MS;

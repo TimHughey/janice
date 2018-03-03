@@ -1,2 +1,3 @@
 *.swp
 !**/.gcc-flags.json
+.DS_Store
