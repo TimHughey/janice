@@ -1,4 +1,4 @@
-fadeOut('fast') import JanUtil from './util';
+import JanUtil from './util';
 
 const sensorsID = '#sensorsTable';
 const switchesID = '#switchesTable';
