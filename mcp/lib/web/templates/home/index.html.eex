@@ -3,7 +3,7 @@
 <div class="container">
   <!-- Jumbotron -->
   <div class="jumbotron">
-    <h1>This is Mercurial for Wiss Landing</h1>
+    <h1>This is Janice for Wiss Landing</h1>
     <p class="lead">Here you can access and control the various aspects of the Master Control Program</p>
     <p><a class="btn btn-lg btn-success" href="<%= mcp_path @conn, :index %>" role="button">Manage MCP</a></p>
   </div>
@@ -12,13 +12,13 @@
   <div class="row">
     <div class="col-lg-4">
       <h2>Guardian</h2>
-      <p>Mercurial now uses Guardian to protect sensitive resources</p>
+      <p>Janice now uses Guardian to protect sensitive resources</p>
       <p><a class="btn btn-primary" href="https://hexdocs.pm/guardian/readme.html#content" role="button">See the Library &raquo;</a></p>
     </div>
     <div class="col-lg-4">
-      <h2>Mercurial Source Code</h2>
-      <p>The source code for Mercurial is available on GitHub for anyone to use via open-source licensing.</p>
-      <p><a class="btn btn-primary" href="https://github.com/TimHughey/mercurial" role="button">GitHub &raquo;</a></p>
+      <h2>Janice Source Code</h2>
+      <p>The source code for Janice is available on GitHub for anyone to use via open-source licensing.</p>
+      <p><a class="btn btn-primary" href="https://github.com/TimHughey/janice" role="button">GitHub &raquo;</a></p>
    </div>
     <div class="col-lg-4">
       <!-- <h2>Elixir Phoenix</h2> -->

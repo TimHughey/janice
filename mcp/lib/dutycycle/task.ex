@@ -1,6 +1,6 @@
 defmodule Dutycycle.CycleTask do
-@moduledoc """
-"""
+  @moduledoc """
+  """
 
   require Logger
   use Timex
@@ -15,7 +15,7 @@ defmodule Dutycycle.CycleTask do
 
   def run(dc, opts) do
     p = dc.profiles |> hd()
-    Logger.info fn -> "[#{dc.name}] started with profile [#{p.name}]" end
+    Logger.info(fn -> "[#{dc.name}] started with profile [#{p.name}]" end)
 
     State.set_started(dc)
 
@@ -31,38 +31,39 @@ defmodule Dutycycle.CycleTask do
     loop(dc, opts)
   end
 
-  defp idle_phase(%Dutycycle{} = dc,
-                  %Profile{idle_ms: idle_ms, name: profile}, _opts)
-  when idle_ms < 1 do
-    Logger.debug fn -> "[#{dc.name}] profile [#{profile}] idle_ms < 1, " <>
-                      "skipping idle phase" end
-    State.set_idling(dc)
+  defp idle_phase(%Dutycycle{} = dc, %Profile{idle_ms: idle_ms, name: profile}, _opts)
+       when idle_ms < 1 do
+    Logger.debug(fn ->
+      "[#{dc.name}] profile [#{profile}] idle_ms < 1, " <> "skipping idle phase"
+    end)
+
+    # will basically do nothing however consistently returns the same as other functions
+    :timer.sleep(idle_ms)
   end
 
-  defp idle_phase(%Dutycycle{} = dc,
-                  %Profile{idle_ms: idle_ms}, _opts)
-  when idle_ms > 0 do
-    dc.log && Logger.info fn -> "[#{dc.name}] idling for #{idle_ms}ms" end
+  defp idle_phase(%Dutycycle{} = dc, %Profile{idle_ms: idle_ms}, _opts)
+       when idle_ms > 0 do
+    dc.log && Logger.info(fn -> "[#{dc.name}] idling for #{idle_ms}ms" end)
     State.set_idling(dc)
 
     :timer.sleep(idle_ms)
   end
 
-  defp run_phase(%Dutycycle{} = dc,
-                 %Profile{run_ms: run_ms, name: profile}, _opts)
-  when run_ms < 1 do
-    Logger.debug fn -> "[#{dc.name}] profile [#{profile}] run_ms < 1, " <>
-                      "skipping run phase" end
-    State.set_running(dc)
+  defp run_phase(%Dutycycle{} = dc, %Profile{run_ms: run_ms, name: profile}, _opts)
+       when run_ms < 1 do
+    Logger.debug(fn ->
+      "[#{dc.name}] profile [#{profile}] run_ms < 1, " <> "skipping run phase"
+    end)
+
+    # will basically do nothing however consistently returns the same as other functions
+    :timer.sleep(run_ms)
   end
 
-  defp run_phase(%Dutycycle{} = dc,
-                 %Profile{run_ms: run_ms}, _opts)
-  when run_ms > 0 do
-    dc.log && Logger.info fn -> "[#{dc.name}] running for #{run_ms}ms" end
+  defp run_phase(%Dutycycle{} = dc, %Profile{run_ms: run_ms}, _opts)
+       when run_ms > 0 do
+    dc.log && Logger.info(fn -> "[#{dc.name}] running for #{run_ms}ms" end)
     State.set_running(dc)
 
     :timer.sleep(run_ms)
   end
-
 end

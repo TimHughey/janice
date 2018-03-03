@@ -20,7 +20,7 @@
         #
         # You can give explicit globs or simply directories.
         # In the latter case `**/*.{ex,exs}` will be used.
-      #
+        #
         included: ["lib/", "src/", "web/", "apps/"],
         excluded: [~r"/_build/", ~r"/deps/"]
       },
@@ -58,7 +58,7 @@
         # For some checks, like AliasUsage, you can only customize the priority
         # Priority values are: `low, normal, high, higher`
         #
-        #{Credo.Check.Design.AliasUsage, priority: :low},
+        # {Credo.Check.Design.AliasUsage, priority: :low},
         {Credo.Check.Design.AliasUsage, false},
 
         # For others you can set parameters
@@ -75,10 +75,9 @@
         #
         {Credo.Check.Design.TagTODO, exit_status: 2},
         {Credo.Check.Design.TagFIXME},
-
         {Credo.Check.Readability.FunctionNames},
         {Credo.Check.Readability.LargeNumbers},
-        {Credo.Check.Readability.MaxLineLength, priority: :low, max_length: 80},
+        {Credo.Check.Readability.MaxLineLength, priority: :low, max_length: 99},
         {Credo.Check.Readability.ModuleAttributeNames},
         {Credo.Check.Readability.ModuleDoc},
         {Credo.Check.Readability.ModuleNames},
@@ -93,7 +92,6 @@
         {Credo.Check.Readability.VariableNames},
         {Credo.Check.Readability.Semicolons},
         {Credo.Check.Readability.SpaceAfterCommas},
-
         {Credo.Check.Refactor.DoubleBooleanNegation},
         {Credo.Check.Refactor.CondStatements},
         {Credo.Check.Refactor.CyclomaticComplexity},
@@ -102,10 +100,9 @@
         {Credo.Check.Refactor.MatchInCondition},
         {Credo.Check.Refactor.NegatedConditionsInUnless},
         {Credo.Check.Refactor.NegatedConditionsWithElse},
-        {Credo.Check.Refactor.Nesting, :false},
-        {Credo.Check.Refactor.PipeChainStart, :false},
+        {Credo.Check.Refactor.Nesting, false},
+        {Credo.Check.Refactor.PipeChainStart, false},
         {Credo.Check.Refactor.UnlessWithElse},
-
         {Credo.Check.Warning.BoolOperationOnSameValues},
         {Credo.Check.Warning.IExPry},
         {Credo.Check.Warning.IoInspect},
@@ -136,7 +133,7 @@
         {Credo.Check.Warning.NameRedeclarationByAssignment, false},
         {Credo.Check.Warning.NameRedeclarationByCase, false},
         {Credo.Check.Warning.NameRedeclarationByDef, false},
-        {Credo.Check.Warning.NameRedeclarationByFn, false},
+        {Credo.Check.Warning.NameRedeclarationByFn, false}
 
         # Custom checks can be created using `mix credo.gen.check`.
         #

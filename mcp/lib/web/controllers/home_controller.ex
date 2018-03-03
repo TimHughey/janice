@@ -8,14 +8,13 @@ defmodule Web.HomeController do
     # Logger.info fn -> inspect(conn) end
     resource = Plug.current_resource(conn)
 
-    resource && Logger.info fn ->
-                    r = Plug.current_resource(conn)
-                    c = Plug.current_claims(conn)
-                    "resource: #{inspect(r)} claims: #{inspect(c)}"
-                end
+    resource &&
+      Logger.debug(fn ->
+        r = Plug.current_resource(conn)
+        c = Plug.current_claims(conn)
+        "resource: #{inspect(r)} claims: #{inspect(c)}"
+      end)
 
-    render conn, "index.html",
-      current_user: get_session(conn, :current_user)
-      #
+    render(conn, "index.html", current_user: get_session(conn, :current_user))
   end
 end

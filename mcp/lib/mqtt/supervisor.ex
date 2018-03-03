@@ -3,30 +3,24 @@ defmodule Mqtt.Supervisor do
 
   require Logger
   use Supervisor
-  import Application, only: [fetch_env: 2]
 
-  def init(_args) do
-
-    Logger.info fn -> "init()" end
-
-    autostart =
-    case fetch_env(:mcp, :build_env) do
-      {:ok, "test"}  -> false
-      _anything_else -> true
-    end
+  def init(args) do
+    Logger.info(fn -> "init()" end)
 
     # List all child processes to be supervised
     children = [
-      {Mqtt.Client, %{autostart: autostart}}
+      {Mqtt.Client, args},
+      {MessageSave, args},
+      {Mqtt.InboundMessage, args}
     ]
-      # Starts a worker by calling: Mqtt.Worker.start_link(arg)
-      # {Mqtt.Worker, arg},
+
+    # Starts a worker by calling: Mqtt.Worker.start_link(arg)
+    # {Mqtt.Worker, arg},
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
-    opts = [strategy: :one_for_one, name: Mqtt.Supervisor]
+    opts = [strategy: :rest_for_one, name: Mqtt.Supervisor]
     Supervisor.init(children, opts)
-
   end
 
   def start_link(arg) do

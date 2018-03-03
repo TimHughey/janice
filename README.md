@@ -1,8 +1,8 @@
-# Mercurial
+# Janice
 
 As of 2017-12-20
 
-Mercurial provides system for collecting sensor data, controlling switches
+Janice provides system for collecting sensor data, controlling switches
 and making making data available via a web interface and through a timeseries
 database.
 

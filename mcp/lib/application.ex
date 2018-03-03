@@ -3,40 +3,26 @@ defmodule Mcp.Application do
 
   use Application
   require Logger
-  import Application, only: [fetch_env: 2, get_env: 3]
+  import Application, only: [get_env: 3, put_env: 3]
   import Keyword, only: [has_key?: 2]
 
   def start(_type, args) do
+    Logger.info(fn -> "start() args: #{inspect(args)}" end)
 
-    Logger.info fn -> "start() args: #{inspect(args)}" end
+    build_env = Keyword.get(args, :build_env, "dev")
+    sha_head = Keyword.get(args, :sha_head, "0000000")
+    sha_mcr_stable = Keyword.get(args, :sha_mcr_stable, "0000000")
 
-    autostart =
-    case fetch_env(:mcp, :build_env) do
-      {:ok, "test"}  -> false
-      _anything_else -> true
-    end
-
-    initial = %{autostart: autostart}
+    put_env(:mcp, :build_env, build_env)
+    put_env(:mcp, :sha_head, sha_head)
+    put_env(:mcp, :sha_mcr_stable, sha_mcr_stable)
 
     # List all child processes to be supervised
-    children = [
-      {Repo, []},
-      {MessageSave, initial},
-      {Fact.Supervisor, initial},
-      {Mqtt.Supervisor, initial},
-      {Dispatcher.Supervisor, initial},
-      {Command.Control, initial},
-      {Janitor, initial},
-      {Dutycycle.Control, initial},
-      {Mixtank.Control, initial},
-      {Web.Supervisor, initial}
-      # {Mcp.SoakTest, initial},
-      # {Mcp.Chamber, initial}
-    ]
+    children = children_by_env(build_env)
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
-    opts = [strategy: :one_for_one, name: Mcp.Supervisor]
+    opts = [strategy: :rest_for_one, name: Mcp.Supervisor, max_restarts: 100, max_seconds: 5]
 
     # only start the Supervisor if the database password is set
     if get_env(:mcp, Repo, []) |> has_key?(:password) do
@@ -45,4 +31,33 @@ defmodule Mcp.Application do
       {:error, :no_db_password}
     end
   end
+
+  # Private Functions
+  defp children_by_env(build_env) when build_env == "dev" or build_env == "test" or build_env == "prod" do
+    initial = initial_args(build_env)
+
+    [
+      {Repo, []},
+      {Fact.Supervisor, initial},
+      {Mqtt.Supervisor, initial},
+      {Janitor, initial},
+      {Dutycycle.Supervisor, initial},
+      {Web.Supervisor, initial}
+    ]
+  end
+
+  defp children_by_env(build_env) when build_env == "test" do
+    initial = initial_args(build_env)
+
+    [
+      {Repo, []},
+      {Fact.Supervisor, initial},
+      {Mqtt.Supervisor, initial},
+      {Web.Supervisor, initial}
+    ]
+  end
+
+  defp initial_args(build_env)
+       when build_env == "dev" or build_env == "test" or build_env == "prod",
+       do: %{autostart: true}
 end

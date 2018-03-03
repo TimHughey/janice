@@ -32,6 +32,7 @@ assets/node_modules
 # we ignore priv/static. You may want to comment
 # this depending on your deployment strategy.
 /priv/static/
+/priv/mcr_esp*
 
 # Files matching config/*.secret.exs pattern contain sensitive
 # data and you should not commit them into version control.
@@ -40,3 +41,8 @@ assets/node_modules
 # secrets files as long as you replace their contents by environment
 # variables.
 /config/*.secret.exs
+
+# Lager will write log files to the cwd when running iex, exclude those logs
+/log/
+/var/log/
+ttb_last_config

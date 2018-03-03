@@ -1,0 +1,2 @@
+
+// #define MG_DEFAULT_NAMESERVER "192.168.2.4"
