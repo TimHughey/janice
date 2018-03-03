@@ -48,14 +48,13 @@ private:
   int _delay_ms = 0;
 
   void begin();
-  void bootFactoryNext();
+  void bootPartitionNext();
   void end();
   void processBlock();
 
 public:
   mcrCmdOTA(mcrCmdType_t type, JsonObject &root);
-  mcrCmdOTA(mcrCmdType_t type, mcrRawMsg_t *raw)
-      : mcrCmd(type), _raw(raw){};
+  mcrCmdOTA(mcrCmdType_t type, mcrRawMsg_t *raw) : mcrCmd(type), _raw(raw){};
   ~mcrCmdOTA(){};
 
   bool process();

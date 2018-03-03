@@ -46,7 +46,7 @@ typedef enum class mcrCmdType {
   otabegin,
   otacontinue,
   otaend,
-  bootfactorynext,
+  bootPartitionNext,
   restart
 } mcrCmdType_t;
 

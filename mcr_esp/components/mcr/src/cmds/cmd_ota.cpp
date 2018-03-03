@@ -41,6 +41,9 @@ void mcrCmdOTA::begin() {
     return;
   }
 
+  ESP_LOGI(TAG, "ota begin received, anticipate data blocks in %dms",
+           _delay_ms);
+
   mcr::Net::suspendNormalOps();
 
   mcrMQTT::otaPrep();
@@ -69,11 +72,12 @@ void mcrCmdOTA::begin() {
 
   _ota_err = esp_ota_begin(_update_part, OTA_SIZE_UNKNOWN, &_ota_update);
   if (_ota_err != ESP_OK) {
-    ESP_LOGE(TAG, "esp_ota_begin failed, error=0x%02x", _ota_err);
+    ESP_LOGE(TAG, "ota begin esp_ota_begin() error=0x%02x", _ota_err);
+    _ota_update = 0;
   }
 }
 
-void mcrCmdOTA::bootFactoryNext() {
+void mcrCmdOTA::bootPartitionNext() {
   esp_err_t err = ESP_OK;
   const esp_partition_t *part = nullptr;
 
@@ -91,7 +95,7 @@ void mcrCmdOTA::bootFactoryNext() {
 void mcrCmdOTA::end() {
 
   if (_ota_update == 0) {
-    ESP_LOGW(TAG, "ota not in-progress, ignoring spurious end");
+    ESP_LOGI(TAG, "ota not in-progress, ignoring spurious end");
     return;
   }
 
@@ -99,6 +103,7 @@ void mcrCmdOTA::end() {
 
   if (_ota_err != ESP_OK) {
     ESP_LOGE(TAG, "error 0x%02x during OTA update", _ota_err);
+    _ota_update = 0;
     return;
   }
 
@@ -115,7 +120,7 @@ void mcrCmdOTA::end() {
   }
 
   if (_ota_err != ESP_OK) {
-    ESP_LOGE(TAG, "error 0x%02x while setting boot part", _ota_err);
+    ESP_LOGE(TAG, "ota error 0x%02x while setting boot part", _ota_err);
   }
 
   _ota_update = 0; // flag that the ota_update is not in-progress
@@ -129,9 +134,9 @@ bool mcrCmdOTA::process() {
   if (_raw == nullptr) {
     switch (type()) {
 
-    case mcrCmdType::bootfactorynext:
+    case mcrCmdType::bootPartitionNext:
       if (this_host) {
-        bootFactoryNext();
+        bootPartitionNext();
       }
       break;
 
@@ -202,11 +207,17 @@ void mcrCmdOTA::processBlock() {
       }
     }
 
-    ESP_LOGI(TAG, "ota last block processed");
+    ESP_LOGI(TAG, "ota final block processed");
     break;
 
   default:
     ESP_LOGW(TAG, "unknown flag (0x%02x) on ota block", flags);
+    _ota_update = 0;
+  }
+
+  if (_ota_err != ESP_OK) {
+    ESP_LOGW(TAG, "canceling ota, processBlock() error=0x%x", _ota_err);
+    _ota_update = 0;
   }
 }
 
