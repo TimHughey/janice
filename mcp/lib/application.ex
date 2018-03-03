@@ -33,7 +33,7 @@ defmodule Mcp.Application do
   end
 
   # Private Functions
-  defp children_by_env(build_env) when build_env == "dev" or build_env == "test" do
+  defp children_by_env(build_env) when build_env == "dev" or build_env == "test" or build_env == "prod" do
     initial = initial_args(build_env)
 
     [
