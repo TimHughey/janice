@@ -29,7 +29,7 @@ defmodule Web.SensorController do
   end
 
   def delete(conn, %{"id" => id}) do
-    Logger.info(fn -> ~s(DELETE #{conn.request_path}) end)
+    Logger.debug(fn -> ~s(DELETE #{conn.request_path}) end)
 
     {rows, _} = Sensor.delete(String.to_integer(id))
 
@@ -37,7 +37,7 @@ defmodule Web.SensorController do
   end
 
   def update(%{method: "PATCH"} = conn, %{"id" => id, "name" => new_name} = _params) do
-    Logger.info(fn -> ~s(#{conn.method} #{conn.request_path}) end)
+    Logger.debug(fn -> ~s(#{conn.method} #{conn.request_path}) end)
 
     Sensor.change_name(String.to_integer(id), new_name, "changed via web")
 

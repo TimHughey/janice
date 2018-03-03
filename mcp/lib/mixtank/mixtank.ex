@@ -147,6 +147,10 @@ defmodule Mixtank do
     |> all()
   end
 
+  def delete(id) when is_integer(id) do
+    from(mt in Mixtank, where: mt.id == ^id) |> Repo.delete_all()
+  end
+
   def delete_all(:dangerous) do
     from(mt in Mixtank, where: mt.id >= 0)
     |> Repo.delete_all()

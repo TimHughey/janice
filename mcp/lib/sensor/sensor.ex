@@ -8,10 +8,9 @@ defmodule Sensor do
   use Timex.Ecto.Timestamps
   use Ecto.Schema
 
-  # import Application, only: [get_env: 2]
   import Ecto.Changeset
   import Ecto.Query, only: [from: 2]
-  import Repo, only: [all: 2, delete_all: 1, insert!: 1, update: 1, update!: 1, one: 1]
+  import Repo, only: [all: 2, insert!: 1, update: 1, update!: 1, one: 1]
 
   alias Fact.Fahrenheit
   alias Fact.Celsius
@@ -37,21 +36,31 @@ defmodule Sensor do
     [add(s)] ++ add(rest)
   end
 
-  def add(%Sensor{name: name} = s) do
-    q =
-      from(
-        s in Sensor,
-        where: s.name == ^name,
-        preload: [:temperature, :relhum]
-      )
+  def add(%Sensor{device: device}, r \\ %{}) when is_map(r) do
+    found = get_by(device: device)
+    r = Map.put(r, :found, found)
 
-    case one(q) do
-      nil ->
-        ensure_temperature(s) |> ensure_relhum() |> insert!()
+    case r do
+      %{found: %Sensor{} = exists} ->
+        exists
 
-      found ->
-        Logger.warn(~s/[#{s.name}] already exists, skipping add/)
-        found
+      %{found: nil, rh: rh, tc: tc, tf: tf, type: type} ->
+        relhum = %SensorRelHum{rh: rh}
+        temp = %SensorTemperature{tc: tc, tf: tf}
+
+        %Sensor{device: device, name: device, type: type, temperature: temp, relhum: relhum}
+        |> insert!()
+
+      %{found: nil, tc: tc, tf: tf, type: type} ->
+        temp = %SensorTemperature{tc: tc, tf: tf}
+
+        %Sensor{device: device, name: device, type: type, temperature: temp}
+        |> insert!()
+
+      %{found: nil} ->
+        type = Map.get(r, :type, nil)
+        Logger.warn(fn -> "#{device} unknown type #{type}, defaulting to temp" end)
+        %Sensor{device: device, name: device, type: "temp"} |> insert!()
     end
   end
 
@@ -77,7 +86,7 @@ defmodule Sensor do
   def change_name(id, to_be, comment \\ "")
 
   def change_name(id, tobe, comment) when is_integer(id) do
-    s = Repo.get(Sensor, id)
+    s = get_by(id: id)
 
     if not is_nil(s) do
       s
@@ -91,15 +100,11 @@ defmodule Sensor do
 
   def change_name(asis, tobe, comment)
       when is_binary(asis) and is_binary(tobe) do
-    s = get_by_name(asis)
+    s = get_by(name: asis)
 
-    if not is_nil(s) do
-      s
-      |> changeset(%{name: tobe, description: comment})
-      |> update()
-    else
-      {:error, :not_found}
-    end
+    if is_nil(s),
+      do: {:error, :not_found},
+      else: changeset(s, %{name: tobe, description: comment})
   end
 
   def changeset(ss, params \\ %{}) do
@@ -111,11 +116,29 @@ defmodule Sensor do
   end
 
   def delete(id) when is_integer(id) do
-    from(s in Sensor, where: s.id == ^id) |> delete_all()
+    from(s in Sensor, where: s.id == ^id) |> Repo.delete_all()
   end
 
   def delete(name) when is_binary(name) do
-    from(s in Sensor, where: s.name == ^name) |> delete_all()
+    from(s in Sensor, where: s.name == ^name) |> Repo.delete_all()
+  end
+
+  def delete_all(:dangerous) do
+    from(s in Sensor, where: s.id >= 0) |> Repo.delete_all()
+  end
+
+  def external_update(%{device: device, host: host, mtime: mtime, type: type} = r) do
+    hostname = Remote.mark_as_seen(host, mtime)
+    r = Map.put(r, :hostname, hostname)
+
+    sensor = add(%Sensor{device: device, type: type}, r)
+
+    {sensor, r} |> update_reading() |> record_metrics()
+  end
+
+  def external_update(%{} = eu) do
+    Logger.warn(fn -> "external_update received a bad map #{inspect(eu)}" end)
+    :error
   end
 
   @doc ~S"""
@@ -123,32 +146,55 @@ defmodule Sensor do
   name.  Returns nil if the no friendly name exists.
 
   """
-  def fahrenheit(name) when is_binary(name), do: get(name) |> fahrenheit()
+  def fahrenheit(name) when is_binary(name), do: get_by(name: name) |> fahrenheit()
   def fahrenheit(%Sensor{temperature: %SensorTemperature{tf: tf}}), do: tf
   def fahrenheit(%Sensor{} = s), do: Logger.warn(inspect(s))
+  def fahrenheit(nil), do: nil
 
-  def external_update(%{device: device, host: host, mtime: mtime, type: type} = r) do
-    hostname = Remote.mark_as_seen(host, mtime)
+  # def get(name)
+  #     when is_binary(name) do
+  #   from(
+  #     s in Sensor,
+  #     where: s.name == ^name,
+  #     preload: [:temperature, :relhum]
+  #   )
+  #   |> one()
+  # end
+  #
+  # def get(device, type)
+  #     when is_binary(device) and is_binary(type) do
+  #   get_by(device: device, type: type)
+  # end
 
-    s =
-      case get(device, type) do
-        nil ->
-          Logger.info(fn -> "discovered new sensor [#{device}]" end)
+  def get_by(opts) when is_list(opts) do
+    filter = Keyword.take(opts, [:id, :device, :name, :type])
+    select = Keyword.take(opts, [:only]) |> Keyword.get_values(:only) |> List.flatten()
 
-          %Sensor{name: device, device: device, type: type}
-          |> ensure_temperature()
-          |> ensure_relhum()
-          |> insert!()
+    if Enum.empty?(filter) do
+      Logger.warn(fn -> "get_by bad args: #{inspect(opts)}" end)
+      []
+    else
+      s = from(s in Sensor, where: ^filter, preload: [:temperature, :relhum]) |> one()
 
-        s ->
-          s
-      end
+      if is_nil(s) or Enum.empty?(select), do: s, else: Map.take(s, select)
+    end
+  end
 
-    s = update_reading(s, r)
+  # def get_by_name(name) when is_binary(name) do
+  #   from(s in Sensor, where: s.name == ^name) |> one()
+  # end
 
-    # TODO: refactor this to a standalone function
-    case type do
-      "temp" ->
+  def relhum(name) when is_binary(name), do: get_by(name: name) |> relhum()
+  def relhum(%Sensor{relhum: %SensorRelHum{rh: rh}}), do: rh
+  def relhum(_anything), do: nil
+
+  ###
+  ### PRIVATE
+  ###
+
+  defp record_metrics({%Sensor{type: type} = s, %{hostname: hostname} = r}) do
+    cond do
+      type === "temp" ->
         Logger.debug(fn ->
           "#{s.name} " <>
             "#{String.pad_leading(Float.to_string(s.temperature.tf), 8)}F " <>
@@ -157,7 +203,7 @@ defmodule Sensor do
 
         Fahrenheit.record(
           remote_host: hostname,
-          device: r.device,
+          device: s.device,
           name: s.name,
           mtime: r.mtime,
           val: s.temperature.tf
@@ -165,13 +211,13 @@ defmodule Sensor do
 
         Celsius.record(
           remote_host: hostname,
-          device: r.device,
+          device: s.device,
           name: s.name,
           mtime: r.mtime,
           val: s.temperature.tc
         )
 
-      "relhum" ->
+      type === "relhum" ->
         Logger.debug(fn ->
           "#{s.name} " <>
             "#{String.pad_leading(Float.to_string(s.temperature.tf), 8)}F " <>
@@ -181,7 +227,7 @@ defmodule Sensor do
 
         Fahrenheit.record(
           remote_host: hostname,
-          device: r.device,
+          device: s.device,
           name: s.name,
           mtime: r.mtime,
           val: s.temperature.tf
@@ -202,115 +248,37 @@ defmodule Sensor do
           mtime: r.mtime,
           val: s.relhum.rh
         )
+
+      true ->
+        Logger.warn(fn -> "invalid switch type [#{inspect(type)}]" end)
     end
 
-    s
+    {s, r}
   end
 
-  def external_update(%{} = eu) do
-    Logger.warn(fn -> "external_update received a bad map #{inspect(eu)}" end)
-    :error
-  end
+  defp record_metrics({%Sensor{} = s, %{} = r}), do: {s, r}
 
-  def get(name)
-      when is_binary(name) do
-    from(
-      s in Sensor,
-      where: s.name == ^name,
-      preload: [:temperature, :relhum]
-    )
-    |> one()
-  end
-
-  def get(device, type)
-      when is_binary(device) and is_binary(type) do
-    q =
-      case type do
-        "temp" ->
-          from(
-            s in Sensor,
-            join: t in assoc(s, :temperature),
-            where: s.device == ^device,
-            where: s.type == ^type,
-            preload: [temperature: t]
-          )
-
-        "relhum" ->
-          from(
-            s in Sensor,
-            join: t in assoc(s, :temperature),
-            join: r in assoc(s, :relhum),
-            where: s.device == ^device,
-            where: s.type == ^type,
-            preload: [temperature: t, relhum: r]
-          )
-
-        _unknown ->
-          Logger.warn(fn -> "unknown type #{type} for [#{device}]" end)
-
-          from(
-            s in Sensor,
-            where: s.type == ^type,
-            where: s.name == ^device,
-            or_where: s.device == ^device
-          )
-      end
-
-    case one(q) do
-      nil ->
-        Logger.info(fn -> "new #{type} sensor [#{device}]" end)
-        %Sensor{name: device, device: device, type: type} |> add()
-
-      s ->
-        s
-    end
-  end
-
-  def get_by_name(name) when is_binary(name) do
-    from(s in Sensor, where: s.name == ^name) |> one()
-  end
-
-  def relhum(name) when is_binary(name), do: get(name) |> relhum()
-  def relhum(%Sensor{relhum: %SensorRelHum{rh: rh}}), do: rh
-  def relhum(_anything), do: nil
-
-  ###
-  ### PRIVATE
-  ###
-
-  defp ensure_relhum(%Sensor{relhum: relhum} = s) do
-    if Ecto.assoc_loaded?(relhum),
-      do: s,
-      else: %{s | relhum: %SensorRelHum{}}
-  end
-
-  defp ensure_temperature(%Sensor{temperature: temp} = s) do
-    if Ecto.assoc_loaded?(temp),
-      do: s,
-      else: %{s | temperature: %SensorTemperature{}}
-  end
-
-  defp update_reading(%Sensor{type: "temp"} = s, r)
+  defp update_reading({%Sensor{type: "temp"} = s, r})
        when is_map(r) do
-    change(s, %{
-      last_seen_at: Timex.from_unix(r.mtime),
-      reading_at: Timex.now(),
-      dev_latency: Map.get(r, :read_us, Timex.diff(r.msg_recv_dt, Timex.from_unix(r.mtime))),
-      temperature: update_temperature(s, r)
-    })
-    |> update!()
+    {change(s, %{
+       last_seen_at: Timex.from_unix(r.mtime),
+       reading_at: Timex.now(),
+       dev_latency: Map.get(r, :read_us, Timex.diff(r.msg_recv_dt, Timex.from_unix(r.mtime))),
+       temperature: update_temperature(s, r)
+     })
+     |> update!(), r}
   end
 
-  defp update_reading(%Sensor{type: "relhum"} = s, r)
+  defp update_reading({%Sensor{type: "relhum"} = s, r})
        when is_map(r) do
-    change(s, %{
-      last_seen_at: Timex.from_unix(r.mtime),
-      reading_at: Timex.now(),
-      dev_latency: Map.get(r, :read_us, Timex.diff(r.msg_recv_dt, Timex.from_unix(r.mtime))),
-      temperature: update_temperature(s, r),
-      relhum: update_relhum(s, r)
-    })
-    |> update!()
+    {change(s, %{
+       last_seen_at: Timex.from_unix(r.mtime),
+       reading_at: Timex.now(),
+       dev_latency: Map.get(r, :read_us, Timex.diff(r.msg_recv_dt, Timex.from_unix(r.mtime))),
+       temperature: update_temperature(s, r),
+       relhum: update_relhum(s, r)
+     })
+     |> update!(), r}
   end
 
   defp update_relhum(%Sensor{relhum: relhum}, r)

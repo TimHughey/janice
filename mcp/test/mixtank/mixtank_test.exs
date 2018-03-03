@@ -14,7 +14,6 @@ defmodule MixtankTest do
   end
 
   setup_all do
-    Mixtank.delete_all(:dangerous)
     _mt = new_mixtank(99) |> Mixtank.add()
     :ok
   end
