@@ -30,7 +30,7 @@ defmodule Web.Router do
     plug(Web.ApiAuthAccessPipeline)
   end
 
-  scope "/mercurial/auth", Web do
+  scope "/janice/auth", Web do
     pipe_through([:browser])
 
     get("/:provider", AuthController, :request)
@@ -40,13 +40,13 @@ defmodule Web.Router do
     post("/:provider/callback", AuthController, :callback)
   end
 
-  scope "/mercurial/mcp", Web do
+  scope "/janice/mcp", Web do
     pipe_through([:browser, :browser_session, :browser_authenticated])
 
     get("/", McpController, :index)
   end
 
-  scope "/mercurial/mcp/api", Web do
+  scope "/janice/mcp/api", Web do
     pipe_through([:api])
     resources("/mixtank", MixtankController, only: [:index, :update])
     resources("/sensor", SensorController, only: [:delete, :index, :update])
@@ -55,7 +55,7 @@ defmodule Web.Router do
     resources("/dutycycle", DutycycleController, only: [:delete, :index, :update])
   end
 
-  scope "/mercurial", Web do
+  scope "/janice", Web do
     pipe_through([:browser, :browser_session])
 
     get("/", HomeController, :index)

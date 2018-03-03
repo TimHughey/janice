@@ -20,7 +20,7 @@ defmodule Fact.EngineMetric do
     # 'type' maps to the measurement
     measurement(@metric_type)
 
-    tag(:application, default: "mercurial")
+    tag(:application, default: "janice")
     tag(:env, default: Application.get_env(:mcp, :build_env, "dev"))
     tag(:host)
     tag(:name)

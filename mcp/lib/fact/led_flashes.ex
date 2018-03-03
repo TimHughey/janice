@@ -12,7 +12,7 @@ defmodule Fact.LedFlashes do
     measurement("led_flashes")
 
     tag(:name)
-    tag(:application, default: "mercurial")
+    tag(:application, default: "janice")
     tag(:env, default: Application.get_env(:mcp, :build_env, "dev"))
 
     field(:val)

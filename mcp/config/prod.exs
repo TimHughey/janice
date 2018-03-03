@@ -30,7 +30,7 @@ config :mcp, Mqtt.Client,
     # must be a char string (not binary) for emqttc
     host: '** set in prod.secret.exs **',
     port: 1883,
-    client_id: "merc-prod",
+    client_id: "janice-prod",
     clean_sess: false,
     username: "** set in prod.secret.exs",
     password: "** set in prod.secret.exs",
@@ -63,8 +63,8 @@ config :mcp, Mixtank.Control, control_temp_secs: 27
 
 config :mcp, Repo,
   adapter: Ecto.Adapters.Postgres,
-  database: "merc_prod",
-  username: "merc_prod",
+  database: "jan_prod",
+  username: "jan_prod",
   password: "** set in prod.secret.exs",
   hostname: "** set in prod.secret.exs",
   pool_size: 20
@@ -88,7 +88,7 @@ config :mcp, Web.Endpoint,
   load_from_system_env: true,
   url: [scheme: "https:", host: "www.wisslanding.com", port: 443],
   cache_static_manifest: "priv/static/cache_manifest.json",
-  static_url: [path: "/mercurial"],
+  static_url: [path: "/janice"],
   server: true,
   # root: ".",
   version: Application.spec(:mcp, :vsn)

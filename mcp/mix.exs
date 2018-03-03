@@ -17,7 +17,7 @@ defmodule Mcp.Mixfile do
        along with this program.  If not, see <http://www.gnu.org/licenses/>
   """
   @moduledoc """
-    Mix file defining Mercurial Web
+    Mix file defining Master Control Program Web
   """
 
   use Mix.Project

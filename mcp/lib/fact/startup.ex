@@ -11,7 +11,7 @@ defmodule Fact.StartupAnnouncement do
     database(Application.get_env(:mcp, Fact.Influx) |> Keyword.get(:database))
     measurement("run_metric")
 
-    tag(:application, default: "mercurial")
+    tag(:application, default: "janice")
     tag(:metric, default: "startup_announcement")
     tag(:env, default: Application.get_env(:mcp, :build_env, "dev"))
     tag(:host)

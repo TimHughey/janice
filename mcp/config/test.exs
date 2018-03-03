@@ -28,7 +28,7 @@ config :mcp, Mqtt.Client,
   broker: [
     host: 'jophiel.wisslanding.com',
     port: 1883,
-    client_id: "merc-test",
+    client_id: "janice-test",
     clean_sess: true,
     username: "mqtt",
     password: "mqtt",
@@ -46,9 +46,9 @@ config :mcp, Mqtt.InboundMessage,
   cmd_feed: "mcr/f/command"
 
 config :mcp, Fact.Influx,
-  database: "merc_test",
+  database: "jan_test",
   host: "jophiel.wisslanding.com",
-  auth: [method: :basic, username: "merc_test", password: "merc_test"],
+  auth: [method: :basic, username: "jan_test", password: "jan_test"],
   http_opts: [insecure: true],
   pool: [max_overflow: 10, size: 10, timeout: 60_000, max_connections: 30],
   port: 8086,
@@ -59,9 +59,9 @@ config :mcp, Mixtank.Control, control_temp_ms: 1000
 
 config :mcp, Repo,
   adapter: Ecto.Adapters.Postgres,
-  username: "merc_test",
-  password: "merc_test",
-  database: "merc_test",
+  username: "jan_test",
+  password: "jan_test",
+  database: "jan_test",
   hostname: "jophiel.wisslanding.com",
   pool_size: 10
 
@@ -80,7 +80,7 @@ config :mcp, Mcp.Chamber,
 config :mcp, Web.Endpoint,
   http: [port: 4000],
   # url: [scheme: "https", url: "www.wisslanding.com", port: 443],
-  static_url: [path: "/mercurial"],
+  static_url: [path: "/janice"],
   debug_errors: true,
   check_origin: false
 
@@ -90,7 +90,7 @@ config :ueberauth, Ueberauth,
       {Ueberauth.Strategy.Identity,
        [
          callback_methods: ["POST"],
-         callback_path: "/mercurial/auth/identity/callback",
+         callback_path: "/janice/auth/identity/callback",
          uid_field: :username,
          nickname_field: :username
        ]}

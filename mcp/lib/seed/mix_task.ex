@@ -1,6 +1,6 @@
 defmodule Mix.Tasks.Seed do
   @moduledoc """
-    Seeds the Mercurial database
+    Seeds the Janice database
   """
   require Logger
   use Mix.Task

@@ -12,7 +12,7 @@ defmodule Fact.RunMetric do
     measurement("run_metric")
 
     tag(:module)
-    tag(:application, default: "mercurial")
+    tag(:application, default: "janice")
     tag(:metric)
     tag(:env, default: Application.get_env(:mcp, :build_env, "dev"))
     tag(:device)

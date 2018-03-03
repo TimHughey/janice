@@ -1,7 +1,7 @@
 #!/bin/zsh
 
 source ${HOME}/.zshrc
-cd ${HOME}/devel/mercurial
+cd ${HOME}/devel/janice
 
 touch mcr_esp/components/mcr/include/misc/version.hpp
 touch mcp/config/config.exs

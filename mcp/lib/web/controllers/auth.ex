@@ -21,13 +21,13 @@ defmodule Web.AuthController do
         conn
         |> configure_session(drop: true)
         |> put_flash(:error, "no current user")
-        |> redirect(to: "/mercurial")
+        |> redirect(to: "/janice")
 
       resource ->
         conn
         |> configure_session(drop: true)
         |> put_flash(:info, "#{resource} logged out!")
-        |> redirect(to: "/mercurial")
+        |> redirect(to: "/janice")
     end
   end
 
@@ -36,7 +36,7 @@ defmodule Web.AuthController do
 
     conn
     |> put_flash(:error, "Ueberauth failure")
-    |> redirect(to: "/mercurial")
+    |> redirect(to: "/janice")
   end
 
   def callback(%{assigns: %{ueberauth_auth: auth}} = conn, _params) do
@@ -51,12 +51,12 @@ defmodule Web.AuthController do
         |> clear_flash()
         |> put_flash(:info, "Welcome #{user.name}")
         |> put_session(:current_user, user)
-        |> redirect(to: "/mercurial")
+        |> redirect(to: "/janice")
 
       {:error, reason} ->
         conn
         |> put_flash(:error, reason)
-        |> redirect(to: "/mercurial")
+        |> redirect(to: "/janice")
     end
   end
 end

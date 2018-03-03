@@ -1,7 +1,7 @@
 defmodule Web.Endpoint do
   use Phoenix.Endpoint, otp_app: :mcp
 
-  socket("/mercurial/socket", Web.UserSocket)
+  socket("/janice/socket", Web.UserSocket)
 
   # Serve at "/" the static files from "priv/static" directory.
   #
@@ -9,7 +9,7 @@ defmodule Web.Endpoint do
   # when deploying your static files in production.
   plug(
     Plug.Static,
-    at: "/mercurial",
+    at: "/janice",
     from: :mcp,
     gzip: false,
     only: ~w(css fonts images js favicon.ico robots.txt)
@@ -42,7 +42,7 @@ defmodule Web.Endpoint do
   plug(
     Plug.Session,
     store: :cookie,
-    key: "_mercurial",
+    key: "_janice",
     signing_salt: "+n7cp8GX",
     max_age: 7 * 24 * 60 * 60
   )

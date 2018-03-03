@@ -14,7 +14,7 @@ config :mcp, Fact.Influx,
 # and the config below works with it
 config :mcp, Mqtt.Client,
   broker: [
-    client_id: "merc-prod",
+    client_id: "janice-prod",
     clean_session: false,
     username: "user",
     password: "pass",

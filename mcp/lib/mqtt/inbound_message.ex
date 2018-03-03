@@ -80,7 +80,7 @@ defmodule Mqtt.InboundMessage do
 
     RunMetric.record(
       module: "#{__MODULE__}",
-      application: "mercurial",
+      application: "janice",
       metric: "msgs_dispatched",
       val: s.messages_dispatched
     )

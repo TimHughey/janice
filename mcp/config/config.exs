@@ -40,7 +40,7 @@ config :mcp,
 
 # Configures the endpoint
 config :mcp, Web.Endpoint,
-  # url: [host: "localhost", path: "/mercurial"],
+  # url: [host: "localhost", path: "/janice"],
   url: [host: "localhost"],
   # good enough for development and test
   # real secret_key is set in prod.secrets.exs
@@ -54,7 +54,7 @@ config :mcp, Mqtt.InboundMessage,
   switch_msgs: {Switch, :external_update},
   startup_msgs: {Remote, :external_update}
 
-config :ueberauth, Ueberauth, base_path: "/mercurial/auth"
+config :ueberauth, Ueberauth, base_path: "/janice/auth"
 
 # configured here for reference, actual secrets set in prod.secret.exs
 config :ueberauth, Ueberauth.Strategy.Github.OAuth,
@@ -62,7 +62,7 @@ config :ueberauth, Ueberauth.Strategy.Github.OAuth,
   client_secret: "** set in prod.secret.exs"
 
 config :mcp, Web.Guardian,
-  issuer: "Mercurial",
+  issuer: "Janice",
   ttl: {30, :days},
   verify_issuer: true,
   # good enough for dev and test, real secret_key is set in prod.secrets.exs

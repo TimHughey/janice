@@ -30,7 +30,7 @@ environment :dev do
   # dev mode.
   set(dev_mode: true)
   set(include_erts: false)
-  set(cookie: :mercurial)
+  set(cookie: :janice)
 end
 
 environment :prod do

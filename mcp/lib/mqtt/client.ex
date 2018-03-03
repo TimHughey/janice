@@ -11,8 +11,8 @@ defmodule Mqtt.Client do
   #  def child_spec(opts) do
   #
   #    %{
-  #      id: Mercurial.Mqtt.Client,
-  #      start: {Mercurial.Mqtt.Client, :start_link, [opts]},
+  #      id: Mqtt.Client,
+  #      start: {Mqtt.Client, :start_link, [opts]},
   #      restart: :permanent,
   #      shutdown: 5000,
   #      type: :supervisor
