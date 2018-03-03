@@ -1,4 +1,4 @@
-import JanUtil from './util';
+fadeOut('fast') import JanUtil from './util';
 
 const sensorsID = '#sensorsTable';
 const switchesID = '#switchesTable';
@@ -57,7 +57,8 @@ function newDeleteButton(tableName) {
         type: 'DELETE',
         beforeSend(xhr) {
           // send the CSRF token included as a meta on the HTML page
-          const token = jQuery("meta[name='csrf-token']").attr('content');
+          const token = jQuery("meta[name='csrf-token']").attr(
+            'content');
           xhr.setRequestHeader('X-CSRF-Token', token);
         },
         error(xhr, status, error) {
@@ -69,7 +70,7 @@ function newDeleteButton(tableName) {
         complete(xhr, status) {
           dt.ajax.reload(null, false);
           button.processing(false);
-          jQuery('#generalPurposeForm').fadeToggle();
+          jQuery('#generalPurposeForm').fadeOut('fast');
           refresh.active(true);
         },
       });
@@ -109,16 +110,20 @@ function newMixtankProfileButton(tableName, profileName) {
         },
         beforeSend(xhr) {
           // send the CSRF token included as a meta on the HTML page
-          const token = jQuery("meta[name='csrf-token']").attr('content');
+          const token = jQuery("meta[name='csrf-token']").attr(
+            'content');
           xhr.setRequestHeader('X-CSRF-Token', token);
         },
         error(jqXHR, status, error) {
-          JanUtil.displayStatus(`Error changing profile to ${newProfile}`);
+          JanUtil.displayStatus(
+            `Error changing profile to ${newProfile}`);
         },
         success(data, status, jqXHR) {
           if (data.restart === 'ok') {
-            JanUtil.displayStatus(`Error changing profile to ${newProfile}`);
-          } else {
+            JanUtil.displayStatus(
+              `Error changing profile to ${newProfile}`);
+          }
+          else {
             JanUtil.displayStatus(`Profile changed to ${newProfile}`);
           }
         },
@@ -166,7 +171,7 @@ function newOtaAllButton(tableName) {
       const url = dt.ajax.url();
 
       button.processing(true);
-      jQuery('#generalPurposeForm').fade('fast');
+      jQuery('#generalPurposeForm').fadeOut('fast');
 
       jQuery.ajax({
         url,
@@ -175,7 +180,8 @@ function newOtaAllButton(tableName) {
         },
         beforeSend(xhr) {
           // send the CSRF token included as a meta on the HTML page
-          const token = jQuery("meta[name='csrf-token']").attr('content');
+          const token = jQuery("meta[name='csrf-token']").attr(
+            'content');
           xhr.setRequestHeader('X-CSRF-Token', token);
         },
         error(jqXHR, status, error) {
@@ -184,7 +190,8 @@ function newOtaAllButton(tableName) {
         success(data, status, jqXHR) {
           if (data.ota_all_res === 'ok') {
             JanUtil.displayStatus('Triggered ota for all');
-          } else {
+          }
+          else {
             JanUtil.displayStatus('Failed triggering ota for all');
           }
         },
@@ -219,7 +226,7 @@ function newOtaSingleButton(tableName) {
       }).data()[0];
 
       button.processing(true);
-      jQuery('#generalPurposeForm').fadeToggle();
+      jQuery('#generalPurposeForm').fadeOut('fast');
 
       jQuery.ajax({
         url: `${url}/${id}`,
@@ -229,7 +236,8 @@ function newOtaSingleButton(tableName) {
         },
         beforeSend(xhr) {
           // send the CSRF token included as a meta on the HTML page
-          const token = jQuery("meta[name='csrf-token']").attr('content');
+          const token = jQuery("meta[name='csrf-token']").attr(
+            'content');
           xhr.setRequestHeader('X-CSRF-Token', token);
         },
         error(jqXHR, status, error) {
@@ -263,7 +271,8 @@ function newRefreshButton(tableName) {
 
       if (button.active()) {
         button.active(false);
-      } else {
+      }
+      else {
         button.active(true);
         JanUtil.autoRefresh();
       }
@@ -303,7 +312,8 @@ function newRenameButton(tableName) {
         dateType: 'json',
         beforeSend(xhr) {
           // send the CSRF token included as a meta on the HTML page
-          const token = jQuery("meta[name='csrf-token']").attr('content');
+          const token = jQuery("meta[name='csrf-token']").attr(
+            'content');
           xhr.setRequestHeader('X-CSRF-Token', token);
         },
         error(xhr, status, error) {
@@ -317,7 +327,7 @@ function newRenameButton(tableName) {
         complete(xhr, status) {
           dt.ajax.reload(null, false);
           rename.processing(false);
-          jQuery('#generalPurposeForm').fadeToggle();
+          jQuery('#generalPurposeForm').fadeOut('fast');
           refresh.active(true);
         },
       });
@@ -355,7 +365,8 @@ function newRestartButton(tableName) {
         },
         beforeSend(xhr) {
           // send the CSRF token included as a meta on the HTML page
-          const token = jQuery("meta[name='csrf-token']").attr('content');
+          const token = jQuery("meta[name='csrf-token']").attr(
+            'content');
           xhr.setRequestHeader('X-CSRF-Token', token);
         },
         error(jqXHR, status, error) {
@@ -364,14 +375,15 @@ function newRestartButton(tableName) {
         success(data, status, jqXHR) {
           if (data.restart === 'ok') {
             JanUtil.displayStatus(`Restart triggered for ${name}`);
-          } else {
+          }
+          else {
             JanUtil.displayStatus(`Restart trigger failed for ${name}`);
           }
         },
         complete(xhr, status) {
           dt.ajax.reload(null, false);
           restart.processing(false);
-          jQuery('#generalPurposeForm').fadeToggle();
+          jQuery('#generalPurposeForm').fadeOut('fast');
           refresh.active(true);
         },
       });
@@ -409,7 +421,8 @@ function toggleButton(tableName) {
         },
         beforeSend(xhr) {
           // send the CSRF token included as a meta on the HTML page
-          const token = jQuery("meta[name='csrf-token']").attr('content');
+          const token = jQuery("meta[name='csrf-token']").attr(
+            'content');
           xhr.setRequestHeader('X-CSRF-Token', token);
         },
         error(jqXHR, status, error) {
@@ -431,29 +444,29 @@ function toggleButton(tableName) {
 
 function sensorsColumns() {
   return [{
-    data: 'id',
+      data: 'id',
   }, {
-    data: 'name',
+      data: 'name',
   }, {
-    data: 'device',
+      data: 'device',
   }, {
-    data: 'description',
+      data: 'description',
   },
-  {
-    data: 'dev_latency',
-    class: 'col-center',
-    render: JanUtil.prettyUs,
+    {
+      data: 'dev_latency',
+      class: 'col-center',
+      render: JanUtil.prettyUs,
   }, {
-    data: 'last_seen_secs',
-    class: 'col-center',
-    render: JanUtil.prettySeconds,
+      data: 'last_seen_secs',
+      class: 'col-center',
+      render: JanUtil.prettySeconds,
   }, {
-    data: 'reading_secs',
-    class: 'col-center',
-    render: JanUtil.prettySeconds,
+      data: 'reading_secs',
+      class: 'col-center',
+      render: JanUtil.prettySeconds,
   }, {
-    data: 'celsius',
-    class: 'col-center',
+      data: 'celsius',
+      class: 'col-center',
   },
   ];
 }
@@ -529,36 +542,36 @@ function createSensorsTable() {
 
 function switchesColumns() {
   return [{
-    data: 'id',
-    class: 'col-center',
+      data: 'id',
+      class: 'col-center',
   },
-  {
-    data: 'name',
+    {
+      data: 'name',
   }, {
-    data: 'device',
+      data: 'device',
   }, {
-    data: 'description',
+      data: 'description',
   },
-  {
-    data: 'dev_latency',
-    class: 'col-center',
-    render: JanUtil.prettyUs,
+    {
+      data: 'dev_latency',
+      class: 'col-center',
+      render: JanUtil.prettyUs,
   }, {
-    data: 'rt_latency',
-    class: 'col-center',
-    render: JanUtil.prettyUs,
+      data: 'rt_latency',
+      class: 'col-center',
+      render: JanUtil.prettyUs,
   }, {
-    data: 'last_cmd_secs',
-    class: 'col-center',
-    render: JanUtil.prettyLastCommand,
+      data: 'last_cmd_secs',
+      class: 'col-center',
+      render: JanUtil.prettyLastCommand,
   }, {
-    data: 'last_seen_secs',
-    class: 'col-center',
-    render: JanUtil.prettySeconds,
+      data: 'last_seen_secs',
+      class: 'col-center',
+      render: JanUtil.prettySeconds,
   }, {
-    data: 'state',
-    class: 'col-state-off',
-    render: JanUtil.humanSize,
+      data: 'state',
+      class: 'col-state-off',
+      render: JanUtil.humanSize,
   },
   ];
 }
@@ -632,33 +645,33 @@ function createSwitchesTable() {
 
 function remotesColumns() {
   return [{
-    data: 'id',
-    class: 'col-center',
+      data: 'id',
+      class: 'col-center',
   }, {
-    data: 'name',
+      data: 'name',
   }, {
-    data: 'host',
+      data: 'host',
   }, {
-    data: 'hw',
-    class: 'col-center',
+      data: 'hw',
+      class: 'col-center',
   },
-  {
-    data: 'firmware_vsn',
-    class: 'col-center',
+    {
+      data: 'firmware_vsn',
+      class: 'col-center',
   }, {
-    data: 'preferred_vsn',
-    class: 'col-center',
+      data: 'preferred_vsn',
+      class: 'col-center',
   }, {
-    data: 'last_start_secs',
-    class: 'col-center',
-    render: JanUtil.prettySeconds,
+      data: 'last_start_secs',
+      class: 'col-center',
+      render: JanUtil.prettySeconds,
   }, {
-    data: 'last_seen_secs',
-    class: 'col-center',
-    render: JanUtil.prettySeconds,
+      data: 'last_seen_secs',
+      class: 'col-center',
+      render: JanUtil.prettySeconds,
   }, {
-    data: 'at_preferred_vsn',
-    class: 'col-center',
+      data: 'at_preferred_vsn',
+      class: 'col-center',
   },
   ];
 }
@@ -749,50 +762,50 @@ function createRemotesTable() {
 
 function dutycyclesColumns() {
   return [{
-    data: 'id',
-    class: 'col-center',
+      data: 'id',
+      class: 'col-center',
   }, {
-    data: 'name',
+      data: 'name',
   }, {
-    data: 'comment',
+      data: 'comment',
   }, {
-    data: 'enable',
-    class: 'col-center',
-    render: JanUtil.boolToYesNo,
+      data: 'enable',
+      class: 'col-center',
+      render: JanUtil.boolToYesNo,
   },
-  {
-    data: 'standalone',
-    class: 'col-center',
-    render: JanUtil.boolToYesNo,
+    {
+      data: 'standalone',
+      class: 'col-center',
+      render: JanUtil.boolToYesNo,
   },
-  {
-    data: 'activeProfile',
-    class: 'col-center',
+    {
+      data: 'activeProfile',
+      class: 'col-center',
   }, {
-    data: 'device',
-    class: 'col-center',
+      data: 'device',
+      class: 'col-center',
   }, {
-    data: 'state.state_at_secs',
-    class: 'col-center',
-    render: JanUtil.prettySeconds,
+      data: 'state.state_at_secs',
+      class: 'col-center',
+      render: JanUtil.prettySeconds,
   }, {
-    data: 'state.run_at_secs',
-    class: 'col-center',
-    render: JanUtil.prettySeconds,
+      data: 'state.run_at_secs',
+      class: 'col-center',
+      render: JanUtil.prettySeconds,
   }, {
-    data: 'state.run_at_end_secs',
-    class: 'col-center',
-    render: JanUtil.prettySeconds,
+      data: 'state.run_at_end_secs',
+      class: 'col-center',
+      render: JanUtil.prettySeconds,
   },
-  {
-    data: 'state.idle_at_secs',
-    class: 'col-center',
-    render: JanUtil.prettySeconds,
+    {
+      data: 'state.idle_at_secs',
+      class: 'col-center',
+      render: JanUtil.prettySeconds,
   },
-  {
-    data: 'state.idle_at_end_secs',
-    class: 'col-center',
-    render: JanUtil.prettySeconds,
+    {
+      data: 'state.idle_at_end_secs',
+      class: 'col-center',
+      render: JanUtil.prettySeconds,
   },
   ];
 }
@@ -865,49 +878,49 @@ function createDutycyclesTable() {
 
 function mixtanksColumns() {
   return [{
-    data: 'id',
-    class: 'col-center',
+      data: 'id',
+      class: 'col-center',
   }, {
-    data: 'name',
+      data: 'name',
   }, {
-    data: 'comment',
+      data: 'comment',
   }, {
-    data: 'enable',
-    class: 'col-center',
-    render: JanUtil.boolToYesNo,
+      data: 'enable',
+      class: 'col-center',
+      render: JanUtil.boolToYesNo,
   },
-  {
-    data: 'state.state',
-    class: 'col-center',
+    {
+      data: 'state.state',
+      class: 'col-center',
 
   },
-  {
-    data: 'activeProfile',
-    class: 'col-center',
-    render: (val) => {
-      if (val === 'none') {
-        return '-';
-      }
+    {
+      data: 'activeProfile',
+      class: 'col-center',
+      render: (val) => {
+        if (val === 'none') {
+          return '-';
+        }
 
-      return val;
-    },
+        return val;
+      },
   },
-  {
-    data: 'sensor',
-    class: 'col-center',
+    {
+      data: 'sensor',
+      class: 'col-center',
   },
-  {
-    data: 'ref_sensor',
-    class: 'col-center',
+    {
+      data: 'ref_sensor',
+      class: 'col-center',
   },
-  {
-    data: 'state.state_at_secs',
-    class: 'col-center',
-    render: JanUtil.prettySeconds,
+    {
+      data: 'state.state_at_secs',
+      class: 'col-center',
+      render: JanUtil.prettySeconds,
   }, {
-    data: 'state.started_at_secs',
-    class: 'col-center',
-    render: JanUtil.prettySeconds,
+      data: 'state.started_at_secs',
+      class: 'col-center',
+      render: JanUtil.prettySeconds,
   },
   ];
 }

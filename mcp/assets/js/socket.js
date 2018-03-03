@@ -9,7 +9,7 @@ import {
   from 'phoenix';
 
 const socket =
-  new Socket('/mercurial/socket', {
+  new Socket('/janice/socket', {
     params: {
       token: window.userToken,
     },
