@@ -53,11 +53,6 @@ mcrI2c::mcrI2c() {
   _engine_task_name = tagEngine();
   _engine_stack_size = 5 * 1024;
   _engine_priority = 13;
-
-  // TODO: do we need to assign a GPIO to power up the i2c devices?
-  // power up the i2c devices
-  // pinMode(I2C_PWR_PIN, OUTPUT);
-  // digitalWrite(I2C_PWR_PIN, HIGH);
 }
 
 bool mcrI2c::crcSHT31(const uint8_t *data) {
@@ -493,7 +488,7 @@ void mcrI2c::run(void *task_data) {
 
   ESP_LOGI(tagEngine(), "waiting for normal ops...");
   mcr::Net::waitForNormalOps();
-  delay(pdMS_TO_TICKS(2500));
+  delay(pdMS_TO_TICKS(7000));
   ESP_LOGI(tagEngine(), "normal ops, proceeding to task loop");
 
   _last_wake.engine = xTaskGetTickCount();

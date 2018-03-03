@@ -153,8 +153,10 @@ bool mcrCmdOTA::process() {
 
     case mcrCmdType::restart:
       if (this_host) {
+        ESP_LOGI(TAG, "restart requested, delaying to settle");
+        // vTaskDelay(pdMS_TO_TICKS(_delay_ms));
+        vTaskDelay(pdMS_TO_TICKS(5000));
         ESP_LOGI(TAG, "JUMP!");
-        vTaskDelay(pdMS_TO_TICKS(_delay_ms));
         esp_restart();
       }
       break;
