@@ -13,7 +13,7 @@ static const std::map<std::string, mcrCmdType> _cmd_map = {
     {std::string("ota.begin"), mcrCmdType::otabegin},
     {std::string("ota.continue"), mcrCmdType::otacontinue},
     {std::string("ota.end"), mcrCmdType::otaend},
-    {std::string("boot.factory.next"), mcrCmdType::bootfactorynext},
+    {std::string("boot.part.next"), mcrCmdType::bootPartitionNext},
     {std::string("restart"), mcrCmdType::restart}};
 
 static mcrCmdTypeMap_t *__singleton;

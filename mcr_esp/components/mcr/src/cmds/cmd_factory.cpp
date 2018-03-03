@@ -68,7 +68,7 @@ mcrCmd_t *mcrCmdFactory::fromJSON(mcrRawMsg_t *raw) {
   case mcrCmdType::otacontinue:
   case mcrCmdType::otaend:
   case mcrCmdType::restart:
-  case mcrCmdType::bootfactorynext:
+  case mcrCmdType::bootPartitionNext:
     cmd = new mcrCmdOTA(cmd_type, root);
   }
 

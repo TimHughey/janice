@@ -36,7 +36,7 @@ run_cmd env MIX_ENV=prod mix phx.digest
 
 cd $MCR
 touch components/mcr/include/misc/version.hpp
-make -j12 deploy
+run_cmd make -j12 deploy
 
 cd $MCP
 run_cmd env MIX_ENV=prod mix release --env=prod
