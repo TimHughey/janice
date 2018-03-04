@@ -219,6 +219,42 @@ void mcrI2c::discover(void *task_data) {
   trackDiscover(false);
 }
 
+bool mcrI2c::hardReset() {
+  ESP_LOGE(tagEngine(), "hard reset of i2c peripheral");
+  i2c_driver_delete(I2C_NUM_0);
+
+  periph_module_disable(PERIPH_I2C0_MODULE);
+  periph_module_enable(PERIPH_I2C0_MODULE);
+
+  return installDriver();
+}
+
+bool mcrI2c::installDriver() {
+  esp_err_t esp_err = 0;
+
+  ESP_LOGI(tagEngine(), "installing i2c driver...");
+  i2c_config_t _conf;
+  bzero(&_conf, sizeof(_conf));
+  _conf.mode = I2C_MODE_MASTER;
+  _conf.sda_io_num = (gpio_num_t)23;
+  _conf.scl_io_num = (gpio_num_t)22;
+  _conf.sda_pullup_en = GPIO_PULLUP_ENABLE;
+  _conf.scl_pullup_en = GPIO_PULLUP_ENABLE;
+  _conf.master.clk_speed = 100000;
+
+  esp_err = i2c_param_config(I2C_NUM_0, &_conf);
+
+  if (esp_err == ESP_OK) {
+    esp_err = i2c_driver_install(I2C_NUM_0, _conf.mode, 0, 0, 0);
+  }
+
+  if (esp_err != ESP_OK) {
+    ESP_LOGE(tagEngine(), "i2c driver install failed 0x%02x", esp_err);
+  }
+
+  return (esp_err == ESP_OK) ? true : false;
+}
+
 uint32_t mcrI2c::maxBuses() { return _max_buses; }
 
 void mcrI2c::printUnhandledDev(i2cDev_t *dev) {
@@ -471,18 +507,6 @@ void mcrI2c::run(void *task_data) {
 
   ESP_LOGI(tagEngine(), "configuring and initializing I2c");
 
-  ESP_LOGI(tagEngine(), "installing i2c driver...");
-  i2c_config_t _conf;
-  bzero(&_conf, sizeof(_conf));
-  _conf.mode = I2C_MODE_MASTER;
-  _conf.sda_io_num = (gpio_num_t)23;
-  _conf.scl_io_num = (gpio_num_t)22;
-  _conf.sda_pullup_en = GPIO_PULLUP_ENABLE;
-  _conf.scl_pullup_en = GPIO_PULLUP_ENABLE;
-  _conf.master.clk_speed = 100000;
-
-  ESP_ERROR_CHECK(i2c_param_config(I2C_NUM_0, &_conf));
-  ESP_ERROR_CHECK(i2c_driver_install(I2C_NUM_0, _conf.mode, 0, 0, 0));
   // vTaskDelay(pdMS_TO_TICKS(200));
 
   ESP_LOGI(tagEngine(), "i2c driver installed");
@@ -544,10 +568,7 @@ bool mcrI2c::selectBus(uint32_t bus) {
                "unable to select bus %d (selects=%u errors=%u) %s", bus,
                _bus_selects, _bus_select_errors, espError(esp_rc));
 
-      periph_module_disable(PERIPH_I2C0_MODULE);
-      periph_module_enable(PERIPH_I2C0_MODULE);
-
-      rc = false;
+      rc = hardReset();
     }
   }
 

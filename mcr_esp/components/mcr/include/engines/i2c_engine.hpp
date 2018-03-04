@@ -105,10 +105,13 @@ private:
   int detectDevicesOnBus(int bus);
 
   bool detectMultiplexer();
+  bool hardReset();
+  bool installDriver();
   uint32_t maxBuses();
   bool useMultiplexer();
   bool selectBus(uint32_t bus);
   void printUnhandledDev(i2cDev_t *dev);
+
   void wakeAM2315(mcrDevAddr_t &addr);
 
   mcrEngineTagMap_t &localTags() {
