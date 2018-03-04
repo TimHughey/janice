@@ -247,10 +247,10 @@ bool mcrI2c::installDriver() {
 
   if (esp_err == ESP_OK) {
     esp_err = i2c_driver_install(I2C_NUM_0, _conf.mode, 0, 0, 0);
-  }
 
-  if (esp_err != ESP_OK) {
-    ESP_LOGE(tagEngine(), "i2c driver install failed 0x%02x", esp_err);
+    if (esp_err != ESP_OK) {
+      ESP_LOGE(tagEngine(), "i2c driver install failed 0x%02x", esp_err);
+    }
   }
 
   return (esp_err == ESP_OK) ? true : false;
@@ -509,7 +509,7 @@ void mcrI2c::run(void *task_data) {
   ESP_LOGI(tagEngine(), "configuring and initializing I2c");
 
   // vTaskDelay(pdMS_TO_TICKS(200));
-  bool driver_ready = true;
+  bool driver_ready = false;
   while (!driver_ready) {
     vTaskDelay(pdMS_TO_TICKS(1000));
     driver_ready = installDriver();
