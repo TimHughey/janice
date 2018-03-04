@@ -225,6 +225,7 @@ bool mcrI2c::hardReset() {
 
   periph_module_disable(PERIPH_I2C0_MODULE);
   periph_module_enable(PERIPH_I2C0_MODULE);
+  delay(pdMS_TO_TICKS(1000));
 
   return installDriver();
 }
@@ -252,6 +253,8 @@ bool mcrI2c::installDriver() {
       ESP_LOGE(tagEngine(), "i2c driver install failed 0x%02x", esp_err);
     }
   }
+
+  delay(pdMS_TO_TICKS(1000));
 
   return (esp_err == ESP_OK) ? true : false;
 }
