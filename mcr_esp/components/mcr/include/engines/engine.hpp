@@ -154,7 +154,7 @@ public:
     if ((found = findDevice(dev->id())) == nullptr) {
       dev->justSeen();
       _devices.push_back(dev);
-      ESP_LOGI(tagEngine(), "added (%p) %s", (void *)dev, dev->debug().c_str());
+      ESP_LOGI(tagEngine(), "added %s", dev->debug().c_str());
     }
 
     return (found == nullptr) ? true : false;
