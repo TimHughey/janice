@@ -508,6 +508,11 @@ void mcrI2c::run(void *task_data) {
   ESP_LOGI(tagEngine(), "configuring and initializing I2c");
 
   // vTaskDelay(pdMS_TO_TICKS(200));
+  bool driver_ready = true;
+  while (!driver_ready) {
+    vTaskDelay(pdMS_TO_TICKS(1000));
+    driver_ready = installDriver();
+  }
 
   ESP_LOGI(tagEngine(), "i2c driver installed");
 
