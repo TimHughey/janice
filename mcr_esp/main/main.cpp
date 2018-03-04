@@ -2,6 +2,7 @@
  */
 #include <cstdlib>
 
+#include <driver/periph_ctrl.h>
 #include <esp_log.h>
 #include <esp_spi_flash.h>
 #include <freertos/FreeRTOS.h>
@@ -32,6 +33,9 @@ void app_main() {
   ESP_LOGI(TAG, "portTICK_PERIOD_MS=%u and 10ms=%u ticks", portTICK_PERIOD_MS,
            pdMS_TO_TICKS(10));
   ESP_LOGI(TAG, "%s", embed_vsn_sha);
+
+  periph_module_disable(PERIPH_I2C0_MODULE);
+  periph_module_enable(PERIPH_I2C0_MODULE);
 
   spi_flash_init();
 

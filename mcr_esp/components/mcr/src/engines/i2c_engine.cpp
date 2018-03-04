@@ -29,6 +29,7 @@
 #include <string>
 
 #include <driver/i2c.h>
+#include <driver/periph_ctrl.h>
 #include <esp_log.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/event_groups.h>
@@ -516,8 +517,8 @@ bool mcrI2c::selectBus(uint32_t bus) {
 
   _bus_selects++;
 
-  i2c_reset_tx_fifo(I2C_NUM_0);
-  i2c_reset_rx_fifo(I2C_NUM_0);
+  // i2c_reset_tx_fifo(I2C_NUM_0);
+  // i2c_reset_rx_fifo(I2C_NUM_0);
 
   if (bus >= _max_buses) {
     ESP_LOGW(tagEngine(), "attempt to select bus %d >= %d, bus not changed",
@@ -542,6 +543,9 @@ bool mcrI2c::selectBus(uint32_t bus) {
       ESP_LOGW(tagSelectBus(),
                "unable to select bus %d (selects=%u errors=%u) %s", bus,
                _bus_selects, _bus_select_errors, espError(esp_rc));
+
+      periph_module_disable(PERIPH_I2C0_MODULE);
+      periph_module_enable(PERIPH_I2C0_MODULE);
 
       rc = false;
     }

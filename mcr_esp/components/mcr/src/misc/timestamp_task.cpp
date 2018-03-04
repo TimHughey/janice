@@ -56,7 +56,7 @@ const char *mcrTimestampTask::dateTimeString(time_t t) {
   localtime_r(&now, &timeinfo);
 
   // strftime(buf, buf_size, "%c", &timeinfo);
-  strftime(buf, buf_size, "%R", &timeinfo);
+  strftime(buf, buf_size, "%b-%d %R", &timeinfo);
 
   return buf;
 }
