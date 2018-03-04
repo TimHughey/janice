@@ -113,7 +113,7 @@ private:
   bool selectBus(uint32_t bus);
   void printUnhandledDev(i2cDev_t *dev);
 
-  void wakeAM2315(mcrDevAddr_t &addr);
+  bool wakeAM2315(mcrDevAddr_t &addr);
 
   mcrEngineTagMap_t &localTags() {
     static std::map<std::string, std::string> tag_map = {

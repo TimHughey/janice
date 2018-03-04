@@ -113,15 +113,18 @@ bool mcrI2c::detectDevice(mcrDevAddr_t &addr) {
 
   // AM2315 needs to be woken up
   case 0x5C:
-    wakeAM2315(addr);
+    if (wakeAM2315(addr)) {
 
-    cmd = i2c_cmd_link_create();
-    i2c_master_start(cmd);
-    i2c_master_write_byte(
-        cmd, (addr.firstAddressByte() << 1) | I2C_MASTER_WRITE, ACK_CHECK_EN);
-    i2c_master_stop(cmd);
-    esp_rc = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(1000));
-    i2c_cmd_link_delete(cmd);
+      cmd = i2c_cmd_link_create();
+      i2c_master_start(cmd);
+      i2c_master_write_byte(
+          cmd, (addr.firstAddressByte() << 1) | I2C_MASTER_WRITE, ACK_CHECK_EN);
+      i2c_master_stop(cmd);
+      esp_rc = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(1000));
+      i2c_cmd_link_delete(cmd);
+    } else {
+      esp_rc = ESP_FAIL;
+    }
 
     break;
   }
@@ -285,6 +288,11 @@ bool mcrI2c::readAM2315(i2cDev_t *dev, humidityReading_t **reading, bool wake) {
   if (wake) {
     mcrDevAddr_t dev_addr = dev->devAddr();
     wakeAM2315(dev_addr);
+    bool woken = wakeAM2315(dev_addr);
+
+    if (!woken) {
+      return rc;
+    }
   }
 
   cmd = i2c_cmd_link_create();
@@ -583,7 +591,8 @@ bool mcrI2c::selectBus(uint32_t bus) {
   return rc;
 }
 
-void mcrI2c::wakeAM2315(mcrDevAddr_t &addr) {
+bool mcrI2c::wakeAM2315(mcrDevAddr_t &addr) {
+  esp_err_t esp_err;
   i2c_cmd_handle_t cmd = nullptr;
   uint8_t dev_addr = addr.firstAddressByte();
 
@@ -593,8 +602,9 @@ void mcrI2c::wakeAM2315(mcrDevAddr_t &addr) {
   i2c_master_stop(cmd);
   // ignore the error code here since the device will not answer while
   // waking up
-  i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(1000));
+  esp_err = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(1000));
+  delay(100);
   i2c_cmd_link_delete(cmd);
 
-  delay(100);
+  return (esp_err == ESP_OK) ? true : false;
 }
