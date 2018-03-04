@@ -233,8 +233,9 @@ bool mcrI2c::installDriver() {
   esp_err_t esp_err = 0;
 
   ESP_LOGI(tagEngine(), "installing i2c driver...");
-  i2c_config_t _conf;
+
   bzero(&_conf, sizeof(_conf));
+
   _conf.mode = I2C_MODE_MASTER;
   _conf.sda_io_num = (gpio_num_t)23;
   _conf.scl_io_num = (gpio_num_t)22;
