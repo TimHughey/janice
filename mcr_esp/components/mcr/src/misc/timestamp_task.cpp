@@ -55,7 +55,8 @@ const char *mcrTimestampTask::dateTimeString(time_t t) {
   tzset();
   localtime_r(&now, &timeinfo);
 
-  strftime(buf, buf_size, "%c", &timeinfo);
+  // strftime(buf, buf_size, "%c", &timeinfo);
+  strftime(buf, buf_size, "%R", &timeinfo);
 
   return buf;
 }
