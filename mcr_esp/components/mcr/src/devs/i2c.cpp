@@ -84,7 +84,7 @@ const mcrDevID_t &i2cDev::externalName() {
 
 uint8_t i2cDev::devAddr() { return firstAddressByte(); };
 bool i2cDev::useMultiplexer() { return _use_multiplexer; };
-uint8_t i2cDev::bus() { return _bus; };
+uint8_t i2cDev::bus() const { return _bus; };
 
 const std::string i2cDev::debug() {
   mcrDevID_t ext_name = externalName();

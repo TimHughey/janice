@@ -46,7 +46,7 @@ public:
 
   uint8_t devAddr();
   bool useMultiplexer();
-  uint8_t bus();
+  uint8_t bus() const;
 
   const mcrDevID_t &externalName();
 

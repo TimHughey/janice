@@ -82,13 +82,10 @@ void mcrTimestampTask::run(void *data) {
 
     // voltage = vref_voltage();
 
-    ESP_LOGI(
-        mcr::Net::getName().c_str(),
-        "%s %s heap=%uk first=%uk min=%uk %sdelta=%d", LOG_RESET_COLOR,
-        dateTimeString(), (curr_heap / 1024), (_firstHeap / 1024),
-        (_maxHeap / 1024),
-        ((delta < 0) ? LOG_COLOR(LOG_COLOR_RED) : LOG_COLOR(LOG_RESET_COLOR)),
-        delta);
+    const char *name = mcr::Net::getName().c_str();
+    ESP_LOGI(name, "%s%s %uk,%uk,%uk,%d (heap,first,min,delta)",
+             LOG_RESET_COLOR, dateTimeString(), (curr_heap / 1024),
+             (_firstHeap / 1024), (_maxHeap / 1024), delta);
 
     if (_task_report) {
       char *tasks = new char[1024];
