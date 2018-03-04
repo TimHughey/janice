@@ -486,13 +486,13 @@ void mcrI2c::run(void *task_data) {
 
   ESP_LOGI(tagEngine(), "i2c driver installed");
 
-  delay(pdMS_TO_TICKS(3000));
   ESP_LOGI(tagEngine(), "waiting for normal ops...");
   mcr::Net::waitForNormalOps();
   ESP_LOGI(tagEngine(), "normal ops, proceeding to task loop");
 
   _last_wake.engine = xTaskGetTickCount();
   for (;;) {
+    vTaskDelay(pdMS_TO_TICKS(500));
     discover(nullptr);
 
     for (int i = 0; i < 6; i++) {
