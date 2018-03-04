@@ -232,8 +232,6 @@ bool mcrI2c::hardReset() {
 bool mcrI2c::installDriver() {
   esp_err_t esp_err = 0;
 
-  ESP_LOGI(tagEngine(), "installing i2c driver...");
-
   bzero(&_conf, sizeof(_conf));
 
   _conf.mode = I2C_MODE_MASTER;
@@ -248,7 +246,9 @@ bool mcrI2c::installDriver() {
   if (esp_err == ESP_OK) {
     esp_err = i2c_driver_install(I2C_NUM_0, _conf.mode, 0, 0, 0);
 
-    if (esp_err != ESP_OK) {
+    if (esp_err == ESP_OK) {
+      ESP_LOGI(tagEngine(), "i2c driver installed");
+    } else {
       ESP_LOGE(tagEngine(), "i2c driver install failed 0x%02x", esp_err);
     }
   }
@@ -477,27 +477,27 @@ void mcrI2c::report(void *task_data) {
     i2cDev_t *dev = (i2cDev_t *)*it;
     humidityReading_t *humidity = nullptr;
 
-    selectBus(dev->bus());
+    if (selectBus(dev->bus())) {
+      switch (dev->devAddr()) {
+      case 0x5C:
+        rc = readAM2315(dev, &humidity, true);
+        dev->setReading(humidity);
+        break;
 
-    switch (dev->devAddr()) {
-    case 0x5C:
-      rc = readAM2315(dev, &humidity, true);
-      dev->setReading(humidity);
-      break;
+      case 0x44:
+        rc = readSHT31(dev, &humidity);
+        dev->setReading(humidity);
+        break;
 
-    case 0x44:
-      rc = readSHT31(dev, &humidity);
-      dev->setReading(humidity);
-      break;
+      default:
+        printUnhandledDev(dev);
+        break;
+      }
 
-    default:
-      printUnhandledDev(dev);
-      break;
-    }
-
-    if (rc && (humidity != nullptr)) {
-      publish(humidity);
-      dev->justSeen();
+      if (rc && (humidity != nullptr)) {
+        publish(humidity);
+        dev->justSeen();
+      }
     }
   }
 
@@ -506,16 +506,12 @@ void mcrI2c::report(void *task_data) {
 
 void mcrI2c::run(void *task_data) {
 
-  ESP_LOGI(tagEngine(), "configuring and initializing I2c");
-
   // vTaskDelay(pdMS_TO_TICKS(200));
   bool driver_ready = false;
   while (!driver_ready) {
     vTaskDelay(pdMS_TO_TICKS(1000));
     driver_ready = installDriver();
   }
-
-  ESP_LOGI(tagEngine(), "i2c driver installed");
 
   ESP_LOGI(tagEngine(), "waiting for normal ops...");
   mcr::Net::waitForNormalOps();
@@ -540,7 +536,7 @@ void mcrI2c::run(void *task_data) {
 }
 
 bool mcrI2c::selectBus(uint32_t bus) {
-  bool rc = true;
+  bool rc = false;
   i2c_cmd_handle_t cmd = nullptr;
   mcrDevAddr_t multiplexer_dev(0x70);
   esp_err_t esp_rc = ESP_FAIL;
@@ -568,7 +564,9 @@ bool mcrI2c::selectBus(uint32_t bus) {
     esp_rc = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(1000));
     i2c_cmd_link_delete(cmd);
 
-    if (esp_rc != ESP_OK) {
+    if (esp_rc == ESP_OK) {
+      rc = true;
+    } else {
       _bus_select_errors++;
       ESP_LOGW(tagSelectBus(),
                "unable to select bus %d (selects=%u errors=%u) %s", bus,
