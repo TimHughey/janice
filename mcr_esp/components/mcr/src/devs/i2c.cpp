@@ -87,6 +87,7 @@ bool i2cDev::useMultiplexer() { return _use_multiplexer; };
 uint8_t i2cDev::bus() { return _bus; };
 
 const std::string i2cDev::debug() {
+  mcrDevID_t ext_name = externalName();
   std::ostringstream debug_str;
   std::stringstream bus_str;
   std::stringstream mplex_str;
@@ -94,7 +95,7 @@ const std::string i2cDev::debug() {
   bus_str << (int)_bus;
   mplex_str << ((_use_multiplexer) ? "true" : "false");
 
-  debug_str << "i2cDev(" << mcrDev::debug() << " bus=" << bus_str.str()
+  debug_str << "i2cDev(" << ext_name << " bus=" << bus_str.str()
             << " use_mplex=" << mplex_str.str() << ")";
 
   return debug_str.str();
