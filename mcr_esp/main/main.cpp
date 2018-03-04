@@ -34,8 +34,8 @@ void app_main() {
            pdMS_TO_TICKS(10));
   ESP_LOGI(TAG, "%s", embed_vsn_sha);
 
-  periph_module_disable(PERIPH_I2C0_MODULE);
-  periph_module_enable(PERIPH_I2C0_MODULE);
+  // periph_module_disable(PERIPH_I2C0_MODULE);
+  // periph_module_enable(PERIPH_I2C0_MODULE);
 
   spi_flash_init();
 

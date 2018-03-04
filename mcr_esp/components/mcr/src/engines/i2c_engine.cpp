@@ -573,7 +573,8 @@ bool mcrI2c::selectBus(uint32_t bus) {
                "unable to select bus %d (selects=%u errors=%u) %s", bus,
                _bus_selects, _bus_select_errors, espError(esp_rc));
 
-      rc = hardReset();
+      hardReset();
+      rc = false;
     }
   }
 
