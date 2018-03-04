@@ -229,6 +229,10 @@ void mcrDS::convert(void *task_data) {
 
     xSemaphoreTake(_bus_mutex, portMAX_DELAY);
 
+    // let's check here for normal ops since we now are holding the _bus_mutex
+    // effectively halting all other processes
+    mcr::Net::waitForNormalOps();
+
     owb_s = owb_reset(ds, &present);
 
     if (!present) {
