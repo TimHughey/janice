@@ -97,7 +97,7 @@ defmodule OTA do
     task =
       Task.start(fn ->
         :timer.sleep(delay_ms)
-        fw = Application.app_dir(:mcp, "priv/test.bin")
+        fw = Application.app_dir(:mcp, "priv/mcr_esp.bin")
         {:ok, file} = File.open(fw, [:read])
         transmit_blocks(file, :start, opts)
         File.close(file)

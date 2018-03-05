@@ -155,7 +155,7 @@ defmodule Sensor do
 
   def external_update(%{device: device, host: host, mtime: mtime, type: type} = r) do
     hostname = Remote.mark_as_seen(host, mtime)
-    r = ensure_temps(r) |> Map.put(:hostname, hostname)
+    r = normalize_readings(r) |> Map.put(:hostname, hostname)
 
     sensor = add(%Sensor{device: device, type: type}, r)
 
@@ -175,12 +175,13 @@ defmodule Sensor do
   def fahrenheit(name) when is_binary(name), do: fahrenheit(name: name)
 
   def fahrenheit(opts) when is_list(opts) do
+    since_secs = Keyword.get(opts, :since_secs, 30) * -1
     sen = get_by(opts)
 
     if is_nil(sen) do
       nil
     else
-      dt = Timex.now() |> Timex.shift(minutes: -5)
+      dt = Timex.now() |> Timex.shift(seconds: since_secs)
 
       query =
         from(
@@ -215,22 +216,25 @@ defmodule Sensor do
   def relhum(name) when is_binary(name), do: relhum(name: name)
 
   def relhum(opts) when is_list(opts) do
+    since_secs = Keyword.get(opts, :since_secs, 30) * -1
     sen = get_by(opts)
 
     if is_nil(sen) do
       nil
     else
-      dt = Timex.now() |> Timex.shift(minutes: -5)
+      dt = Timex.now() |> Timex.shift(seconds: since_secs)
 
-      from(
-        relhum in SensorRelHum,
-        join: s in assoc(relhum, :sensor),
-        where: s.id == ^sen.id,
-        group_by: relhum.id,
-        order_by: relhum.inserted_at >= ^dt,
-        select: avg(relhum.rh)
-      )
-      |> Repo.all()
+      query =
+        from(
+          relhum in SensorRelHum,
+          join: s in assoc(relhum, :sensor),
+          where: s.id == ^sen.id,
+          group_by: relhum.id,
+          order_by: relhum.inserted_at >= ^dt,
+          select: avg(relhum.rh)
+        )
+
+      if res = Repo.all(query), do: hd(res), else: nil
     end
   end
 
@@ -246,8 +250,8 @@ defmodule Sensor do
       type === "temp" ->
         Logger.debug(fn ->
           "#{s.name} " <>
-            "#{String.pad_leading(Float.to_string(s.temperature.tf), 8)}F " <>
-            "#{String.pad_leading(Float.to_string(s.temperature.tc), 8)}C"
+            "#{String.pad_leading(Float.to_string(r.tf), 8)}F " <>
+            "#{String.pad_leading(Float.to_string(r.tc), 8)}C"
         end)
 
         Fahrenheit.record(
@@ -269,9 +273,9 @@ defmodule Sensor do
       type === "relhum" ->
         Logger.debug(fn ->
           "#{s.name} " <>
-            "#{String.pad_leading(Float.to_string(s.temperature.tf), 8)}F " <>
-            "#{String.pad_leading(Float.to_string(s.temperature.tc), 8)}C " <>
-            "#{String.pad_leading(Float.to_string(s.relhum.rh), 8)}RH"
+            "#{String.pad_leading(Float.to_string(r.tf), 8)}F " <>
+            "#{String.pad_leading(Float.to_string(r.tc), 8)}C " <>
+            "#{String.pad_leading(Float.to_string(r.rh), 8)}RH"
         end)
 
         Fahrenheit.record(
@@ -307,15 +311,18 @@ defmodule Sensor do
 
   defp record_metrics({%Sensor{} = s, %{} = r}), do: {s, r}
 
-  # case 2: reading has tc so convert tf
-  defp ensure_temps(%{} = r) do
+  defp normalize_readings(%{} = r) do
     has_tc = Map.has_key?(r, :tc)
     has_tf = Map.has_key?(r, :tf)
 
+    r = if Map.has_key?(r, :rh), do: Map.put(r, :rh, Float.round(r.rh * 1.0, 3)), else: r
+    r = if has_tc, do: Map.put(r, :tc, Float.round(r.tc * 1.0, 3)), else: r
+    r = if has_tf, do: Map.put(r, :tf, Float.round(r.tf * 1.0, 3)), else: r
+
     cond do
       has_tc and has_tf -> r
-      has_tc -> Map.put_new(r, :tf, r.tc * (9.0 / 5.0) + 32.0)
-      has_tf -> Map.put_new(r, :tc, (r.tf - 32) * (5.0 / 9.0))
+      has_tc -> Map.put_new(r, :tf, Float.round(r.tc * (9.0 / 5.0) + 32.0, 3))
+      has_tf -> Map.put_new(r, :tc, Float.round(r.tf - 32 * (5.0 / 9.0), 3))
       true -> r
     end
   end
@@ -348,7 +355,7 @@ defmodule Sensor do
   defp update_relhum(%Sensor{relhum: _relhum} = sen, r)
        when is_map(r) do
     Ecto.build_assoc(sen, :relhum, %{
-      rh: Float.round(r.rh * 1.0, 2)
+      rh: r.rh
     })
     |> insert!()
 
@@ -358,8 +365,8 @@ defmodule Sensor do
   defp update_temperature(%Sensor{temperature: _temp} = sen, r)
        when is_map(r) do
     Ecto.build_assoc(sen, :temperature, %{
-      tc: Float.round(r.tc * 1.0, 2),
-      tf: Float.round(r.tf * 1.0, 2)
+      tc: r.tc,
+      tf: r.tf
     })
     |> insert!()
 

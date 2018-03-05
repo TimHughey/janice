@@ -34,10 +34,6 @@ config :mcp,
     ota: {"prod/mcr/f/ota", :qos0}
   ]
 
-# config :mcp, build_env, "#{Mix.env}"
-# config :mcp, namespace: Web
-# config :mcp, :generators, context_app: false
-
 # Configures the endpoint
 config :mcp, Web.Endpoint,
   # url: [host: "localhost", path: "/janice"],
