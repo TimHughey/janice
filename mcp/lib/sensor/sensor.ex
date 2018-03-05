@@ -93,15 +93,17 @@ defmodule Sensor do
     else
       dt = Timex.now() |> Timex.shift(seconds: since_secs)
 
-      from(
-        t in SensorTemperature,
-        join: s in assoc(t, :sensor),
-        where: s.id == ^sen.id,
-        group_by: t.id,
-        order_by: t.inserted_at >= ^dt,
-        select: avg(t.tc)
-      )
-      |> Repo.all()
+      query =
+        from(
+          t in SensorTemperature,
+          join: s in assoc(t, :sensor),
+          where: s.id == ^sen.id,
+          group_by: t.id,
+          order_by: t.inserted_at >= ^dt,
+          select: avg(t.tc)
+        )
+
+      if res = Repo.all(query), do: hd(res), else: nil
     end
   end
 
@@ -180,15 +182,17 @@ defmodule Sensor do
     else
       dt = Timex.now() |> Timex.shift(minutes: -5)
 
-      from(
-        t in SensorTemperature,
-        join: s in assoc(t, :sensor),
-        where: s.id == ^sen.id,
-        group_by: t.id,
-        order_by: t.inserted_at >= ^dt,
-        select: avg(t.tf)
-      )
-      |> Repo.all()
+      query =
+        from(
+          t in SensorTemperature,
+          join: s in assoc(t, :sensor),
+          where: s.id == ^sen.id,
+          group_by: t.id,
+          order_by: t.inserted_at >= ^dt,
+          select: avg(t.tf)
+        )
+
+      if res = Repo.all(query), do: hd(res), else: nil
     end
   end
 

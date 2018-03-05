@@ -17,7 +17,10 @@ defmodule SensorTest do
   setup context do
     if num = context[:num] do
       device = sen_dev(num)
-      temp_ext_msg(num)
+
+      # record many temperatures
+      for _i <- 0..10, do: temp_ext_msg(num)
+
       sensor = Sensor.get_by(device: device)
       [device: device, sensor: sensor]
     else
@@ -38,9 +41,16 @@ defmodule SensorTest do
   end
 
   @tag num: 2
-  test "can get avg temperature", context do
+  test "can get avg temperature (F)", context do
     tf = Sensor.fahrenheit(device: context[:device])
 
-    assert tf
+    assert is_number(tf)
+  end
+
+  @tag num: 2
+  test "can get avg temperature (C)", context do
+    tf = Sensor.celsius(device: context[:device])
+
+    assert is_number(tf)
   end
 end
