@@ -147,16 +147,13 @@ defmodule Remote do
     if res == :ok, do: rem.preferred_vsn, else: res
   end
 
-  def delete(id) when is_integer(id) do
-    from(s in Remote, where: s.id == ^id) |> Repo.delete_all()
-  end
+  def delete(id) when is_integer(id),
+    do: from(s in Remote, where: s.id == ^id) |> Repo.delete_all()
 
-  def delete_all(:dangerous) do
-    dt = Timex.now()
-
-    from(rem in Remote, where: rem.id >= 0)
-    |> Repo.delete_all()
-  end
+  def delete_all(:dangerous),
+    do:
+      from(rem in Remote, where: rem.id >= 0)
+      |> Repo.delete_all()
 
   def external_update(%{host: host, vsn: _vsn, mtime: _mtime, hw: _hw} = eu) do
     result =
@@ -234,9 +231,7 @@ defmodule Remote do
   # ota_update() header
   def ota_update(id, opts \\ [])
 
-  def ota_update(:all, opts) when is_list(opts) do
-    all() |> ota_update(opts)
-  end
+  def ota_update(:all, opts) when is_list(opts), do: all() |> ota_update(opts)
 
   def ota_update(id, opts)
       when is_integer(id) do
@@ -244,26 +239,33 @@ defmodule Remote do
     ota_update([rem], opts)
   end
 
-  def ota_update(list, opts) when is_list(list) do
-    transmit_delay_ms = Keyword.get(opts, :transmit_delay_ms, 7000)
+  def ota_update(list, opts) when is_list(list) and is_list(opts) do
+    delay_ms = Keyword.get(opts, :delay_ms, 7000)
+    reboot_delay_ms = Keyword.get(opts, :reboot_delay_ms, 3000)
+    force = Keyword.get(opts, :force, false)
+    log = Keyword.get(opts, :log, false)
 
     check =
       for %Remote{host: host, name: name} = r <- list do
-        if at_preferred_vsn?(r) do
-          :at_preferred_vsn
-        else
-          Logger.warn(fn -> "#{name} needs update" end)
-          OTA.send_begin(host, "ota")
-          :need_update
+        at_vsn = at_preferred_vsn?(r)
+
+        cond do
+          at_vsn == false or force == true ->
+            log && Logger.warn(fn -> "#{name} needs update" end)
+            OTA.send_begin(host, "ota", opts)
+            :need_update
+
+          at_vsn ->
+            :at_preferred_vsn
+
+          true ->
+            :at_preferred_vsn
         end
       end
 
     if :need_update in check do
-      :timer.sleep(transmit_delay_ms)
-      Logger.warn(fn -> "transmit started" end)
-      OTA.transmit()
-      OTA.send_end()
-      Logger.warn(fn -> "ota transmit complete, ota end sent" end)
+      OTA.transmit(delay_ms: delay_ms)
+      OTA.send_end(delay_ms: reboot_delay_ms)
       :ok
     else
       :none_needed
@@ -271,39 +273,23 @@ defmodule Remote do
   end
 
   def ota_update_single(name, opts \\ []) when is_binary(name) do
-    force = Keyword.get(opts, :force, false)
-    transmit_delay_ms = Keyword.get(opts, :transmit_delay_ms, 3000)
-
+    log = Keyword.get(opts, :log, true)
     r = get_by(name: name)
 
-    cond do
-      is_nil(r) ->
-        Logger.warn(fn -> "#{name} not found" end)
-        :not_found
-
-      force or not at_preferred_vsn?(r) ->
-        Logger.warn(fn -> "#{r.name} needs update" end)
-        Logger.warn(fn -> "sending begin cmd" end)
-        OTA.send_begin(r.host, "ota")
-        :timer.sleep(transmit_delay_ms)
-
-        Logger.warn(fn -> "transmit started" end)
-        OTA.transmit()
-        OTA.send_end()
-        Logger.warn(fn -> "ota transmit complete, ota end sent" end)
-        :ok
-
-      not force or at_preferred_vsn?(r) ->
-        Logger.info(fn -> "#{r.name} already at vsn #{r.firmware_vsn}" end)
-        :at_preferred_vsn
+    if is_nil(r) do
+      log && Logger.warn(fn -> "#{name} not found, can't trigger ota" end)
+      :not_found
+    else
+      ota_update([r], opts)
     end
   end
 
   def restart(id, opts \\ []) when is_integer(id) do
+    log = Keyword.get(opts, :log, true)
     r = get_by(id: id)
 
     if is_nil(r) do
-      Logger.warn(fn -> "#{id} not found, can't trigger restart" end)
+      log && Logger.warn(fn -> "remote id #{id} not found, can't trigger restart" end)
       :not_found
     else
       OTA.restart(r.host, opts)

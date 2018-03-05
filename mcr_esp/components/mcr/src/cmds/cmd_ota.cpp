@@ -113,8 +113,8 @@ void mcrCmdOTA::end() {
   if (_ota_err == ESP_OK) {
     ESP_LOGI(TAG, "next boot part label=%-8s addr=0x%x", _update_part->label,
              _update_part->address);
-    ESP_LOGI(TAG, "will restart in 5s");
-    vTaskDelay(pdMS_TO_TICKS(5000));
+    ESP_LOGI(TAG, "spooling ftl for jump in %dms", _delay_ms);
+    vTaskDelay(pdMS_TO_TICKS(_delay_ms));
     ESP_LOGI(TAG, "JUMP!");
     esp_restart();
   }

@@ -2,7 +2,7 @@ defmodule MixtankManagerTest do
   @moduledoc """
 
   """
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
   # import ExUnit.CaptureLog
   use Timex
 
@@ -156,6 +156,8 @@ defmodule MixtankManagerTest do
 
     task = Task.async(Mixtank.TempTask, :run, [mt, opts])
     rc = Task.await(task)
+
+    :timer.sleep(3000)
 
     active_profile = Dutycycle.active_profile_name(name: dc_name(num, "heater"))
     # profile_good = active_profile in ["on", "off"]

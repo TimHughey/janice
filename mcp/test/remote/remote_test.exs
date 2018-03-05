@@ -2,7 +2,7 @@ defmodule RemoteTest do
   @moduledoc """
 
   """
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
   import ExUnit.CaptureLog
   use Timex
 
@@ -175,7 +175,7 @@ defmodule RemoteTest do
   end
 
   test "OTA update all" do
-    msg = capture_log(fn -> Remote.ota_update(:all, transmit_delay_ms: 1) end)
+    msg = capture_log(fn -> Remote.ota_update(:all, delay_ms: 1000, log: true) end)
 
     assert msg =~ "needs update"
   end
@@ -184,7 +184,7 @@ defmodule RemoteTest do
     n = 10
     ext(n) |> Remote.external_update()
     rem = Remote.get_by(host: host(n))
-    msg = capture_log(fn -> Remote.ota_update(rem.id, transmit_delay_ms: 1) end)
+    msg = capture_log(fn -> Remote.ota_update(rem.id, delay_ms: 1000, log: true) end)
 
     assert msg =~ "needs update"
   end
@@ -195,7 +195,9 @@ defmodule RemoteTest do
     rem = Remote.get_by(host: host(n))
 
     msg =
-      capture_log(fn -> Remote.ota_update_single(rem.name, force: true, transmit_delay_ms: 1) end)
+      capture_log(fn ->
+        Remote.ota_update_single(rem.name, force: true, delay_ms: 1, log: true)
+      end)
 
     assert msg =~ "needs update"
   end
@@ -205,7 +207,7 @@ defmodule RemoteTest do
     ext(n) |> Remote.external_update()
     rem = Remote.get_by(host: host(n))
 
-    res = Remote.restart(rem.id, delay_ms: 0)
+    res = Remote.restart(rem.id, delay_ms: 0, log: false)
 
     assert res == :ok
   end

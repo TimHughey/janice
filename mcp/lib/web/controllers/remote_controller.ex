@@ -5,8 +5,10 @@ defmodule Web.RemoteController do
   use Timex
   use Web, :controller
 
-  def index(conn, %{"ota_all" => "true"} = _params) do
-    ota_all_res = Remote.ota_update(:all, transmit_delay_ms: 100)
+  def index(conn, %{"ota_all" => "true"} = params) do
+    log = Map.get(params, :log, true)
+
+    ota_all_res = Remote.ota_update(:all, delay_ms: 10_000, log: log)
 
     resp = %{
       data: [],
@@ -54,6 +56,9 @@ defmodule Web.RemoteController do
     Logger.debug(fn -> ~s(#{conn.method} #{conn.request_path}) end)
     id = String.to_integer(id_str)
 
+    # special case for testing
+    log = Map.get(params, :log, true)
+
     new_name = Map.get(params, "name", nil)
     name_res = if new_name, do: Remote.change_name(id, new_name)
 
@@ -61,10 +66,10 @@ defmodule Web.RemoteController do
     prefer_res = if new_preference, do: Remote.change_vsn_preference(id, new_preference)
 
     ota = Map.get(params, "ota", false)
-    ota_res = if ota, do: Remote.ota_update(id, transmit_delay_ms: 100)
+    ota_res = if ota, do: Remote.ota_update(id, delay_ms: 10_000, log: log)
 
     restart = Map.get(params, "restart", false)
-    restart_res = if restart, do: Remote.restart(id, delay_ms: 0)
+    restart_res = if restart, do: Remote.restart(id, delay_ms: 3_000)
 
     resp = %{
       name: name_res,

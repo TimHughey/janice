@@ -1,6 +1,6 @@
 defmodule Mcp.ReadingTest do
   @moduledoc false
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   import ExUnit.CaptureLog
   doctest Mqtt.Reading
 

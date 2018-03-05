@@ -26,7 +26,7 @@ defmodule Dutycycle.Control do
   use Timex
 
   import Application, only: [get_env: 3]
-  import Process, only: [send_after: 3]
+  # import Process, only: [send_after: 3]
 
   alias Dutycycle.Control
   alias Dutycycle.CycleTask
@@ -234,7 +234,7 @@ defmodule Dutycycle.Control do
     {:noreply, s}
   end
 
-  def handle_info({ref, result}, %{tasks: tasks} = s)
+  def handle_info({ref, result}, %{tasks: _tasks} = s)
       when is_reference(ref) do
     Logger.info(fn -> "ref: #{inspect(ref)} result: #{inspect(result)}" end)
 

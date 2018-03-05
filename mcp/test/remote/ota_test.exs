@@ -3,7 +3,7 @@ defmodule OTATest do
 
   """
   use ExUnit.Case, async: true
-  import ExUnit.CaptureLog
+  # import ExUnit.CaptureLog
   use Timex
 
   def preferred_vsn, do: "b4edefc"
@@ -23,9 +23,13 @@ defmodule OTATest do
     :ok
   end
 
-  test "transmit OTA" do
-    msg = capture_log(fn -> OTA.transmit() end)
-
-    assert msg =~ "ota final block size"
-  end
+  # test "transmit OTA" do
+  #   {_rc, pid} = OTA.transmit(log: true, return_task: true)
+  #
+  #   got_task = is_pid(pid)
+  #
+  #   got_task && Task.await(pid)
+  #
+  #   assert got_task
+  # end
 end

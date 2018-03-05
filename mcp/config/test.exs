@@ -41,9 +41,7 @@ config :mcp, Mqtt.InboundMessage,
   log_reading: true,
   startup_delay_ms: 200,
   periodic_log_first_ms: 30_000,
-  periodic_log_ms: 10 * 60 * 1000,
-  rpt_feed: "mcr/f/report",
-  cmd_feed: "mcr/f/command"
+  periodic_log_ms: 10 * 60 * 1000
 
 config :mcp, Fact.Influx,
   database: "jan_test",

@@ -43,7 +43,7 @@ defmodule OTA do
   def header_bytes, do: [0xD1, 0xD2, 0xD3, 0xD4]
 
   def restart(host, opts \\ []) when is_binary(host) do
-    delay_ms = Keyword.get(opts, :delay_ms, 0)
+    delay_ms = Keyword.get(opts, :delay_ms, 3000)
 
     %{}
     |> Map.put(:vsn, Application.get_env(:mcp, :git_sha))
@@ -55,8 +55,10 @@ defmodule OTA do
     |> Client.publish()
   end
 
-  def send_begin(host, partition, delay_ms \\ 10000)
-      when is_binary(host) and is_binary(partition) and is_integer(delay_ms) do
+  def send_begin(host, partition, opts \\ [])
+      when is_list(opts) and is_binary(host) and is_binary(partition) do
+    delay_ms = Keyword.get(opts, :delay_ms, 10_000)
+
     fw_file_version()
     |> Map.put(:vsn, Application.get_env(:mcp, :git_sha))
     |> Map.put(:cmd, @ota_begin_cmd)
@@ -68,11 +70,14 @@ defmodule OTA do
     |> Client.publish()
   end
 
-  def send_end do
+  def send_end(opts \\ []) do
+    delay_ms = Keyword.get(opts, :delay_ms, 5_000)
+
     %{}
     |> Map.put(:vsn, Application.get_env(:mcp, :git_sha))
     |> Map.put(:cmd, @ota_end_cmd)
     |> Map.put(:mtime, Timex.now() |> Timex.to_unix())
+    |> Map.put(:delays_ms, delay_ms)
     |> json()
     |> Client.publish()
   end
@@ -81,18 +86,32 @@ defmodule OTA do
     Jason.encode!(c)
   end
 
-  def transmit do
-    fw = Application.app_dir(:mcp, "priv/mcr_esp.bin")
-    {:ok, file} = File.open(fw, [:read])
-
-    transmit_blocks(file, :start)
-
-    File.close(file)
+  def transmit(opts \\ []) when is_list(opts) do
+    transmit_blocks(:task, opts)
   end
 
-  def transmit_blocks(_file, :eof), do: :ok
+  def transmit_blocks(:task, opts) when is_list(opts) do
+    delay_ms = Keyword.get(opts, :delay_ms, 0)
+    return_task = Keyword.get(opts, :return_task, false)
 
-  def transmit_blocks(file, block) do
+    task =
+      Task.start(fn ->
+        :timer.sleep(delay_ms)
+        fw = Application.app_dir(:mcp, "priv/test.bin")
+        {:ok, file} = File.open(fw, [:read])
+        transmit_blocks(file, :start, opts)
+        File.close(file)
+      end)
+
+    if return_task, do: task, else: :ok
+  end
+
+  def transmit_blocks(_file, :eof, _opts) do
+    :ok
+  end
+
+  def transmit_blocks(file, block, opts) when is_list(opts) do
+    log = Keyword.get(opts, :log, false)
     # if :start is passed in as the block, get the first block
     data =
       if block == :start,
@@ -101,17 +120,19 @@ defmodule OTA do
 
     flags =
       if block == :start do
+        log && Logger.info(fn -> "ota first block" end)
         # if :start was passed in then flag this is the first block
         <<0xD1::size(8)>>
       else
         case IO.iodata_length(data) do
           # if the amount of data is equal to a block then we are midstream
           n when n == @block_size ->
+            log && Logger.debug(fn -> "ota stream block" end)
             <<0xD2::size(8)>>
 
           n ->
             # otherwise this is the final block
-            Logger.info(fn -> "ota final block size=#{n}" end)
+            log && Logger.info(fn -> "ota final block size=#{n}" end)
             <<0xD4::size(8)>>
         end
       end
@@ -123,6 +144,6 @@ defmodule OTA do
 
     # get the next block and recurse
     next_block = IO.binread(file, @block_size)
-    transmit_blocks(file, next_block)
+    transmit_blocks(file, next_block, opts)
   end
 end

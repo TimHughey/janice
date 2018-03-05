@@ -2,7 +2,8 @@ defmodule WebRemoteControllerTest do
   @moduledoc """
 
   """
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
+  import ExUnit.CaptureLog
   use Web.ConnCase
   use Timex
 
@@ -51,17 +52,28 @@ defmodule WebRemoteControllerTest do
     assert Map.has_key?(json, "items")
   end
 
-  test "ota all" do
+  test "ota all (no log)" do
     num = 4
     ext(num) |> Remote.external_update()
 
     conn = build_conn() |> Map.merge(%{method: "GET"})
-    params = %{"ota_all" => "true"}
+    params = %{"ota_all" => "true", log: false}
     res = Controller.index(conn, params)
 
     assert res.status === 200
     assert String.contains?(res.resp_body, "ota_all")
     assert String.contains?(res.resp_body, "ok")
+  end
+
+  test "ota all (with log)" do
+    num = 4
+    ext(num) |> Remote.external_update()
+
+    conn = build_conn() |> Map.merge(%{method: "GET"})
+    params = %{"ota_all" => "true", log: true}
+    msg = capture_log(fn -> Controller.index(conn, params) end)
+
+    assert msg =~ "needs update"
   end
 
   test "restart trigger" do

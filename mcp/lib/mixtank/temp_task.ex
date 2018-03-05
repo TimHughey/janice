@@ -7,7 +7,7 @@ defmodule Mixtank.TempTask do
   use Timex
 
   # NOTE: main entry point for the task
-  def run(%Mixtank{name: name} = mt, opts \\ []) when is_list(opts) do
+  def run(%Mixtank{name: _name} = mt, opts \\ []) when is_list(opts) do
     control_temp(mt, opts)
   end
 
