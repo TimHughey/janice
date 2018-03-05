@@ -24,7 +24,7 @@ defmodule Sensor do
     field(:dev_latency, :integer)
     field(:reading_at, Timex.Ecto.DateTime)
     field(:last_seen_at, Timex.Ecto.DateTime)
-    has_one(:temperature, SensorTemperature)
+    has_many(:temperature, SensorTemperature)
     has_one(:relhum, SensorRelHum)
 
     timestamps(usec: true)
@@ -48,13 +48,13 @@ defmodule Sensor do
         relhum = %SensorRelHum{rh: rh}
         temp = %SensorTemperature{tc: tc, tf: tf}
 
-        %Sensor{device: device, name: device, type: type, temperature: temp, relhum: relhum}
+        %Sensor{device: device, name: device, type: type, temperature: [temp], relhum: relhum}
         |> insert!()
 
       %{found: nil, tc: tc, tf: tf, type: type} ->
         temp = %SensorTemperature{tc: tc, tf: tf}
 
-        %Sensor{device: device, name: device, type: type, temperature: temp}
+        %Sensor{device: device, name: device, type: type, temperature: [temp]}
         |> insert!()
 
       %{found: nil} ->
@@ -77,11 +77,35 @@ defmodule Sensor do
   def all(:everything) do
     from(
       s in Sensor,
-      order_by: [asc: s.name],
-      preload: [:temperature, :relhum]
+      order_by: [asc: s.name]
     )
     |> all(timeout: 100)
   end
+
+  def celsius(name) when is_binary(name), do: celsius(name: name)
+
+  def celsius(opts) when is_list(opts) do
+    sen = get_by(opts)
+    since_secs = Keyword.get(opts, :since_secs, 30) * -1
+
+    if is_nil(sen) do
+      nil
+    else
+      dt = Timex.now() |> Timex.shift(seconds: since_secs)
+
+      from(
+        t in SensorTemperature,
+        join: s in assoc(t, :sensor),
+        where: s.id == ^sen.id,
+        group_by: t.id,
+        order_by: t.inserted_at >= ^dt,
+        select: avg(t.tc)
+      )
+      |> Repo.all()
+    end
+  end
+
+  def celsius(nil), do: nil
 
   def change_name(id, to_be, comment \\ "")
 
@@ -129,7 +153,7 @@ defmodule Sensor do
 
   def external_update(%{device: device, host: host, mtime: mtime, type: type} = r) do
     hostname = Remote.mark_as_seen(host, mtime)
-    r = Map.put(r, :hostname, hostname)
+    r = ensure_temps(r) |> Map.put(:hostname, hostname)
 
     sensor = add(%Sensor{device: device, type: type}, r)
 
@@ -146,45 +170,29 @@ defmodule Sensor do
   name.  Returns nil if the no friendly name exists.
 
   """
-  def fahrenheit(name) when is_binary(name) do
-    get_by(name: name) |> fahrenheit()
-  end
+  def fahrenheit(name) when is_binary(name), do: fahrenheit(name: name)
 
   def fahrenheit(opts) when is_list(opts) do
-    device = Keyword.get(opts, :device)
-    # sen = get_by(opts)
+    sen = get_by(opts)
 
-    dt = Timex.now() |> Timex.shift(minutes: -5)
+    if is_nil(sen) do
+      nil
+    else
+      dt = Timex.now() |> Timex.shift(minutes: -5)
 
-    from(
-      t in SensorTemperature,
-      join: s in assoc(t, :sensor),
-      where: s.device == ^device,
-      group_by: t.id,
-      order_by: t.inserted_at > ^dt,
-      select: avg(t.tf)
-    )
-    |> Repo.one()
+      from(
+        t in SensorTemperature,
+        join: s in assoc(t, :sensor),
+        where: s.id == ^sen.id,
+        group_by: t.id,
+        order_by: t.inserted_at >= ^dt,
+        select: avg(t.tf)
+      )
+      |> Repo.all()
+    end
   end
 
-  def fahrenheit(%Sensor{temperature: %SensorTemperature{tf: tf}}), do: tf
-  def fahrenheit(%Sensor{} = s), do: Logger.warn(inspect(s))
   def fahrenheit(nil), do: nil
-
-  # def get(name)
-  #     when is_binary(name) do
-  #   from(
-  #     s in Sensor,
-  #     where: s.name == ^name,
-  #     preload: [:temperature, :relhum]
-  #   )
-  #   |> one()
-  # end
-  #
-  # def get(device, type)
-  #     when is_binary(device) and is_binary(type) do
-  #   get_by(device: device, type: type)
-  # end
 
   def get_by(opts) when is_list(opts) do
     filter = Keyword.take(opts, [:id, :device, :name, :type])
@@ -194,17 +202,34 @@ defmodule Sensor do
       Logger.warn(fn -> "get_by bad args: #{inspect(opts)}" end)
       []
     else
-      s = from(s in Sensor, where: ^filter, preload: [:temperature, :relhum]) |> one()
+      s = from(s in Sensor, where: ^filter) |> one()
 
       if is_nil(s) or Enum.empty?(select), do: s, else: Map.take(s, select)
     end
   end
 
-  # def get_by_name(name) when is_binary(name) do
-  #   from(s in Sensor, where: s.name == ^name) |> one()
-  # end
+  def relhum(name) when is_binary(name), do: relhum(name: name)
 
-  def relhum(name) when is_binary(name), do: get_by(name: name) |> relhum()
+  def relhum(opts) when is_list(opts) do
+    sen = get_by(opts)
+
+    if is_nil(sen) do
+      nil
+    else
+      dt = Timex.now() |> Timex.shift(minutes: -5)
+
+      from(
+        relhum in SensorRelHum,
+        join: s in assoc(relhum, :sensor),
+        where: s.id == ^sen.id,
+        group_by: relhum.id,
+        order_by: relhum.inserted_at >= ^dt,
+        select: avg(relhum.rh)
+      )
+      |> Repo.all()
+    end
+  end
+
   def relhum(%Sensor{relhum: %SensorRelHum{rh: rh}}), do: rh
   def relhum(_anything), do: nil
 
@@ -226,7 +251,7 @@ defmodule Sensor do
           device: s.device,
           name: s.name,
           mtime: r.mtime,
-          val: s.temperature.tf
+          val: r.tf
         )
 
         Celsius.record(
@@ -234,7 +259,7 @@ defmodule Sensor do
           device: s.device,
           name: s.name,
           mtime: r.mtime,
-          val: s.temperature.tc
+          val: r.tc
         )
 
       type === "relhum" ->
@@ -250,7 +275,7 @@ defmodule Sensor do
           device: s.device,
           name: s.name,
           mtime: r.mtime,
-          val: s.temperature.tf
+          val: r.tf
         )
 
         Celsius.record(
@@ -258,7 +283,7 @@ defmodule Sensor do
           device: r.device,
           name: s.name,
           mtime: r.mtime,
-          val: s.temperature.tc
+          val: r.tc
         )
 
         RelativeHumidity.record(
@@ -266,7 +291,7 @@ defmodule Sensor do
           device: r.device,
           name: s.name,
           mtime: r.mtime,
-          val: s.relhum.rh
+          val: r.rh
         )
 
       true ->
@@ -278,36 +303,62 @@ defmodule Sensor do
 
   defp record_metrics({%Sensor{} = s, %{} = r}), do: {s, r}
 
+  # case 2: reading has tc so convert tf
+  defp ensure_temps(%{} = r) do
+    has_tc = Map.has_key?(r, :tc)
+    has_tf = Map.has_key?(r, :tf)
+
+    cond do
+      has_tc and has_tf -> r
+      has_tc -> Map.put_new(r, :tf, r.tc * (9.0 / 5.0) + 32.0)
+      has_tf -> Map.put_new(r, :tc, (r.tf - 32) * (5.0 / 9.0))
+      true -> r
+    end
+  end
+
   defp update_reading({%Sensor{type: "temp"} = s, r})
        when is_map(r) do
+    _temp = update_temperature(s, r)
+
     {change(s, %{
        last_seen_at: Timex.from_unix(r.mtime),
        reading_at: Timex.now(),
-       dev_latency: Map.get(r, :read_us, Timex.diff(r.msg_recv_dt, Timex.from_unix(r.mtime))),
-       temperature: update_temperature(s, r)
+       dev_latency: Map.get(r, :read_us, Timex.diff(r.msg_recv_dt, Timex.from_unix(r.mtime)))
      })
      |> update!(), r}
   end
 
   defp update_reading({%Sensor{type: "relhum"} = s, r})
        when is_map(r) do
+    _temp = update_temperature(s, r)
+    _relhum = update_relhum(s, r)
+
     {change(s, %{
        last_seen_at: Timex.from_unix(r.mtime),
        reading_at: Timex.now(),
-       dev_latency: Map.get(r, :read_us, Timex.diff(r.msg_recv_dt, Timex.from_unix(r.mtime))),
-       temperature: update_temperature(s, r),
-       relhum: update_relhum(s, r)
+       dev_latency: Map.get(r, :read_us, Timex.diff(r.msg_recv_dt, Timex.from_unix(r.mtime)))
      })
      |> update!(), r}
   end
 
-  defp update_relhum(%Sensor{relhum: relhum}, r)
+  defp update_relhum(%Sensor{relhum: _relhum} = sen, r)
        when is_map(r) do
-    change(relhum, %{rh: Float.round(r.rh * 1.0, 2)})
+    Ecto.build_assoc(sen, :relhum, %{
+      rh: Float.round(r.rh * 1.0, 2)
+    })
+    |> insert!()
+
+    {sen, r}
   end
 
-  defp update_temperature(%Sensor{temperature: temp}, r)
+  defp update_temperature(%Sensor{temperature: _temp} = sen, r)
        when is_map(r) do
-    change(temp, %{tc: Float.round(r.tc * 1.0, 2), tf: Float.round(r.tf * 1.0, 2)})
+    Ecto.build_assoc(sen, :temperature, %{
+      tc: Float.round(r.tc * 1.0, 2),
+      tf: Float.round(r.tf * 1.0, 2)
+    })
+    |> insert!()
+
+    {sen, r}
   end
 end

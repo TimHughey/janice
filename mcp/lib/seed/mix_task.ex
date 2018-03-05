@@ -5,13 +5,10 @@ defmodule Mix.Tasks.Seed do
   require Logger
   use Mix.Task
   import Mix.Ecto
-  import Seed.Chambers
   import Seed.Dutycycles
   import Seed.Mixtanks
   import Seed.Sensors
   import Seed.Switches
-
-  # alias Mcp.Chamber
 
   def run(args) do
     repos = parse_repo(args)
@@ -66,31 +63,8 @@ defmodule Mix.Tasks.Seed do
       Mixtank.add(x)
     end)
 
-    chambers(Mix.env()) |> seed()
-
     pid && repo.stop(pid)
 
     Logger.info(fn -> "#{inspect(repo)} stopped" end)
   end
-
-  defp seed([]), do: []
-
-  defp seed(%{__struct__: type, name: name} = thing) do
-    Logger.info("seeding #{type} #{name}")
-
-    case Repo.insert(thing) do
-      {:ok, item} ->
-        item
-
-      {:error, err} ->
-        Logger.warn(fn -> "seed failed #{inspect(type)} " <> "#{thing.name} #{inspect(err)}" end)
-        %{}
-
-      unknown ->
-        Logger.warn(fn -> "unknown failure #{inspect(unknown)}" end)
-        %{}
-    end
-  end
-
-  defp seed([thing | list]), do: [seed(thing)] ++ seed(list)
 end

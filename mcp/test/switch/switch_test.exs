@@ -49,7 +49,7 @@ defmodule SwitchStateTest do
     [device_pio: device_pio]
   end
 
-  setup_all context do
+  setup_all do
     :ok
   end
 
@@ -178,7 +178,7 @@ defmodule SwitchStateTest do
   end
 
   @tag shared_switch: true
-  test "change a SwitchState name and test not found", context do
+  test "change a SwitchState name and test not found" do
     ss1 = SwitchState.get_by(name: device_pio(0, 4))
     ss2 = SwitchState.get_by(name: device_pio(0, 5))
     {rc1, new_ss} = SwitchState.change_name(ss1.id, name(4), "changed by test")

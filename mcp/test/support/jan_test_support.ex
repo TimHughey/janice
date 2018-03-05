@@ -30,20 +30,43 @@ defmodule JanTest do
     a + b * 0.1
   end
 
+  # SENSORS
+
+  def relhum_ext(num) do
+    base = base_ext("sensor", num)
+
+    sensor = %{
+      type: "relhum",
+      device: device("sensor", num),
+      rh: random_float(),
+      tc: random_float()
+    }
+
+    Map.merge(base, sensor)
+  end
+
+  def relhum_dev(n), do: device("sensor", n + 50)
+
+  def relhum_ext_msg(n) do
+    # all relative humidity senors start at 50 for test purposes
+    # also avoids conflicts with temperature sensors
+    n = n + 50
+    relhum_ext(n) |> Jason.encode!() |> Mqtt.InboundMessage.process(async: false)
+  end
+
+  def relhum_name(n), do: name("sensor", n + 50)
+
   def sen_dev(n), do: device("sensor", n)
   def sen_host(n), do: host("sensor", n)
   def sen_name(n), do: name("sensor", n)
 
   def temp_ext(num) do
     base = base_ext("sensor", num)
-    tc = random_float()
-    tf = tc * (9.0 / 5.0) + 32.0
 
     sensor = %{
       type: "temp",
       device: device("sensor", num),
-      tc: tc,
-      tf: tf
+      tc: random_float()
     }
 
     Map.merge(base, sensor)

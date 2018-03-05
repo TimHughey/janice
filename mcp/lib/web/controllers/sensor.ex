@@ -19,7 +19,7 @@ defmodule Web.SensorController do
           dev_latency: s.dev_latency,
           last_seen_secs: humanize_secs(s.last_seen_at),
           reading_secs: humanize_secs(s.reading_at),
-          celsius: s.temperature.tc
+          celsius: Sensor.celsius(id: s.id, since_secs: 1)
         }
       end
 

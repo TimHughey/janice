@@ -136,7 +136,7 @@ defmodule Mqtt.Reading do
   def temperature?(%{} = r) do
     tc = Map.get(r, :tc)
     tf = Map.get(r, :tf)
-    check = metadata?(r) and r.type === @temp_t and is_number(tc) and is_number(tf)
+    check = (metadata?(r) and r.type === @temp_t and is_number(tc)) or is_number(tf)
 
     if check && Map.get(r, :log_reading, false),
       do:
