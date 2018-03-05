@@ -6,6 +6,7 @@ defmodule MixtankManagerTest do
   # import ExUnit.CaptureLog
   use Timex
 
+  @moduletag mixtank: true
   import JanTest
 
   setup do
@@ -93,14 +94,6 @@ defmodule MixtankManagerTest do
 
   def num(n), do: String.pad_leading(Integer.to_string(n), 3, "0")
   def pios(n, pos), do: for(i <- 0..(n - 1), do: %{pio: i, state: pos})
-  def preferred_vsn, do: "b4edefc"
-
-  def random_float do
-    a = :rand.uniform(25)
-    b = :rand.uniform(100)
-
-    a + b * 0.1
-  end
 
   def shared_mt, do: Mixtank.get_by(name: mt_name(99))
   def subsystems, do: ["pump", "air", "heater", "fill", "replenish"]

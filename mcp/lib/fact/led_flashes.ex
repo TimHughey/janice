@@ -28,7 +28,7 @@ defmodule Fact.LedFlashes do
     f = set_field(f, opts, :val)
 
     f = %{f | timestamp: Keyword.get(opts, :mtime, def_mtime)}
-    write(f, precision: :seconds)
+    write(f, precision: :seconds, async: true)
   end
 
   defp set_tag(map, opts, key)

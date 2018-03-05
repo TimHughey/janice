@@ -146,7 +146,27 @@ defmodule Sensor do
   name.  Returns nil if the no friendly name exists.
 
   """
-  def fahrenheit(name) when is_binary(name), do: get_by(name: name) |> fahrenheit()
+  def fahrenheit(name) when is_binary(name) do
+    get_by(name: name) |> fahrenheit()
+  end
+
+  def fahrenheit(opts) when is_list(opts) do
+    device = Keyword.get(opts, :device)
+    # sen = get_by(opts)
+
+    dt = Timex.now() |> Timex.shift(minutes: -5)
+
+    from(
+      t in SensorTemperature,
+      join: s in assoc(t, :sensor),
+      where: s.device == ^device,
+      group_by: t.id,
+      order_by: t.inserted_at > ^dt,
+      select: avg(t.tf)
+    )
+    |> Repo.one()
+  end
+
   def fahrenheit(%Sensor{temperature: %SensorTemperature{tf: tf}}), do: tf
   def fahrenheit(%Sensor{} = s), do: Logger.warn(inspect(s))
   def fahrenheit(nil), do: nil

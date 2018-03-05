@@ -19,16 +19,18 @@ defmodule Mqtt.InboundMessage do
 
   def init(s)
       when is_map(s) do
-    case Map.get(s, :autostart, false) do
-      true -> send_after(self(), {:startup}, 0)
-      false -> nil
-    end
+    Logger.debug("init()")
 
-    s = Map.put_new(s, :log_reading, config(:log_reading))
-    s = Map.put_new(s, :messages_dispatched, 0)
-    s = Map.put_new(s, :json_log, nil)
+    s =
+      Map.put_new(s, :log_reading, config(:log_reading))
+      |> Map.put_new(:messages_dispatched, 0)
+      |> Map.put_new(:json_log, nil)
+      |> Map.put_new(:startup_msgs, config(:startup_msgs))
+      |> Map.put_new(:temperature_msgs, config(:temperature_msgs))
+      |> Map.put_new(:switch_msgs, config(:switch_msgs))
 
-    Logger.info("init()")
+    if Map.get(s, :autostart, false),
+      do: send_after(self(), {:periodic_log}, config(:periodic_log_first_ms))
 
     {:ok, s}
   end
@@ -41,62 +43,20 @@ defmodule Mqtt.InboundMessage do
 
   # internal work functions
 
-  def process(msg)
-      when is_binary(msg) do
-    GenServer.cast(Mqtt.InboundMessage, {:incoming_message, msg})
-  end
+  def process(msg, opts \\ [])
+      when is_binary(msg) and is_list(opts) do
+    async = Keyword.get(opts, :async, true)
 
-  defp log_reading(%{}, false), do: nil
-
-  defp log_reading(%{} = r, true) do
-    if Reading.temperature?(r) do
-      Logger.info(fn ->
-        ~s(#{r.host} #{r.device} #{r.tc} #{r.tf})
-      end)
-    end
-
-    if Reading.relhum?(r) do
-      Logger.info(fn ->
-        ~s(#{r.host} #{r.device} #{r.tc} #{r.tf} #{r.rh})
-      end)
-    end
+    if async,
+      do: GenServer.cast(Mqtt.InboundMessage, {:incoming_message, msg, opts}),
+      else: GenServer.call(Mqtt.InboundMessage, {:incoming_message, msg, opts})
   end
 
   # GenServer callbacks
-  def handle_cast({:incoming_message, msg}, s)
-      when is_binary(msg) and is_map(s) do
-    {elapsed_us, task} =
-      :timer.tc(fn ->
-        task =
-          if is_pid(s.json_log),
-            do: Task.async(fn -> IO.puts(s.json_log, msg) end),
-            else: nil
-
-        Reading.decode(msg) |> decoded_msg(s)
-        task
-      end)
-
-    s = %{s | messages_dispatched: s.messages_dispatched + 1}
-
-    RunMetric.record(
-      module: "#{__MODULE__}",
-      application: "janice",
-      metric: "msgs_dispatched",
-      val: s.messages_dispatched
-    )
-
-    RunMetric.record(
-      module: "#{__MODULE__}",
-      metric: "mqtt_process_inbound_msg_us",
-      device: "none",
-      val: elapsed_us
-    )
-
-    if not is_nil(task), do: Task.await(task)
-    {:noreply, s}
+  def handle_call({:incoming_message, msg, opts}, _from, s) do
+    {:reply, :ok, incoming_msg(msg, s, opts)}
   end
 
-  # open the json log if not already open
   def handle_call({@log_json_msg, opts}, _from, %{json_log: pid} = s) do
     log = Keyword.get(opts, :log, false)
 
@@ -126,12 +86,9 @@ defmodule Mqtt.InboundMessage do
     {:reply, json_log, s}
   end
 
-  def handle_info({:startup}, s)
-      when is_map(s) do
-    send_after(self(), {:periodic_log}, config(:periodic_log_first_ms))
-    Logger.info(fn -> "startup()" end)
-
-    {:noreply, s}
+  def handle_cast({:incoming_message, msg, opts}, s)
+      when is_binary(msg) and is_map(s) do
+    {:noreply, incoming_msg(msg, s, opts)}
   end
 
   def handle_info({:periodic_log}, s)
@@ -148,29 +105,36 @@ defmodule Mqtt.InboundMessage do
     get_env(:mcp, Mqtt.InboundMessage) |> Keyword.get(key)
   end
 
-  defp decoded_msg({:ok, %{metadata: :fail}}, _s), do: nil
+  defp decoded_msg({:ok, %{metadata: :fail}}, _s, _opts), do: nil
 
-  defp decoded_msg({:ok, %{metadata: :ok} = r}, s) do
-    log = Map.get(r, :log, s.log_reading)
-    log_reading(r, log)
+  defp decoded_msg({:ok, %{metadata: :ok} = r}, s, opts) when is_list(opts) do
+    async = Keyword.get(opts, :async, true)
+
+    r = Map.put_new(r, :log_reading, Map.get(r, :log, s.log_reading))
 
     # NOTE: we invoke the module / functions defined in the config
     #       to process incoming messages.  we also spin up a Task
     #       for the benefits of parallel processing.
 
     if Reading.startup?(r) do
-      {mod, func} = config(:startup_msgs)
+      {mod, func} = s.startup_msgs
       Task.start(mod, func, [r])
     end
 
     if Reading.temperature?(r) || Reading.relhum?(r) do
-      {mod, func} = config(:temperature_msgs)
-      Task.start(mod, func, [r])
+      {mod, func} = s.temperature_msgs
+
+      if async,
+        do: Task.start(mod, func, [r]),
+        else: apply(mod, func, [r])
     end
 
     if Reading.switch?(r) do
-      {mod, func} = config(:switch_msgs)
-      Task.start(mod, func, [r])
+      {mod, func} = s.switch_msgs
+
+      if async,
+        do: Task.start(mod, func, [r]),
+        else: apply(mod, func, [r])
     end
 
     if Reading.free_ram_stat?(r), do: FreeRamStat.record(remote_host: r.host, val: r.freeram)
@@ -180,7 +144,40 @@ defmodule Mqtt.InboundMessage do
     nil
   end
 
-  defp decoded_msg({:error, e}, _s) do
+  defp decoded_msg({:error, e}, _s, _opts) do
     Logger.warn(fn -> e end)
+  end
+
+  defp incoming_msg(msg, s, opts) do
+    {elapsed_us, log_task} =
+      :timer.tc(fn ->
+        task =
+          if is_pid(s.json_log),
+            do: Task.async(fn -> IO.puts(s.json_log, msg) end),
+            else: nil
+
+        Reading.decode(msg) |> decoded_msg(s, opts)
+        task
+      end)
+
+    s = %{s | messages_dispatched: s.messages_dispatched + 1}
+
+    RunMetric.record(
+      module: "#{__MODULE__}",
+      application: "janice",
+      metric: "msgs_dispatched",
+      val: s.messages_dispatched
+    )
+
+    RunMetric.record(
+      module: "#{__MODULE__}",
+      metric: "mqtt_process_inbound_msg_us",
+      device: "none",
+      val: elapsed_us
+    )
+
+    if log_task, do: Task.await(log_task)
+
+    s
   end
 end

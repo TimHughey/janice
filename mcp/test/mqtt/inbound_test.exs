@@ -126,11 +126,11 @@ defmodule MqttInboundMessageTest do
     assert res === :ok
   end
 
-  test "inbound message logging" do
-    start = Mqtt.InboundMessage.log_json(log: true)
-    switch_ext_msg(1)
-    stop = Mqtt.InboundMessage.log_json(log: false)
-
-    assert start === :log_open and stop === :log_closed
-  end
+  # test "inbound message logging" do
+  #   start = Mqtt.InboundMessage.log_json(log: true)
+  #   switch_ext_msg(1)
+  #   stop = Mqtt.InboundMessage.log_json(log: false)
+  #
+  #   assert start === :log_open and stop === :log_closed
+  # end
 end

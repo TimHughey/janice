@@ -2,7 +2,7 @@ defmodule RemoteTest do
   @moduledoc """
 
   """
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   import ExUnit.CaptureLog
   use Timex
 
@@ -48,10 +48,11 @@ defmodule RemoteTest do
     assert before_mark.last_seen_at === after_mark.last_seen_at
   end
 
+  @tag long_running: true
   test "mark as seen (zero threshold)" do
     ext(5) |> Remote.external_update()
     before_mark = Remote.get_by(host: host(5))
-    :timer.sleep(1500)
+    :timer.sleep(1001)
     Remote.mark_as_seen(host(5), Timex.now() |> Timex.to_unix(), 0)
     after_mark = Remote.get_by(host: host(5))
 
@@ -174,12 +175,14 @@ defmodule RemoteTest do
     assert is_list(remotes) and is_remote
   end
 
+  @tag :ota
   test "OTA update all" do
     msg = capture_log(fn -> Remote.ota_update(:all, delay_ms: 1000, log: true) end)
 
     assert msg =~ "needs update"
   end
 
+  @tag :ota
   test "OTA update by name" do
     n = 10
     ext(n) |> Remote.external_update()
@@ -189,6 +192,7 @@ defmodule RemoteTest do
     assert msg =~ "needs update"
   end
 
+  @tag :ota
   test "OTA single (by name, force)" do
     n = 11
     ext(n) |> Remote.external_update()

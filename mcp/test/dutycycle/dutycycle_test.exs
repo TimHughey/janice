@@ -2,6 +2,7 @@ defmodule DutycycleTest do
   @moduledoc """
 
   """
+
   use ExUnit.Case, async: false
   # import ExUnit.CaptureLog
   use Timex
@@ -10,6 +11,7 @@ defmodule DutycycleTest do
     :ok
   end
 
+  @moduletag :dutycycle
   setup_all do
     Dutycycle.delete_all(:dangerous)
     _dc = new_dutycycle(99) |> Dutycycle.add()

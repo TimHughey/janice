@@ -136,7 +136,15 @@ defmodule Mqtt.Reading do
   def temperature?(%{} = r) do
     tc = Map.get(r, :tc)
     tf = Map.get(r, :tf)
-    metadata?(r) and r.type === @temp_t and is_number(tc) and is_number(tf)
+    check = metadata?(r) and r.type === @temp_t and is_number(tc) and is_number(tf)
+
+    if check && Map.get(r, :log_reading, false),
+      do:
+        Logger.info(fn ->
+          ~s(#{r.host} #{r.device} #{r.tc} #{r.tf})
+        end)
+
+    check
   end
 
   @doc ~S"""
@@ -153,7 +161,15 @@ defmodule Mqtt.Reading do
   """
   def relhum?(%{} = r) do
     rh = Map.get(r, :rh)
-    metadata?(r) and r.type === @relhum_t and is_number(rh)
+    check = metadata?(r) and r.type === @relhum_t and is_number(rh)
+
+    if check && Map.get(r, :log_reading, false),
+      do:
+        Logger.info(fn ->
+          ~s(#{r.host} #{r.device} #{r.tc} #{r.tf} #{r.rh})
+        end)
+
+    check
   end
 
   @doc ~S"""

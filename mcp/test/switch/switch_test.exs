@@ -36,7 +36,20 @@ defmodule SwitchStateTest do
     :ok
   end
 
-  setup_all do
+  setup context do
+    n = if context[:num], do: context[:num], else: 0
+
+    if context[:shared_switch] do
+      ext(n, 8, false) |> Switch.external_update()
+    end
+
+    pio = context[:pio]
+    device_pio = if pio, do: device_pio(n, pio), else: device_pio(n, 0)
+
+    [device_pio: device_pio]
+  end
+
+  setup_all context do
     :ok
   end
 
@@ -154,18 +167,18 @@ defmodule SwitchStateTest do
     refute before_toggle == after_toggle
   end
 
-  test "get a SwitchState state (position) by name and handle not found" do
-    common_ext_update()
-    ss = SwitchState.state(device_pio(0, 3))
+  @tag shared_switch: true
+  @tag pio: 3
+  test "get a SwitchState state (position) by name and handle not found", context do
+    ss = SwitchState.state(context[:device_pio])
     msg = capture_log(fn -> SwitchState.state("foobar") end)
 
     refute ss
     assert msg =~ "foobar not found while RETRIEVING state"
   end
 
-  test "change a SwitchState name and test not found" do
-    common_ext_update()
-
+  @tag shared_switch: true
+  test "change a SwitchState name and test not found", context do
     ss1 = SwitchState.get_by(name: device_pio(0, 4))
     ss2 = SwitchState.get_by(name: device_pio(0, 5))
     {rc1, new_ss} = SwitchState.change_name(ss1.id, name(4), "changed by test")

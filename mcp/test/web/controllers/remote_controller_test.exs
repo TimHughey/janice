@@ -52,6 +52,7 @@ defmodule WebRemoteControllerTest do
     assert Map.has_key?(json, "items")
   end
 
+  @tag :ota
   test "ota all (no log)" do
     num = 4
     ext(num) |> Remote.external_update()
@@ -65,6 +66,7 @@ defmodule WebRemoteControllerTest do
     assert String.contains?(res.resp_body, "ok")
   end
 
+  @tag :ota
   test "ota all (with log)" do
     num = 4
     ext(num) |> Remote.external_update()
