@@ -46,6 +46,8 @@ private:
   std::string _stable;
   std::string _partition;
   int _delay_ms = 0;
+  int _start_delay_ms = 0;
+  int _reboot_delay_ms = 0;
 
   void begin();
   void bootPartitionNext();

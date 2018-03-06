@@ -25,12 +25,16 @@ defmodule OTATest do
 
   @tag :ota
   test "transmit OTA" do
-    {_rc, pid} = OTA.transmit(log: true, return_task: true)
+    {_rc, pid} = OTA.transmit(host: host(0), partition: "ota", log: false, return_task: true)
 
-    got_task = is_pid(pid)
+    checks =
+      for _i <- 0..20 do
+        :timer.sleep(500)
+        Process.alive?(pid)
+      end
 
-    got_task && Task.await(pid)
+    ended = false in checks
 
-    assert got_task
+    assert ended
   end
 end

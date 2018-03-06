@@ -13,6 +13,8 @@ static const char *k_head = "head";
 static const char *k_stable = "stable";
 static const char *k_delay_ms = "delay_ms";
 static const char *k_part = "partition";
+static const char *k_start_delay_ms = "start_delay_ms";
+static const char *k_reboot_delay_ms = "reboot_delay_ms";
 
 static esp_ota_handle_t _ota_update = 0;
 static const esp_partition_t *_update_part = nullptr;
@@ -27,8 +29,10 @@ mcrCmdOTA::mcrCmdOTA(mcrCmdType_t type, JsonObject &root) : mcrCmd(type, root) {
     _host = root[k_host] | "no_host";
     _head = root[k_head] | "0000000";
     _stable = root[k_stable] | "0000000";
-    _delay_ms = root[k_delay_ms] | 0;
     _partition = root[k_part] | "ota";
+    _delay_ms = root[k_delay_ms] | 0;
+    _start_delay_ms = root[k_start_delay_ms] | 0;
+    _reboot_delay_ms = root[k_reboot_delay_ms] | 0;
   }
 }
 
@@ -42,7 +46,7 @@ void mcrCmdOTA::begin() {
   }
 
   ESP_LOGI(TAG, "ota begin received, anticipate data blocks in %dms",
-           _delay_ms);
+           _start_delay_ms);
 
   mcr::Net::suspendNormalOps();
 
@@ -113,8 +117,8 @@ void mcrCmdOTA::end() {
   if (_ota_err == ESP_OK) {
     ESP_LOGI(TAG, "next boot part label=%-8s addr=0x%x", _update_part->label,
              _update_part->address);
-    ESP_LOGI(TAG, "spooling ftl for jump in %dms", _delay_ms);
-    vTaskDelay(pdMS_TO_TICKS(_delay_ms));
+    ESP_LOGI(TAG, "spooling ftl for jump in %dms", _reboot_delay_ms);
+    vTaskDelay(pdMS_TO_TICKS(_reboot_delay_ms));
     ESP_LOGI(TAG, "JUMP!");
     esp_restart();
   }
@@ -153,9 +157,8 @@ bool mcrCmdOTA::process() {
 
     case mcrCmdType::restart:
       if (this_host) {
-        ESP_LOGI(TAG, "restart requested, delaying to settle");
-        // vTaskDelay(pdMS_TO_TICKS(_delay_ms));
-        vTaskDelay(pdMS_TO_TICKS(5000));
+        ESP_LOGI(TAG, "restart requested, delaying %dms", _delay_ms);
+        vTaskDelay(pdMS_TO_TICKS(_delay_ms));
         ESP_LOGI(TAG, "JUMP!");
         esp_restart();
       }

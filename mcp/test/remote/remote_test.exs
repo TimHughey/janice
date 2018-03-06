@@ -177,7 +177,10 @@ defmodule RemoteTest do
 
   @tag :ota
   test "OTA update all" do
-    msg = capture_log(fn -> Remote.ota_update(:all, delay_ms: 1000, log: true) end)
+    msg =
+      capture_log(fn ->
+        Remote.ota_update(:all, start_delay_ms: 1000, reboot_delay_ms: 1000, log: true)
+      end)
 
     assert msg =~ "needs update"
   end
@@ -187,7 +190,11 @@ defmodule RemoteTest do
     n = 10
     ext(n) |> Remote.external_update()
     rem = Remote.get_by(host: host(n))
-    msg = capture_log(fn -> Remote.ota_update(rem.id, delay_ms: 1000, log: true) end)
+
+    msg =
+      capture_log(fn ->
+        Remote.ota_update(rem.id, start_delay_ms: 1000, reboot_delay_ms: 1000, log: true)
+      end)
 
     assert msg =~ "needs update"
   end

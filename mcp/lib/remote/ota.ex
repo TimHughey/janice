@@ -55,29 +55,41 @@ defmodule OTA do
     |> Client.publish()
   end
 
-  def send_begin(host, partition, opts \\ [])
-      when is_list(opts) and is_binary(host) and is_binary(partition) do
-    delay_ms = Keyword.get(opts, :delay_ms, 10_000)
+  def send_begin(opts) when is_list(opts) do
+    log = Keyword.get(opts, :log, true)
+    update_hosts = Keyword.get(opts, :update_hosts, [])
+    partition = Keyword.get(opts, :partition, nil)
+    delay_ms = Keyword.get(opts, :start_delay_ms, 10_000)
 
-    fw_file_version()
-    |> Map.put(:vsn, Application.get_env(:mcp, :git_sha))
-    |> Map.put(:cmd, @ota_begin_cmd)
-    |> Map.put(:mtime, Timex.now() |> Timex.to_unix())
-    |> Map.put(:host, host)
-    |> Map.put(:partition, partition)
-    |> Map.put(:delay_ms, delay_ms)
-    |> json()
-    |> Client.publish()
+    if is_binary(partition) do
+      for host <- update_hosts do
+        log && Logger.info(fn -> "sending begin for #{host}" end)
+
+        fw_file_version()
+        |> Map.put(:vsn, Application.get_env(:mcp, :git_sha))
+        |> Map.put(:cmd, @ota_begin_cmd)
+        |> Map.put(:mtime, Timex.now() |> Timex.to_unix())
+        |> Map.put(:host, host)
+        |> Map.put(:partition, partition)
+        |> Map.put(:delay_ms, delay_ms)
+        |> Map.put(:start_delay_ms, delay_ms)
+        |> json()
+        |> Client.publish()
+      end
+    else
+      :bad_opts
+    end
   end
 
   def send_end(opts \\ []) do
-    delay_ms = Keyword.get(opts, :delay_ms, 5_000)
+    delay_ms = Keyword.get(opts, :reboot_delay_ms, 5_000)
 
     %{}
     |> Map.put(:vsn, Application.get_env(:mcp, :git_sha))
     |> Map.put(:cmd, @ota_end_cmd)
     |> Map.put(:mtime, Timex.now() |> Timex.to_unix())
-    |> Map.put(:delays_ms, delay_ms)
+    |> Map.put(:delay_ms, delay_ms)
+    |> Map.put(:reboot_delay_ms, delay_ms)
     |> json()
     |> Client.publish()
   end
@@ -91,15 +103,20 @@ defmodule OTA do
   end
 
   def transmit_blocks(:task, opts) when is_list(opts) do
-    delay_ms = Keyword.get(opts, :delay_ms, 0)
+    delay_ms = Keyword.get(opts, :start_delay_ms, 10_000)
     return_task = Keyword.get(opts, :return_task, false)
 
     task =
       Task.start(fn ->
+        send_begin(opts)
         :timer.sleep(delay_ms)
+
         fw = Application.app_dir(:mcp, "priv/mcr_esp.bin")
         {:ok, file} = File.open(fw, [:read])
+
         transmit_blocks(file, :start, opts)
+
+        send_end(opts)
         File.close(file)
       end)
 
@@ -120,7 +137,8 @@ defmodule OTA do
 
     flags =
       if block == :start do
-        log && Logger.info(fn -> "ota first block" end)
+        n = IO.iodata_length(data)
+        log && Logger.info(fn -> "ota first block size=#{n}" end)
         # if :start was passed in then flag this is the first block
         <<0xD1::size(8)>>
       else

@@ -240,35 +240,32 @@ defmodule Remote do
   end
 
   def ota_update(list, opts) when is_list(list) and is_list(opts) do
-    delay_ms = Keyword.get(opts, :delay_ms, 7000)
+    delay_ms = Keyword.get(opts, :start_delay_ms, 10000)
     reboot_delay_ms = Keyword.get(opts, :reboot_delay_ms, 3000)
     force = Keyword.get(opts, :force, false)
     log = Keyword.get(opts, :log, false)
 
-    check =
+    update_hosts =
       for %Remote{host: host, name: name} = r <- list do
         at_vsn = at_preferred_vsn?(r)
 
-        cond do
-          at_vsn == false or force == true ->
-            log && Logger.warn(fn -> "#{name} needs update" end)
-            OTA.send_begin(host, "ota", opts)
-            :need_update
-
-          at_vsn ->
-            :at_preferred_vsn
-
-          true ->
-            :at_preferred_vsn
+        if at_vsn == false or force == true do
+          log && Logger.warn(fn -> "#{name} needs update" end)
+          host
+        else
+          false
         end
       end
 
-    if :need_update in check do
-      OTA.transmit(delay_ms: delay_ms)
-      OTA.send_end(delay_ms: reboot_delay_ms)
-      :ok
-    else
+    if Enum.empty?(update_hosts) do
       :none_needed
+    else
+      opts =
+        opts ++
+          [update_hosts: update_hosts, start_delay_ms: delay_ms, reboot_delay_ms: reboot_delay_ms]
+
+      OTA.transmit(opts)
+      :ok
     end
   end
 
