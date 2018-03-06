@@ -48,8 +48,8 @@
 
 mcrI2c::mcrI2c() {
   setTags(localTags());
-  // setLoggingLevel(ESP_LOG_WARN);
-  setLoggingLevel(tagEngine(), ESP_LOG_INFO);
+  setLoggingLevel(ESP_LOG_WARN);
+  // setLoggingLevel(tagEngine(), ESP_LOG_INFO);
 
   _engine_task_name = tagEngine();
   _engine_stack_size = 5 * 1024;
@@ -547,7 +547,7 @@ void mcrI2c::run(void *task_data) {
 }
 
 bool mcrI2c::selectBus(uint32_t bus) {
-  bool rc = false;
+  bool rc = true; // default return is success, failures detected inline
   i2c_cmd_handle_t cmd = nullptr;
   mcrDevAddr_t multiplexer_dev(0x70);
   esp_err_t esp_rc = ESP_FAIL;
@@ -560,6 +560,7 @@ bool mcrI2c::selectBus(uint32_t bus) {
   if (bus >= _max_buses) {
     ESP_LOGW(tagEngine(), "attempt to select bus %d >= %d, bus not changed",
              bus, _max_buses);
+    return rc;
   }
 
   if (useMultiplexer() && (bus < _max_buses)) {

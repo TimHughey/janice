@@ -43,7 +43,7 @@ void mcrCmdOTA::begin() {
   const esp_partition_t *run_part = esp_ota_get_running_partition();
 
   if (_ota_update != 0) {
-    ESP_LOGI(TAG, "ota already in-progress, ignoring spurious begin");
+    ESP_LOGI(TAG, "ota in-progress, ignoring spurious begin");
     return;
   }
 
@@ -103,7 +103,7 @@ void mcrCmdOTA::bootPartitionNext() {
 void mcrCmdOTA::end() {
 
   if (_ota_update == 0) {
-    ESP_LOGI(TAG, "ota not in-progress, ignoring spurious end");
+    ESP_LOGI(TAG, "ota not in-progress, ignoring end");
     return;
   }
 
