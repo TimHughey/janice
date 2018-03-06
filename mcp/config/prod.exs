@@ -52,7 +52,7 @@ config :mcp, Fact.Influx,
     password: "** set in prod.secret.exs"
   ],
   http_opts: [insecure: true],
-  pool: [max_overflow: 10, size: 5, timeout: 150_000, max_connections: 10],
+  pool: [max_overflow: 15, size: 10, timeout: 150_000, max_connections: 25],
   port: 8086,
   scheme: "http",
   writer: Instream.Writer.Line,
