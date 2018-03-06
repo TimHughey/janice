@@ -23,9 +23,11 @@ defmodule OTATest do
     :ok
   end
 
-  @tag :ota
   test "transmit OTA" do
-    {_rc, pid} = OTA.transmit(host: host(0), partition: "ota", log: false, return_task: true)
+    ext(0) |> Remote.external_update()
+    hosts = [host(0)]
+
+    {_rc, pid} = OTA.transmit(update_hosts: hosts, log: false, return_task: true)
 
     checks =
       for _i <- 0..20 do
@@ -33,8 +35,10 @@ defmodule OTATest do
         Process.alive?(pid)
       end
 
+    started = true in checks
     ended = false in checks
 
+    assert started
     assert ended
   end
 end

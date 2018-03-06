@@ -163,7 +163,8 @@ defmodule RemoteTest do
     fun = fn -> Map.put(ext(4), :log, true) |> Remote.external_update() end
     msg = capture_log(fun)
 
-    assert msg =~ "started"
+    assert msg =~ host(4)
+    assert msg =~ "startup"
   end
 
   test "all Remote" do
