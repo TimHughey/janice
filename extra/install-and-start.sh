@@ -35,6 +35,10 @@
 	fi
 
 	print -n "untarring $release into $jan_base_new"
+
+	run_cmd sudo rm -rf $jan_base_new
+	run_cmd sudo mkdir --mode 0775 $jan_base_new
+	run_cmd sudo chown janice:janice $jan_base_new
 	run_cmd tar -C $jan_base_new -xf $release && print " done."
 
 
@@ -50,9 +54,9 @@
 	cd $save_cwd
 
 	print -n "swapping in new release..."
-	run_cmd rm -rf $jan_base_old 1> /dev/null 2>&1
-	run_cmd mv $jan_base $jan_base_old 1> /dev/null 2>&1
-	run_cmd mv $jan_base_new $jan_base 1> /dev/null 2>&1 && print " done."
+	run_cmd sudo rm -rf $jan_base_old 1> /dev/null 2>&1
+	run_cmd sudo mv $jan_base $jan_base_old 1> /dev/null 2>&1
+	run_cmd sudo mv $jan_base_new $jan_base 1> /dev/null 2>&1 && print " done."
 
 	print -n "starting janice..."
 
@@ -61,7 +65,7 @@
 	print -n "removing deploy tar..." && rm -f $release && print " done."
 
 	if [[ $clean -eq 1 ]]; then
-		print -n "removing $jan_base_old..." && rm -rf $jan_base_old && print " done."
+		print -n "removing $jan_base_old..." && run_cmd sudo rm -rf $jan_base_old && print " done."
 	else
 		print "won't remove ${jan_base_old}, use --clean to do so"
 	fi

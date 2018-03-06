@@ -35,8 +35,9 @@ cd $MCP
 run_cmd env MIX_ENV=prod mix phx.digest
 
 cd $MCR
-touch components/mcr/include/misc/version.hpp
-run_cmd make -j12 deploy
+print -n "building mcr_esp..."
+run_cmd make app-clean 1> /dev/null 2>&1
+run_cmd make -j12 deploy 1> /dev/null 2>&1 && print " done"
 
 cd $MCP
 run_cmd env MIX_ENV=prod mix release --env=prod
