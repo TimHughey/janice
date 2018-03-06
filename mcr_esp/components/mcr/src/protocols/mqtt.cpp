@@ -141,6 +141,12 @@ void mcrMQTT::incomingMsg(struct mg_str *in_topic, struct mg_str *in_payload) {
   entry.topic = topic;
   entry.data = data;
 
+  if ((_ota_start_time) && ((time(nullptr) - _ota_start_time) > 60)) {
+    ESP_LOGW(tagEngine(), "detected stalled ota, spooling ftl");
+    ESP_LOGW(tagEngine(), "JUMP!");
+    esp_restart();
+  }
+
   rb_rc =
       xRingbufferSend(_rb_in, &entry, sizeof(mqttInMsg_t), pdMS_TO_TICKS(100));
 
@@ -148,7 +154,7 @@ void mcrMQTT::incomingMsg(struct mg_str *in_topic, struct mg_str *in_payload) {
 
   if ((!_prefer_outbound_ticks) && (avail_bytes < _rb_in_lowwater)) {
     ESP_LOGW(tagEngine(),
-             "inbound ringbuff overload %u,%u,%u (avail,low,total bytes)",
+             "--> ringbuff overload %04u,%04u,%u (avail,low,total)",
              avail_bytes, _rb_in_lowwater, _rb_in_size);
 
     _prefer_outbound_ticks = pdMS_TO_TICKS(200);
@@ -156,7 +162,7 @@ void mcrMQTT::incomingMsg(struct mg_str *in_topic, struct mg_str *in_payload) {
 
   if (_prefer_outbound_ticks && (avail_bytes > _rb_in_highwater)) {
     ESP_LOGI(tagEngine(),
-             "inbound ringbuff drained %u,%u,%u (avail,high,total bytes)",
+             "--> ringbuff drained  %04u,%04u,%u (avail,high,total)",
              avail_bytes, _rb_in_highwater, _rb_in_size);
     vTaskPrioritySet(_task.handle, _task.priority);
     _prefer_outbound_ticks = 0;
@@ -164,11 +170,10 @@ void mcrMQTT::incomingMsg(struct mg_str *in_topic, struct mg_str *in_payload) {
 
   if (rb_rc) {
     ESP_LOGD(tagEngine(),
-             "INCOMING msg SENT to rb (topic=%s,len=%u,json_len=%u)",
+             "INCOMING msg SENT to ringbuff (topic=%s,len=%u,json_len=%u)",
              topic->c_str(), sizeof(mqttInMsg_t), in_payload->len);
   } else {
-    ESP_LOGW(tagEngine(),
-             "INCOMING msg(len=%u) FAILED send to rb, will restart!",
+    ESP_LOGW(tagEngine(), "INCOMING msg(len=%u) FAILED send to ringbuff, JUMP!",
              sizeof(mqttInMsg_t));
     delete data;
     delete topic;
@@ -193,6 +198,8 @@ void mcrMQTT::__otaFinish() {
 
 void mcrMQTT::__otaPrep() {
   struct mg_mqtt_topic_expression sub = {.topic = _ota_feed, .qos = 0};
+
+  _ota_start_time = time(nullptr);
 
   _ota_feed_msg_id = _msg_id++;
   ESP_LOGI(tagEngine(), "prep for ota, subscribe feed=%s msg_id=%d", sub.topic,

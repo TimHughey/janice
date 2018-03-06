@@ -23,6 +23,8 @@ static size_t _ota_size = 0;
 static uint64_t _ota_first_block = 0;
 static uint64_t _ota_last_block = 0;
 static uint64_t _ota_total_us = 0;
+static bool _got_final_block = false;
+static bool _got_end_cmd = false;
 
 mcrCmdOTA::mcrCmdOTA(mcrCmdType_t type, JsonObject &root) : mcrCmd(type, root) {
   if (root.success()) {
@@ -44,6 +46,8 @@ void mcrCmdOTA::begin() {
     ESP_LOGI(TAG, "ota already in-progress, ignoring spurious begin");
     return;
   }
+
+  _got_final_block = false;
 
   ESP_LOGI(TAG, "ota begin received, anticipate data blocks in %dms",
            _start_delay_ms);
@@ -100,6 +104,16 @@ void mcrCmdOTA::end() {
 
   if (_ota_update == 0) {
     ESP_LOGI(TAG, "ota not in-progress, ignoring spurious end");
+    return;
+  }
+
+  // handle the situation where the ota end cmd is received before the
+  // final data block is processed
+  if (_got_final_block) {
+    ESP_LOGI(TAG, "ota final block was received");
+  } else {
+    _got_end_cmd = true;
+    ESP_LOGI(TAG, "ota final block not received, holding finalize");
     return;
   }
 
@@ -212,7 +226,14 @@ void mcrCmdOTA::processBlock() {
       }
     }
 
+    _got_final_block = true;
     ESP_LOGI(TAG, "ota final block processed");
+
+    // handle the situation where the ota end cmd is received before the
+    // final data block is processed
+    if ((_ota_err == ESP_OK) && (_got_end_cmd)) {
+      end();
+    }
     break;
 
   default:

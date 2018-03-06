@@ -71,7 +71,6 @@ defmodule OTA do
         |> Map.put(:mtime, Timex.now() |> Timex.to_unix())
         |> Map.put(:host, host)
         |> Map.put(:partition, partition)
-        |> Map.put(:delay_ms, delay_ms)
         |> Map.put(:start_delay_ms, delay_ms)
         |> json()
         |> Client.publish()
@@ -91,7 +90,6 @@ defmodule OTA do
     |> Map.put(:vsn, Application.get_env(:mcp, :git_sha))
     |> Map.put(:cmd, @ota_end_cmd)
     |> Map.put(:mtime, Timex.now() |> Timex.to_unix())
-    |> Map.put(:delay_ms, delay_ms)
     |> Map.put(:reboot_delay_ms, delay_ms)
     |> json()
     |> Client.publish()
@@ -117,7 +115,7 @@ defmodule OTA do
 
         transmit_blocks(file, :start, opts)
 
-        :timer.sleep(delay_ms)
+        :timer.sleep(delay_ms / 2)
         send_end(opts)
         File.close(file)
       end)

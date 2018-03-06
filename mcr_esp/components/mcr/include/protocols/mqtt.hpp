@@ -130,6 +130,7 @@ private:
   const char *_ota_feed = CONFIG_MCR_MQTT_OTA_FEED;
   uint16_t _ota_feed_msg_id = 0;
   bool _ota_subscribed = false;
+  time_t _ota_start_time = 0;
 
   void announceStartup();
   void __otaFinish();
