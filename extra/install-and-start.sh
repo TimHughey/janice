@@ -23,36 +23,48 @@
 	# configuration variables
 	mcp_base=${HOME}/devel/janice/mcp
 	jan_base=/usr/local/janice
+	jan_base_new=${jan_base}.new
+	jan_base_old=${jan_base}.old
 	jan_bin=$jan_base/bin
 	release=/run/janice/mcp.tar.gz
+
 
 	if [[ ! -f $release ]]; then
 		print "deploy tar $release doesn't exist, doing nothing."
 		return 1
 	fi
 
+	print -n "untarring $release into $jan_base_new"
+	run_cmd tar -C $jan_base_new -xf $release && print " done."
+
+
 	$jan_bin/mcp ping 1> /dev/null 2>&1
 	if [[ $? -eq 0 ]]; then
-		print -n "stopping jan before install..."
+		print -n "stopping janice before swapping old and new..."
 		run_cmd $jan_base/bin/mcp stop 1> /dev/null 2>&1 && print " done."
 	fi
 
+	print "executing mix ecto.migrate:"
 	cd $mcp_base
 	run_cmd env MIX_ENV=prod mix ecto.migrate
 	cd $save_cwd
 
-	if [[ $clean -eq 1 ]]; then
-		print -n "cleaning up $jan_base..." && rm -rf $jan_base/* && print " done."
-	else
-		print "won't clean existing release, use --clean to do so"
-	fi
+	print -n "swapping in new release..."
+	run_cmd rm -rf $jan_base_old 1> /dev/null 2>&1
+	run_cmd mv $jan_base $jan_base_old 1> /dev/null 2>&1
+	run_cmd mv $jan_base_new $jan_base 1> /dev/null 2>&1 && print " done."
 
-	print -n "untarring $release..."
-	run_cmd tar -C $jan_base -xf $release && print " done."
+	print -n "starting janice..."
+
+	env PORT=4009 mcp start && print " done."
 
 	print -n "removing deploy tar..." && rm -f $release && print " done."
-	print "starting jan then running tail. (use CTRL+C to stop)"
 
-	env PORT=4009 mcp start
-	sleep 2
+	if [[ $clean -eq 1 ]]; then
+		print -n "removing $jan_base_old..." && rm -rf $jan_base_old && print " done."
+	else
+		print "won't remove ${jan_base_old}, use --clean to do so"
+	fi
+
+	print "tailing janice log file. (use CTRL+C to stop)"
 	exec tail --lines=100 -f $jan_base/var/log/erlang.*(om[1])

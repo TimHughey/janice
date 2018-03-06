@@ -63,8 +63,8 @@ defmodule MixtankManagerTest do
     for sub <- subsystems(), do: switch_ext_msg(n, sub)
 
     # setup the temperature sensors we'll need
-    temp_ext_msg(n, "temp")
-    temp_ext_msg(n, "ref")
+    mt_temp_ext_msg(n, "temp")
+    mt_temp_ext_msg(n, "ref")
     :timer.sleep(1000)
 
     # setup the necessary dutycycles
@@ -119,7 +119,7 @@ defmodule MixtankManagerTest do
 
   def switch_pio(n, type, pio), do: switch(n, type) <> ":#{pio}"
 
-  def temp_ext(n, type, val \\ 0.0) do
+  def mt_temp_ext(n, type, val \\ 0.0) do
     base = base_ext(n)
     tc = if val > 0.0, do: val, else: random_float()
     tf = tc * (9.0 / 5.0) + 32.0
@@ -134,8 +134,8 @@ defmodule MixtankManagerTest do
     Map.merge(base, sensor)
   end
 
-  def temp_ext_msg(n, type, val \\ 0.0) do
-    temp_ext(n, type, val) |> Jason.encode!() |> Mqtt.InboundMessage.process()
+  def mt_temp_ext_msg(n, type, val \\ 0.0) do
+    mt_temp_ext(n, type, val) |> Jason.encode!() |> Mqtt.InboundMessage.process()
     :timer.sleep(200)
   end
 
@@ -167,8 +167,8 @@ defmodule MixtankManagerTest do
     mt = Mixtank.get_by(name: mt_name(num))
 
     # set the ref temperature high and the tank temp low
-    temp_ext_msg(num, "ref", 100.0)
-    temp_ext_msg(num, "temp", 0)
+    mt_temp_ext_msg(num, "ref", 100.0)
+    mt_temp_ext_msg(num, "temp", 0)
 
     # let the messages process
     # #:timer.sleep(500)
@@ -193,8 +193,8 @@ defmodule MixtankManagerTest do
     mt = Mixtank.get_by(name: mt_name(num))
 
     # set the ref temperature high and the tank temp low
-    temp_ext_msg(num, "ref", 0.0)
-    temp_ext_msg(num, "temp", 100.0)
+    mt_temp_ext_msg(num, "ref", 0.0)
+    mt_temp_ext_msg(num, "temp", 100.0)
 
     # let the messages process
     # # :timer.sleep(500)

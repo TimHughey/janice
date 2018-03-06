@@ -60,19 +60,20 @@ defmodule JanTest do
   def sen_host(n), do: host("sensor", n)
   def sen_name(n), do: name("sensor", n)
 
-  def temp_ext(num) do
+  def temp_ext(num, opts \\ []) do
+    tc = Keyword.get(opts, :tc, random_float())
     base = base_ext("sensor", num)
 
     sensor = %{
       type: "temp",
       device: device("sensor", num),
-      tc: random_float()
+      tc: tc
     }
 
     Map.merge(base, sensor)
   end
 
-  def temp_ext_msg(n \\ 0) do
-    temp_ext(n) |> Jason.encode!() |> Mqtt.InboundMessage.process(async: false)
+  def temp_ext_msg(n, opts \\ []) do
+    temp_ext(n, opts) |> Jason.encode!() |> Mqtt.InboundMessage.process(async: false)
   end
 end

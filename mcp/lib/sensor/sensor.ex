@@ -85,26 +85,7 @@ defmodule Sensor do
   def celsius(name) when is_binary(name), do: celsius(name: name)
 
   def celsius(opts) when is_list(opts) do
-    sen = get_by(opts)
-    since_secs = Keyword.get(opts, :since_secs, 30) * -1
-
-    if is_nil(sen) do
-      nil
-    else
-      dt = Timex.now() |> Timex.shift(seconds: since_secs)
-
-      query =
-        from(
-          t in SensorTemperature,
-          join: s in assoc(t, :sensor),
-          where: s.id == ^sen.id,
-          group_by: t.id,
-          order_by: t.inserted_at >= ^dt,
-          select: avg(t.tc)
-        )
-
-      if res = Repo.all(query), do: hd(res), else: nil
-    end
+    temperature(opts) |> normalize_readings() |> Map.get(:tc, nil)
   end
 
   def celsius(nil), do: nil
@@ -174,28 +155,8 @@ defmodule Sensor do
   """
   def fahrenheit(name) when is_binary(name), do: fahrenheit(name: name)
 
-  def fahrenheit(opts) when is_list(opts) do
-    since_secs = Keyword.get(opts, :since_secs, 30) * -1
-    sen = get_by(opts)
-
-    if is_nil(sen) do
-      nil
-    else
-      dt = Timex.now() |> Timex.shift(seconds: since_secs)
-
-      query =
-        from(
-          t in SensorTemperature,
-          join: s in assoc(t, :sensor),
-          where: s.id == ^sen.id,
-          group_by: t.id,
-          order_by: t.inserted_at >= ^dt,
-          select: avg(t.tf)
-        )
-
-      if res = Repo.all(query), do: hd(res), else: nil
-    end
-  end
+  def fahrenheit(opts) when is_list(opts),
+    do: temperature(opts) |> normalize_readings() |> Map.get(:tf, nil)
 
   def fahrenheit(nil), do: nil
 
@@ -241,9 +202,49 @@ defmodule Sensor do
   def relhum(%Sensor{relhum: %SensorRelHum{rh: rh}}), do: rh
   def relhum(_anything), do: nil
 
+  def temperature(opts) when is_list(opts) do
+    since_secs = Keyword.get(opts, :since_secs, 30) * -1
+    sen = get_by(opts)
+
+    if is_nil(sen) do
+      nil
+    else
+      dt = Timex.now() |> Timex.shift(seconds: since_secs)
+
+      query =
+        from(
+          t in SensorTemperature,
+          join: s in assoc(t, :sensor),
+          where: s.id == ^sen.id,
+          where: t.inserted_at >= ^dt,
+          select: %{tf: avg(t.tf), tc: avg(t.tc)}
+        )
+
+      if res = Repo.all(query), do: hd(res), else: nil
+    end
+  end
+
   ###
   ### PRIVATE
   ###
+
+  defp normalize_readings(%{tc: nil, tf: nil}), do: %{}
+
+  defp normalize_readings(%{} = r) do
+    has_tc = Map.has_key?(r, :tc)
+    has_tf = Map.has_key?(r, :tf)
+
+    r = if Map.has_key?(r, :rh), do: Map.put(r, :rh, Float.round(r.rh * 1.0, 3)), else: r
+    r = if has_tc, do: Map.put(r, :tc, Float.round(r.tc * 1.0, 3)), else: r
+    r = if has_tf, do: Map.put(r, :tf, Float.round(r.tf * 1.0, 3)), else: r
+
+    cond do
+      has_tc and has_tf -> r
+      has_tc -> Map.put_new(r, :tf, Float.round(r.tc * (9.0 / 5.0) + 32.0, 3))
+      has_tf -> Map.put_new(r, :tc, Float.round(r.tf - 32 * (5.0 / 9.0), 3))
+      true -> r
+    end
+  end
 
   defp record_metrics({%Sensor{type: type} = s, %{hostname: hostname} = r}) do
     cond do
@@ -310,22 +311,6 @@ defmodule Sensor do
   end
 
   defp record_metrics({%Sensor{} = s, %{} = r}), do: {s, r}
-
-  defp normalize_readings(%{} = r) do
-    has_tc = Map.has_key?(r, :tc)
-    has_tf = Map.has_key?(r, :tf)
-
-    r = if Map.has_key?(r, :rh), do: Map.put(r, :rh, Float.round(r.rh * 1.0, 3)), else: r
-    r = if has_tc, do: Map.put(r, :tc, Float.round(r.tc * 1.0, 3)), else: r
-    r = if has_tf, do: Map.put(r, :tf, Float.round(r.tf * 1.0, 3)), else: r
-
-    cond do
-      has_tc and has_tf -> r
-      has_tc -> Map.put_new(r, :tf, Float.round(r.tc * (9.0 / 5.0) + 32.0, 3))
-      has_tf -> Map.put_new(r, :tc, Float.round(r.tf - 32 * (5.0 / 9.0), 3))
-      true -> r
-    end
-  end
 
   defp update_reading({%Sensor{type: "temp"} = s, r})
        when is_map(r) do

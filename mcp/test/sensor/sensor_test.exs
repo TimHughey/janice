@@ -2,7 +2,7 @@ defmodule SensorTest do
   @moduledoc """
 
   """
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   import JanTest
   # import ExUnit.CaptureLog
   use Timex
@@ -14,12 +14,22 @@ defmodule SensorTest do
     :ok
   end
 
+  setup_all do
+    for j <- 0..10,
+        _k <- 0..10,
+        do: temp_ext_msg(j)
+
+    # sensor011 has 40 readings in two groups separated by 2 seconds
+    for _j <- 0..20, do: temp_ext_msg(11, tc: 100)
+    :timer.sleep(2000)
+    for _j <- 0..20, do: temp_ext_msg(11, tc: 50)
+
+    :ok
+  end
+
   setup context do
     if num = context[:num] do
       device = sen_dev(num)
-
-      # record many temperatures
-      for _i <- 0..10, do: temp_ext_msg(num)
 
       sensor = Sensor.get_by(device: device)
       [device: device, sensor: sensor]
@@ -52,5 +62,24 @@ defmodule SensorTest do
     tf = Sensor.celsius(device: context[:device])
 
     assert is_number(tf)
+  end
+
+  @tag num: 3
+  test "can get avg temperature map", context do
+    map = Sensor.temperature(device: context[:device])
+
+    tf = Map.get(map, :tf)
+    tc = Map.get(map, :tc)
+
+    assert is_number(tf)
+    assert is_number(tc)
+  end
+
+  # sensor011 has temperatures of all the same value
+  @tag num: 11
+  test "average is calculated correctly", context do
+    tc = Sensor.celsius(device: context[:device], since_secs: 1)
+
+    assert tc === 50.0
   end
 end
