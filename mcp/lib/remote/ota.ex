@@ -115,7 +115,6 @@ defmodule OTA do
 
         transmit_blocks(file, :start, opts)
 
-        :timer.sleep(delay_ms / 2)
         send_end(opts)
         File.close(file)
       end)
