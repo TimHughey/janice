@@ -23,6 +23,7 @@ defmodule OTATest do
     :ok
   end
 
+  @tag :ota
   test "transmit OTA" do
     ext(0) |> Remote.external_update()
     hosts = [host(0)]

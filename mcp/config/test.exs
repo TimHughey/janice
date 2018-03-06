@@ -21,7 +21,7 @@ config :mcp, Janitor,
 
 config :mcp, MessageSave,
   save: true,
-  delete_older_than_hrs: 12
+  delete: [all_at_startup: true, older_than_hrs: 12]
 
 config :mcp, Mqtt.Client,
   log_dropped_msg: true,
@@ -53,7 +53,7 @@ config :mcp, Fact.Influx,
   scheme: "http",
   writer: Instream.Writer.Line
 
-config :mcp, Mixtank.Control, control_temp_ms: 1000
+config :mcp, Mixtank.Control, control_temp_ms: 100
 
 config :mcp, Repo,
   adapter: Ecto.Adapters.Postgres,
@@ -64,16 +64,12 @@ config :mcp, Repo,
   pool_size: 10
 
 config :mcp, Mcp.SoakTest,
-  startup_delay_ms: 1000,
+  startup_delay_ms: 0,
   periodic_log_first_ms: 1 * 60 * 1000,
   periodic_log_ms: 15 * 50 * 1000,
   flash_led_ms: 1000
 
 config :mcp, Switch, logCmdAck: false
-
-config :mcp, Mcp.Chamber,
-  autostart_wait_ms: 0,
-  routine_check_ms: 1000
 
 config :mcp, Web.Endpoint,
   http: [port: 4000],

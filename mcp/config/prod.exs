@@ -21,8 +21,8 @@ config :mcp, Janitor,
   orphan_acks: [interval_mins: 1, older_than_mins: 1, log: true]
 
 config :mcp, MessageSave,
-  save: true,
-  delete_older_than_hrs: 7 * 24
+  save: false,
+  delete: [all_at_startup: true, older_than_hrs: 7 * 24]
 
 config :mcp, Mqtt.Client,
   log_dropped_msgs: true,
@@ -77,10 +77,6 @@ config :mcp, Mcp.SoakTest,
   flash_led_ms: 3 * 1000
 
 config :mcp, Switch, logCmdAck: false
-
-config :mcp, Mcp.Chamber,
-  autostart_wait_ms: 0,
-  routine_check_ms: 1000
 
 config :mcp, Web.Endpoint,
   # http: [port: {:system, "PORT"}],

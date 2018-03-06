@@ -240,8 +240,6 @@ defmodule Remote do
   end
 
   def ota_update(list, opts) when is_list(list) and is_list(opts) do
-    delay_ms = Keyword.get(opts, :start_delay_ms, 10000)
-    reboot_delay_ms = Keyword.get(opts, :reboot_delay_ms, 3000)
     force = Keyword.get(opts, :force, false)
     log = Keyword.get(opts, :log, false)
 
@@ -260,9 +258,7 @@ defmodule Remote do
     if Enum.empty?(update_hosts) do
       :none_needed
     else
-      opts =
-        opts ++
-          [update_hosts: update_hosts, start_delay_ms: delay_ms, reboot_delay_ms: reboot_delay_ms]
+      opts = opts ++ [update_hosts: update_hosts]
 
       OTA.transmit(opts)
       :ok

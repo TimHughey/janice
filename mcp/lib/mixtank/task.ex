@@ -11,16 +11,9 @@ defmodule Mixtank.TankTask do
     p = mt.profiles |> hd()
     Logger.info(fn -> "[#{name}] started with profile [#{p.name}]" end)
 
-    # :timer.sleep(3000)
     Dutycycle.Control.activate_profile(mt.pump, p.pump, :enable)
-
-    # :timer.sleep(2000)
     Dutycycle.Control.activate_profile(mt.air, p.air, :enable)
-
-    # :timer.sleep(2000)
     Dutycycle.Control.activate_profile(mt.fill, p.fill, :enable)
-
-    # :timer.sleep(2000)
     Dutycycle.Control.activate_profile(mt.replenish, p.replenish, :enable)
 
     State.set_started(mt)
@@ -38,7 +31,7 @@ defmodule Mixtank.TankTask do
   defp control_temp(%Mixtank{} = mt, _opts) do
     profile = mt.profiles |> hd()
 
-    mix_temp = Sensor.fahrenheit(mt.sensor)
+    mix_temp = Sensor.fahrenheit(name: mt.sensor, since_secs: 90)
     ref_temp = Sensor.fahrenheit(mt.ref_sensor)
     curr_state = Dutycycle.Control.switch_state(mt.heater)
 
@@ -57,8 +50,8 @@ defmodule Mixtank.TankTask do
 
     next_state =
       cond do
-        val > ref_val + 0.7 -> false
-        val < ref_val - 0.7 -> true
+        val > ref_val + 0.5 -> false
+        val < ref_val - 0.1 -> true
         true -> curr_state
       end
 

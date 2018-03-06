@@ -103,14 +103,14 @@ void mcrCmdOTA::bootPartitionNext() {
 void mcrCmdOTA::end() {
 
   if (_ota_update == 0) {
-    ESP_LOGI(TAG, "ota not in-progress, ignoring end");
+    ESP_LOGD(TAG, "ota not in-progress, ignoring end");
     return;
   }
 
   // handle the situation where the ota end cmd is received before the
   // final data block is processed
   if (_got_final_block) {
-    ESP_LOGI(TAG, "ota final block was received");
+    ESP_LOGD(TAG, "ota final block was received");
   } else {
     _got_end_cmd = true;
     ESP_LOGI(TAG, "ota final block not received, holding finalize");

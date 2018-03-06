@@ -11,7 +11,7 @@ defmodule MessageSave do
   import Application, only: [get_env: 3]
   import Process, only: [send_after: 3]
   import Ecto.Query, only: [from: 2]
-  import Repo, only: [delete_all: 1, one!: 1, insert!: 1]
+  import Repo, only: [one!: 1, insert!: 1]
 
   schema "message" do
     field(:direction, :string)
@@ -20,6 +20,8 @@ defmodule MessageSave do
 
     timestamps(usec: true)
   end
+
+  def delete_all(:dangerous), do: from(m in MessageSave, where: m.id > 0) |> Repo.delete_all()
 
   def message_count do
     from(ms in MessageSave, select: count(ms.id)) |> one!()
@@ -47,8 +49,10 @@ defmodule MessageSave do
   end
 
   def start_link(args) do
-    defs = [save: false, delete_older_than_hrs: 12]
-    opts = get_env(:mcp, MessageSave, defs) |> Enum.into(%{})
+    defs = [save: false, delete: [all_at_startup: false, older_than_hrs: 12]]
+    opts = get_env(:mcp, MessageSave, defs)
+
+    if get_in(opts, [:delete, :all_at_startup]), do: delete_all(:dangerous)
 
     s = Map.put(args, :opts, opts)
     GenServer.start_link(MessageSave, s, name: MessageSave)
@@ -68,25 +72,25 @@ defmodule MessageSave do
     {:reply, :ok, s}
   end
 
-  def handle_cast({@save_msg, _, _, _}, %{opts: %{save: false}} = s) do
-    {:noreply, s}
-  end
+  def handle_cast({@save_msg, direction, payload, dropped}, %{opts: opts} = s) do
+    if get_in(opts, [:save]) do
+      <<first_byte::size(8), _rest::binary>> = payload
 
-  def handle_cast({@save_msg, direction, payload, dropped}, %{opts: %{save: true}} = s) do
-    <<first_byte::size(8), _rest::binary>> = payload
+      if first_byte in OTA.header_bytes() do
+        # this is OTA data, skip it!!
+      else
+        %MessageSave{direction: Atom.to_string(direction), payload: payload, dropped: dropped}
+        |> insert!()
 
-    if first_byte in OTA.header_bytes() do
-      # this is OTA data, skip it!!
-    else
-      %MessageSave{direction: Atom.to_string(direction), payload: payload, dropped: dropped}
-      |> insert!()
+        older_than_hrs = get_in(s.opts, [:delete, :older_than_hrs]) * -1
 
-      older_dt =
-        Timex.to_datetime(Timex.now(), "UTC")
-        |> Timex.shift(hours: s.opts.delete_older_than_hrs * -1)
+        older_dt =
+          Timex.to_datetime(Timex.now(), "UTC")
+          |> Timex.shift(hours: older_than_hrs)
 
-      from(ms in MessageSave, where: ms.inserted_at < ^older_dt)
-      |> delete_all()
+        from(ms in MessageSave, where: ms.inserted_at < ^older_dt)
+        |> Repo.delete_all()
+      end
     end
 
     {:noreply, s}

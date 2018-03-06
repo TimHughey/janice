@@ -13,8 +13,8 @@ defmodule DutycycleTest do
 
   @moduletag :dutycycle
   setup_all do
-    Dutycycle.delete_all(:dangerous)
-    _dc = new_dutycycle(99) |> Dutycycle.add()
+    new_dcs = [0, 1, 2, 3, 99]
+    for n <- new_dcs, do: new_dutycycle(n) |> Dutycycle.add()
     :ok
   end
 
@@ -24,16 +24,15 @@ defmodule DutycycleTest do
 
   def get_an_id, do: Dutycycle.get_by(name: fixed_name()) |> Map.get(:id)
 
-  def name_str(n), do: "test dc " <> String.pad_leading(Integer.to_string(n), 3, "0")
+  def name_str(n), do: "dutycycle" <> String.pad_leading(Integer.to_string(n), 3, "0")
 
   def new_dutycycle(n) do
     num_str = String.pad_leading(Integer.to_string(n), 3, "0")
-    name_str = "test dc " <> num_str
-    dev_str = "test_sw_" <> num_str
+    dev_str = "dutycycle_sw" <> num_str
 
     %Dutycycle{
-      name: name_str,
-      comment: "test dc " <> num_str,
+      name: name_str(n),
+      comment: "test dutycycle " <> num_str,
       device: dev_str,
       profiles: [
         %Dutycycle.Profile{name: "high", run_ms: 120_000, idle_ms: 60_000},
@@ -83,7 +82,7 @@ defmodule DutycycleTest do
   end
 
   test "activate a profile" do
-    dc = new_dutycycle(0) |> Dutycycle.add()
+    dc = Dutycycle.get_by(name: name_str(0))
 
     {count, _} = Dutycycle.activate_profile(dc.name, "off")
 
@@ -91,7 +90,7 @@ defmodule DutycycleTest do
   end
 
   test "get available profile names" do
-    dc = new_dutycycle(1) |> Dutycycle.add()
+    dc = Dutycycle.get_by(name: name_str(1))
 
     profiles = Dutycycle.available_profiles(dc.name)
 
@@ -100,7 +99,7 @@ defmodule DutycycleTest do
 
   test "get dutycycle with only active profile" do
     profile = "off"
-    dc = new_dutycycle(2) |> Dutycycle.add()
+    dc = Dutycycle.get_by(name: name_str(2))
 
     {count, _} = Dutycycle.activate_profile(dc.name, profile)
 

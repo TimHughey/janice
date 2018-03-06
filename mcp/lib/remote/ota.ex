@@ -43,7 +43,7 @@ defmodule OTA do
   def header_bytes, do: [0xD1, 0xD2, 0xD3, 0xD4]
 
   def restart(host, opts \\ []) when is_binary(host) do
-    delay_ms = Keyword.get(opts, :delay_ms, 3000)
+    delay_ms = Keyword.get(opts, :delay_ms, 3_000)
 
     %{}
     |> Map.put(:vsn, Application.get_env(:mcp, :git_sha))
@@ -82,7 +82,7 @@ defmodule OTA do
 
   defp send_end(opts) when is_list(opts) do
     log = Keyword.get(opts, :log, true)
-    delay_ms = Keyword.get(opts, :reboot_delay_ms, 3_000)
+    delay_ms = Keyword.get(opts, :reboot_delay_ms, 1_000)
 
     log && Logger.info(fn -> "sending end" end)
 

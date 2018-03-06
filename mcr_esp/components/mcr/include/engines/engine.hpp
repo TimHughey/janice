@@ -289,7 +289,7 @@ protected:
   void setLoggingLevel(esp_log_level_t level) {
     for_each(_tags.begin(), _tags.end(),
              [this, level](std::pair<std::string, std::string> item) {
-               ESP_LOGI(_tags["engine"].c_str(),
+               ESP_LOGD(_tags["engine"].c_str(),
                         "key=%s tag=%s logging at level=%d", item.first.c_str(),
                         item.second.c_str(), level);
                esp_log_level_set(item.second.c_str(), level);

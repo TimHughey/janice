@@ -113,7 +113,7 @@ defmodule MixtankManagerTest do
   end
 
   def switch_ext_msg(n, type) do
-    switch_ext(n, type, 8, false) |> Jason.encode!() |> Mqtt.InboundMessage.process()
+    switch_ext(n, type, 8, false) |> Jason.encode!() |> Mqtt.InboundMessage.process(sync: true)
     :timer.sleep(200)
   end
 
