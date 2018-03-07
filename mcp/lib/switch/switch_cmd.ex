@@ -88,11 +88,17 @@ defmodule SwitchCmd do
   def ack_if_needed(%{}), do: :bad_cmd_ack
 
   def ack_orphans(opts) do
+    interval_mins = opts.interval_mins
     minutes_ago = opts.older_than_mins
 
     before =
       Timex.to_datetime(Timex.now(), "UTC")
       |> Timex.shift(minutes: minutes_ago * -1)
+
+    # set the lower limit on the check to the interval minutes converted to hours
+    lower =
+      Timex.to_datetime(Timex.now(), "UTC")
+      |> Timex.shift(hours: interval_mins * -1)
 
     ack_at = Timex.now()
 
@@ -100,6 +106,7 @@ defmodule SwitchCmd do
       sc in SwitchCmd,
       update: [set: [acked: true, ack_at: ^ack_at, orphan: true]],
       where: sc.acked == false,
+      where: sc.sent_at > ^lower,
       where: sc.sent_at < ^before
     )
     |> update_all([])
