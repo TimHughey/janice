@@ -4,18 +4,24 @@ defmodule Mqtt.Supervisor do
   require Logger
   use Supervisor
 
+  def child_spec(args),
+    do: %{
+      id: __MODULE__,
+      start: {__MODULE__, :start_link, [args]},
+      restart: :permanent,
+      shutdown: 5000,
+      type: :supervisor
+    }
+
   def init(args) do
     Logger.info(fn -> "init()" end)
 
     # List all child processes to be supervised
     children = [
-      {Mqtt.Client, args},
       {MessageSave, args},
+      {Mqtt.Client, args},
       {Mqtt.InboundMessage, args}
     ]
-
-    # Starts a worker by calling: Mqtt.Worker.start_link(arg)
-    # {Mqtt.Worker, arg},
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options

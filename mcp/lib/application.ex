@@ -33,31 +33,44 @@ defmodule Mcp.Application do
   end
 
   # Private Functions
-  defp children_by_env(build_env) when build_env == "dev" or build_env == "test" or build_env == "prod" do
+  defp children_by_env(build_env) when is_binary(build_env) do
     initial = initial_args(build_env)
 
-    [
-      {Repo, []},
-      {Fact.Supervisor, initial},
-      {Mqtt.Supervisor, initial},
-      {Janitor, initial},
-      {Dutycycle.Supervisor, initial},
-      {Web.Supervisor, initial}
-    ]
+    first = [{Repo, []}, {Fact.Supervisor, initial}, {Mqtt.Supervisor, initial}]
+
+    specific =
+      case build_env do
+        "dev" ->
+          [
+            {Janitor, initial},
+            {Dutycycle.Supervisor, initial}
+          ]
+
+        "test" ->
+          []
+
+        "prod" ->
+          [
+            {Janitor, initial},
+            {Dutycycle.Supervisor, initial}
+          ]
+      end
+
+    last = [{Web.Supervisor, initial}]
+
+    first ++ specific ++ last
   end
 
-  defp children_by_env(build_env) when build_env == "test" do
-    initial = initial_args(build_env)
+  defp initial_args(build_env) when is_binary(build_env) do
+    case build_env do
+      "dev" ->
+        %{autostart: true}
 
-    [
-      {Repo, []},
-      {Fact.Supervisor, initial},
-      {Mqtt.Supervisor, initial},
-      {Web.Supervisor, initial}
-    ]
+      "test" ->
+        %{autostart: true}
+
+      "prod" ->
+        %{autostart: true}
+    end
   end
-
-  defp initial_args(build_env)
-       when build_env == "dev" or build_env == "test" or build_env == "prod",
-       do: %{autostart: true}
 end

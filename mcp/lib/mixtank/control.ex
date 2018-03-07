@@ -30,9 +30,6 @@ defmodule Mixtank.Control do
 
     if s.autostart, do: send_after(self(), {:startup}, 0)
 
-    # opts = [strategy: :one_for_all, name: Mixtank.TankTask]
-    # Supervisor.init([], opts)
-
     {:ok, s}
   end
 
@@ -43,9 +40,9 @@ defmodule Mixtank.Control do
     Logger.info(fn -> "terminating with reason #{inspect(reason)}" end)
   end
 
-  ####################
-  # Public Functions #
-  ####################
+  ####
+  #### Public Functions
+  ####
 
   def activate_profile(id, profile_name)
       when is_integer(id) and is_binary(profile_name) do

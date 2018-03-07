@@ -7,11 +7,19 @@ defmodule Dutycycle.Supervisor do
   def init(args) do
     Logger.info(fn -> "init()" end)
 
+    all_dcs = Dutycycle.all()
+
+    dc_children =
+      for d <- all_dcs do
+        {Dutycycle.Server, %{id: d.id}}
+      end
+
     # List all child processes to be supervised
-    children = [
-      {Dutycycle.Control, args},
-      {Mixtank.Control, args}
-    ]
+    children =
+      [
+        {Dutycycle.Control, args},
+        {Mixtank.Control, args}
+      ] ++ dc_children
 
     # Starts a worker by calling: Mqtt.Worker.start_link(arg)
     # {Mqtt.Worker, arg},
