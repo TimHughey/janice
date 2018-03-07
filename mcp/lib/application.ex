@@ -47,7 +47,7 @@ defmodule Mcp.Application do
           ]
 
         "test" ->
-          []
+          [{Dutycycle.Supervisor, initial}]
 
         "prod" ->
           [
