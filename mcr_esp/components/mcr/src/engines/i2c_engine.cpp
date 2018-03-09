@@ -48,12 +48,12 @@
 
 mcrI2c::mcrI2c() {
   setTags(localTags());
-  setLoggingLevel(ESP_LOG_WARN);
+  // setLoggingLevel(ESP_LOG_WARN);
   // setLoggingLevel(tagEngine(), ESP_LOG_INFO);
 
   _engine_task_name = tagEngine();
   _engine_stack_size = 5 * 1024;
-  _engine_priority = 13;
+  _engine_priority = 11;
 }
 
 bool mcrI2c::crcSHT31(const uint8_t *data) {
@@ -199,6 +199,7 @@ void mcrI2c::discover(void *task_data) {
   //       should pause because a critical operation is underway (e.g. ota
   //       update)
   mcr::Net::waitForNormalOps();
+  delay(750);
 
   trackDiscover(true);
   detectMultiplexer();
@@ -220,6 +221,7 @@ void mcrI2c::discover(void *task_data) {
   }
 
   trackDiscover(false);
+  delay(750);
 }
 
 bool mcrI2c::hardReset() {
@@ -228,7 +230,7 @@ bool mcrI2c::hardReset() {
 
   periph_module_disable(PERIPH_I2C0_MODULE);
   periph_module_enable(PERIPH_I2C0_MODULE);
-  delay(pdMS_TO_TICKS(1000));
+  delay(500);
 
   return installDriver();
 }
@@ -257,7 +259,7 @@ bool mcrI2c::installDriver() {
     }
   }
 
-  delay(pdMS_TO_TICKS(3000));
+  delay(500);
 
   return (esp_err == ESP_OK) ? true : false;
 }
@@ -329,7 +331,7 @@ bool mcrI2c::readAM2315(i2cDev_t *dev, humidityReading_t **reading, bool wake) {
   }
   i2c_master_stop(cmd);
 
-  esp_rc = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(3000));
+  esp_rc = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(1000));
   i2c_cmd_link_delete(cmd);
 
   if (esp_rc != ESP_OK) {
@@ -382,7 +384,6 @@ bool mcrI2c::readSHT31(i2cDev_t *dev, humidityReading_t **reading) {
   auto rc = false;
   i2c_cmd_handle_t cmd = nullptr;
   esp_err_t esp_rc;
-  static uint32_t convert_ms = 20;
 
   uint8_t buff[] = {
       0x00, 0x00, // tempC high byte, low byte
@@ -412,15 +413,7 @@ bool mcrI2c::readSHT31(i2cDev_t *dev, humidityReading_t **reading) {
     return rc;
   }
 
-  TickType_t last_wake;
-  ESP_LOGD(tagReadSHT31(), "delaying %ums for measurement", convert_ms);
-  last_wake = xTaskGetTickCount();
-  int64_t start_delay = esp_timer_get_time();
-  vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(convert_ms));
-  int64_t end_delay = esp_timer_get_time();
-
-  ESP_LOGD(tagReadSHT31(), "actual delay was %0.3fms",
-           (float)(end_delay - start_delay) / 1000.0);
+  delay(100);
 
   cmd = i2c_cmd_link_create();
   i2c_master_start(cmd);
@@ -442,12 +435,6 @@ bool mcrI2c::readSHT31(i2cDev_t *dev, humidityReading_t **reading) {
   if (esp_rc != ESP_OK) {
     ESP_LOGW(tagReadSHT31(), "read failed for %s %s", dev->debug().c_str(),
              espError(esp_rc));
-
-    if (convert_ms < 100) {
-      convert_ms += 3;
-      ESP_LOGD(tagReadSHT31(), "calibrating measurement delay to %ums",
-               convert_ms);
-    }
 
     dev->readFailure();
     return rc;
@@ -475,11 +462,6 @@ bool mcrI2c::readSHT31(i2cDev_t *dev, humidityReading_t **reading) {
 
 void mcrI2c::report(void *task_data) {
   mcr::Net::waitForName(10000);
-  // NOTE: special case due to buggy i2c driver
-  //       the normalOpsBit is used to globally signal processes
-  //       should pause because a critical operation is underway (e.g. ota
-  //       update)
-  mcr::Net::waitForNormalOps();
 
   trackReport(true);
 
@@ -487,6 +469,14 @@ void mcrI2c::report(void *task_data) {
     auto rc = false;
     i2cDev_t *dev = (i2cDev_t *)*it;
     humidityReading_t *humidity = nullptr;
+
+    // NOTE: special case due to buggy i2c driver
+    //       the normalOpsBit is used to globally signal processes
+    //       should pause because a critical operation is underway (e.g. ota
+    //       update)
+    mcr::Net::waitForNormalOps();
+
+    delay(750);
 
     if (selectBus(dev->bus())) {
       switch (dev->devAddr()) {
@@ -515,6 +505,8 @@ void mcrI2c::report(void *task_data) {
   }
 
   trackReport(false);
+
+  delay(750);
 }
 
 void mcrI2c::run(void *task_data) {
@@ -522,7 +514,6 @@ void mcrI2c::run(void *task_data) {
   // vTaskDelay(pdMS_TO_TICKS(200));
   bool driver_ready = false;
   while (!driver_ready) {
-    vTaskDelay(pdMS_TO_TICKS(1000));
     driver_ready = installDriver();
   }
 
@@ -532,7 +523,6 @@ void mcrI2c::run(void *task_data) {
 
   _last_wake.engine = xTaskGetTickCount();
   for (;;) {
-    vTaskDelay(pdMS_TO_TICKS(500));
     discover(nullptr);
 
     for (int i = 0; i < 6; i++) {
@@ -556,8 +546,8 @@ bool mcrI2c::selectBus(uint32_t bus) {
 
   _bus_selects++;
 
-  // i2c_reset_tx_fifo(I2C_NUM_0);
-  // i2c_reset_rx_fifo(I2C_NUM_0);
+  i2c_reset_tx_fifo(I2C_NUM_0);
+  i2c_reset_rx_fifo(I2C_NUM_0);
 
   if (bus >= _max_buses) {
     ESP_LOGW(tagEngine(), "attempt to select bus %d >= %d, bus not changed",
@@ -589,7 +579,15 @@ bool mcrI2c::selectBus(uint32_t bus) {
       hardReset();
       rc = false;
     }
+
+    if (_bus_select_errors > 25) {
+      ESP_LOGE(tagEngine(), "bus select errors exceeded, JUMP!");
+      delay(300);
+      esp_restart();
+    }
   }
+
+  delay(300);
 
   return rc;
 }
@@ -601,7 +599,8 @@ bool mcrI2c::wakeAM2315(mcrDevAddr_t &addr) {
 
   cmd = i2c_cmd_link_create();
   i2c_master_start(cmd);
-  i2c_master_write_byte(cmd, (dev_addr << 1) | I2C_MASTER_WRITE, ACK_CHECK_EN);
+  i2c_master_write_byte(cmd, (dev_addr << 1) | I2C_MASTER_WRITE,
+                        I2C_MASTER_NACK);
   i2c_master_stop(cmd);
   // ignore the error code here since the device will not answer while
   // waking up

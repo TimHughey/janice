@@ -94,6 +94,9 @@ public:
   void readFailure();
   void writeFailure();
 
+  int readErrors() const { return _read_errors; }
+  int writeErrors() const { return _write_errors; }
+
   // int crcMismatchCount();
   // int readErrorCount();
   // int writeErrorCount();
