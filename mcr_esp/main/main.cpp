@@ -38,6 +38,9 @@ void app_main() {
   periph_module_disable(PERIPH_I2C0_MODULE);
   periph_module_enable(PERIPH_I2C0_MODULE);
 
+  periph_module_disable(PERIPH_RMT_MODULE);
+  periph_module_enable(PERIPH_RMT_MODULE);
+
   spi_flash_init();
 
   esp_err_t nvs_rc = ESP_OK;
