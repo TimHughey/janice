@@ -8,6 +8,8 @@ defmodule Mixtank.TempTask do
 
   # NOTE: main entry point for the task
   def run(%Mixtank{name: _name} = mt, opts \\ []) when is_list(opts) do
+    Dutycycle.Server.enable(mt.heater)
+
     control_temp(mt, opts)
   end
 
@@ -15,24 +17,24 @@ defmodule Mixtank.TempTask do
     force = Keyword.get(opts, :force, false)
     profile = mt.profiles |> hd()
 
-    mix_temp = Sensor.fahrenheit(mt.sensor)
-    ref_temp = Sensor.fahrenheit(mt.ref_sensor)
-    curr_state = if Dutycycle.Control.switch_state(mt.heater), do: "on", else: "off"
+    mix_temp = Sensor.fahrenheit(name: mt.sensor, since_secs: 90)
+    ref_temp = Sensor.fahrenheit(name: mt.ref_sensor)
+    curr_state = if Dutycycle.Server.switch_state(mt.heater), do: "on", else: "off"
 
     next_state = next_temp_state(mix_temp, ref_temp, profile.temp_diff)
 
     cond do
       # if force option is set then always set the state
       force ->
-        Dutycycle.Control.activate_profile(mt.heater, next_state, :enable)
+        Dutycycle.Server.activate_profile(mt.heater, next_state, :enable)
 
       # prevent unncessary state changes when the state isn't different
       next_state === curr_state ->
-        {:ok}
+        :ok
 
       # if none of the above match then always set to next_state
       true ->
-        Dutycycle.Control.activate_profile(mt.heater, next_state, :enable)
+        Dutycycle.Server.activate_profile(mt.heater, next_state, :enable)
     end
   end
 

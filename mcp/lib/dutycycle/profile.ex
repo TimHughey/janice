@@ -10,6 +10,8 @@ defmodule Dutycycle.Profile do
   import Repo, only: [one: 1, update_all: 2]
   import Ecto.Query, only: [from: 2]
 
+  alias Dutycycle.Profile
+
   schema "dutycycle_profile" do
     field(:name)
     field(:active, :boolean, default: false)
@@ -38,6 +40,16 @@ defmodule Dutycycle.Profile do
     |> update_all([])
   end
 
+  def active(nil), do: nil
+
+  def active(%Dutycycle{} = d), do: active(d.profiles)
+
+  def active([%Profile{} | _rest] = profiles) do
+    active = for p <- profiles, p.active, do: p
+
+    if Enum.empty?(active), do: :none, else: hd(active)
+  end
+
   def as_map(list) when is_list(list) do
     for dcp <- list, do: as_map(dcp)
   end
@@ -48,7 +60,8 @@ defmodule Dutycycle.Profile do
       :name,
       :active,
       :run_ms,
-      :idle_ms
+      :idle_ms,
+      :updated_at
     ]
 
     Map.take(dcp, keys)
@@ -68,7 +81,7 @@ defmodule Dutycycle.Profile do
       |> update_all([])
 
     rows_updated > 0 &&
-      Logger.info(fn -> "dutycycle [#{dc.name}] " <> "profile [#{profile}] updated" end)
+      Logger.info(fn -> "dutycycle [#{dc.name}] profile [#{profile}] updated" end)
 
     from(
       dp in Dutycycle.Profile,
@@ -77,4 +90,7 @@ defmodule Dutycycle.Profile do
     )
     |> one
   end
+
+  def phase_ms(%Dutycycle.Profile{idle_ms: ms}, :idle), do: ms
+  def phase_ms(%Dutycycle.Profile{run_ms: ms}, :run), do: ms
 end

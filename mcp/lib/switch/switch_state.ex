@@ -127,12 +127,13 @@ defmodule SwitchState do
   def state(name, opts) when is_binary(name) and is_list(opts) do
     position = Keyword.get(opts, :position, false)
     lazy = Keyword.get(opts, :lazy, false)
+    log = Keyword.get(opts, :log, true)
 
     ss = get_by_name(name)
 
     cond do
       is_nil(ss) ->
-        Logger.warn(fn -> "#{name} not found while SETTING state" end)
+        log && Logger.warn(fn -> "#{name} not found while SETTING state" end)
         nil
 
       # only change the ss if it doesn't match requested position when lazy

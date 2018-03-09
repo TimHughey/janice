@@ -7,8 +7,9 @@ defmodule Dutycycle.State do
   use Timex.Ecto.Timestamps
   use Ecto.Schema
 
-  import Repo, only: [update_all: 2]
-  import Ecto.Query, only: [from: 2]
+  import Ecto.Query, only: [from: 2, update: 2]
+
+  alias Dutycycle.Profile
 
   schema "dutycycle_state" do
     field(:state)
@@ -40,110 +41,90 @@ defmodule Dutycycle.State do
     Map.take(dcs, keys)
   end
 
-  def set_idling(%Dutycycle{} = dc) do
-    SwitchState.state(dc.device, position: false, lazy: true)
+  def set(opts) when is_list(opts) do
+    rc = set(:raw_result, opts)
 
-    now = Timex.now()
-    profile = dc.profiles |> hd()
-
-    idle_end_at =
-      Timex.to_datetime(now, "UTC")
-      |> Timex.shift(milliseconds: profile.idle_ms)
-
-    from(
-      s in Dutycycle.State,
-      where: s.dutycycle_id == ^dc.id,
-      update: [
-        set: [
-          state: "idling",
-          dev_state: false,
-          idle_at: ^now,
-          idle_end_at: ^idle_end_at,
-          run_at: nil,
-          run_end_at: nil,
-          state_at: ^now
-        ]
-      ]
-    )
-    |> update_all([])
+    if is_tuple(rc) and elem(rc, 0) > 0, do: :ok, else: rc
   end
 
-  def set_running(%Dutycycle{} = dc) do
-    SwitchState.state(dc.device, position: true, lazy: true)
+  def set(:raw_result, opts) when is_list(opts) do
+    mode = Keyword.get(opts, :mode, nil)
+    dc = Keyword.get(opts, :dutycycle, %{})
+    dc_id = Map.get(dc, :id, false)
+    profile = Map.get(dc, :profiles) |> Profile.active()
 
     now = Timex.now()
-    profile = dc.profiles |> hd()
+    query = from(s in Dutycycle.State, where: s.dutycycle_id == ^dc_id)
 
-    run_end_at =
-      Timex.to_datetime(now, "UTC")
-      |> Timex.shift(milliseconds: profile.run_ms)
+    cond do
+      is_nil(mode) or dc_id == false ->
+        :bad_args
 
-    from(
-      s in Dutycycle.State,
-      where: s.dutycycle_id == ^dc.id,
-      update: [
-        set: [
-          state: "running",
-          dev_state: true,
-          idle_at: nil,
-          idle_end_at: nil,
-          run_at: ^now,
-          run_end_at: ^run_end_at,
-          state_at: ^now
-        ]
-      ]
-    )
-    |> update_all([])
-  end
+      profile === :none ->
+        :no_active_profile
 
-  def set_started(%Dutycycle{} = dc) do
-    now = Timex.now()
+      mode === "idle" ->
+        SwitchState.state(dc.device, position: false, lazy: true, log: false)
 
-    from(
-      s in Dutycycle.State,
-      where: s.dutycycle_id == ^dc.id,
-      update: [
-        set: [
-          state: "started",
-          dev_state: false,
-          idle_at: nil,
-          idle_end_at: nil,
-          run_at: nil,
-          run_end_at: nil,
-          started_at: ^now,
-          state_at: ^now
-        ]
-      ]
-    )
-    |> update_all([])
-  end
+        idle_end_at =
+          Timex.to_datetime(now, "UTC")
+          |> Timex.shift(milliseconds: profile.idle_ms)
 
-  def set_stopped(name) when is_binary(name) do
-    Dutycycle.get(name) |> set_stopped()
-  end
+        query
+        |> update(
+          set: [
+            state: "idling",
+            dev_state: false,
+            idle_at: ^now,
+            idle_end_at: ^idle_end_at,
+            run_at: nil,
+            run_end_at: nil,
+            state_at: ^now
+          ]
+        )
+        |> Repo.update_all([])
 
-  def set_stopped(nil), do: {:not_found}
+      mode === "run" ->
+        SwitchState.state(dc.device, position: true, lazy: true, log: false)
 
-  def set_stopped(%Dutycycle{} = dc) do
-    SwitchState.state(dc.device, position: false, lazy: true, ack: false)
-    now = Timex.now()
+        run_end_at =
+          Timex.to_datetime(now, "UTC")
+          |> Timex.shift(milliseconds: profile.run_ms)
 
-    from(
-      s in Dutycycle.State,
-      where: s.dutycycle_id == ^dc.id,
-      update: [
-        set: [
-          state: "stopped",
-          dev_state: false,
-          idle_at: nil,
-          idle_end_at: nil,
-          run_at: nil,
-          run_end_at: nil,
-          started_at: nil,
-          state_at: ^now
-        ]
-      ]
-    )
-    |> update_all([])
+        query
+        |> update(
+          set: [
+            state: "running",
+            dev_state: true,
+            idle_at: nil,
+            idle_end_at: nil,
+            run_at: ^now,
+            run_end_at: ^run_end_at,
+            state_at: ^now
+          ]
+        )
+        |> Repo.update_all([])
+
+      mode === "stop" ->
+        SwitchState.state(dc.device, position: false, lazy: true, ack: false, log: false)
+
+        query
+        |> update(
+          set: [
+            state: "stopped",
+            dev_state: false,
+            idle_at: nil,
+            idle_end_at: nil,
+            run_at: nil,
+            run_end_at: nil,
+            started_at: nil,
+            state_at: ^now
+          ]
+        )
+        |> Repo.update_all([])
+
+      true ->
+        :bad_args
+    end
   end
 end

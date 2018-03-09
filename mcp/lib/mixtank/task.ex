@@ -8,15 +8,22 @@ defmodule Mixtank.TankTask do
   alias Mixtank.State
 
   def run(%Mixtank{name: name} = mt, opts) do
-    p = mt.profiles |> hd()
-    Logger.info(fn -> "[#{name}] started with profile [#{p.name}]" end)
+    active = mt.profiles |> hd()
+    cycles = [:pump, :air, :fill, :replenish]
 
-    Dutycycle.Control.activate_profile(mt.pump, p.pump, :enable)
-    Dutycycle.Control.activate_profile(mt.air, p.air, :enable)
-    Dutycycle.Control.activate_profile(mt.fill, p.fill, :enable)
-    Dutycycle.Control.activate_profile(mt.replenish, p.replenish, :enable)
+    _res =
+      for c <- cycles do
+        name = Map.get(mt, c)
+        p = Map.get(active, c)
+        Dutycycle.Server.activate_profile(name, p, enable: true)
+      end
+
+    # only enable heater, it's profile is managed by the control temp loop
+    Dutycycle.Server.enable(mt.heater)
 
     State.set_started(mt)
+
+    Logger.info(fn -> "[#{name}] started with profile [#{active.name}]" end)
 
     loop(mt, opts)
   end
@@ -32,15 +39,15 @@ defmodule Mixtank.TankTask do
     profile = mt.profiles |> hd()
 
     mix_temp = Sensor.fahrenheit(name: mt.sensor, since_secs: 90)
-    ref_temp = Sensor.fahrenheit(mt.ref_sensor)
-    curr_state = Dutycycle.Control.switch_state(mt.heater)
+    ref_temp = Sensor.fahrenheit(name: mt.ref_sensor)
+    curr_state = Dutycycle.Server.switch_state(mt.heater)
 
     next_state = next_temp_state(mix_temp, ref_temp, curr_state, profile.temp_diff)
 
     cond do
       is_nil(next_state) -> nil
-      next_state -> Dutycycle.Control.activate_profile(mt.heater, "on", :enable)
-      not next_state -> Dutycycle.Control.activate_profile(mt.heater, "off", :enable)
+      next_state -> Dutycycle.Server.activate_profile(mt.heater, "on")
+      not next_state -> Dutycycle.Server.activate_profile(mt.heater, "off")
     end
   end
 
@@ -50,6 +57,7 @@ defmodule Mixtank.TankTask do
 
     next_state =
       cond do
+        is_nil(val) or is_nil(ref_val) -> false
         val > ref_val + 0.5 -> false
         val < ref_val - 0.1 -> true
         true -> curr_state

@@ -21,11 +21,10 @@ mcp=(/usr/local/janice/lib/mcp*(om[1]))
 priv=${mcp}/priv
 
 cd $base
-run_cmd git fetch --tags --all
-run_cmd git pull --all
+run_cmd git pull --tags
 
 cd $mcr
-run_cmd make app-clean 
+run_cmd make app-clean
 run_cmd make -j12
 
 echo "installing to ${priv}"

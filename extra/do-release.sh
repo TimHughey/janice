@@ -16,8 +16,7 @@ mcp_releases=${base}/mcp/_build/prod/rel/mcp/releases
 
 
 cd $base
-run_cmd git fetch --all
-run_cmd git pull --all
+run_cmd git pull --tags
 run_cmd $extra/prod-release.sh
 run_cmd $extra/install-and-start.sh --clean
 run_cmd find $mcp_releases -maxdepth 1 -mtime 3 -print

@@ -30,7 +30,9 @@ defmodule JanTest do
     a + b * 0.1
   end
 
-  # SENSORS
+  ####
+  #### SENSORS
+  ####
 
   def relhum_ext(num) do
     base = base_ext("sensor", num)
@@ -76,4 +78,28 @@ defmodule JanTest do
   def temp_ext_msg(n, opts \\ []) do
     temp_ext(n, opts) |> Jason.encode!() |> Mqtt.InboundMessage.process(async: false)
   end
+
+  ####
+  #### SWITCHES
+  ####
+
+  def create_switch(num, num_pios, pos) do
+    switch_ext("switch", num, num_pios, pos) |> Switch.external_update()
+  end
+
+  def device_pio(num, pio), do: device("switch", num) <> ":#{pio}"
+  def pios(num, pos), do: for(n <- 0..(num - 1), do: %{pio: n, state: pos})
+
+  def switch_ext(name, num, num_pios, pos),
+    do: %{
+      host: host(name, num),
+      name: name("switch", num),
+      hw: "esp32",
+      device: device(name, num),
+      pio_count: num_pios,
+      states: pios(num_pios, pos),
+      vsn: preferred_vsn(),
+      mtime: Timex.now() |> Timex.to_unix(),
+      log: false
+    }
 end

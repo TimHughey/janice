@@ -26,7 +26,7 @@ defmodule Dutycycle do
   use Ecto.Schema
   use Timex
 
-  import Repo, only: [all: 1, one: 1, insert_or_update!: 1, update_all: 2]
+  import Repo, only: [one: 1, insert_or_update!: 1]
   import Ecto.Changeset, only: [change: 2]
   import Ecto.Query, only: [from: 2]
 
@@ -46,49 +46,14 @@ defmodule Dutycycle do
     timestamps(usec: true)
   end
 
-  def activate_profile(dc_name, profile_name, opts \\ :none)
-      when is_binary(dc_name) and is_binary(profile_name) do
-    dc = from(d in Dutycycle, where: d.name == ^dc_name) |> one()
+  def activate(opts) when is_list(opts) do
+    name = Keyword.get(opts, :name)
+    profile = Keyword.get(opts, :profile)
 
-    if opts == :enable, do: enable(dc_name)
-
-    if dc do
-      Profile.activate(dc, profile_name)
-    else
-      Logger.warn(fn ->
-        "dutycycle [#{dc_name}] does not " <> "exist, can't activate profile"
-      end)
-
+    if is_nil(name) or is_nil(profile) do
       :not_found
-    end
-  end
-
-  def active_profile_name(opts) when is_list(opts) do
-    dc = get_by(opts)
-
-    state = Map.get(dc, :state, "none")
-
-    if state === "stopped" do
-      "none"
     else
-      profiles = Map.get(dc, :profiles, [])
-      profile = for p <- profiles, p.active == true, do: p.name
-
-      if Enum.empty?(profile), do: "none", else: hd(profile)
     end
-  end
-
-  def active_profile(name) do
-    from(
-      d in Dutycycle,
-      join: m in assoc(d, :profiles),
-      join: s in assoc(d, :state),
-      where: m.active == true,
-      where: d.name == ^name,
-      select: d,
-      preload: [state: s, profiles: m]
-    )
-    |> one()
   end
 
   def add([]), do: []
@@ -102,7 +67,8 @@ defmodule Dutycycle do
 
     case one(q) do
       nil ->
-        change(dc, []) |> insert_or_update!()
+        dc = change(dc, []) |> insert_or_update!()
+        Dutycycle.Server.start_server(dc)
 
       found ->
         Logger.warn(~s/add() [#{dc.name}] already exists/)
@@ -110,17 +76,18 @@ defmodule Dutycycle do
     end
   end
 
-  def all do
-    from(
-      d in Dutycycle,
-      join: p in assoc(d, :profiles),
-      join: s in assoc(d, :state),
-      preload: [profiles: p, state: s],
-      select: d
-    )
-    |> all()
+  # FUNCTION HEADER
+  def all(atom, opts \\ [])
+
+  def all(:ids, opts) when is_list(opts) do
+    for d <- Repo.all(Dutycycle), do: Map.get(d, :id)
   end
 
+  def all(:names, opts) when is_list(opts) do
+    for d <- Repo.all(Dutycycle), do: Map.get(d, :name)
+  end
+
+  # LEGACY
   def all_active do
     from(
       d in Dutycycle,
@@ -130,7 +97,7 @@ defmodule Dutycycle do
       preload: [profiles: p, state: s],
       select: d
     )
-    |> all()
+    |> Repo.all()
   end
 
   def as_map(nil), do: %{}
@@ -148,49 +115,20 @@ defmodule Dutycycle do
     }
   end
 
-  def available_profiles(name) when is_binary(name) do
-    from(
-      d in Dutycycle,
-      join: p in assoc(d, :profiles),
-      where: d.name == ^name,
-      select: p.name
-    )
-    |> all()
+  def enable(%Dutycycle{} = dc, val) when is_boolean(val) do
+    change(dc, enable: val) |> Repo.update()
   end
 
   def delete_all(:dangerous) do
+    names = from(d in Dutycycle, select: d.name) |> Repo.all()
+
+    for name <- names do
+      rc = Dutycycle.Server.shutdown(name)
+      {name, rc}
+    end
+
     from(dc in Dutycycle, where: dc.id >= 0)
     |> Repo.delete_all()
-  end
-
-  def disable(name) when is_binary(name) do
-    from(
-      d in Dutycycle,
-      where: d.name == ^name,
-      update: [set: [enable: false]]
-    )
-    |> update_all([])
-  end
-
-  def enable(name) when is_binary(name) do
-    from(
-      d in Dutycycle,
-      where: d.name == ^name,
-      update: [set: [enable: true]]
-    )
-    |> update_all([])
-  end
-
-  def get(name) do
-    from(
-      d in Dutycycle,
-      join: p in assoc(d, :profiles),
-      join: s in assoc(d, :state),
-      where: d.name == ^name,
-      select: d,
-      preload: [state: s, profiles: p]
-    )
-    |> one()
   end
 
   def get_by(opts) when is_list(opts) do
@@ -214,4 +152,21 @@ defmodule Dutycycle do
       if is_nil(dc) or Enum.empty?(select), do: dc, else: Map.take(dc, select)
     end
   end
+
+  def profiles(%Dutycycle{} = d, opts \\ []) when is_list(opts) do
+    only_active = Keyword.get(opts, :only_active, false)
+
+    if only_active do
+      list = for p <- d.profiles, p.active, do: p.name
+      if Enum.empty?(list), do: :none, else: hd(list)
+    else
+      for p <- d.profiles, do: %{profile: p.name, active: p.active}
+    end
+  end
+
+  def standalone(%Dutycycle{} = dc, val) when is_boolean(val) do
+    change(dc, standalone: val) |> Repo.update()
+  end
+
+  def standalone?(%Dutycycle{} = d), do: d.standalone
 end

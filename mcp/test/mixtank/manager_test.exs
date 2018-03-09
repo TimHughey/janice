@@ -60,12 +60,12 @@ defmodule MixtankManagerTest do
 
   def new_mixtank(n) do
     # setup the switches we'll need
-    for sub <- subsystems(), do: switch_ext_msg(n, sub)
+    for sub <- subsystems(), do: mt_switch_ext_msg(n, sub)
 
     # setup the temperature sensors we'll need
     mt_temp_ext_msg(n, "temp")
     mt_temp_ext_msg(n, "ref")
-    :timer.sleep(1000)
+    # :timer.sleep(1000)
 
     # setup the necessary dutycycles
     for sub <- subsystems(), do: new_dutycycle(n, sub) |> Dutycycle.add()
@@ -93,13 +93,12 @@ defmodule MixtankManagerTest do
   end
 
   def num(n), do: String.pad_leading(Integer.to_string(n), 3, "0")
-  def pios(n, pos), do: for(i <- 0..(n - 1), do: %{pio: i, state: pos})
 
   def shared_mt, do: Mixtank.get_by(name: mt_name(99))
   def subsystems, do: ["pump", "air", "heater", "fill", "replenish"]
   def switch(n, type), do: "ds/mixtank" <> num(n) <> "_#{type}"
 
-  def switch_ext(n, type, num_pios, pos) do
+  def mt_switch_ext(n, type, num_pios, pos) do
     base = base_ext(n)
 
     sw = %{
@@ -112,9 +111,9 @@ defmodule MixtankManagerTest do
     Map.merge(base, sw)
   end
 
-  def switch_ext_msg(n, type) do
-    switch_ext(n, type, 8, false) |> Jason.encode!() |> Mqtt.InboundMessage.process(sync: true)
-    :timer.sleep(200)
+  def mt_switch_ext_msg(n, type) do
+    mt_switch_ext(n, type, 8, false) |> Jason.encode!() |> Mqtt.InboundMessage.process(sync: true)
+    # :timer.sleep(200)
   end
 
   def switch_pio(n, type, pio), do: switch(n, type) <> ":#{pio}"
@@ -135,8 +134,8 @@ defmodule MixtankManagerTest do
   end
 
   def mt_temp_ext_msg(n, type, val \\ 0.0) do
-    mt_temp_ext(n, type, val) |> Jason.encode!() |> Mqtt.InboundMessage.process()
-    :timer.sleep(200)
+    mt_temp_ext(n, type, val) |> Jason.encode!() |> Mqtt.InboundMessage.process(sync: true)
+    # :timer.sleep(200)
   end
 
   def temp_sensor(n, type), do: "ds/#{mt_name(n)}_#{type}"
@@ -150,13 +149,13 @@ defmodule MixtankManagerTest do
     task = Task.async(Mixtank.TempTask, :run, [mt, opts])
     rc = Task.await(task)
 
-    :timer.sleep(3000)
+    # :timer.sleep(3000)
 
-    active_profile = Dutycycle.active_profile_name(name: dc_name(num, "heater"))
+    active_profile = Dutycycle.Server.profiles(dc_name(num, "heater"), only_active: true)
     # profile_good = active_profile in ["on", "off"]
 
     assert %Task{} = task
-    assert rc == {:ok}
+    assert rc == :ok
     refute active_profile === "none"
   end
 
@@ -178,11 +177,11 @@ defmodule MixtankManagerTest do
 
     # # :timer.sleep(500)
 
-    active_profile = Dutycycle.active_profile_name(name: dc_name(num, "heater"))
+    active_profile = Dutycycle.Server.profiles(dc_name(num, "heater"), only_active: true)
     profile_good = active_profile === "on"
 
     assert %Task{} = task
-    assert rc == {:ok} or is_nil(rc)
+    assert rc == :ok
     assert profile_good
   end
 
@@ -204,10 +203,10 @@ defmodule MixtankManagerTest do
 
     # # :timer.sleep(500)
 
-    active_profile = Dutycycle.active_profile_name(name: dc_name(num, "heater"))
+    active_profile = Dutycycle.Server.profiles(dc_name(num, "heater"), only_active: true)
 
     assert %Task{} = task
-    assert rc == {:ok} or is_nil(rc)
+    assert rc == :ok
     assert active_profile === "off"
   end
 end

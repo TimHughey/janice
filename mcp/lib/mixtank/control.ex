@@ -275,11 +275,11 @@ defmodule Mixtank.Control do
   end
 
   defp stop_tank_cycles(%Mixtank{} = mt, _opts) do
-    Dutycycle.Control.disable_cycle(mt.pump)
-    Dutycycle.Control.disable_cycle(mt.air)
-    Dutycycle.Control.disable_cycle(mt.heater)
-    Dutycycle.Control.disable_cycle(mt.fill)
-    Dutycycle.Control.disable_cycle(mt.replenish)
+    Dutycycle.Server.stop(mt.pump)
+    Dutycycle.Server.stop(mt.air)
+    Dutycycle.Server.stop(mt.heater)
+    Dutycycle.Server.stop(mt.fill)
+    Dutycycle.Server.stop(mt.replenish)
   end
 
   defp stop_single(nil, %{} = t, _opts), do: t

@@ -39,17 +39,17 @@ defmodule Mixtank.State do
   end
 
   def set_stopped(name) when is_binary(name) do
-    Dutycycle.get(name) |> set_stopped()
+    Mixtank.get(name) |> set_stopped()
   end
 
   def set_stopped(nil), do: {:not_found}
 
   def set_stopped(%Mixtank{} = mt) do
-    Dutycycle.Control.disable_cycle(mt.pump)
-    Dutycycle.Control.disable_cycle(mt.air)
-    Dutycycle.Control.disable_cycle(mt.heater)
-    Dutycycle.Control.disable_cycle(mt.fill)
-    Dutycycle.Control.disable_cycle(mt.replenish)
+    Dutycycle.Server.disable(mt.pump)
+    Dutycycle.Server.disable(mt.air)
+    Dutycycle.Server.disable(mt.heater)
+    Dutycycle.Server.disable(mt.fill)
+    Dutycycle.Server.disable(mt.replenish)
 
     now = Timex.now()
 
