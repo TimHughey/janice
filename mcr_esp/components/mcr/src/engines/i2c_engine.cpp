@@ -228,7 +228,7 @@ bool mcrI2c::hardReset() {
 
   periph_module_disable(PERIPH_I2C0_MODULE);
   periph_module_enable(PERIPH_I2C0_MODULE);
-  delay(pdMS_TO_TICKS(1000));
+  delay(pdMS_TO_TICKS(5000));
 
   return installDriver();
 }
@@ -508,6 +508,8 @@ void mcrI2c::report(void *task_data) {
       if (rc && (humidity != nullptr)) {
         publish(humidity);
         dev->justSeen();
+      } else {
+        hardReset();
       }
     }
   }
