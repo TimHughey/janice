@@ -329,12 +329,16 @@ defmodule Dutycycle.Server do
   end
 
   defp next_phase(%Dutycycle{state: %State{state: "running"}} = d, %Profile{} = p, s) do
+    # if the idle phase has actual run ms then use it
     if p.idle_ms > 0 do
       if State.set(mode: "idle", dutycycle: d) == :ok,
         do: phase_end_timer(s, Profile.phase_ms(p, :idle)),
         else: nil
     else
-      phase_end_timer(s, Profile.phase_ms(p, :run))
+      # otherwise, just continue with the run phase
+      if State.set(mode: "run", dutycycle: d) == :ok,
+        do: phase_end_timer(s, Profile.phase_ms(p, :run)),
+        else: nil
     end
   end
 
@@ -344,7 +348,9 @@ defmodule Dutycycle.Server do
         do: phase_end_timer(s, Profile.phase_ms(p, :run)),
         else: nil
     else
-      phase_end_timer(s, Profile.phase_ms(p, :idle))
+      if State.set(mode: "idle", dutycycle: d) == :ok,
+        do: phase_end_timer(s, Profile.phase_ms(p, :idle)),
+        else: nil
     end
   end
 
