@@ -102,7 +102,7 @@ public:
       return;
     }
 
-    ESP_LOGW(tagEngine(), "task stopping, goodbye.");
+    ESP_LOGW(tagEngine(), "task stopping, goodbye");
 
     xTaskHandle task = _engine_task;
     _engine_task = nullptr;
