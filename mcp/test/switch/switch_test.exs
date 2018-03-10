@@ -14,10 +14,6 @@ defmodule SwitchStateTest do
   setup context do
     n = if context[:num], do: context[:num], else: 0
 
-    if context[:shared_switch] do
-      switch_ext("switch", n, 8, false) |> Switch.external_update()
-    end
-
     pio = context[:pio]
     device_pio = if pio, do: device_pio(n, pio), else: device_pio(n, 0)
 
@@ -73,7 +69,6 @@ defmodule SwitchStateTest do
   test "change switch position and handle not found", context do
     n = context[:num]
 
-    create_switch(n, 8, true)
     dev = device_pio(n, 0)
     pos = SwitchState.state(dev, position: true)
 
@@ -100,7 +95,7 @@ defmodule SwitchStateTest do
 
     dev = device_pio(n, 0)
 
-    ss = SwitchState.get_by_name(dev)
+    ss = SwitchState.get_by(name: dev)
 
     {rc, refid} = SwitchCmd.record_cmd(dev, ss, ack: false, log: false)
 
@@ -116,10 +111,9 @@ defmodule SwitchStateTest do
   end
 
   @tag num: 5
+  @tag pio: 0
   test "check for pending commands", context do
-    n = context[:num]
-
-    ss = device_pio(n, 0)
+    ss = context[:device_pio]
     SwitchState.state(ss, position: false)
 
     :timer.sleep(10)
@@ -162,7 +156,7 @@ defmodule SwitchStateTest do
     refute before_toggle == after_toggle
   end
 
-  @tag shared_switch: true
+  @tag num: 7
   @tag pio: 3
   test "get a SwitchState state (position) by name and handle not found", context do
     ss = SwitchState.state(context[:device_pio])
@@ -172,7 +166,6 @@ defmodule SwitchStateTest do
     assert msg =~ "foobar not found while RETRIEVING state"
   end
 
-  @tag shared_switch: true
   test "change a SwitchState name and test not found" do
     ss1 = SwitchState.get_by(name: device_pio(0, 4))
     ss2 = SwitchState.get_by(name: device_pio(0, 5))
@@ -211,7 +204,7 @@ defmodule SwitchStateTest do
     assert Map.has_key?(first, :state)
   end
 
-  @tag num: 7
+  @tag num: 8
   test "delete a Switch", context do
     n = context[:num]
 

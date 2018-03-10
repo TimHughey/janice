@@ -67,7 +67,7 @@ defmodule SwitchState do
 
   def change_name(asis, tobe, comment)
       when is_binary(asis) and is_binary(tobe) do
-    ss = get_by_name(asis)
+    ss = get_by(name: asis)
 
     if not is_nil(ss) do
       ss
@@ -102,9 +102,9 @@ defmodule SwitchState do
 
   def get_by(bad), do: Logger.warn(fn -> "get_by() bad args: #{inspect(bad)}" end)
 
-  def get_by_name(name) when is_binary(name) do
-    from(ss in SwitchState, where: ss.name == ^name) |> one()
-  end
+  # def get_by_name(name) when is_binary(name) do
+  #   from(ss in SwitchState, where: ss.name == ^name) |> one()
+  # end
 
   def state(name) when is_binary(name) do
     ss = get_by(name: name)
@@ -129,7 +129,7 @@ defmodule SwitchState do
     lazy = Keyword.get(opts, :lazy, false)
     log = Keyword.get(opts, :log, true)
 
-    ss = get_by_name(name)
+    ss = get_by(name: name)
 
     cond do
       is_nil(ss) ->

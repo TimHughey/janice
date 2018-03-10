@@ -34,6 +34,8 @@ config :mcp,
     ota: {"prod/mcr/f/ota", :qos0}
   ]
 
+config :mcp, OTA, firmware_files: [current: "mcr_esp.bin", previous: "mcr_esp.bin.prev"]
+
 # Configures the endpoint
 config :mcp, Web.Endpoint,
   # url: [host: "localhost", path: "/janice"],

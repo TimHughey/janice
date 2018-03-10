@@ -180,7 +180,7 @@ defmodule RemoteTest do
   test "OTA update all" do
     msg =
       capture_log(fn ->
-        Remote.ota_update(:all, start_delay_ms: 1000, reboot_delay_ms: 1000, log: true)
+        Remote.ota_update(:all, start_delay_ms: 10, reboot_delay_ms: 1000, log: true)
       end)
 
     assert msg =~ "needs update"
@@ -194,7 +194,7 @@ defmodule RemoteTest do
 
     msg =
       capture_log(fn ->
-        Remote.ota_update(rem.id, start_delay_ms: 1000, reboot_delay_ms: 1000, log: true)
+        Remote.ota_update(rem.id, start_delay_ms: 100, reboot_delay_ms: 1000, log: true)
       end)
 
     assert msg =~ "needs update"
@@ -208,7 +208,7 @@ defmodule RemoteTest do
 
     msg =
       capture_log(fn ->
-        Remote.ota_update_single(rem.name, force: true, delay_ms: 1, log: true)
+        Remote.ota_update_single(rem.name, force: true, start_delay_ms: 1, log: true)
       end)
 
     assert msg =~ "needs update"

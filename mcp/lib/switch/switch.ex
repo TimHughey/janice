@@ -62,21 +62,11 @@ defmodule Switch do
   end
 
   def add(%Switch{device: device} = sw) do
-    last_cmds =
-      from(
-        sc in SwitchCmd,
-        group_by: sc.switch_id,
-        select: %{switch_id: sc.switch_id, last_cmd_id: max(sc.id)}
-      )
-
     q =
       from(
         sw in Switch,
-        join: cmds in subquery(last_cmds),
-        on: cmds.last_cmd_id == sw.id,
-        join: states in assoc(sw, :states),
         where: sw.device == ^device,
-        preload: [:states, :cmds]
+        preload: [:states]
       )
 
     case one(q) do
@@ -191,7 +181,7 @@ defmodule Switch do
   end
 
   def pending_cmds(device, opts \\ []) when is_binary(device) do
-    sw = get_by_device(device)
+    sw = get_by(device: device)
 
     if sw, do: SwitchCmd.pending_cmds(sw, opts), else: nil
   end
