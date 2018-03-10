@@ -35,8 +35,10 @@ typedef class startupReading startupReading_t;
 
 class startupReading : public Reading {
 private:
+  std::string last_reboot_m;
+
 public:
-  startupReading(time_t mtime);
+  startupReading(time_t mtime, const std::string &last_reboot);
 
 protected:
   virtual void populateJSON(JsonObject &root);

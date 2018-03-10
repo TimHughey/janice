@@ -102,9 +102,11 @@ public:
       return;
     }
 
-    xTaskHandle temp = _engine_task;
+    ESP_LOGW(tagEngine(), "task stopping, goodbye.");
+
+    xTaskHandle task = _engine_task;
     _engine_task = nullptr;
-    ::vTaskDelete(temp);
+    ::vTaskDelete(task);
   }
 
   // FIXME: move to external config

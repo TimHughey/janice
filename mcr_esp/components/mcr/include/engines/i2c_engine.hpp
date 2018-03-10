@@ -37,9 +37,8 @@
 #include "engines/engine.hpp"
 #include "engines/i2c_engine.hpp"
 #include "external/mongoose.h"
-#include "protocols/mqtt.hpp"
-// #include "readings/readings.hpp"
 #include "misc/mcr_types.hpp"
+#include "protocols/mqtt.hpp"
 
 #define mcr_i2c_version_1 1
 
@@ -73,7 +72,8 @@ typedef class mcrI2c mcrI2c_t;
 class mcrI2c : public mcrEngine<i2cDev_t> {
 private:
   i2c_config_t _conf;
-  const TickType_t _loop_frequency = pdMS_TO_TICKS(7000);
+  const TickType_t _loop_frequency =
+      pdMS_TO_TICKS(CONFIG_MCR_I2C_ENGINE_FREQUENCY_SECS * 1000);
   static const uint32_t _max_buses = 8;
   bool _use_multiplexer = false;
   i2cLastWakeTime_t _last_wake;
@@ -83,11 +83,12 @@ private:
 
 public:
   mcrI2c();
+  static mcrI2c_t *instance();
   void run(void *data);
 
 private:
-  mcrDevAddr_t _search_addrs[3] = {mcrDevAddr(0x44), mcrDevAddr(0x5C),
-                                   mcrDevAddr(0x00)};
+  mcrDevAddr_t _search_addrs[3] = {
+      {mcrDevAddr(0x44)}, {mcrDevAddr(0x5C)}, {mcrDevAddr(0x00)}};
   mcrDevAddr_t *search_addrs() { return _search_addrs; };
   inline uint32_t search_addrs_count() {
     return sizeof(_search_addrs) / sizeof(mcrDevAddr_t);

@@ -14,7 +14,8 @@ static const std::map<std::string, mcrCmdType> _cmd_map = {
     {std::string("ota.continue"), mcrCmdType::otacontinue},
     {std::string("ota.end"), mcrCmdType::otaend},
     {std::string("boot.part.next"), mcrCmdType::bootPartitionNext},
-    {std::string("restart"), mcrCmdType::restart}};
+    {std::string("restart"), mcrCmdType::restart},
+    {std::string("stopEngines"), mcrCmdType::stopEngines}};
 
 static mcrCmdTypeMap_t *__singleton;
 

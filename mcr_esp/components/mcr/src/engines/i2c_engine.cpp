@@ -46,6 +46,8 @@
 #include "protocols/mqtt.hpp"
 #include "readings/readings.hpp"
 
+static mcrI2c_t *__singleton__ = nullptr;
+
 mcrI2c::mcrI2c() {
   setTags(localTags());
   setLoggingLevel(ESP_LOG_WARN);
@@ -53,7 +55,7 @@ mcrI2c::mcrI2c() {
 
   _engine_task_name = tagEngine();
   _engine_stack_size = 5 * 1024;
-  _engine_priority = 11;
+  _engine_priority = CONFIG_MCR_I2C_TASK_CORE_PRIORITY;
 }
 
 bool mcrI2c::crcSHT31(const uint8_t *data) {
@@ -261,6 +263,14 @@ bool mcrI2c::installDriver() {
   delay(500);
 
   return (esp_err == ESP_OK) ? true : false;
+}
+
+mcrI2c_t *mcrI2c::instance() {
+  if (__singleton__ == nullptr) {
+    __singleton__ = new mcrI2c();
+  }
+
+  return __singleton__;
 }
 
 uint32_t mcrI2c::maxBuses() { return _max_buses; }

@@ -56,7 +56,7 @@ mcrDS::mcrDS() {
   // task setup
   _engine_task_name = tagEngine();
   _engine_stack_size = 5 * 1024;
-  _engine_priority = 14;
+  _engine_priority = CONFIG_MCR_DS_TASK_INIT_PRIORITY;
 }
 
 bool mcrDS::checkDevicesPowered() {

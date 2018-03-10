@@ -8,145 +8,6 @@ menu "Network"
 			IP address of the DNS server to use for host name resolution
 endmenu
 
-config MCR_IOT_ENDPOINT
-	bool "Use IoT Endpoint"
-	default y
-	select MCR_MQTT_CONFIG
-	select MCR_IOT_TASKS
-
-	config MCR_MQTT_CONFIG
-		bool "Configure IoT Endpoint"
-		default y
-
-
-	config MCR_MQTT_HOST
-		depends on MCR_MQTT_CONFIG
-		string "IoT Endpoint Host"
-		default "jophiel.wisslanding.com"
-		help
-			Endpoint host name for the IoT MQTT/S gateway
-
-	config MCR_MQTT_PORT
-		depends on MCR_MQTT_CONFIG
-		int "IoT Endpoint Port"
-		default 1883
-		range 0 65535
-		help
-			Endpoint port for the IoT MQTT/S gateway
-
-	config MCR_MQTT_USER
-		depends on MCR_MQTT_CONFIG
-		string "IoT Endpoint User"
-		default "mqtt"
-		help
-			User name for connecting to the IoT MQTT/S gateway
-
-	config MCR_MQTT_PASSWD
-		depends on MCR_MQTT_CONFIG
-		string "IoT Endpoint Password"
-		default "mqtt"
-		help
-			Password for connecting to the IoT MQTT/S gateway
-
-	config MCR_MQTT_RPT_FEED
-		depends on MCR_MQTT_CONFIG
-		string "Reporting Publish Topic (Feed)"
-		default "prod/mcr/f/report"
-		help
-			Topic (feed) for reporting data from the MCR device to the IoT endpoint
-
-	config MCR_MQTT_CMD_FEED
-		depends on MCR_MQTT_CONFIG
-		string "Command Subscribe Topic (Feed)"
-		default "prod/mcr/f/cmd"
-		help
-			Topic (feed) for receiving commands from the IoT endpoint
-
-	config MCR_MQTT_OTA_FEED
-		depends on MCR_MQTT_CONFIG
-		string "Over-The-Air (OTA) Subscribe Topc (Feed)"
-		default "prod/mcr/f/ota"
-		help
-			MCR devices can receive firmware upgrades OTA.  This is the feed (topic)
-			that will be used exclusively for the firmware binary.
-
-	config MCR_IOT_TASKS
-		bool "IoT Tasks for Inbound and Outbound Messages"
-		default y
-
-		config MCR_MQTT_TASK_PRIORITY
-			depends on MCR_IOT_TASKS
-			int "Send/Receive Task Priority"
-			default 14
-			range 1 19
-			help
-				MQTT processing is divided into two tasks:
-				  1. Sending and receiving all MQTT messages (this configuration value)
-					2. Processing messages (e.g. parsing JSON) to hand-off to Engine tasks for action
-
-				This value configures the priority of the sending and receiving task.
-
-				It is advisable for this task to be a higher priority than the inbound processing
-				task to ensure that messages are overall sent and received with minimal delay.
-
-		config MCR_MQTT_INBOUND_TASK_PRIORITY
-			depends on MCR_IOT_TASKS
-			int "Inbound Processing Task Priority"
-			default 10
-			range 1 19
-			help
-				MQTT processing is divided into two tasks:
-					1. Sending and receiving all MQTT messages
-					2. Processing messages (e.g. parsing JSON) to hand-off to Engine tasks for action
-					   (this configuration value)
-
-				This value configures the priority processing task.
-
-				It is advisable for this task to be a lower priority than the sending and receiving
-				task to avoid delays in sending and receiving.
-
-
-		config MCR_MQTT_RINGBUFFER_PENDING_MSGS
-			depends on MCR_IOT_TASKS
-			int "Pending Messages"
-			default 128
-			range 12 256
-			help
-				The processing of inbound/outbound messages from/to the IoT endpoint are
-				buffered between receiving and sending before being sent to the device or the endoint.
-
-				This value configures how many pending messages are permitted.
-
-		config MCR_MQTT_INBOUND_MSG_WAIT_MS
-			depends on MCR_IOT_TASKS
-			int "Wait for inbound messages (ms)"
-			default 1
-			range 0 1000
-			help
-				To avoid consuming excessive CPU the endpoint task will delay at two points:
-				   1. Poll for inbound messages to process (this configuration value)
-					 2. Wait for outbound messages to send
-
-				This value configures how long (in milliseconds) to wait for an inbound message.
-
-				It is advisable to match this value with the outbound message wait to best balance the
-				processing of inbound and outbound messages.
-
-		config MCR_MQTT_OUTBOUND_MSG_WAIT_MS
-			depends on MCR_IOT_TASKS
-			int "Wait for outbound messages (ms)"
-			default 1
-			range 0 1000
-			help
-				To avoid consuming excessive CPU the endpoint task will delay at two points:
-					 1. Poll for inbound messages to process
-					 2. Wait for outbound messages to send (this configuration value)
-
-				This value configures how long (in milliseconds) to wait for an outbound message.
-
-				It is advisable to match this value with the inbound message wait to best balance the
-				processing of inbound and outbound messages.
-
 menu "Engines"
 	config MCR_DS_ENABLE
 		bool "Enable the 1-Wire Engine"
@@ -210,7 +71,7 @@ menu "Engines"
 		config MCR_DS_TEMP_CONVERT_POLL_MS
 			depends on MCR_DS_PHASES
 			int "Delay between polls to check if temperature convert is finished (ms)"
-			default 10
+			default 50
 			range 10 1000
 			help
 				How much to delay between checks that a temperature convert is complete
@@ -328,6 +189,197 @@ menu "Engines"
 
 				It is advisable to set this priority the highest of all 1-Wire Engine tasks
 				to ensure handling commands (e.g. changing a switch position) swiftly.
+
+		config MCR_I2C_ENABLE
+			bool "Enable the I2C Engine"
+			default y
+			select MCR_I2C_PHASES
+			select MCR_I2C_TASKS
+
+			config MCR_I2C_PHASES
+				depends on MCR_I2C_ENABLE
+				bool "I2C Phases"
+
+				config MCR_I2C_ENGINE_FREQUENCY_SECS
+					depends on MCR_I2C_PHASES
+					int "Main Loop Frequency (seconds)"
+					default 7
+					range 3 600
+					help
+						How often to execute the housekeeping task for the I2C bus engine
+
+						As of now this value controls how often all actions are performed
+						by the I2C engine.
+
+				config MCR_I2C_TASKS
+					depends on MCR_I2C_ENABLE
+					bool "I2C Tasks"
+
+					config MCR_I2C_TASK_CORE_PRIORITY
+						depends on MCR_I2C_TASKS
+						int "Core Task Initialization Priority"
+						default 11
+						range 1 19
+						help
+						 	This configuration value defines the task priority of the only task
+							for the I2C engine (Core).
+	endmenu
+
+menu "IoT"
+	config MCR_IOT_ENDPOINT
+		bool "Use IoT Endpoint"
+		default y
+		select MCR_MQTT_CONFIG
+		select MCR_IOT_TASKS
+
+		config MCR_MQTT_CONFIG
+			depends on MCR_IOT_ENDPOINT
+			bool "Configure IoT Endpoint"
+			default y
+
+
+		config MCR_MQTT_HOST
+			depends on MCR_MQTT_CONFIG
+			string "IoT Endpoint Host"
+			default "jophiel.wisslanding.com"
+			help
+				Endpoint host name for the IoT MQTT/S gateway
+
+		config MCR_MQTT_PORT
+			depends on MCR_MQTT_CONFIG
+			int "IoT Endpoint Port"
+			default 1883
+			range 0 65535
+			help
+				Endpoint port for the IoT MQTT/S gateway
+
+		config MCR_MQTT_USER
+			depends on MCR_MQTT_CONFIG
+			string "IoT Endpoint User"
+			default "mqtt"
+			help
+				User name for connecting to the IoT MQTT/S gateway
+
+		config MCR_MQTT_PASSWD
+			depends on MCR_MQTT_CONFIG
+			string "IoT Endpoint Password"
+			default "mqtt"
+			help
+				Password for connecting to the IoT MQTT/S gateway
+
+		config MCR_MQTT_RPT_FEED
+			depends on MCR_MQTT_CONFIG
+			string "Reporting Publish Topic (Feed)"
+			default "prod/mcr/f/report"
+			help
+				Topic (feed) for reporting data from the MCR device to the IoT endpoint
+
+		config MCR_MQTT_CMD_FEED
+			depends on MCR_MQTT_CONFIG
+			string "Command Subscribe Topic (Feed)"
+			default "prod/mcr/f/cmd"
+			help
+				Topic (feed) for receiving commands from the IoT endpoint
+
+		config MCR_MQTT_OTA_FEED
+			depends on MCR_MQTT_CONFIG
+			string "Over-The-Air (OTA) Subscribe Topc (Feed)"
+			default "prod/mcr/f/ota"
+			help
+				MCR devices can receive firmware upgrades OTA.  This is the feed (topic)
+				that will be used exclusively for the firmware binary.
+
+		config MCR_IOT_TASKS
+			depends on MCR_IOT_ENDPOINT
+			bool "IoT Tasks for Inbound and Outbound Messages"
+			default y
+
+			config MCR_MQTT_TASK_PRIORITY
+				depends on MCR_IOT_TASKS
+				int "Send/Receive Task Priority"
+				default 14
+				range 1 19
+				help
+					MQTT processing is divided into two tasks:
+					  1. Sending and receiving all MQTT messages (this configuration value)
+						2. Processing messages (e.g. parsing JSON) to hand-off to Engine tasks for action
+
+					This value configures the priority of the sending and receiving task.
+
+					It is advisable for this task to be a higher priority than the inbound processing
+					task to ensure that messages are overall sent and received with minimal delay.
+
+			config MCR_MQTT_INBOUND_TASK_PRIORITY
+				depends on MCR_IOT_TASKS
+				int "Inbound Processing Task Priority"
+				default 10
+				range 1 19
+				help
+					MQTT processing is divided into two tasks:
+						1. Sending and receiving all MQTT messages
+						2. Processing messages (e.g. parsing JSON) to hand-off to Engine tasks for action
+						   (this configuration value)
+
+					This value configures the priority processing task.
+
+					It is advisable for this task to be a lower priority than the sending and receiving
+					task to avoid delays in sending and receiving.
+
+
+			config MCR_MQTT_RINGBUFFER_PENDING_MSGS
+				depends on MCR_IOT_TASKS
+				int "Pending Messages"
+				default 128
+				range 12 256
+				help
+					The processing of inbound/outbound messages from/to the IoT endpoint are
+					buffered between receiving and sending before being sent to the device or the endoint.
+
+					This value configures how many pending messages are permitted.
+
+			config MCR_MQTT_INBOUND_MSG_WAIT_MS
+				depends on MCR_IOT_TASKS
+				int "Wait for inbound messages (ms)"
+				default 1
+				range 0 1000
+				help
+					To avoid consuming excessive CPU the endpoint task will delay at two points:
+					   1. Poll for inbound messages to process (this configuration value)
+						 2. Wait for outbound messages to send
+
+					This value configures how long (in milliseconds) to wait for an inbound message.
+
+					It is advisable to match this value with the outbound message wait to best balance the
+					processing of inbound and outbound messages.
+
+			config MCR_MQTT_INBOUND_RB_WAIT_MS
+				depends on MCR_IOT_TASKS
+				int "How long to wait (in ms) for space if the inbound ringbuffer if full"
+				default 1000
+				range 0 5000
+				help
+					If the inbound ringbuffer becomes overloaded while processing MQTT
+					messges wait this amount of time (in ms) for space to become free
+
+					Use this value to create a throttle point when a flood of inbound MQTT
+					occurs.  This situation is most likely to occur when the MCR has been
+					offline for an extended period of time.
+
+
+			config MCR_MQTT_OUTBOUND_MSG_WAIT_MS
+				depends on MCR_IOT_TASKS
+				int "Wait for outbound messages (ms)"
+				default 30
+				range 0 1000
+				help
+					To avoid consuming excessive CPU the endpoint task will delay at two points:
+						 1. Poll for inbound messages to process
+						 2. Wait for outbound messages to send (this configuration value)
+
+					This value configures how long (in milliseconds) to wait for an outbound message.
+
+					It is advisable to match this value with the inbound message wait to best balance the
+					processing of inbound and outbound messages.
 	endmenu
 
 	config PROD_BUILD

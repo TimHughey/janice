@@ -103,6 +103,8 @@ private:
 
   // mg_mgr uses LWIP and the timeout is specified in ms
   int _inbound_msg_ms = CONFIG_MCR_MQTT_INBOUND_MSG_WAIT_MS;
+  TickType_t _inbound_rb_wait_ticks =
+      pdMS_TO_TICKS(CONFIG_MCR_MQTT_INBOUND_RB_WAIT_MS);
   TickType_t _outbound_msg_ticks =
       pdMS_TO_TICKS(CONFIG_MCR_MQTT_OUTBOUND_MSG_WAIT_MS);
 

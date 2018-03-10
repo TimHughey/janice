@@ -4,6 +4,7 @@
 #include <esp_spi_flash.h>
 
 #include "cmds/cmd_ota.hpp"
+#include "engines/i2c_engine.hpp"
 #include "net/mcr_net.hpp"
 #include "protocols/mqtt.hpp"
 
@@ -52,6 +53,7 @@ void mcrCmdOTA::begin() {
   ESP_LOGI(TAG, "ota begin received, anticipate data blocks in %dms",
            _start_delay_ms);
 
+  mcrI2c::instance()->stop();
   mcr::Net::suspendNormalOps();
 
   mcrMQTT::otaPrep();

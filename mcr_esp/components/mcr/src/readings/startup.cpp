@@ -25,9 +25,11 @@
 
 #include "readings/startup_reading.hpp"
 
-startupReading::startupReading(time_t mtime) : Reading(mtime){};
+startupReading::startupReading(time_t mtime, const std::string &last_reboot)
+    : Reading(mtime), last_reboot_m(last_reboot){};
 
 void startupReading::populateJSON(JsonObject &root) {
   root["type"] = "boot";
   root["hw"] = "esp32";
+  root["last_reboot"] = last_reboot_m;
 };

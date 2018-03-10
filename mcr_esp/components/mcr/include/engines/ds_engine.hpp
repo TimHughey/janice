@@ -73,30 +73,30 @@ private:
   mcrTask_t _engineTask = {.handle = nullptr,
                            .data = nullptr,
                            .lastWake = 0,
-                           .priority = 1,
+                           .priority = CONFIG_MCR_DS_TASK_HOUSEKEEPING_PRIORITY,
                            .stackSize = (2 * 1024)};
 
   mcrTask_t _cmdTask = {.handle = nullptr,
                         .data = nullptr,
                         .lastWake = 0,
-                        .priority = 14,
+                        .priority = CONFIG_MCR_DS_COMMAND_TASK_PRIORITY,
                         .stackSize = (3 * 1024)};
   mcrTask_t _convertTask = {.handle = nullptr,
                             .data = nullptr,
                             .lastWake = 0,
-                            .priority = 13,
+                            .priority = CONFIG_MCR_DS_CONVERT_TASK_PRIORITY,
                             .stackSize = (3 * 1024)};
 
   mcrTask_t _discoverTask = {.handle = nullptr,
                              .data = nullptr,
                              .lastWake = 0,
-                             .priority = 12,
+                             .priority = CONFIG_MCR_DS_DISCOVER_TASK_PRIORITY,
                              .stackSize = (4 * 1024)};
 
   mcrTask_t _reportTask = {.handle = nullptr,
                            .data = nullptr,
                            .lastWake = 0,
-                           .priority = 13,
+                           .priority = CONFIG_MCR_DS_REPORT_TASK_PRIORITY,
                            .stackSize = (3 * 1024)};
 
   bool _devices_powered = true;
@@ -106,11 +106,16 @@ private:
   void *_handle_cmd_task_data = nullptr;
 
   // delay times
-  const TickType_t _loop_frequency = pdMS_TO_TICKS(30 * 1000);
-  const TickType_t _convert_frequency = pdMS_TO_TICKS(7 * 1000);
-  const TickType_t _discover_frequency = pdMS_TO_TICKS(30 * 1000);
-  const TickType_t _report_frequency = pdMS_TO_TICKS(7 * 1000);
-  const TickType_t _temp_convert_wait = pdMS_TO_TICKS(50);
+  const TickType_t _loop_frequency =
+      pdMS_TO_TICKS(CONFIG_MCR_DS_ENGINE_FREQUENCY_SECS * 1000);
+  const TickType_t _convert_frequency =
+      pdMS_TO_TICKS(CONFIG_MCR_DS_CONVERT_FREQUENCY_SECS * 1000);
+  const TickType_t _discover_frequency =
+      pdMS_TO_TICKS(CONFIG_MCR_DS_DISCOVER_FREQUENCY_SECS * 1000);
+  const TickType_t _report_frequency =
+      pdMS_TO_TICKS(CONFIG_MCR_DS_REPORT_FREQUENCY_SECS * 1000);
+  const TickType_t _temp_convert_wait =
+      pdMS_TO_TICKS(CONFIG_MCR_DS_TEMP_CONVERT_POLL_MS);
   const uint64_t _max_temp_convert_us =
       (1000 * 1000); // one second in microsecs
 

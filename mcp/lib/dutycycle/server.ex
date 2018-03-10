@@ -124,7 +124,7 @@ defmodule Dutycycle.Server do
 
   def handle_call(%{:msg => :disable} = msg, _from, s) do
     msg = Map.put(msg, :set, false)
-    {rc, d} = actual_enable(msg, s)
+    {rc, d} = handle_enable(msg, s)
 
     s = Map.put(s, :dutycycle, d)
 
@@ -137,7 +137,7 @@ defmodule Dutycycle.Server do
 
   def handle_call(%{:msg => :enable} = msg, _from, s) do
     msg = Map.put(msg, :set, true)
-    {rc, d} = actual_enable(msg, s)
+    {rc, d} = handle_enable(msg, s)
 
     s = Map.put(s, :dutycycle, d)
 
@@ -168,7 +168,7 @@ defmodule Dutycycle.Server do
   end
 
   def handle_call(%{:msg => :stop, :opts => _opts} = msg, _from, s) do
-    {rc, d} = actual_stop(msg, s)
+    {rc, d} = handle_stop(msg, s)
 
     s = Map.put(s, :dutycycle, d)
 
@@ -263,6 +263,19 @@ defmodule Dutycycle.Server do
     end
   end
 
+  defp call_server(name, msg) when is_binary(name) and is_map(msg) do
+    {d, server_name} = server_name(name: name)
+
+    msg = Map.put(msg, :dutycycle, d)
+    pid = Process.whereis(server_name)
+
+    cond do
+      is_nil(d) -> :not_found
+      is_pid(pid) -> GenServer.call(server_name, msg)
+      true -> :no_server
+    end
+  end
+
   defp handle_activate_profile(msg, s) do
     enable = Keyword.get(msg.opts, :enable, false)
 
@@ -296,29 +309,16 @@ defmodule Dutycycle.Server do
     end
   end
 
-  defp actual_enable(msg, s) do
+  defp handle_enable(msg, s) do
     {rc, d} = Dutycycle.enable(s.dutycycle, msg.set)
 
     if rc === :ok, do: {:ok, d}, else: {:failed, s.dutycycle}
   end
 
-  defp actual_stop(_msg, s) do
+  defp handle_stop(_msg, s) do
     rc = State.set(mode: "stop", dutycycle: s.dutycycle)
     d = Dutycycle.get_by(id: s.dutycycle_id) |> Repo.preload([:profiles, :state])
     {rc, d}
-  end
-
-  defp call_server(name, msg) when is_binary(name) and is_map(msg) do
-    {d, server_name} = server_name(name: name)
-
-    msg = Map.put(msg, :dutycycle, d)
-    pid = Process.whereis(server_name)
-
-    cond do
-      is_nil(d) -> :not_found
-      is_pid(pid) -> GenServer.call(server_name, msg)
-      true -> :no_server
-    end
   end
 
   defp next_phase(%Dutycycle{} = d, s) do

@@ -76,7 +76,8 @@ mcrMQTT::mcrMQTT() {
 }
 
 void mcrMQTT::announceStartup() {
-  startupReading_t reading(time(nullptr));
+  std::string reason = "none";
+  startupReading_t reading(time(nullptr), reason);
 
   publish(&reading);
 }
@@ -91,13 +92,6 @@ void mcrMQTT::connect(int wait_ms) {
   TickType_t last_wake = xTaskGetTickCount();
 
   mcr::Net::waitForConnection();
-
-  // struct mg_mgr_init_opts opts;
-  //
-  // bzero(&opts, sizeof(opts));
-  // opts.nameserver = _dns_server;
-  //
-  // mg_mgr_init_opt(&_mgr, NULL, opts);
 
   if (wait_ms > 0) {
     vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(wait_ms));
@@ -147,8 +141,8 @@ void mcrMQTT::incomingMsg(struct mg_str *in_topic, struct mg_str *in_payload) {
     esp_restart();
   }
 
-  rb_rc =
-      xRingbufferSend(_rb_in, &entry, sizeof(mqttInMsg_t), pdMS_TO_TICKS(100));
+  rb_rc = xRingbufferSend(_rb_in, &entry, sizeof(mqttInMsg_t),
+                          _inbound_rb_wait_ticks);
 
   size_t avail_bytes = xRingbufferGetCurFreeSize(_rb_in);
 

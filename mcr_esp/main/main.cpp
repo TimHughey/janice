@@ -34,14 +34,14 @@ void app_main() {
            pdMS_TO_TICKS(10));
   ESP_LOGI(TAG, "%s", embed_vsn_sha);
 
+  // ensure all peripherals have been completely reset
+  // important after OTA and if an internal error occur that force a restart
   periph_module_disable(PERIPH_WIFI_MODULE);
-  periph_module_enable(PERIPH_WIFI_MODULE);
-
-  // hard reset i2c to work around buggy esp-idf and avoid reboot crash loops
   periph_module_disable(PERIPH_I2C0_MODULE);
-  periph_module_enable(PERIPH_I2C0_MODULE);
-
   periph_module_disable(PERIPH_RMT_MODULE);
+
+  periph_module_enable(PERIPH_WIFI_MODULE);
+  periph_module_enable(PERIPH_I2C0_MODULE);
   periph_module_enable(PERIPH_RMT_MODULE);
 
   spi_flash_init();
@@ -59,11 +59,11 @@ void app_main() {
   }
 
   // must create network first
-  network = mcr::Net::instance(); // singleton, get the instance to create
+  network = mcr::Net::instance(); // singleton
   timestampTask = new mcrTimestampTask();
-  mqttTask = mcrMQTT::instance(); // singleton, get the instance to create
+  mqttTask = mcrMQTT::instance(); // singleton
   dsEngineTask = new mcrDS();
-  i2cEngineTask = new mcrI2c();
+  i2cEngineTask = mcrI2c::instance(); // singleton
 
   // create and start our tasks
   // NOTE: each task implementation handles syncronization

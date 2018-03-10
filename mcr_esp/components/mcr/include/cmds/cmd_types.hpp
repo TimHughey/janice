@@ -46,8 +46,9 @@ typedef enum class mcrCmdType {
   otabegin,
   otacontinue,
   otaend,
-  bootPartitionNext, 
-  restart
+  bootPartitionNext,
+  restart,
+  stopEngines
 } mcrCmdType_t;
 
 typedef class mcrCmdTypeMap mcrCmdTypeMap_t;
