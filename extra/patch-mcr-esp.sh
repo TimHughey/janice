@@ -24,10 +24,13 @@ cd $base
 run_cmd git pull --tags
 
 cd $mcr
-run_cmd make app-clean
-run_cmd make -j12
+echo -n "clean build of mcr_esp..."
+run_cmd make app-clean 1>/dev/null
+run_cmd make -j9 1>/dev/null
+echo " done"
 
-echo "installing to ${priv}"
-run_cmd install build/mcr_esp.bin ${priv}
+echo -n "installing to ${priv}..."
+run_cmd install --suffix=.prev build/mcr_esp.bin ${priv}
+echo " done"
 
 cd ${save_pwd}
