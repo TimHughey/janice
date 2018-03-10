@@ -26,7 +26,7 @@ defmodule Mixtank.TempTask do
     cond do
       # if force option is set then always set the state
       force ->
-        Dutycycle.Server.activate_profile(mt.heater, next_state, :enable)
+        Dutycycle.Server.activate_profile(mt.heater, next_state)
 
       # prevent unncessary state changes when the state isn't different
       next_state === curr_state ->
@@ -34,7 +34,7 @@ defmodule Mixtank.TempTask do
 
       # if none of the above match then always set to next_state
       true ->
-        Dutycycle.Server.activate_profile(mt.heater, next_state, :enable)
+        Dutycycle.Server.activate_profile(mt.heater, next_state)
     end
   end
 

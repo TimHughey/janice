@@ -40,7 +40,10 @@ defmodule OTA do
     |> Map.put_new(:stable, Map.get(vsn, "stable", "0000000"))
   end
 
-  def header_bytes, do: [0xD1, 0xD2, 0xD3, 0xD4]
+  def header_bytes, do: for(t <- [:start, :stream, :last], do: header(t))
+  defp header(:start), do: 0xD1
+  defp header(:stream), do: 0xD2
+  defp header(:last), do: 0xD4
 
   def restart(host, opts \\ []) when is_binary(host) do
     delay_ms = Keyword.get(opts, :delay_ms, 3_000)
@@ -104,58 +107,69 @@ defmodule OTA do
   defp transmit_blocks(:task, opts) when is_list(opts) do
     delay_ms = Keyword.get(opts, :start_delay_ms, 3_000)
     return_task = Keyword.get(opts, :return_task, false)
+    which_file = Keyword.get(opts, :file, :current)
 
     task =
       Task.start_link(fn ->
         send_begin(opts)
         :timer.sleep(delay_ms)
 
-        fw = Application.app_dir(:mcp, "priv/mcr_esp.bin")
-        {:ok, file} = File.open(fw, [:read])
+        def = [firmware_files: [current: "mcr_esp.bin"]]
+        config = Application.get_env(:mcp, OTA, def)
 
-        transmit_blocks(file, :start, opts)
+        file = Kernel.get_in(config, [:firmware_files, which_file])
 
-        send_end(opts)
-        File.close(file)
+        if is_nil(file) do
+          Logger.warn(fn -> "no config for firmware file #{inspect(which_file)}" end)
+        else
+          fw = Application.app_dir(:mcp, "priv/#{file}")
+          {:ok, file} = File.open(fw, [:read])
+
+          transmit_blocks(file, :start, opts)
+
+          send_end(opts)
+          File.close(file)
+        end
       end)
 
     if return_task, do: task, else: :ok
   end
 
-  defp transmit_blocks(_file, :eof, _opts) do
+  defp transmit_blocks(file, :start, opts) do
+    log = Keyword.get(opts, :log, false)
+
+    block = IO.binread(file, @block_size)
+    n = IO.iodata_length(block)
+    msg = <<header(:start)::size(8)>> <> block
+
+    log && Logger.info(fn -> "first block size=#{n}" end)
+
+    Client.publish_ota(msg)
+
+    # get the next block and recurse
+    next_block = IO.binread(file, @block_size)
+    transmit_blocks(file, next_block, opts)
+  end
+
+  # handle eof from IO.binread()
+  defp transmit_blocks(_file, :eof, opts) do
+    log = Keyword.get(opts, :log, false)
+
+    log && Logger.info(fn -> "last block" end)
+
+    msg = <<header(:last)::size(8)>>
+    Client.publish_ota(msg)
+
     :ok
   end
 
   defp transmit_blocks(file, block, opts) when is_list(opts) do
     log = Keyword.get(opts, :log, false)
-    # if :start is passed in as the block, get the first block
-    data =
-      if block == :start,
-        do: IO.binread(file, @block_size),
-        else: block
 
-    flags =
-      if block == :start do
-        n = IO.iodata_length(data)
-        log && Logger.info(fn -> "first block size=#{n}" end)
-        # if :start was passed in then flag this is the first block
-        <<0xD1::size(8)>>
-      else
-        case IO.iodata_length(data) do
-          # if the amount of data is equal to a block then we are midstream
-          n when n == @block_size ->
-            log && Logger.debug(fn -> "stream block" end)
-            <<0xD2::size(8)>>
+    n = IO.iodata_length(block)
+    log && Logger.debug(fn -> "stream block size=#{n}" end)
 
-          n ->
-            # otherwise this is the final block
-            log && Logger.info(fn -> "final block size=#{n}" end)
-            <<0xD4::size(8)>>
-        end
-      end
-
-    # prepend the flags to the data to form the actual message to transmit
-    msg = flags <> data
+    msg = <<header(:stream)::size(8)>> <> block
 
     Client.publish_ota(msg)
 

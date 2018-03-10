@@ -217,8 +217,17 @@ void mcrCmdOTA::processBlock() {
     break;
 
   case mcrCmdType::otaend:
-    _ota_size += block_size;
-    _ota_err = esp_ota_write(_ota_update, ota_data, len - 1);
+    // handle the case when the firmware size is perfectly divided into
+    // data blocks.  the final block will be of zero size.
+    if (block_size > 0) {
+      _ota_size += block_size;
+
+      _ota_err = esp_ota_write(_ota_update, ota_data, len - 1);
+    } else {
+      _ota_err = ESP_OK;
+    }
+
+    // wrap-up ota, we've received the final block
     _ota_last_block = esp_timer_get_time();
     _ota_total_us = _ota_last_block - _ota_first_block;
 

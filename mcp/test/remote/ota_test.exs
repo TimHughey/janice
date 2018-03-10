@@ -20,19 +20,22 @@ defmodule OTATest do
     }
 
   setup_all do
-    :ok
+    [log: false]
   end
 
   @tag :ota
-  test "transmit OTA" do
+  test "transmit OTA", context do
+    log = Kernel.get_in(context, [:opts])
+
     ext(0) |> Remote.external_update()
     hosts = [host(0)]
 
-    {_rc, pid} = OTA.transmit(update_hosts: hosts, log: false, return_task: true)
+    {_rc, pid} =
+      OTA.transmit(update_hosts: hosts, log: log, start_delay_ms: 100, return_task: true)
 
     checks =
-      for _i <- 0..20 do
-        :timer.sleep(500)
+      for _i <- 0..990 do
+        :timer.sleep(1)
         Process.alive?(pid)
       end
 

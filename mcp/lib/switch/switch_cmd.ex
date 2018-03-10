@@ -45,8 +45,8 @@ defmodule SwitchCmd do
     cmd =
       from(
         cmd in SwitchCmd,
-        where: cmd.refid == ^refid,
-        preload: [:switch]
+        where: cmd.refid == ^refid
+        # preload: [:switch]
       )
       |> one()
 
