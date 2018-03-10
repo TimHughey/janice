@@ -200,7 +200,6 @@ void mcrI2c::discover(void *task_data) {
   //       the normalOpsBit is used to globally signal processes
   //       should pause because a critical operation is underway (e.g. ota
   //       update)
-  mcr::Net::waitForNormalOps();
   delay(750);
 
   trackDiscover(true);
@@ -479,12 +478,6 @@ void mcrI2c::report(void *task_data) {
     i2cDev_t *dev = (i2cDev_t *)*it;
     humidityReading_t *humidity = nullptr;
 
-    // NOTE: special case due to buggy i2c driver
-    //       the normalOpsBit is used to globally signal processes
-    //       should pause because a critical operation is underway (e.g. ota
-    //       update)
-    mcr::Net::waitForNormalOps();
-
     delay(750);
 
     if (selectBus(dev->bus())) {
@@ -535,8 +528,6 @@ void mcrI2c::run(void *task_data) {
     discover(nullptr);
 
     for (int i = 0; i < 6; i++) {
-      // wait here for normal ops
-      mcr::Net::waitForNormalOps();
       report(nullptr);
 
       runtimeMetricsReport();
