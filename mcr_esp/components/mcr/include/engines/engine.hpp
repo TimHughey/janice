@@ -86,8 +86,7 @@ public:
 
   void start(void *task_data = nullptr) {
     if (_engine_task != nullptr) {
-      ESP_LOGW(tagEngine(), "there may already be a task running %p",
-               (void *)_engine_task);
+      ESP_LOGW(tagEngine(), "task already running %p", (void *)_engine_task);
     }
 
     // this (object) is passed as the data to the task creation and is
