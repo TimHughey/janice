@@ -48,7 +48,7 @@
 
 mcrI2c::mcrI2c() {
   setTags(localTags());
-  // setLoggingLevel(ESP_LOG_WARN);
+  setLoggingLevel(ESP_LOG_WARN);
   // setLoggingLevel(tagEngine(), ESP_LOG_INFO);
 
   _engine_task_name = tagEngine();
@@ -206,11 +206,10 @@ void mcrI2c::discover(void *task_data) {
 
   if (useMultiplexer()) {
     for (uint32_t bus = 0; (useMultiplexer() && (bus < maxBuses())); bus++) {
-      ESP_LOGD(tagDetectDev(), "scanning bus 0x%02x", bus);
+      ESP_LOGD(tagDetectDev(), "scanning bus %#02x", bus);
       int found = detectDevicesOnBus(bus);
       if (found > 0) {
-        ESP_LOGI(tagDiscover(), "found 0x%02x devices on bus=0x%02x", found,
-                 bus);
+        ESP_LOGI(tagDiscover(), "found %02d devices on bus=%#02x", found, bus);
       }
     }
   } else { // multiplexer not available, just search bus 0
@@ -530,10 +529,10 @@ void mcrI2c::run(void *task_data) {
       mcr::Net::waitForNormalOps();
       report(nullptr);
 
+      runtimeMetricsReport();
       reportMetrics();
 
       vTaskDelayUntil(&(_last_wake.engine), _loop_frequency);
-      runtimeMetricsReport();
     }
   }
 }
