@@ -70,6 +70,14 @@ typedef struct {
 
 typedef class mcrI2c mcrI2c_t;
 class mcrI2c : public mcrEngine<i2cDev_t> {
+
+private:
+  mcrI2c();
+
+public:
+  static mcrI2c_t *instance();
+  void run(void *data);
+
 private:
   i2c_config_t _conf;
   const TickType_t _loop_frequency =
@@ -80,11 +88,6 @@ private:
 
   uint32_t _bus_selects = 0;
   uint32_t _bus_select_errors = 0;
-
-public:
-  mcrI2c();
-  static mcrI2c_t *instance();
-  void run(void *data);
 
 private:
   mcrDevAddr_t _search_addrs[3] = {

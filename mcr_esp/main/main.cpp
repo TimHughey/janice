@@ -61,8 +61,8 @@ void app_main() {
   // must create network first
   network = mcr::Net::instance(); // singleton
   timestampTask = new mcrTimestampTask();
-  mqttTask = mcrMQTT::instance(); // singleton
-  dsEngineTask = new mcrDS();
+  mqttTask = mcrMQTT::instance();     // singleton
+  dsEngineTask = mcrDS::instance();   // singleton
   i2cEngineTask = mcrI2c::instance(); // singleton
 
   // create and start our tasks

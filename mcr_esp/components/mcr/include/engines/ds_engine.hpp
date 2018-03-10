@@ -54,8 +54,11 @@ typedef struct {
 typedef class mcrDS mcrDS_t;
 class mcrDS : public mcrEngine<dsDev_t> {
 
-public:
+private:
   mcrDS();
+
+public:
+  static mcrDS_t *instance();
   void run(void *data);
 
 private:

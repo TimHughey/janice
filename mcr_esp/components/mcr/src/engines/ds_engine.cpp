@@ -45,6 +45,8 @@
 #include "net/mcr_net.hpp"
 #include "protocols/mqtt.hpp"
 
+mcrDS_t *__singleton__ = nullptr;
+
 mcrDS::mcrDS() {
   setTags(localTags());
   setLoggingLevel(ESP_LOG_WARN);
@@ -437,6 +439,14 @@ void mcrDS::discover(void *task_data) {
 
     vTaskDelayUntil(&(_discoverTask.lastWake), _discover_frequency);
   }
+}
+
+mcrDS_t *mcrDS::instance() {
+  if (__singleton__ == nullptr) {
+    __singleton__ = new mcrDS();
+  }
+
+  return __singleton__;
 }
 
 void mcrDS::report(void *task_data) {

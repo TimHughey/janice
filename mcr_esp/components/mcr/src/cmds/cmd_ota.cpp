@@ -4,6 +4,7 @@
 #include <esp_spi_flash.h>
 
 #include "cmds/cmd_ota.hpp"
+#include "engines/ds_engine.hpp"
 #include "engines/i2c_engine.hpp"
 #include "net/mcr_net.hpp"
 #include "protocols/mqtt.hpp"
@@ -54,6 +55,7 @@ void mcrCmdOTA::begin() {
            _start_delay_ms);
 
   mcrI2c::instance()->stop();
+  mcrDS::instance()->stop();
   mcr::Net::suspendNormalOps();
 
   mcrMQTT::otaPrep();
