@@ -158,7 +158,7 @@ int mcrI2c::detectDevicesOnBus(int bus) {
         i2cDev_t dev(search_addr, useMultiplexer(), bus);
 
         if (i2cDev_t *found = (i2cDev_t *)justSeenDevice(dev)) {
-          ESP_LOGD(tagDiscover(), "previously seen %s", found->debug().c_str());
+          ESP_LOGD(tagDiscover(), "already know %s", found->debug().c_str());
         } else { // device was not known, must add
           i2cDev_t *new_dev = new i2cDev(dev);
 
@@ -181,11 +181,11 @@ bool mcrI2c::detectMultiplexer() {
   mcrDevAddr_t multiplexer_dev(0x70);
 
   for (int i = 1; ((i <= 3) && (_use_multiplexer == false)); i++) {
-    ESP_LOGD(tagDetectDev(), "detecting TCA9548A multiplexer (attempt %d/%d)",
-             i, max_attempts);
+    ESP_LOGD(tagDetectDev(), "detecting TCA9548A (attempt %d/%d)", i,
+             max_attempts);
 
     if (detectDevice(multiplexer_dev)) {
-      ESP_LOGD(tagDetectDev(), "found TCA9548A multiplexer");
+      ESP_LOGD(tagDetectDev(), "found TCA9548A");
       _use_multiplexer = true;
     }
   }
