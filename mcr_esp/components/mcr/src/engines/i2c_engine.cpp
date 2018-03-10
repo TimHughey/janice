@@ -111,6 +111,7 @@ bool mcrI2c::detectDevice(mcrDevAddr_t &addr) {
 
     esp_rc = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(1000));
     i2c_cmd_link_delete(cmd);
+    delay(100);
     break;
 
   // AM2315 needs to be woken up
@@ -196,12 +197,6 @@ bool mcrI2c::detectMultiplexer() {
 }
 
 void mcrI2c::discover(void *task_data) {
-  // NOTE: special case due to buggy i2c driver
-  //       the normalOpsBit is used to globally signal processes
-  //       should pause because a critical operation is underway (e.g. ota
-  //       update)
-  delay(750);
-
   trackDiscover(true);
   detectMultiplexer();
 
@@ -221,7 +216,6 @@ void mcrI2c::discover(void *task_data) {
   }
 
   trackDiscover(false);
-  delay(750);
 }
 
 bool mcrI2c::hardReset() {
@@ -230,7 +224,7 @@ bool mcrI2c::hardReset() {
 
   periph_module_disable(PERIPH_I2C0_MODULE);
   periph_module_enable(PERIPH_I2C0_MODULE);
-  delay(500);
+  delay(100);
 
   return installDriver();
 }
@@ -259,7 +253,7 @@ bool mcrI2c::installDriver() {
     }
   }
 
-  delay(500);
+  delay(100);
 
   return (esp_err == ESP_OK) ? true : false;
 }
@@ -478,8 +472,6 @@ void mcrI2c::report(void *task_data) {
     i2cDev_t *dev = (i2cDev_t *)*it;
     humidityReading_t *humidity = nullptr;
 
-    delay(750);
-
     if (selectBus(dev->bus())) {
       switch (dev->devAddr()) {
       case 0x5C:
@@ -507,8 +499,6 @@ void mcrI2c::report(void *task_data) {
   }
 
   trackReport(false);
-
-  delay(750);
 }
 
 void mcrI2c::run(void *task_data) {
@@ -586,8 +576,6 @@ bool mcrI2c::selectBus(uint32_t bus) {
       esp_restart();
     }
   }
-
-  delay(300);
 
   return rc;
 }
