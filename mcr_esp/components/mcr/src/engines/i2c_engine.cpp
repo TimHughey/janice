@@ -548,8 +548,8 @@ bool mcrI2c::selectBus(uint32_t bus) {
 
   _bus_selects++;
 
-  i2c_reset_tx_fifo(I2C_NUM_0);
-  i2c_reset_rx_fifo(I2C_NUM_0);
+  // i2c_reset_tx_fifo(I2C_NUM_0);
+  // i2c_reset_rx_fifo(I2C_NUM_0);
 
   if (bus >= _max_buses) {
     ESP_LOGW(tagEngine(), "attempt to select bus %d >= %d, bus not changed",
