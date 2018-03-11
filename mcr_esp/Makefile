@@ -25,4 +25,4 @@ MCR_BIN_FILE = $(APP_BIN)
 .PHONY : deploy-to-mcp
 deploy-to-mcp : $(APP_BIN)
 	install $(INSTALL_OPTS) $(MCR_BIN_FILE) $(MCP_PRIV)
-	$(info "installed $(APP_BIN) with opts $(INSTALL_OPTS) to $(MCP_PRIV)) 
+	$(info installed $(APP_BIN) with opts $(INSTALL_OPTS) to $(MCP_PRIV)) 
