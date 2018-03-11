@@ -51,7 +51,7 @@ static mcrI2c_t *__singleton__ = nullptr;
 mcrI2c::mcrI2c() {
   setTags(localTags());
   setLoggingLevel(ESP_LOG_WARN);
-  // setLoggingLevel(tagEngine(), ESP_LOG_INFO);
+  setLoggingLevel(tagEngine(), ESP_LOG_INFO);
 
   _engine_task_name = tagEngine();
   _engine_stack_size = 5 * 1024;
@@ -224,11 +224,19 @@ void mcrI2c::discover(void *task_data) {
 }
 
 bool mcrI2c::hardReset() {
+  esp_err_t rc;
+
   ESP_LOGE(tagEngine(), "hard reset of i2c peripheral");
-  i2c_driver_delete(I2C_NUM_0);
+
+  rc = i2c_driver_delete(I2C_NUM_0);
+  ESP_LOGI(tagEngine(), "i2c_driver_delete() == %s", espError(rc));
+
+  delay(500);
 
   periph_module_disable(PERIPH_I2C0_MODULE);
   periph_module_enable(PERIPH_I2C0_MODULE);
+
+  delay(500);
 
   return installDriver();
 }
@@ -246,18 +254,14 @@ bool mcrI2c::installDriver() {
   _conf.master.clk_speed = 100000;
 
   esp_err = i2c_param_config(I2C_NUM_0, &_conf);
+  ESP_LOGI(tagEngine(), "i2c_param_config() == %s", espError(esp_err));
 
   if (esp_err == ESP_OK) {
     esp_err = i2c_driver_install(I2C_NUM_0, _conf.mode, 0, 0, 0);
-
-    if (esp_err == ESP_OK) {
-      ESP_LOGI(tagEngine(), "i2c driver installed");
-    } else {
-      ESP_LOGE(tagEngine(), "i2c driver install failed 0x%02x", esp_err);
-    }
+    ESP_LOGI(tagEngine(), "i2c_driver_install() == %s", espError(esp_err));
   }
 
-  delay(1000);
+  delay(500);
 
   return (esp_err == ESP_OK) ? true : false;
 }
