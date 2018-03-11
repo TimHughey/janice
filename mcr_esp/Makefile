@@ -5,7 +5,7 @@
 
 PROJECT_NAME := mcr_esp
 OS = $(shell uname)
-PREV_SUFFIX := ".prev"
+PREV_SUFFIX := .prev
 MCP_PRIV = $(PROJECT_PATH)/../mcp/priv
 FIRMWARE = $(MCP_PRIV)/$(PROJECT_NAME).bin
 
