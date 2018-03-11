@@ -111,7 +111,6 @@ bool mcrI2c::detectDevice(mcrDevAddr_t &addr) {
 
     esp_rc = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(1000));
     i2c_cmd_link_delete(cmd);
-    delay(100);
     break;
 
   // AM2315 needs to be woken up
@@ -142,6 +141,7 @@ bool mcrI2c::detectDevice(mcrDevAddr_t &addr) {
              espError(esp_rc));
   }
 
+  delay(700);
   return rc;
 }
 
