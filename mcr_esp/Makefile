@@ -4,21 +4,25 @@
 #
 
 PROJECT_NAME := mcr_esp
+OS = $(shell uname)
+PREV_SUFFIX := ".prev"
+MCP_PRIV = $(PROJECT_PATH)/../mcp/priv
+FIRMWARE = $(MCP_PRIV)/$(PROJECT_NAME).bin
+
+ifeq ($(OS),Darwin)
+  INSTALL_OPTS = -B $(PREV_SUFFIX) -b
+endif
+
+ifeq ($(OS),Linux)
+  INSTALL_OPTS = --suffix=$(PREV_SUFFIX) 
+endif
 
 include $(IDF_PATH)/make/project.mk
 
-MCP_PRIV := ../mcp/priv
-MCR_BIN_FILE := build/mcr_esp.bin
+MCP_PRIV = ../mcp/priv
+MCR_BIN_FILE = $(APP_BIN) 
 
-#.PHONY: deploy
-deploy: all
-	OS := $(shell uname)
-	ifeq ($(OS), "Linux")
-		$(INSTALL) --suffix=.prev $(MCR_BIN_FILE) $(MCP_PRIV)
-	else ($(OS), "Darwin")
-		$(INSTALL) -B .prev -b install $(MCR_BIN_FILE) $(MCP_PRIV)
-	else
-		$(INSTALL) $(MCR_BIN_FILE) $(MCP_PRIV)
-	endif
-
-	$(info Deployed $(MCR_BIN_FILE) to $(MCP_PRIV))
+.PHONY : deploy-to-mcp
+deploy-to-mcp : $(APP_BIN)
+	install $(INSTALL_OPTS) $(MCR_BIN_FILE) $(MCP_PRIV)
+	$(info "installed $(APP_BIN) with opts $(INSTALL_OPTS) to $(MCP_PRIV)) 
