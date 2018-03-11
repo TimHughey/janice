@@ -228,15 +228,13 @@ bool mcrI2c::hardReset() {
 
   ESP_LOGE(tagEngine(), "hard reset of i2c peripheral");
 
+  delay(1000);
+
   rc = i2c_driver_delete(I2C_NUM_0);
   ESP_LOGI(tagEngine(), "i2c_driver_delete() == %s", espError(rc));
 
-  delay(500);
-
   periph_module_disable(PERIPH_I2C0_MODULE);
   periph_module_enable(PERIPH_I2C0_MODULE);
-
-  delay(500);
 
   return installDriver();
 }
@@ -261,7 +259,7 @@ bool mcrI2c::installDriver() {
     ESP_LOGI(tagEngine(), "i2c_driver_install() == %s", espError(esp_err));
   }
 
-  delay(500);
+  delay(1000);
 
   return (esp_err == ESP_OK) ? true : false;
 }
