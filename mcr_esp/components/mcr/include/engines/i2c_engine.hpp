@@ -95,7 +95,7 @@ private:
   // utility methods
   bool crcSHT31(const uint8_t *data);
   bool detectDevice(mcrDevAddr_t &addr);
-  int detectDevicesOnBus(int bus);
+  bool detectDevicesOnBus(int bus);
 
   bool detectMultiplexer();
   bool hardReset();

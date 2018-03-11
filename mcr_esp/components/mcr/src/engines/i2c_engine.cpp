@@ -150,8 +150,8 @@ bool mcrI2c::detectDevice(mcrDevAddr_t &addr) {
   return rc;
 }
 
-int mcrI2c::detectDevicesOnBus(int bus) {
-  int found = 0;
+bool mcrI2c::detectDevicesOnBus(int bus) {
+  bool rc = true;
   mcrDevAddr_t *addrs = search_addrs();
 
   for (uint8_t i = 0; addrs[i].isValid(); i++) {
@@ -159,7 +159,6 @@ int mcrI2c::detectDevicesOnBus(int bus) {
 
     if (selectBus(bus)) {
       if (detectDevice(search_addr)) {
-        found++;
         i2cDev_t dev(search_addr, useMultiplexer(), bus);
 
         if (i2cDev_t *found = (i2cDev_t *)justSeenDevice(dev)) {
@@ -173,12 +172,14 @@ int mcrI2c::detectDevicesOnBus(int bus) {
         }
       }
     } else {
-      ESP_LOGW(tagDiscover(), "bus select failed, aborting discover");
+      ESP_LOGW(tagDiscover(),
+               "bus select failed, aborting detectDevicesOnBus()");
+      rc = false;
       break;
     }
   }
 
-  return found;
+  return rc;
 }
 
 bool mcrI2c::detectMultiplexer() {
@@ -205,22 +206,18 @@ bool mcrI2c::detectMultiplexer() {
 }
 
 void mcrI2c::discover(void *task_data) {
+  bool detect_rc = true;
+
   trackDiscover(true);
   detectMultiplexer();
 
   if (useMultiplexer()) {
-    for (uint32_t bus = 0; (useMultiplexer() && (bus < maxBuses())); bus++) {
+    for (uint32_t bus = 0; (detect_rc && (bus < maxBuses())); bus++) {
       ESP_LOGD(tagDetectDev(), "scanning bus %#02x", bus);
-      int found = detectDevicesOnBus(bus);
-      if (found > 0) {
-        ESP_LOGI(tagDiscover(), "found %02d devices on bus=%#02x", found, bus);
-      }
+      detect_rc = detectDevicesOnBus(bus);
     }
   } else { // multiplexer not available, just search bus 0
-    int found = detectDevicesOnBus(0x00);
-    if (found > 0) {
-      ESP_LOGI(tagDiscover(), "found 0x%02x devices on single bus", found);
-    }
+    detect_rc = detectDevicesOnBus(0x00);
   }
 
   trackDiscover(false);
