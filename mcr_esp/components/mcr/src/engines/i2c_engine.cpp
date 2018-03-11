@@ -172,6 +172,9 @@ int mcrI2c::detectDevicesOnBus(int bus) {
           addDevice(new_dev);
         }
       }
+    } else {
+      ESP_LOGW(tagDiscover(), "bus select failed, aborting discover");
+      break;
     }
   }
 
@@ -578,14 +581,12 @@ bool mcrI2c::selectBus(uint32_t bus) {
       ESP_LOGW(tagSelectBus(),
                "unable to select bus %d (selects=%u errors=%u) %s", bus,
                _bus_selects, _bus_select_errors, espError(esp_rc));
-
-      hardReset();
       rc = false;
     }
 
     if (_bus_select_errors > 25) {
       ESP_LOGE(tagEngine(), "bus select errors exceeded, JUMP!");
-      delay(1000);
+      delay(5000);
       esp_restart();
     }
   }
