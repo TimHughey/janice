@@ -97,6 +97,8 @@ bool mcrI2c::detectDevice(mcrDevAddr_t &addr) {
 
     esp_rc = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(1000));
     i2c_cmd_link_delete(cmd);
+
+    delay(100);
     break;
 
   // SHT-31 humidity sensor
@@ -111,6 +113,8 @@ bool mcrI2c::detectDevice(mcrDevAddr_t &addr) {
 
     esp_rc = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(1000));
     i2c_cmd_link_delete(cmd);
+
+    delay(100);
     break;
 
   // AM2315 needs to be woken up
@@ -124,6 +128,8 @@ bool mcrI2c::detectDevice(mcrDevAddr_t &addr) {
       i2c_master_stop(cmd);
       esp_rc = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(1000));
       i2c_cmd_link_delete(cmd);
+
+      delay(100);
     } else {
       esp_rc = ESP_FAIL;
     }
@@ -141,7 +147,6 @@ bool mcrI2c::detectDevice(mcrDevAddr_t &addr) {
              espError(esp_rc));
   }
 
-  delay(700);
   return rc;
 }
 
@@ -224,7 +229,6 @@ bool mcrI2c::hardReset() {
 
   periph_module_disable(PERIPH_I2C0_MODULE);
   periph_module_enable(PERIPH_I2C0_MODULE);
-  delay(100);
 
   return installDriver();
 }
@@ -253,7 +257,7 @@ bool mcrI2c::installDriver() {
     }
   }
 
-  delay(100);
+  delay(1000);
 
   return (esp_err == ESP_OK) ? true : false;
 }
@@ -311,6 +315,8 @@ bool mcrI2c::readAM2315(i2cDev_t *dev, humidityReading_t **reading, bool wake) {
   esp_rc = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(1000));
   i2c_cmd_link_delete(cmd);
 
+  delay(100);
+
   if (esp_rc != ESP_OK) {
     ESP_LOGW(tagReadAM2315(), "write failed %s %s", dev->debug().c_str(),
              espError(esp_rc));
@@ -318,8 +324,6 @@ bool mcrI2c::readAM2315(i2cDev_t *dev, humidityReading_t **reading, bool wake) {
     dev->writeFailure();
     return rc;
   }
-
-  delay(100);
 
   // get the device data
   cmd = i2c_cmd_link_create();
@@ -335,6 +339,8 @@ bool mcrI2c::readAM2315(i2cDev_t *dev, humidityReading_t **reading, bool wake) {
 
   esp_rc = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(1000));
   i2c_cmd_link_delete(cmd);
+
+  delay(100);
 
   if (esp_rc != ESP_OK) {
     ESP_LOGW(tagReadAM2315(), "read failed for %s %s", dev->debug().c_str(),
@@ -407,6 +413,8 @@ bool mcrI2c::readSHT31(i2cDev_t *dev, humidityReading_t **reading) {
   esp_rc = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(1000));
   i2c_cmd_link_delete(cmd);
 
+  delay(100);
+
   if (esp_rc != ESP_OK) {
     ESP_LOGW(tagReadSHT31(), "write failed %s %s", dev->debug().c_str(),
              espError(esp_rc));
@@ -414,8 +422,6 @@ bool mcrI2c::readSHT31(i2cDev_t *dev, humidityReading_t **reading) {
     dev->writeFailure();
     return rc;
   }
-
-  delay(100);
 
   cmd = i2c_cmd_link_create();
   i2c_master_start(cmd);
@@ -431,6 +437,8 @@ bool mcrI2c::readSHT31(i2cDev_t *dev, humidityReading_t **reading) {
 
   esp_rc = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(1000));
   i2c_cmd_link_delete(cmd);
+
+  delay(100);
 
   dev->stopRead();
 
@@ -558,7 +566,7 @@ bool mcrI2c::selectBus(uint32_t bus) {
     esp_rc = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(1000));
     i2c_cmd_link_delete(cmd);
 
-    delay(300);
+    delay(100);
 
     if (esp_rc == ESP_OK) {
       rc = true;
@@ -574,7 +582,7 @@ bool mcrI2c::selectBus(uint32_t bus) {
 
     if (_bus_select_errors > 25) {
       ESP_LOGE(tagEngine(), "bus select errors exceeded, JUMP!");
-      delay(300);
+      delay(1000);
       esp_restart();
     }
   }
