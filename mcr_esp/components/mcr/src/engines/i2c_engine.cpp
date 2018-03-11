@@ -563,9 +563,10 @@ bool mcrI2c::selectBus(uint32_t bus) {
     i2c_master_write_byte(
         cmd, (multiplexer_dev.firstAddressByte() << 1) | I2C_MASTER_WRITE,
         ACK_CHECK_EN);
-    i2c_master_write_byte(cmd, (0x01 << bus),
-                          ACK_CHECK_EN); // 0x00 selects no bus
+    i2c_master_write_byte(cmd, (0x01 << bus), ACK_CHECK_EN);
     i2c_master_stop(cmd);
+
+    delay(100);
 
     esp_rc = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(1000));
     i2c_cmd_link_delete(cmd);

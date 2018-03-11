@@ -40,8 +40,6 @@
 #include "misc/mcr_types.hpp"
 #include "protocols/mqtt.hpp"
 
-#define mcr_i2c_version_1 1
-
 typedef struct {
   TickType_t engine;
   TickType_t convert;
@@ -49,24 +47,14 @@ typedef struct {
   TickType_t report;
 } i2cLastWakeTime_t;
 
-// Set the version of MCP Remote
-#ifndef mcr_i2c_version
-#define mcr_i2c_version mcr_i2c_version_1
-#endif
-
 // I2C master will check ack from slave*
 #define ACK_CHECK_EN (i2c_ack_type_t)0x1
 // I2C master will not check ack from slave
 #define ACK_CHECK_DIS (i2c_ack_type_t)0x0
-// I2C ack value
-#define ACK_VAL (i2c_ack_type_t)0x0
-// I2C nack value
-#define NACK_VAL (i2c_ack_type_t)0x1
 
 #define SDA_PIN (gpio_num_t)18
 #define SCL_PIN (gpio_num_t)19
 #define I2C_PWR_PIN (gpio_num_t)12
-#define MAX_DEV_NAME 20
 
 typedef class mcrI2c mcrI2c_t;
 class mcrI2c : public mcrEngine<i2cDev_t> {
