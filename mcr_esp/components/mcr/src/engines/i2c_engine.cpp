@@ -558,6 +558,8 @@ bool mcrI2c::selectBus(uint32_t bus) {
     esp_rc = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(1000));
     i2c_cmd_link_delete(cmd);
 
+    delay(300);
+
     if (esp_rc == ESP_OK) {
       rc = true;
     } else {
