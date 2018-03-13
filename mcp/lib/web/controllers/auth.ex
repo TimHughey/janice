@@ -39,9 +39,32 @@ defmodule Web.AuthController do
     |> redirect(to: "/janice")
   end
 
+  def callback(
+        %{assigns: %{ueberauth_auth: %{extra: %{raw_info: %{"type" => "json"}}} = auth}} = conn,
+        _params
+      ) do
+    # Logger.info(fn -> "Auth Map:" end)
+    # Logger.info(fn -> inspect(auth) end)
+    # Logger.info(fn -> "Conn Map:" end)
+    # Logger.info(fn -> inspect(conn) end)
+    Logger.info(fn -> "#{auth.provider} success for #{auth.uid}" end)
+
+    case UserFromAuth.find_or_create(auth) do
+      {:ok, user} ->
+        conn = Plug.sign_in(conn, user)
+        token = Plug.current_token(conn)
+
+        json(conn, %{token: token})
+
+      {:error, reason} ->
+        conn
+        |> put_flash(:error, reason)
+        |> redirect(to: "/janice")
+    end
+  end
+
   def callback(%{assigns: %{ueberauth_auth: auth}} = conn, _params) do
-    Logger.info(fn -> "Auth Map:" end)
-    Logger.info(fn -> inspect(auth) end)
+    Logger.info(fn -> "Auth Map: #{inspect(auth, pretty: true)}" end)
     Logger.info(fn -> "#{auth.provider} success for #{auth.uid}" end)
 
     case UserFromAuth.find_or_create(auth) do

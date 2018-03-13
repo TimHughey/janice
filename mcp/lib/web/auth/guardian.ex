@@ -1,7 +1,20 @@
 defmodule Web.Guardian do
   @moduledoc """
   """
+  require Logger
   use Guardian, otp_app: :mcp
+
+  def after_sign_in(conn, resource, token, full_claims, opts) do
+    msg =
+      "\n resource=#{inspect(resource, pretty: true)}" <>
+        "\n token=#{inspect(token, pretty: true, printable_limit: 65)}" <>
+        "\n full_claims=#{inspect(full_claims, pretty: true)}" <>
+        "\n opts=#{inspect(opts, pretty: true)}"
+
+    Logger.info(fn -> "after_sign_in(): #{msg}" end)
+
+    {:ok, conn}
+  end
 
   def subject_for_token(resource, _claims), do: {:ok, to_string(resource.id)}
 

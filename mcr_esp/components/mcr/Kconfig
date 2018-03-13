@@ -218,11 +218,14 @@ menu "Engines"
 					config MCR_I2C_TASK_CORE_PRIORITY
 						depends on MCR_I2C_TASKS
 						int "Core Task Initialization Priority"
-						default 11
+						default 13
 						range 1 19
 						help
 						 	This configuration value defines the task priority of the only task
 							for the I2C engine (Core).
+
+							NOTE:  For an unknown reason the i2c bus appears most stable when
+							       this task priority == mcrDS convert
 	endmenu
 
 menu "IoT"

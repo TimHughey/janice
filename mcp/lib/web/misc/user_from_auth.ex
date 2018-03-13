@@ -86,5 +86,8 @@ defmodule Web.UserFromAuth do
     {:error, "Invalid password"}
   end
 
-  defp validate_pass(_), do: {:error, "Default catch for pw check!"}
+  defp validate_pass(auth) do
+    Logger.info(fn -> "#{inspect(auth)}" end)
+    {:error, "Default catch for pw check!"}
+  end
 end
