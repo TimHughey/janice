@@ -24,20 +24,24 @@ defmodule OTA do
   end
 
   def fw_file_version do
-    fw = Application.app_dir(:mcp, "priv/mcr_esp.bin")
-    {:ok, file} = File.open(fw, [:read])
+    fw_file = "priv/mcr_esp.bin"
+    fw = Application.app_dir(:mcp, fw_file)
 
-    block = IO.binread(file, 24 * 1024)
-    rx = ~r/mcr_sha_head=(?<head>\w+).mcr_sha_stable=(?<stable>\w+)/x
+    with {:ok, file} <- File.open(fw, [:read]),
+         block <- IO.binread(file, 24 * 1024) do
+      rx = ~r/mcr_sha_head=(?<head>\w+).mcr_sha_stable=(?<stable>\w+)/x
 
-    vsn = Regex.named_captures(rx, block)
+      vsn = Regex.named_captures(rx, block)
 
-    Logger.debug(fn -> "mcr_esp.bin versions: #{inspect(vsn)}" end)
-    File.close(file)
+      Logger.debug(fn -> "mcr_esp.bin versions: #{inspect(vsn)}" end)
+      File.close(file)
 
-    %{}
-    |> Map.put_new(:head, Map.get(vsn, "head", "0000000"))
-    |> Map.put_new(:stable, Map.get(vsn, "stable", "0000000"))
+      %{head: Map.get(vsn, "head", "0000000"), stable: Map.get(vsn, "stable", "0000000")}
+    else
+      err ->
+        Logger.warn(fn -> "File.open(#{fw_file}, [:read]) returned #{inspect(err)}" end)
+        %{head: "0000000", stable: "0000000"}
+    end
   end
 
   def header_bytes, do: for(t <- [:start, :stream, :last], do: header(t))
@@ -123,12 +127,13 @@ defmodule OTA do
           Logger.warn(fn -> "no config for firmware file #{inspect(which_file)}" end)
         else
           fw = Application.app_dir(:mcp, "priv/#{file}")
-          {:ok, file} = File.open(fw, [:read])
 
-          transmit_blocks(file, :start, opts)
+          with {:ok, file} <- File.open(fw, [:read]) do
+            transmit_blocks(file, :start, opts)
 
-          send_end(opts)
-          File.close(file)
+            send_end(opts)
+            File.close(file)
+          end
         end
       end)
 
