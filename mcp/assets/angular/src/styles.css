@@ -9,7 +9,7 @@ header {
  border-top: 9px solid #222222;
 }
 
-// DataTable column centering
+/* DataTable column centering */
 .col-center {
   text-align: center;
 }
@@ -94,7 +94,7 @@ hr {
 }
 
 .tab-pane {
-  //margin-top: 3px;
+  /* margin-top: 3px; */
   border: 2px;
 }
 
