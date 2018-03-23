@@ -4,7 +4,7 @@
 
 <div class="row justify-content-center" id="mcpSubsystemsRow">
   <!-- <div class="col-4"></div> -->
-  <div class="col-md-auto text-center h3">Subsystems</div>
+  <div class="col-md-auto small-caps" style="padding-top:1em" >Subsystems</div>
   <!-- <div class="col-4"></div> -->
 </div>
 
@@ -19,7 +19,7 @@
     </div>
 </div>
 
-<div class="container col-10">
+<div class="container col-10 main-wrapper">
   <div class="tab-content" id="nav-mcpSubsystemsTabContent">
     <div class="tab-pane fade show active" role="tabpanel" id="switchesTab">
       <table class="table display device-table compact" cellspacing="0" width="100%" id="switchesTable">
