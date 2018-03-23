@@ -561,7 +561,7 @@ function switchesColumns() {
   }, {
     data: 'state',
     class: 'col-state-off',
-    render: JanUtil.humanSize,
+    render: JanUtil.humanizeState,
   },
   ];
 }

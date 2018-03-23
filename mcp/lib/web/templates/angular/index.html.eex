@@ -1,1 +1,5 @@
-  <app-root></app-root>
+<%= render_shared "top_nav.html", assigns %>
+
+<app-root></app-root>
+
+<%= render_shared "footer.html", assigns %>
