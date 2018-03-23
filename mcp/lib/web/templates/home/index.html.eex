@@ -1,6 +1,5 @@
 <%= render_shared "top_nav.html", assigns %>
 
-<div class="container">
   <!-- Jumbotron -->
   <div class="jumbotron">
     <h1>This is Janice for Wiss Landing</h1>
@@ -8,7 +7,6 @@
     <p><a class="btn btn-lg btn-success" href="<%= mcp_path @conn, :index %>" role="button">Manage MCP</a></p>
   </div>
 
-  <!-- Example row of columns -->
   <div class="row">
     <div class="col-lg-4">
       <h2>Guardian</h2>
@@ -28,6 +26,5 @@
       <div class="caption"><a class="btn btn-primary" href="http://phoenixframework.org" target="_blank" role="button">Phoenix &raquo;</a></div>
     </div>
   </div>
-</div>
 
 <%= render_shared "footer.html", assigns %>

@@ -12,7 +12,7 @@ defmodule Web.Endpoint do
     at: "/janice",
     from: :mcp,
     gzip: false,
-    only: ~w(angular css fonts images js favicon.ico robots.txt)
+    only: ~w(angular bundles css fonts images js favicon.ico robots.txt)
   )
 
   # Code reloading can be explicitly enabled under the

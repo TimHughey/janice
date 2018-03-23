@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>I Am Janice</title>
+    <base href="/janice/new/">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="This is Janice">
+    <meta name="author" content="Tim Hughey">
+
+    <!-- generate a CSRF token and store as a meta -->
+    <meta name="csrf-token" content="<%= get_csrf_token() %>">
+
+    <!-- put the current user on the page for use later -->
+    <meta name="current_user" content="<%= @current_user.id %>">
+
+    <!-- help with display on mobile devices -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="<%= static_path(@conn, "/favicon.ico") %>">
+    <link href="https://fonts.googleapis.com/css?family=Permanent+Marker|Inconsolata|Acme|Rokkitt" rel="stylesheet" type='text/css' crossorigin="anonymous">
+  </head>
+
+  <body>
+    <div class="container-fluid">
+      <%= render @view_module, @view_template, assigns %>
+    </div>
+
+    <script type="text/javascript" src="<%= static_path(@conn, "/bundles/inline.bundle.js") %>"></script>
+    <script type="text/javascript" src="<%= static_path(@conn, "/bundles/polyfills.bundle.js") %>"></script>
+    <script type="text/javascript" src="<%= static_path(@conn, "/bundles/styles.bundle.js") %>"></script>
+    <script type="text/javascript" src="<%= static_path(@conn, "/bundles/vendor.bundle.js") %>"></script>
+    <script type="text/javascript" src="<%= static_path(@conn, "/bundles/main.bundle.js") %>"></script>
+  </body>
+</html>

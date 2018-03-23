@@ -1,21 +1,21 @@
 <%= render_shared "top_nav.html", assigns %>
 
-<div class="container main-wrapper">
+<!-- <div class="container main-wrapper"> -->
 
-<div class="row align-items-center" id="mcpSubsystemsRow">
-  <div class="col-4"></div>
-  <div class="col-4 text-center h3 px-2">Subsystems</div>
-  <div class="col-4"></div>
+<div class="row justify-content-center" id="mcpSubsystemsRow">
+  <!-- <div class="col-4"></div> -->
+  <div class="col-md-auto text-center h3">Subsystems</div>
+  <!-- <div class="col-4"></div> -->
 </div>
 
 <div class="row" id="mcpSubsystemsRow">
-  <div class="col-2">
-  <div class="nav flex-column nav-pills" id="mcpSubsystems" role="tablist" aria-orientation="vertical">
-    <a class="nav-link active" id="nav-switches-tab" data-toggle="pill" href="#switchesTab" role="tab" aria-controls="v-pills-home" aria-selected="true">Switches</a>
-    <a class="nav-link" id="nav-sensors-tab" data-toggle="pill" href="#sensorsTab" role="tab" aria-controls="v-pills-profile" aria-selected="false">Sensors</a>
-    <a class="nav-link" id="nav-remotes-tab" data-toggle="pill" href="#remotesTab" role="tab" aria-controls="v-pills-profile" aria-selected="false">Remotes</a>
-    <a class="nav-link" id="nav-dutycycles-tab" data-toggle="pill" href="#dutycyclesTab" role="tab" aria-controls="v-pills-profile" aria-selected="false">Dutycycles</a>
-    <a class="nav-link" id="nav-mixtanks-tab" data-toggle="pill" href="#mixtanksTab" role="tab" aria-controls="v-pills-profile" aria-selected="false">Mixtanks</a>
+  <div class="col-md-auto">
+    <div class="nav flex-column nav-pills" id="mcpSubsystems" role="tablist" aria-orientation="vertical">
+      <a class="nav-link active" id="nav-switches-tab" data-toggle="pill" href="#switchesTab" role="tab" aria-controls="v-pills-home" aria-selected="true">Switches</a>
+      <a class="nav-link" id="nav-sensors-tab" data-toggle="pill" href="#sensorsTab" role="tab" aria-controls="v-pills-profile" aria-selected="false">Sensors</a>
+      <a class="nav-link" id="nav-remotes-tab" data-toggle="pill" href="#remotesTab" role="tab" aria-controls="v-pills-profile" aria-selected="false">Remotes</a>
+      <a class="nav-link" id="nav-dutycycles-tab" data-toggle="pill" href="#dutycyclesTab" role="tab" aria-controls="v-pills-profile" aria-selected="false">Dutycycles</a>
+      <a class="nav-link" id="nav-mixtanks-tab" data-toggle="pill" href="#mixtanksTab" role="tab" aria-controls="v-pills-profile" aria-selected="false">Mixtanks</a>
     </div>
 </div>
 
@@ -123,6 +123,6 @@
 </div>
 </div>
 
-</div>
+<!-- </div> -->
 
 <%= render_shared "footer.html", assigns %>

@@ -46,6 +46,12 @@ defmodule Web.Router do
     get("/", McpController, :index)
   end
 
+  scope "/janice/new", Web do
+    pipe_through([:browser, :browser_session, :browser_authenticated])
+
+    get("/*path", AngularController, :index)
+  end
+
   scope "/janice/mcp/api", Web do
     pipe_through([:api])
     resources("/mixtank", MixtankController, only: [:index, :update])
