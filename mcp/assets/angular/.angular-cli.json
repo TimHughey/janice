@@ -22,7 +22,6 @@
         "../node_modules/font-awesome/css/font-awesome.css",
         "../node_modules/primeng/resources/themes/ludvig/theme.css",
         "../node_modules/primeng/resources/primeng.min.css",
-        "../node_modules/bootstrap/dist/css/bootstrap.min.css",
         "styles.css"
       ],
       "scripts": [],

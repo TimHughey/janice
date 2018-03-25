@@ -39,7 +39,28 @@ defmodule Web.RemoteController do
         }
       end
 
-    resp = %{data: data, items: Enum.count(data), mtime: Timex.local() |> Timex.to_unix()}
+    key_mapping = [
+      id: "id",
+      name: "name",
+      host: "host",
+      hw: "hardware",
+      firmware_vsn: "firmware",
+      preferred_vsn: "firmwarePref",
+      last_start_at: "startedAt",
+      last_seen_at: "lastSeenAt"
+    ]
+
+    data2 =
+      for r <- remotes do
+        resp_mapper(r, key_mapping) |> Map.put("atVersion", Remote.at_preferred_vsn?(r))
+      end
+
+    resp = %{
+      data: data,
+      data2: data2,
+      items: Enum.count(data),
+      mtime: Timex.local() |> Timex.to_unix()
+    }
 
     json(conn, resp)
   end

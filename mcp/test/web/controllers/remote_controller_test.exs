@@ -49,6 +49,7 @@ defmodule WebRemoteControllerTest do
 
     assert rc === :ok
     assert Map.has_key?(json, "data")
+    assert Map.has_key?(json, "data2")
     assert Map.has_key?(json, "items")
   end
 

@@ -1,0 +1,11 @@
+
+th, td {
+  font-family:'Inconsolata', monospace !important;
+  font-size:12px;
+}
+
+input {
+  font-family:'Inconsolata', monospace !important;
+  font-weight:bold;
+  font-size:12px;
+}

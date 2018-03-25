@@ -1,5 +1,7 @@
 <%= render_shared "top_nav.html", assigns %>
 
-<app-root></app-root>
+<div class="container-fluid main-wrapper">
+  <app-root></app-root>
+</div>
 
 <%= render_shared "footer.html", assigns %>

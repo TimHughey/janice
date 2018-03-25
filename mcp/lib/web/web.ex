@@ -23,6 +23,7 @@ defmodule Web do
       import Plug.Conn
       import Web.Router.Helpers
       import Web.Gettext
+      import Web.Local.Helpers
     end
   end
 

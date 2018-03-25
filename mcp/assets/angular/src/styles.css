@@ -1,9 +1,9 @@
-body {
+/* body {
   background-color: white;
   font-family: 'Rokkitt', serif !important;
   min-height: 75rem;
   height: 75vh;
-}
+} */
 
 header {
  border-top: 9px solid #222222;
@@ -117,9 +117,9 @@ hr {
   background: black;
 }
 
-.main-wrapper {
+/* .main-wrapper {
   height: 75vh;
-}
+} */
 
 #generalInputTextLabel {
   background-color: red;
