@@ -110,28 +110,33 @@ var AppComponent = /** @class */ (function () {
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__angular_platform_browser__ = __webpack_require__("./node_modules/@angular/platform-browser/esm5/platform-browser.js");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__angular_platform_browser_animations__ = __webpack_require__("./node_modules/@angular/platform-browser/esm5/animations.js");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__angular_core__ = __webpack_require__("./node_modules/@angular/core/esm5/core.js");
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__angular_forms__ = __webpack_require__("./node_modules/@angular/forms/esm5/forms.js");
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4_angular2_fontawesome_angular2_fontawesome__ = __webpack_require__("./node_modules/angular2-fontawesome/angular2-fontawesome.js");
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4_angular2_fontawesome_angular2_fontawesome___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_4_angular2_fontawesome_angular2_fontawesome__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_5_primeng_primeng__ = __webpack_require__("./node_modules/primeng/primeng.js");
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_5_primeng_primeng___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_5_primeng_primeng__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_6_primeng_confirmdialog__ = __webpack_require__("./node_modules/primeng/confirmdialog.js");
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_6_primeng_confirmdialog___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_6_primeng_confirmdialog__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_7_primeng_inputtext__ = __webpack_require__("./node_modules/primeng/inputtext.js");
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_7_primeng_inputtext___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_7_primeng_inputtext__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_8_primeng_menu__ = __webpack_require__("./node_modules/primeng/menu.js");
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_8_primeng_menu___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_8_primeng_menu__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_9_primeng_menubar__ = __webpack_require__("./node_modules/primeng/menubar.js");
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_9_primeng_menubar___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_9_primeng_menubar__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_10_primeng_table__ = __webpack_require__("./node_modules/primeng/table.js");
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_10_primeng_table___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_10_primeng_table__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_11__app_component__ = __webpack_require__("./src/app/app.component.ts");
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_12__remotes_remote_table_component__ = __webpack_require__("./src/app/remotes/remote-table.component.ts");
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_13__remotes_remote_service__ = __webpack_require__("./src/app/remotes/remote.service.ts");
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_14__app_routing_module__ = __webpack_require__("./src/app/app-routing.module.ts");
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_15__landing_landing_component__ = __webpack_require__("./src/app/landing/landing.component.ts");
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_16__subsystems_subsystems_component__ = __webpack_require__("./src/app/subsystems/subsystems.component.ts");
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_17__remotes_remotes_component__ = __webpack_require__("./src/app/remotes/remotes.component.ts");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__angular_common_http__ = __webpack_require__("./node_modules/@angular/common/esm5/http.js");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__angular_forms__ = __webpack_require__("./node_modules/@angular/forms/esm5/forms.js");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_5_angular2_fontawesome_angular2_fontawesome__ = __webpack_require__("./node_modules/angular2-fontawesome/angular2-fontawesome.js");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_5_angular2_fontawesome_angular2_fontawesome___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_5_angular2_fontawesome_angular2_fontawesome__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_6_primeng_primeng__ = __webpack_require__("./node_modules/primeng/primeng.js");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_6_primeng_primeng___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_6_primeng_primeng__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_7_primeng_checkbox__ = __webpack_require__("./node_modules/primeng/checkbox.js");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_7_primeng_checkbox___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_7_primeng_checkbox__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_8_primeng_confirmdialog__ = __webpack_require__("./node_modules/primeng/confirmdialog.js");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_8_primeng_confirmdialog___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_8_primeng_confirmdialog__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_9_primeng_inputtext__ = __webpack_require__("./node_modules/primeng/inputtext.js");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_9_primeng_inputtext___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_9_primeng_inputtext__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_10_primeng_menu__ = __webpack_require__("./node_modules/primeng/menu.js");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_10_primeng_menu___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_10_primeng_menu__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_11_primeng_menubar__ = __webpack_require__("./node_modules/primeng/menubar.js");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_11_primeng_menubar___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_11_primeng_menubar__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_12_primeng_table__ = __webpack_require__("./node_modules/primeng/table.js");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_12_primeng_table___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_12_primeng_table__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_13_primeng_togglebutton__ = __webpack_require__("./node_modules/primeng/togglebutton.js");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_13_primeng_togglebutton___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_13_primeng_togglebutton__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_14__app_component__ = __webpack_require__("./src/app/app.component.ts");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_15__remotes_remote_table_component__ = __webpack_require__("./src/app/remotes/remote-table.component.ts");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_16__remotes_remote_service__ = __webpack_require__("./src/app/remotes/remote.service.ts");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_17__app_routing_module__ = __webpack_require__("./src/app/app-routing.module.ts");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_18__landing_landing_component__ = __webpack_require__("./src/app/landing/landing.component.ts");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_19__subsystems_subsystems_component__ = __webpack_require__("./src/app/subsystems/subsystems.component.ts");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_20__remotes_remotes_component__ = __webpack_require__("./src/app/remotes/remotes.component.ts");
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -156,33 +161,39 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 
 
 
+
+
+
 var AppModule = /** @class */ (function () {
     function AppModule() {
     }
     AppModule = __decorate([
         Object(__WEBPACK_IMPORTED_MODULE_2__angular_core__["NgModule"])({
             declarations: [
-                __WEBPACK_IMPORTED_MODULE_11__app_component__["a" /* AppComponent */],
-                __WEBPACK_IMPORTED_MODULE_12__remotes_remote_table_component__["a" /* RemoteTableComponent */],
-                __WEBPACK_IMPORTED_MODULE_15__landing_landing_component__["a" /* LandingComponent */],
-                __WEBPACK_IMPORTED_MODULE_16__subsystems_subsystems_component__["a" /* SubsystemsComponent */],
-                __WEBPACK_IMPORTED_MODULE_17__remotes_remotes_component__["a" /* RemotesComponent */]
+                __WEBPACK_IMPORTED_MODULE_14__app_component__["a" /* AppComponent */],
+                __WEBPACK_IMPORTED_MODULE_15__remotes_remote_table_component__["a" /* RemoteTableComponent */],
+                __WEBPACK_IMPORTED_MODULE_18__landing_landing_component__["a" /* LandingComponent */],
+                __WEBPACK_IMPORTED_MODULE_19__subsystems_subsystems_component__["a" /* SubsystemsComponent */],
+                __WEBPACK_IMPORTED_MODULE_20__remotes_remotes_component__["a" /* RemotesComponent */]
             ],
             imports: [
                 __WEBPACK_IMPORTED_MODULE_0__angular_platform_browser__["BrowserModule"],
                 __WEBPACK_IMPORTED_MODULE_1__angular_platform_browser_animations__["a" /* BrowserAnimationsModule */],
-                __WEBPACK_IMPORTED_MODULE_4_angular2_fontawesome_angular2_fontawesome__["Angular2FontawesomeModule"],
-                __WEBPACK_IMPORTED_MODULE_7_primeng_inputtext__["InputTextModule"],
-                __WEBPACK_IMPORTED_MODULE_5_primeng_primeng__["ButtonModule"],
-                __WEBPACK_IMPORTED_MODULE_6_primeng_confirmdialog__["ConfirmDialogModule"],
-                __WEBPACK_IMPORTED_MODULE_3__angular_forms__["FormsModule"],
-                __WEBPACK_IMPORTED_MODULE_8_primeng_menu__["MenuModule"],
-                __WEBPACK_IMPORTED_MODULE_9_primeng_menubar__["MenubarModule"],
-                __WEBPACK_IMPORTED_MODULE_10_primeng_table__["TableModule"],
-                __WEBPACK_IMPORTED_MODULE_14__app_routing_module__["a" /* AppRoutingModule */]
+                __WEBPACK_IMPORTED_MODULE_3__angular_common_http__["b" /* HttpClientModule */],
+                __WEBPACK_IMPORTED_MODULE_5_angular2_fontawesome_angular2_fontawesome__["Angular2FontawesomeModule"],
+                __WEBPACK_IMPORTED_MODULE_9_primeng_inputtext__["InputTextModule"],
+                __WEBPACK_IMPORTED_MODULE_6_primeng_primeng__["ButtonModule"],
+                __WEBPACK_IMPORTED_MODULE_7_primeng_checkbox__["CheckboxModule"],
+                __WEBPACK_IMPORTED_MODULE_8_primeng_confirmdialog__["ConfirmDialogModule"],
+                __WEBPACK_IMPORTED_MODULE_4__angular_forms__["FormsModule"],
+                __WEBPACK_IMPORTED_MODULE_10_primeng_menu__["MenuModule"],
+                __WEBPACK_IMPORTED_MODULE_11_primeng_menubar__["MenubarModule"],
+                __WEBPACK_IMPORTED_MODULE_12_primeng_table__["TableModule"],
+                __WEBPACK_IMPORTED_MODULE_13_primeng_togglebutton__["ToggleButtonModule"],
+                __WEBPACK_IMPORTED_MODULE_17__app_routing_module__["a" /* AppRoutingModule */]
             ],
-            providers: [__WEBPACK_IMPORTED_MODULE_13__remotes_remote_service__["a" /* RemoteService */]],
-            bootstrap: [__WEBPACK_IMPORTED_MODULE_11__app_component__["a" /* AppComponent */]]
+            providers: [__WEBPACK_IMPORTED_MODULE_16__remotes_remote_service__["a" /* RemoteService */]],
+            bootstrap: [__WEBPACK_IMPORTED_MODULE_14__app_component__["a" /* AppComponent */]]
         })
     ], AppModule);
     return AppModule;
@@ -279,7 +290,7 @@ module.exports = "\nth, td {\n  font-family:'Inconsolata', monospace !important;
 /***/ "./src/app/remotes/remote-table.component.html":
 /***/ (function(module, exports) {
 
-module.exports = "<p-table [value]=\"remotes\" [scrollable]=\"true\" (onEditInit)=\"onEditInit($event)\" (onEditCancel)=\"onEditCancel($event)\"\n  (onEditComplete)=\"onEditComplete($event)\">\n  <ng-template pTemplate=\"header\">\n    <tr>\n      <!-- <th style=\"width: 2.25em\">Id</th> -->\n      <th style=\"width: 2.25em\">Id</th>\n      <th>Name</th>\n      <th>Host</th>\n      <th>Hardware</th>\n      <th>FW</th>\n      <th>FW Pref</th>\n      <th>At Vsn?</th>\n      <th>Started</th>\n      <th>Seen</th>\n    </tr>\n  </ng-template>\n  <ng-template pTemplate=\"body\" let-remote>\n    <tr>\n      <td style=\"width: 2.25em\">{{remote.id}}</td>\n      <td [pEditableColumn]=\"remote\" [pEditableColumnField]=\"'name'\">\n        <p-cellEditor>\n          <ng-template pTemplate=\"input\">\n            <input type=\"text\" [(ngModel)]=\"remote.name\" (blur)=\"blur({event: $event, local: $item})\">\n          </ng-template>\n          <ng-template pTemplate=\"output\">\n            {{remote.name}}\n          </ng-template>\n        </p-cellEditor>\n      </td>\n      <td>{{remote.host}}</td>\n      <td>{{remote.hardware}}</td>\n      <td>{{remote.firmware}}</td>\n      <td>{{remote.firmwarePref}}</td>\n      <td>{{remote.atVersion}}</td>\n      <td>{{remote.startedAt}}</td>\n      <td>{{remote.seenAt}}</td>\n    </tr>\n  </ng-template>\n</p-table>\n\n<div class=\"row justify-content-center\">\n  <div class=\"col-md-auto\">\n    Pending Commands: {{ pending.length }}\n  </div>\n</div>"
+module.exports = "<div class=\"row justify-content-center\">\n  <div class=\"col-md-11\">\n    <p-table [value]=\"remotes\" [scrollable]=\"true\" (onEditInit)=\"onEditInit($event)\" (onEditCancel)=\"onEditCancel($event)\"\n      (onEditComplete)=\"onEditComplete($event)\">\n      <ng-template pTemplate=\"header\">\n        <tr>\n          <!-- <th style=\"width: 2.25em\">Id</th> -->\n          <th style=\"width: 2.25em\">Id</th>\n          <th>Name</th>\n          <th>Host</th>\n          <th>Hardware</th>\n          <th>FW</th>\n          <th>FW Pref</th>\n          <th>At Vsn?</th>\n          <th>Started</th>\n          <th>Seen</th>\n        </tr>\n      </ng-template>\n      <ng-template pTemplate=\"body\" let-remote>\n        <tr>\n          <td style=\"width: 2.25em\">{{remote.id}}</td>\n          <td [pEditableColumn]=\"remote\" [pEditableColumnField]=\"'name'\">\n            <p-cellEditor>\n              <ng-template pTemplate=\"input\">\n                <input type=\"text\" [(ngModel)]=\"remote.name\" (blur)=\"blur({event: $event, local: $item})\">\n              </ng-template>\n              <ng-template pTemplate=\"output\">\n                {{remote.name}}\n              </ng-template>\n            </p-cellEditor>\n          </td>\n          <td>{{remote.host}}</td>\n          <td>{{remote.hardware}}</td>\n          <td>{{remote.firmware}}</td>\n          <td>{{remote.firmwarePref}}</td>\n          <td>{{remote.atVersion}}</td>\n          <td>{{remote.startedAt}}</td>\n          <td>{{remote.seenAt}}</td>\n        </tr>\n      </ng-template>\n    </p-table>\n  </div>\n</div>\n\n<div class=\"row justify-content-center\">\n  <div class=\"col-md-auto\">\n    <p-toggleButton [(ngModel)]=\"autoRefresh\" onLabel=\"Refresh: On\" offLabel=\"Refresh: Off\" onIcon=\"fa-check-square\"\n      offIcon=\"fa-square\" [style]=\"{'width':'150px'}\"></p-toggleButton>\n  </div>\n  <div class=\"col-md-auto\">\n    Pending Commands: {{ pending.length }}\n  </div>\n</div>"
 
 /***/ }),
 
@@ -289,7 +300,9 @@ module.exports = "<p-table [value]=\"remotes\" [scrollable]=\"true\" (onEditInit
 "use strict";
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return RemoteTableComponent; });
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__angular_core__ = __webpack_require__("./node_modules/@angular/core/esm5/core.js");
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__remote_service__ = __webpack_require__("./src/app/remotes/remote.service.ts");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_rxjs_Observable__ = __webpack_require__("./node_modules/rxjs/_esm5/Observable.js");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_rxjs_add_observable_interval__ = __webpack_require__("./node_modules/rxjs/_esm5/add/observable/interval.js");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__remote_service__ = __webpack_require__("./src/app/remotes/remote.service.ts");
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -302,14 +315,38 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 
 
 
+
+
 var RemoteTableComponent = /** @class */ (function () {
     function RemoteTableComponent(remoteService) {
         this.remoteService = remoteService;
+        this.ob = __WEBPACK_IMPORTED_MODULE_1_rxjs_Observable__["a" /* Observable */].interval(3000);
         this.pending = new Array();
+        this.autoRefresh = true;
     }
+    RemoteTableComponent.prototype.loadData = function () {
+        var _this = this;
+        this.data$ = this.remoteService.getRemotes();
+        // one-time
+        this.data$.subscribe(function (r) { return _this.setData(r); });
+        // repeating
+        this.refresh = this.ob.
+            subscribe(function () { return _this.handleRefresh(); });
+    };
+    RemoteTableComponent.prototype.setData = function (remotes) { this.remotes = remotes.slice(); };
+    RemoteTableComponent.prototype.handleRefresh = function () {
+        var _this = this;
+        if (this.autoRefresh) {
+            this.data$.subscribe(function (r) { return _this.setData(r); });
+        }
+    };
+    RemoteTableComponent.prototype.ngOnDestroy = function () {
+        console.log('destroy');
+        this.refresh.unsubscribe();
+    };
     RemoteTableComponent.prototype.ngOnInit = function () {
-        this.remotes = this.remoteService.getRemotes();
-        // this.remoteService.getRemotes().then(remotes => this.remotes = remotes);
+        // this.interval = setInterval(() => this.loadData(), 3000);
+        this.loadData();
     };
     RemoteTableComponent.prototype.blur = function (_a) {
         var event = _a.event, local = _a.local;
@@ -328,6 +365,7 @@ var RemoteTableComponent = /** @class */ (function () {
     };
     RemoteTableComponent.prototype.onEditInit = function (event) {
         this.save = event.data.name;
+        this.autoRefresh = false;
         console.log('init: ', event, this.save);
     };
     __decorate([
@@ -340,7 +378,7 @@ var RemoteTableComponent = /** @class */ (function () {
             template: __webpack_require__("./src/app/remotes/remote-table.component.html"),
             styles: [__webpack_require__("./src/app/remotes/remote-table.component.css")]
         }),
-        __metadata("design:paramtypes", [__WEBPACK_IMPORTED_MODULE_1__remote_service__["a" /* RemoteService */]])
+        __metadata("design:paramtypes", [__WEBPACK_IMPORTED_MODULE_3__remote_service__["a" /* RemoteService */]])
     ], RemoteTableComponent);
     return RemoteTableComponent;
 }());
@@ -355,6 +393,9 @@ var RemoteTableComponent = /** @class */ (function () {
 "use strict";
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return RemoteService; });
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__angular_core__ = __webpack_require__("./node_modules/@angular/core/esm5/core.js");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__angular_common_http__ = __webpack_require__("./node_modules/@angular/common/esm5/http.js");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_rxjs_observable_of__ = __webpack_require__("./node_modules/rxjs/_esm5/observable/of.js");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3_rxjs_operators__ = __webpack_require__("./node_modules/rxjs/_esm5/operators.js");
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -365,9 +406,14 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 
+
+
+
 var RemoteService = /** @class */ (function () {
-    function RemoteService() {
-        this.remotes = [
+    function RemoteService(http) {
+        this.http = http;
+        this.remotesUrl = '/janice/mcp/api/remote';
+        this.testRemotes = [
             {
                 id: 0, name: 'lab-switches', host: 'mcr.30aea427b684', hardware: 'esp32',
                 firmware: '1111111', firmwarePref: 'head', atVersion: true, startedAt: '10min',
@@ -379,13 +425,33 @@ var RemoteService = /** @class */ (function () {
                 seenAt: '11min'
             },
         ];
+        this.testResponse = {
+            data: [],
+            data2: this.testRemotes,
+            items: this.testRemotes.length,
+            mtime: 1000
+        };
     }
     RemoteService.prototype.getRemotes = function () {
-        return this.remotes;
+        return this.http.get(this.remotesUrl)
+            .pipe(Object(__WEBPACK_IMPORTED_MODULE_3_rxjs_operators__["b" /* map */])(function (resp) { return resp.data2; }), 
+        // tap(remotes => console.log(`fetched remotes`)),
+        Object(__WEBPACK_IMPORTED_MODULE_3_rxjs_operators__["a" /* catchError */])(this.handleError('getRemotes', [])));
+    };
+    RemoteService.prototype.handleError = function (operation, result) {
+        if (operation === void 0) { operation = 'operation'; }
+        return function (error) {
+            // TODO: send the error to remote logging infrastructure
+            console.error(error); // log to console instead
+            // TODO: better job of transforming error for user consumption
+            console.log(operation + " failed: " + error.message);
+            // Let the app keep running by returning an empty result.
+            return Object(__WEBPACK_IMPORTED_MODULE_2_rxjs_observable_of__["a" /* of */])(result);
+        };
     };
     RemoteService = __decorate([
         Object(__WEBPACK_IMPORTED_MODULE_0__angular_core__["Injectable"])(),
-        __metadata("design:paramtypes", [])
+        __metadata("design:paramtypes", [__WEBPACK_IMPORTED_MODULE_1__angular_common_http__["a" /* HttpClient */]])
     ], RemoteService);
     return RemoteService;
 }());
@@ -404,7 +470,7 @@ module.exports = ""
 /***/ "./src/app/remotes/remotes.component.html":
 /***/ (function(module, exports) {
 
-module.exports = "<div class=\"row justify-content-center\">\n  <div class=\"col-md-auto\">\n    <h2>Subsystem</h2>\n  </div>\n</div>\n\n<div class=\"row justify-content-center\">\n  <div class=\"col-md-auto\">\n    <h3>Remotes</h3>\n  </div>\n</div>\n\n<div class=\"row justify-content-center\">\n  <div class=\"col-md-11\">\n    <app-remote-table></app-remote-table>\n  </div>\n</div>"
+module.exports = "<div class=\"row justify-content-center\">\n  <div class=\"col-md-auto\">\n    <h2>Subsystem</h2>\n  </div>\n</div>\n\n<div class=\"row justify-content-center\">\n  <div class=\"col-md-auto\">\n    <h3>Remotes</h3>\n  </div>\n</div>\n\n<app-remote-table></app-remote-table>"
 
 /***/ }),
 
