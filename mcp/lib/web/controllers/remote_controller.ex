@@ -47,7 +47,7 @@ defmodule Web.RemoteController do
       firmware_vsn: "firmware",
       preferred_vsn: "firmwarePref",
       last_start_at: "startedAt",
-      last_seen_at: "SeenAt"
+      last_seen_at: "seenAt"
     ]
 
     data2 =
