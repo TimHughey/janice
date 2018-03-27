@@ -9,9 +9,9 @@
           <th>Name</th>
           <th>Host</th>
           <th>Hardware</th>
-          <th>FW</th>
-          <th>FW Pref</th>
-          <th>At Vsn?</th>
+          <th style="width: 8.5em">FW</th>
+          <th style="width: 8.5em">FW Pref</th>
+          <th style="width: 8.5em">At Vsn?</th>
           <th>Started</th>
           <th>Seen</th>
         </tr>
@@ -34,8 +34,8 @@
           <td>{{remote.firmware}}</td>
           <td>{{remote.firmwarePref}}</td>
           <td>{{remote.atVersion}}</td>
-          <td>{{remote.startedAt | date:'yyyy-MM-dd hh:mm:ss':'ET'}}</td>
-          <td>{{remote.seenAt | date:'yyyy-MM-dd hh:mm:ss':'ET'}}</td>
+          <td>{{remote.startedAt | date:'yyyy-MM-dd HH:mm:ss':'ET'}}</td>
+          <td>{{remote.seenAt | date:'yyyy-MM-dd HH:mm:ss':'ET'}}</td>
         </tr>
       </ng-template>
     </p-table>
