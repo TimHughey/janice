@@ -1,6 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { DatePipe } from '@angular/common';
+import { HostListener, Inject } from '@angular/core';
 import { Input, Output } from '@angular/core';
+import { DatePipe } from '@angular/common';
 
 import { Subscription } from 'rxjs/Subscription';
 import { Observable } from 'rxjs/Observable';
@@ -31,8 +32,11 @@ export class RemoteTableComponent implements OnInit, OnDestroy {
   @Output() pending = new Array<Remote>();
   autoRefresh = true;
   tableLoading = false;
+  visible = true;
 
-  constructor(private remoteService: RemoteService, private messageService: MessageService) { }
+  constructor(private remoteService: RemoteService, private messageService: MessageService) {
+
+  }
 
   loadData() {
     this.data$ = this.remoteService.getRemotes();
@@ -55,7 +59,7 @@ export class RemoteTableComponent implements OnInit, OnDestroy {
   }
 
   handleRefresh() {
-    if (this.autoRefresh) {
+    if (this.autoRefresh && (document.visibilityState === 'visible')) {
       this.tableLoading = true;
       this.data$.subscribe(r => this.setData(r));
     }

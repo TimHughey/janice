@@ -339,6 +339,7 @@ var RemoteTableComponent = /** @class */ (function () {
         this.pending = new Array();
         this.autoRefresh = true;
         this.tableLoading = false;
+        this.visible = true;
     }
     RemoteTableComponent.prototype.loadData = function () {
         var _this = this;
@@ -358,7 +359,7 @@ var RemoteTableComponent = /** @class */ (function () {
     };
     RemoteTableComponent.prototype.handleRefresh = function () {
         var _this = this;
-        if (this.autoRefresh) {
+        if (this.autoRefresh && (document.visibilityState === 'visible')) {
             this.tableLoading = true;
             this.data$.subscribe(function (r) { return _this.setData(r); });
         }
