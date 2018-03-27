@@ -1,11 +1,25 @@
 
 th, td {
-  font-family:'Inconsolata', monospace !important;
+  font-family:'Inconsolata', monospace;
   font-size:12px;
 }
 
 input {
-  font-family:'Inconsolata', monospace !important;
+  font-family:'Inconsolata', monospace;
   font-weight:bold;
   font-size:12px;
+}
+
+.refresh-button {
+  width:150px;
+  font-size:12px;
+}
+
+.commit-button {
+  font-size:12px;
+}
+
+.load-spinner {
+  width:20px;
+  height:20px;
 }

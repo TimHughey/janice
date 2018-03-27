@@ -1,10 +1,14 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { Input, Output } from '@angular/core';
 
 import { Subscription } from 'rxjs/Subscription';
 import { Observable } from 'rxjs/Observable';
 import { IntervalObservable } from 'rxjs/observable/IntervalObservable';
 import 'rxjs/add/observable/interval';
+
+import { Message } from 'primeng/components/common/api';
+import { MessageService } from 'primeng/components/common/messageservice';
 
 import { RemoteApiResponse } from './remote-api-response';
 import { RemoteService } from './remote.service';
@@ -26,8 +30,9 @@ export class RemoteTableComponent implements OnInit, OnDestroy {
   save: string;
   @Output() pending = new Array<Remote>();
   autoRefresh = true;
+  tableLoading = false;
 
-  constructor(private remoteService: RemoteService) { }
+  constructor(private remoteService: RemoteService, private messageService: MessageService) { }
 
   loadData() {
     this.data$ = this.remoteService.getRemotes();
@@ -40,10 +45,20 @@ export class RemoteTableComponent implements OnInit, OnDestroy {
       subscribe(() => this.handleRefresh());
   }
 
-  setData(remotes) { this.remotes = [...remotes]; }
+  setData(remotes) {
+    this.remotes = [...remotes];
+    this.tableLoading = false;
+  }
+
+  handleCommit(event) {
+    this.pending = [];
+  }
 
   handleRefresh() {
-    if (this.autoRefresh) { this.data$.subscribe(r => this.setData(r)); }
+    if (this.autoRefresh) {
+      this.tableLoading = true;
+      this.data$.subscribe(r => this.setData(r));
+    }
   }
 
   ngOnDestroy() {
@@ -60,6 +75,10 @@ export class RemoteTableComponent implements OnInit, OnDestroy {
     console.log('blur:', event, this.save, local);
   }
 
+  commitLabel() {
+    return `Changes (${this.pending.length})`;
+  }
+
   onEditCancel(event) {
     const changed: Remote = event.data;
 
@@ -68,7 +87,7 @@ export class RemoteTableComponent implements OnInit, OnDestroy {
     event.data.name = this.save;
     // this.remotes[index] = this.save[index];
 
-    console.log('cancel:', event, index);
+    this.messageService.add({ severity: 'warn', summary: 'Edit canceled', detail: 'value reverted' });
   }
 
   onEditComplete(event) {

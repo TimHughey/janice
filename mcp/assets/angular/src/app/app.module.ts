@@ -11,6 +11,9 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { MenuModule } from 'primeng/menu';
 import { MenubarModule } from 'primeng/menubar';
+import { MessagesModule } from 'primeng/messages';
+import { MessageService } from 'primeng/components/common/messageservice';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { TableModule } from 'primeng/table';
 import { ToggleButtonModule } from 'primeng/togglebutton';
 
@@ -43,11 +46,13 @@ import { RemotesComponent } from './remotes/remotes.component';
     FormsModule,
     MenuModule,
     MenubarModule,
+    MessagesModule,
+    ProgressSpinnerModule,
     TableModule,
     ToggleButtonModule,
     AppRoutingModule
   ],
-  providers: [RemoteService],
+  providers: [MessageService, RemoteService],
   bootstrap: [AppComponent]
 })
 export class AppModule { }
