@@ -24,6 +24,7 @@ import { AppRoutingModule } from './app-routing.module';
 import { LandingComponent } from './landing/landing.component';
 import { SubsystemsComponent } from './subsystems/subsystems.component';
 import { RemotesComponent } from './remotes/remotes.component';
+import { MixtanksComponent } from './mixtanks/mixtanks.component';
 
 
 @NgModule({
@@ -32,7 +33,8 @@ import { RemotesComponent } from './remotes/remotes.component';
     RemoteTableComponent,
     LandingComponent,
     SubsystemsComponent,
-    RemotesComponent
+    RemotesComponent,
+    MixtanksComponent
   ],
   imports: [
     BrowserModule,

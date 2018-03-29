@@ -23,7 +23,10 @@
     "@angular/router": "^5.2.0",
     "angular2-fontawesome": "^5.2.1",
     "core-js": "^2.4.1",
+    "devextreme": "^17.2.7",
+    "devextreme-angular": "^17.2.7",
     "font-awesome": "^4.7.0",
+    "moment": "^2.21.0",
     "primeng": "^5.2.3",
     "rxjs": "^5.5.6",
     "zone.js": "^0.8.19"

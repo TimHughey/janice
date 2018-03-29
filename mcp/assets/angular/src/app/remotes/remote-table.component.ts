@@ -5,10 +5,12 @@ import { DatePipe } from '@angular/common';
 
 import { Subscription } from 'rxjs/Subscription';
 import { Observable } from 'rxjs/Observable';
-import { IntervalObservable } from 'rxjs/observable/IntervalObservable';
+// import { IntervalObservable } from 'rxjs/observable/IntervalObservable';
 import 'rxjs/add/observable/interval';
 
-import { Message } from 'primeng/components/common/api';
+import * as Moment from 'moment';
+
+
 import { MessageService } from 'primeng/components/common/messageservice';
 
 import { RemoteApiResponse } from './remote-api-response';
@@ -33,6 +35,7 @@ export class RemoteTableComponent implements OnInit, OnDestroy {
   autoRefresh = true;
   tableLoading = false;
   visible = true;
+  lastLoad = Moment();
 
   constructor(private remoteService: RemoteService, private messageService: MessageService) {
 
@@ -52,6 +55,7 @@ export class RemoteTableComponent implements OnInit, OnDestroy {
   setData(remotes) {
     this.remotes = [...remotes];
     this.tableLoading = false;
+    this.lastLoad = Moment();
   }
 
   handleCommit(event) {
@@ -103,6 +107,5 @@ export class RemoteTableComponent implements OnInit, OnDestroy {
     this.save = event.data.name;
     this.autoRefresh = false;
     console.log('init: ', event, this.save);
-
   }
 }

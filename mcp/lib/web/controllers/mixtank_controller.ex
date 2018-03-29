@@ -28,11 +28,46 @@ defmodule Web.MixtankController do
         profile_names = for p <- map.profiles, do: p.name
         active_profile = Mixtank.active_profile_name(mt.id)
 
-        map |> Map.put(:state, state) |> Map.put(:profileNames, profile_names)
+        map
+        |> Map.put(:state, state)
+        |> Map.put(:profileNames, profile_names)
         |> Map.put(:activeProfile, active_profile)
       end
 
-    resp = %{data: data, items: Enum.count(data), mtime: Timex.local() |> Timex.to_unix()}
+    key_mapping = [
+      id: "id",
+      name: "name",
+      comment: "comment",
+      enable: "enabled",
+      sensor: "sensor",
+      ref_sensor: "referenceSensor",
+      pump: "pump",
+      air: "air",
+      heater: "heater",
+      fill: "fill",
+      replenish: "replenish",
+      inserted_at: "insertedAt",
+      updated_at: "updatedAt"
+    ]
+
+    data2 =
+      for mt <- mixtanks do
+        state = %{"startedAt" => mt.state.started_at, "stateAt" => mt.state.state_at}
+        profile_names = for p <- mt.profiles, do: p.name
+        active_profile = Mixtank.active_profile_name(mt.id)
+
+        resp_mapper(mt, key_mapping)
+        |> Map.put("profileNames", profile_names)
+        |> Map.put("activeProfile", active_profile)
+        |> Map.put("state", state)
+      end
+
+    resp = %{
+      data: data,
+      data2: data2,
+      items: Enum.count(data),
+      mtime: Timex.local() |> Timex.to_unix()
+    }
 
     json(conn, resp)
   end

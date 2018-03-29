@@ -19,6 +19,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="<%= static_path(@conn, "/favicon.ico") %>">
     <link rel="stylesheet" href="<%= static_path(@conn, "/css/app.css") %>">
+    <link rel="stylesheet" href="<%= static_path(@conn, "/bundles/styles.09bafb169e38ce881cde.bundle.css") %>"/>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
     <link href="https://fonts.googleapis.com/css?family=Permanent+Marker|Inconsolata|Acme|Rokkitt" rel="stylesheet" type='text/css' crossorigin="anonymous">
   </head>
@@ -28,10 +29,9 @@
       <%= render @view_module, @view_template, assigns %>
     </div>
 
-    <script type="text/javascript" src="<%= static_path(@conn, "/bundles/inline.bundle.js") %>"></script>
-    <script type="text/javascript" src="<%= static_path(@conn, "/bundles/polyfills.bundle.js") %>"></script>
-    <script type="text/javascript" src="<%= static_path(@conn, "/bundles/styles.bundle.js") %>"></script>
-    <script type="text/javascript" src="<%= static_path(@conn, "/bundles/vendor.bundle.js") %>"></script>
-    <script type="text/javascript" src="<%= static_path(@conn, "/bundles/main.bundle.js") %>"></script>
+    <script type="text/javascript" src="<%= static_path(@conn, "/bundles/inline.499acf67384ab9661bfe.bundle.js") %>"></script>
+    <script type="text/javascript" src="<%= static_path(@conn, "/bundles/polyfills.1457c99db4b6dba06e8d.bundle.js") %>"></script>
+    <!-- <script type="text/javascript" src="<%= static_path(@conn, "/bundles/vendor.bundle.js") %>"></script> -->
+    <script type="text/javascript" src="<%= static_path(@conn, "/bundles/main.6eec33f5333cdb1052d6.bundle.js") %>"></script>
   </body>
 </html>
