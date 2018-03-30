@@ -15,7 +15,10 @@ function run_cmd {
 
 BASE=${HOME}/devel/janice
 MCP=${BASE}/mcp
+MCP_STATIC=${BASE}/mcp/assets/static
 MCR=${BASE}/mcr_esp
+ANGULAR=${MCP}/assets/angular
+BUNDLES=${MCP_STATIC}/bundles
 
 [[ ! -x $BASE ]] && exit 1
 
@@ -30,6 +33,12 @@ run_cmd env MIX_ENV=prod mix compile
 
 cd $MCP/assets
 run_cmd brunch build --production
+
+cd $ANGULAR
+print -n "building angular ui..."
+rm -f ${BUNDLES}/*
+run_cmd ng build --prod --env=prod --build-optimizer
+run_cmd cp ${ANGULAR}/dist/* ${BUNDLES}
 
 cd $MCP
 run_cmd env MIX_ENV=prod mix phx.digest
