@@ -15,7 +15,7 @@ function run_cmd {
 
 BASE=${HOME}/devel/janice
 MCP=${BASE}/mcp
-MCP_STATIC=${BASE}/mcp/assets/static
+MCP_STATIC=${MCP}/assets/static
 MCR=${BASE}/mcr_esp
 ANGULAR=${MCP}/assets/angular
 BUNDLES=${MCP_STATIC}/bundles
@@ -36,7 +36,8 @@ run_cmd brunch build --production
 
 cd $ANGULAR
 print -n "building angular ui..."
-rm -f ${BUNDLES}/*
+rm -rf ${BUNDLES} 1> /dev/null 2>&1
+run_cmd mkdir -p ${BUNDLES}
 run_cmd ng build --prod --env=prod --build-optimizer
 run_cmd cp ${ANGULAR}/dist/* ${BUNDLES}
 
