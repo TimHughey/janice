@@ -31,7 +31,8 @@ exports.conventions = {
   // This option sets where we should place non-css and non-js assets in. By
   // default, we set this to "/assets/static". Files in this directory will
   // be copied to `paths.public`, which is "priv/static" by default.
-  assets: /^(static)/,
+  assets: [/^(static)/, /bundles\//],
+  ignored: [],
 };
 
 // Phoenix paths configuration
@@ -48,6 +49,7 @@ exports.paths = {
 exports.plugins = {
   babel: {
     presets: ['latest', 'stage-0'],
+    ignore: [/bundles/],
     // Do not use ES6 compiler in vendor code ignore: [ /vendor/ ]
   },
   pleeease: {
@@ -60,7 +62,11 @@ exports.plugins = {
     images: [
       'static/images', 'node_modules/datatables.net-dt/images',
     ],
+    // bundles: [
+    //   'angular/dist',
+    // ],
     onlyChanged: true,
+    verbose: true,
   },
   sass: {
     options: {
@@ -85,6 +91,7 @@ exports.modules = {
 
 exports.npm = {
   enabled: true,
+  debug: true,
   // Bootstrap JavaScript requires both '$', 'jQuery', and Tether in global
   // scope
   globals: {

@@ -21,7 +21,7 @@
   </head>
 
   <body>
-    <div class="container-fluid">
+    <div class="container-fluid h-100">
       <%= render @view_module, @view_template, assigns %>
     </div>
     <script src="<%= static_path(@conn, "/js/app.js") %>"></script>
