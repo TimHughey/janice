@@ -46,13 +46,8 @@ run_cmd env MIX_ENV=prod mix phx.digest
 
 cd $MCR
 print -n "building mcr_esp..."
-<<<<<<< HEAD
-run_cmd make app-clean 1> /dev/null 2>&1
-run_cmd make -j9 deploy-to-mcp 1> /dev/null 2>&1 && print " done"
-=======
-run_cmd make app-clean 
+run_cmd make app-clean
 run_cmd make -j9 deploy-to-mcp && print " done"
->>>>>>> b60214f80b5eec93968c68f3a98d5f1ded4364b2
 
 cd $MCP
 run_cmd env MIX_ENV=prod mix release --env=prod
