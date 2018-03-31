@@ -35,7 +35,7 @@ cd $MCP/assets
 run_cmd brunch build --production
 
 cd $ANGULAR
-print -n "building angular ui..."
+print "building angular ui..."
 rm -rf ${BUNDLES} 1> /dev/null 2>&1
 run_cmd mkdir -p ${BUNDLES}
 run_cmd ng build --prod --env=prod --build-optimizer
@@ -47,7 +47,7 @@ run_cmd env MIX_ENV=prod mix phx.digest
 cd $MCR
 print -n "building mcr_esp..."
 run_cmd make app-clean 1> /dev/null 2>&1
-run_cmd make -j9 deploy 1> /dev/null 2>&1 && print " done"
+run_cmd make -j9 deploy-to-mcp 1> /dev/null 2>&1 && print " done"
 
 cd $MCP
 run_cmd env MIX_ENV=prod mix release --env=prod
