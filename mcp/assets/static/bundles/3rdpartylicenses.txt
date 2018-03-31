@@ -1,4 +1,4 @@
-moment@2.21.0
+moment@2.22.0
 MIT
 Copyright (c) JS Foundation and other contributors
 
@@ -93,7 +93,7 @@ CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-primeng@5.2.3
+primeng@5.2.4
 MIT
 The MIT License (MIT)
 
@@ -173,9 +173,9 @@ MIT
 MIT
 MIT
 
-core-js@2.5.3
+core-js@2.5.4
 MIT
-Copyright (c) 2014-2017 Denis Pushkarev
+Copyright (c) 2014-2018 Denis Pushkarev
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -195,11 +195,11 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
-zone.js@0.8.20
+zone.js@0.8.21
 MIT
 The MIT License
 
-Copyright (c) 2016 Google, Inc.
+Copyright (c) 2016-2018 Google, Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
