@@ -24,7 +24,7 @@ import { Remote } from './remote';
 })
 export class RemoteTableComponent implements OnInit, OnDestroy {
 
-  ob = Observable.interval(3000);
+  ob = Observable.interval(10000);
   data$: Observable<Remote[]>;
   refresh: Subscription;
 

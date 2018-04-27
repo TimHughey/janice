@@ -581,7 +581,7 @@ bool mcrI2c::selectBus(uint32_t bus) {
       rc = false;
     }
 
-    if (_bus_select_errors > 25) {
+    if (_bus_select_errors > 50) {
       ESP_LOGE(tagEngine(), "bus select errors exceeded, JUMP!");
       delay(5000);
       esp_restart();
