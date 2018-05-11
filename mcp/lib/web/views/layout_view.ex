@@ -27,7 +27,7 @@ defmodule Web.LayoutView do
   def ui_js_files do
     # files = ["inline", "polyfills", "styles", "vendor", "main"]
     files = ["inline", "polyfills", "main"]
-    env = "#{Mix.env()}"
+    # env = "#{Mix.env()}"
 
     # if env === "dev" or env === "test" do
     #   for f <- files, do: "#{f}.bundle.js"
