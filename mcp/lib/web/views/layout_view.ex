@@ -8,18 +8,13 @@ defmodule Web.LayoutView do
 
     {:ok, files} = File.ls(bundles_path)
 
-    styles_re = ~r/(?<file>styles\.[[:xdigit]]+\.bundle\.css)/
-    js_re = ~r/(?<file>[a-z]+\.[[:xdigit:]]+\.bundle\.js)/
+    # styles_re = ~r/(?<file>styles\.[[:xdigit]]+\.bundle\.css)/
+    styles_re = ~r/styles\.[[:xdigit]]+\.bundle\.css$/
+    js_re = ~r/[a-z]+\.[[:xdigit:]]+\.bundle\.js$/
 
-    ss =
-      for f <- files, match = Regex.named_captures(styles_re, f) do
-        Map.get(match, "file", nil)
-      end
+    ss = for f <- files, Regex.match?(styles_re, f), do: f
 
-    js =
-      for f <- files, match = Regex.named_captures(js_re, f) do
-        Map.get(match, "file", nil)
-      end
+    js = for f <- files, Regex.named_captures(js_re, f), do: f
 
     %{ss: ss, js: js}
   end
