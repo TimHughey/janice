@@ -31,8 +31,9 @@ exports.conventions = {
   // This option sets where we should place non-css and non-js assets in. By
   // default, we set this to "/assets/static". Files in this directory will
   // be copied to `paths.public`, which is "priv/static" by default.
-  assets: [/^(static)/, /bundles\//],
-  ignored: [],
+  assets: [/^(static)/],
+  // assets: [/^(static)/, /bundles\//],
+  ignored: [path => path.includes('bundles')],
 };
 
 // Phoenix paths configuration
@@ -61,6 +62,9 @@ exports.plugins = {
   copycat: {
     images: [
       'static/images', 'node_modules/datatables.net-dt/images',
+    ],
+    bundles: [
+       'angular/dist',
     ],
     // bundles: [
     //   'angular/dist',
