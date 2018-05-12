@@ -16,17 +16,16 @@ defmodule Web.LayoutView do
 
     js =
       for f <- files, Regex.match?(js_re, f) do
-        Logger.warn(fn -> "found js file: #{f}" end)
+        # Logger.warn(fn -> "found js file: #{f}" end)
         f
       end
 
-    Logger.warn(fn -> inspect(ss, pretty: true) end)
+    # Logger.warn(fn -> inspect(ss, pretty: true) end)
 
     %{ss: ss, js: js}
   end
 
   def ui_js_files do
-    # files = ["inline", "polyfills", "styles", "vendor", "main"]
     files = ["inline", "polyfills", "main"]
     # env = "#{Mix.env()}"
 
@@ -47,6 +46,7 @@ defmodule Web.LayoutView do
   end
 
   def bundle_file(conn, file) do
+    Logger.warn(fn -> "creating static path for file: #{file}" end)
     static_path(conn, "/bundles/#{file}")
   end
 end
