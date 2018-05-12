@@ -9,8 +9,8 @@ defmodule Web.LayoutView do
     {:ok, files} = File.ls(bundles_path)
 
     # styles_re = ~r/(?<file>styles\.[[:xdigit]]+\.bundle\.css)/
-    styles_re = ~r/styles.[[:xdigit:]]+.bundle.css$/
-    js_re = ~r/[a-z]+.[[:xdigit:]]+.bundle.js$/
+    styles_re = ~r/^styles\.[[:xdigit:]]+\.bundle\.css$/
+    js_re = ~r/^[a-z]+\.[[:xdigit:]]+\.bundle\.js$/
 
     ss = for f <- files, Regex.match?(styles_re, f), do: f
 
@@ -21,7 +21,6 @@ defmodule Web.LayoutView do
       end
 
     Logger.warn(fn -> inspect(ss, pretty: true) end)
-    Logger.warn(fn -> inspect(js, pretty: true) end)
 
     %{ss: ss, js: js}
   end
@@ -45,22 +44,6 @@ defmodule Web.LayoutView do
 
   def stylesheets do
     locate_ui_files() |> Map.get(:ss, [])
-  end
-
-  def javascripts do
-    [inline_js(), polyfills_js(), main_js()]
-  end
-
-  def inline_js do
-    locate_ui_files() |> Map.get(:js, []) |> Enum.find(fn x -> String.match?(x, ~r/inline/) end)
-  end
-
-  def main_js do
-    locate_ui_files() |> Map.get(:js, []) |> Enum.find(fn x -> String.match?(x, ~r/main/) end)
-  end
-
-  def polyfills_js do
-    locate_ui_files() |> Map.get(:js, []) |> Enum.find(fn x -> String.match?(x, ~r/polyfill/) end)
   end
 
   def bundle_file(conn, file) do

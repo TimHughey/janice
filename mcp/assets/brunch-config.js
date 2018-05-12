@@ -64,7 +64,7 @@ exports.plugins = {
       'static/images', 'node_modules/datatables.net-dt/images',
     ],
     bundles: [
-       'angular/dist',
+      'angular/dist',
     ],
     // bundles: [
     //   'angular/dist',
