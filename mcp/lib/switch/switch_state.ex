@@ -125,7 +125,7 @@ defmodule SwitchState do
   #   lazy: [true | false]
   #   ack: [true | false]
   def state(name, opts) when is_binary(name) and is_list(opts) do
-    position = Keyword.get(opts, :position, false)
+    position = Keyword.get(opts, :position)
     lazy = Keyword.get(opts, :lazy, false)
     log = Keyword.get(opts, :log, true)
 
@@ -138,20 +138,21 @@ defmodule SwitchState do
 
       # only change the ss if it doesn't match requested position when lazy
       lazy and ss.state != position ->
-        state(ss, opts ++ [position: position])
+        state(ss, opts)
 
       # just return the position if ss matches the requested position when lazy
-      lazy and ss.state === position ->
+      lazy and ss.state == position ->
         position
 
       # force a ss position update
       true ->
-        state(ss, opts ++ [position: position])
+        state(ss, opts)
     end
   end
 
   def state(%SwitchState{name: name} = ss, opts) when is_list(opts) do
-    position = Keyword.get(opts, :position, false)
+    position = Keyword.get(opts, :position)
+
     new_ss = change(ss, state: position) |> update!()
     SwitchCmd.record_cmd(name, new_ss, opts)
     new_ss.state
