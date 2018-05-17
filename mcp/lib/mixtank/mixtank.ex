@@ -2,8 +2,6 @@ defmodule Mixtank do
   @moduledoc """
   """
 
-  @vsn 4
-
   require Logger
   use Timex.Ecto.Timestamps
   use Ecto.Schema
@@ -133,7 +131,9 @@ defmodule Mixtank do
       :replenish
     ]
 
-    mt |> Map.take(keys) |> Map.put_new(:state, State.as_map(mt.state))
+    mt
+    |> Map.take(keys)
+    |> Map.put_new(:state, State.as_map(mt.state))
     |> Map.put_new(:profiles, Profile.as_map(mt.profiles))
   end
 

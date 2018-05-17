@@ -29,7 +29,7 @@ defmodule Mixtank.TempTask do
         Dutycycle.Server.activate_profile(mt.heater, next_state)
 
       # prevent unncessary state changes when the state isn't different
-      next_state === curr_state ->
+      next_state == curr_state ->
         :ok
 
       # if none of the above match then always set to next_state
