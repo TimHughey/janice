@@ -271,8 +271,7 @@ defmodule Thermostat.Server do
     Control.temperature(t)
   end
 
-  defp handle_activate_profile(%{opts: opts} = msg, s) do
-    new_profile = opts[:profile] || nil
+  defp handle_activate_profile(%{profile: new_profile, opts: opts} = msg, s) do
     enable = opts[:enable] || false
     known_profile = Profile.known?(s.thermostat, new_profile)
 
