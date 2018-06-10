@@ -208,6 +208,10 @@ defmodule Thermostat.Server do
 
     s = Map.put(s, :thermostat, t)
 
+    timer = next_check_timer(s)
+
+    s = Map.put(s, :timer, timer)
+
     {:ok, s}
   end
 
