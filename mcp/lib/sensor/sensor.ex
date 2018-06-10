@@ -190,8 +190,7 @@ defmodule Sensor do
           relhum in SensorRelHum,
           join: s in assoc(relhum, :sensor),
           where: s.id == ^sen.id,
-          group_by: relhum.id,
-          order_by: relhum.inserted_at >= ^dt,
+          where: relhum.inserted_at >= ^dt,
           select: avg(relhum.rh)
         )
 
