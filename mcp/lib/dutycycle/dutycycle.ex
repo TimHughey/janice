@@ -16,9 +16,7 @@ defmodule Dutycycle do
   #    along with this program.  If not, see <http://www.gnu.org/licenses/>
 
   @moduledoc """
-  GenServer implementation of Dutycycle controller capable of:
-    - controlling a single device
-    - to maintain temperature in alignment with reference
+    Dutycycle schema
   """
 
   require Logger
@@ -115,10 +113,6 @@ defmodule Dutycycle do
     }
   end
 
-  def enable(%Dutycycle{} = dc, val) when is_boolean(val) do
-    change(dc, enable: val) |> Repo.update()
-  end
-
   def delete_all(:dangerous) do
     names = from(d in Dutycycle, select: d.name) |> Repo.all()
 
@@ -129,6 +123,10 @@ defmodule Dutycycle do
 
     from(dc in Dutycycle, where: dc.id >= 0)
     |> Repo.delete_all()
+  end
+
+  def enable(%Dutycycle{} = dc, val) when is_boolean(val) do
+    change(dc, enable: val) |> Repo.update()
   end
 
   def get_by(opts) when is_list(opts) do

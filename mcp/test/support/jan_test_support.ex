@@ -79,12 +79,36 @@ defmodule JanTest do
     temp_ext(n, opts) |> Jason.encode!() |> Mqtt.InboundMessage.process(async: false)
   end
 
+  def create_temp_sensor(sub, name, num, opts \\ []) do
+    tc = opts[:tc] || random_float()
+    base = base_ext(sub, num)
+
+    sensor = %{type: "temp", device: name, tc: tc}
+
+    Map.merge(base, sensor) |> Jason.encode!() |> Mqtt.InboundMessage.process(async: false)
+  end
+
   ####
   #### SWITCHES
   ####
 
-  def create_switch(num, num_pios, pos) do
+  def create_switch(num, num_pios, pos) when is_integer(num) do
     switch_ext("switch", num, num_pios, pos) |> Switch.external_update()
+  end
+
+  def create_switch(sub, name, num, num_pios, pos) when is_binary(name) do
+    %{
+      host: sub,
+      name: name,
+      hw: "esp32",
+      device: device(sub, num),
+      pio_count: num_pios,
+      states: pios(num_pios, pos),
+      vsn: preferred_vsn(),
+      mtime: Timex.now() |> Timex.to_unix(),
+      log: false
+    }
+    |> Switch.external_update()
   end
 
   def device_pio(num, pio), do: device("switch", num) <> ":#{pio}"

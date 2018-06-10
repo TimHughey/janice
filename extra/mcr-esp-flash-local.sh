@@ -2,7 +2,7 @@
 
 source ${HOME}/.zshrc
 
-ttys=(/dev/ttyUSB*)
+ttys=(/dev/tty.SLAB*)
 
 cd ${HOME}/devel/janice/mcr_esp
 git pull --tags

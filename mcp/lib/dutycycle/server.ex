@@ -22,16 +22,13 @@ defmodule Dutycycle.Server do
 
   def all(:dutycycles) do
     servers = Dutycycle.Supervisor.known_servers()
-    for s <- servers, do: Dutycycle.Server.dutycycle(s)
+    for s <- servers, d = Dutycycle.Server.dutycycle(s), is_map(d), do: d
   end
 
   def all(:names) do
     servers = Dutycycle.Supervisor.known_servers()
 
-    for s <- servers do
-      res = Dutycycle.Server.dutycycle(s)
-      if is_map(res), do: Map.get(res, :name), else: res
-    end
+    for s <- servers, d = Dutycycle.Server.dutycycle(s), is_map(d), do: d.name
   end
 
   def all(:as_maps) do
@@ -160,11 +157,11 @@ defmodule Dutycycle.Server do
   def handle_call(%{:msg => :standalone, :opts => opts}, _from, s) do
     val = Keyword.get(opts, :set, true)
 
-    d = Dutycycle.standalone(s.dutycycle, val)
+    {rc, d} = Dutycycle.standalone(s.dutycycle, val)
 
     s = Map.put(s, :dutycycle, d) |> start_standalone()
 
-    {:reply, :ok, s}
+    {:reply, rc, s}
   end
 
   def handle_call(%{:msg => :stop, :opts => _opts} = msg, _from, s) do
@@ -183,6 +180,11 @@ defmodule Dutycycle.Server do
     state = SwitchState.state(s.dutycycle.device)
 
     {:reply, state, s}
+  end
+
+  # handle case when we receive a message that we don't understand
+  def handle_call(%{:msg => _unhandled}, _from, s) when is_map(s) do
+    {:reply, false, s}
   end
 
   def handle_info(%{:msg => :phase_end, :ms => _ms}, %{dutycycle: dc} = s) do

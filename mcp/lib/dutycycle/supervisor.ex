@@ -14,11 +14,15 @@ defmodule Dutycycle.Supervisor do
         {Dutycycle.Server, Map.put(args, :id, id)}
       end
 
+    ids = Thermostat.all(:ids)
+
+    th_children =
+      for id <- ids do
+        {Thermostat.Server, Map.put(args, :id, id)}
+      end
+
     # List all child processes to be supervised
-    children =
-      [
-        {Mixtank.Control, args}
-      ] ++ dc_children
+    children = dc_children ++ th_children ++ [{Mixtank.Control, args}]
 
     # Starts a worker by calling: Mqtt.Worker.start_link(arg)
     # {Mqtt.Worker, arg},
@@ -29,16 +33,16 @@ defmodule Dutycycle.Supervisor do
     Supervisor.init(children, opts)
   end
 
-  def is_duty_server?(a) when is_atom(a) do
+  def is_match?(a, name) when is_atom(a) do
     str = Atom.to_string(a)
 
-    String.contains?(str, "Duty_ID")
+    String.contains?(str, name)
   end
 
-  def known_servers do
+  def known_servers(match_name \\ "Duty_ID") do
     children = Supervisor.which_children(Dutycycle.Supervisor)
 
-    for {server_name, _pid, _type, _modules} <- children, is_duty_server?(server_name) do
+    for {server_name, _pid, _type, _modules} <- children, is_match?(server_name, match_name) do
       server_name
       # rx = ~r/Duty_ID(?<id>\d+)/x
       #
