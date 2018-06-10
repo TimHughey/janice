@@ -8,19 +8,19 @@ defmodule Thermostat.Control do
   alias Thermostat.Profile
 
   def current_val(%Thermostat{sensor: sensor}) do
-    Sensor.fahrenheit(name: sensor, since_secs: 90)
+    Sensor.celsius(name: sensor, since_secs: 90)
   end
 
   def next_state(%{low_offset: low_offset, high_offset: high_offset}, set_pt, val) do
     cond do
       # handle the case where the sensor doesn't have a value
-      is_nil(val) ->
+      is_nil(val) or is_nil(set_pt) ->
         "off"
 
-      val > set_pt + high_offset ->
+      val >= set_pt + high_offset ->
         "off"
 
-      val < set_pt + low_offset ->
+      val <= set_pt + low_offset ->
         "on"
 
       true ->

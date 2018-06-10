@@ -7,8 +7,8 @@ defmodule Thermostat.Profile do
   use Timex.Ecto.Timestamps
   use Ecto.Schema
 
-  import Repo, only: [one: 1, update_all: 2]
-  import Ecto.Query, only: [from: 2]
+  # import Repo, only: [one: 1, update_all: 2]
+  # import Ecto.Query, only: [from: 2]
 
   alias Thermostat.Profile
 
@@ -55,7 +55,7 @@ defmodule Thermostat.Profile do
     if is_nil(profile.ref_sensor) do
       profile.fixed_setpt
     else
-      Sensor.fahrenheit(name: profile.ref_sensor, since_secs: 90)
+      Sensor.celsius(name: profile.ref_sensor, since_secs: 90)
     end
   end
 end
