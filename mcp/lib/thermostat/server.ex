@@ -57,6 +57,16 @@ defmodule Thermostat.Server do
     call_server(name, msg)
   end
 
+  def reload(name, opts \\ []) when is_binary(name) do
+    msg = %{:msg => :reload, opts: opts}
+    call_server(name, msg)
+  end
+
+  def restart(name, opts \\ []) when is_binary(name) do
+    msg = %{:msg => :restart, opts: opts}
+    call_server(name, msg)
+  end
+
   def shutdown(name, opts \\ []) when is_binary(name) do
     msg = %{:msg => :shutdown, opts: opts}
     call_server(name, msg)
@@ -152,6 +162,16 @@ defmodule Thermostat.Server do
     {:reply, res, s}
   end
 
+  def handle_call(%{:msg => :reload, :opts => _opts}, _from, s) do
+    s = Map.put(s, :need_reload, true)
+
+    {:reply, :reload_queued, s}
+  end
+
+  def handle_call(%{:msg => :restart, :opts => _opts}, _from, s) do
+    {:stop, :restart_requested, :restart_queued, s}
+  end
+
   def handle_call(%{:msg => :shutdown}, _from, s) do
     {:stop, :shutdown, :ok, s}
   end
@@ -176,8 +196,13 @@ defmodule Thermostat.Server do
     {:noreply, s}
   end
 
-  def handle_info(%{:msg => :scheduled_work}, %{server_name: server_name} = s) do
-    Process.send_after(server_name, %{:msg => :scheduled_work}, 300)
+  def handle_info(
+        %{:msg => :scheduled_work},
+        %{server_name: server_name} = s
+      ) do
+    s = reload_thermostat(s)
+
+    Process.send_after(server_name, %{:msg => :scheduled_work}, 1000)
     {:noreply, s}
   end
 
@@ -333,6 +358,20 @@ defmodule Thermostat.Server do
       Process.send_after(s.server_name, msg, ms)
     end
   end
+
+  defp reload_thermostat(%{thermostat_id: id, need_reload: true} = s) do
+    t = Thermostat.get_by(id: id)
+
+    if is_nil(t) do
+      Logger.warn(fn -> "reload of thermostat id=#{id} failed" end)
+      s
+    else
+      Map.merge(s, %{need_reload: false, thermostat: t})
+    end
+  end
+
+  # do nothing if need_reload is false or doesn't exist
+  defp reload_thermostat(%{} = s), do: s
 
   defp server_name(opts) when is_list(opts) do
     d = Thermostat.get_by(opts)
