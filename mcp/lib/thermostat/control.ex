@@ -8,7 +8,7 @@ defmodule Thermostat.Control do
   alias Thermostat.Profile
 
   def current_val(%Thermostat{sensor: sensor}) do
-    Sensor.celsius(name: sensor, since_secs: 90)
+    Sensor.celsius(name: sensor, since_secs: 15)
   end
 
   def next_state(%{low_offset: low_offset, high_offset: high_offset}, set_pt, val) do
