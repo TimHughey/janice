@@ -14,15 +14,8 @@ defmodule Dutycycle.Supervisor do
         {Dutycycle.Server, Map.put(args, :id, id)}
       end
 
-    ids = Thermostat.all(:ids)
-
-    th_children =
-      for id <- ids do
-        {Thermostat.Server, Map.put(args, :id, id)}
-      end
-
     # List all child processes to be supervised
-    children = dc_children ++ th_children ++ [{Mixtank.Control, args}]
+    children = dc_children ++ [{Mixtank.Control, args}]
 
     # Starts a worker by calling: Mqtt.Worker.start_link(arg)
     # {Mqtt.Worker, arg},

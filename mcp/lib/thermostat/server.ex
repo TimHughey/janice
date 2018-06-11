@@ -21,13 +21,13 @@ defmodule Thermostat.Server do
   end
 
   def all(:names) do
-    servers = Dutycycle.Supervisor.known_servers("Thermo_ID")
+    servers = Thermostat.Supervisor.known_servers("Thermo_ID")
 
     for s <- servers, t = Thermostat.Server.thermostat(s), is_map(t), do: t.name
   end
 
   def all(:thermostats) do
-    servers = Dutycycle.Supervisor.known_servers("Thermo_ID")
+    servers = Thermostat.Supervisor.known_servers("Thermo_ID")
     for s <- servers, t = Thermostat.Server.thermostat(s), is_map(t), do: t
   end
 
@@ -79,7 +79,7 @@ defmodule Thermostat.Server do
 
   def start_server(%Thermostat{} = t) do
     args = %{id: t.id, added: true}
-    Supervisor.start_child(Dutycycle.Supervisor, child_spec(args))
+    Supervisor.start_child(Thermostat.Supervisor, child_spec(args))
     t
   end
 
@@ -363,7 +363,7 @@ defmodule Thermostat.Server do
     t = Thermostat.get_by(id: id)
 
     if is_nil(t) do
-      Logger.warn(fn -> "reload of thermostat id=#{id} failed" end)
+      Logger.warn(fn -> "failed reload of thermostat id=#{id}" end)
       s
     else
       Map.merge(s, %{need_reload: false, thermostat: t})
@@ -387,7 +387,7 @@ defmodule Thermostat.Server do
 
   # start a __standalone__ thermostat (owner is nil)
   defp start(%{thermostat: %Thermostat{owned_by: owner}} = s) when is_nil(owner) do
-    SwitchState.state(Thermostat.switch(s.thermostat), position: false)
+    SwitchState.state(Thermostat.switch(s.thermostat), position: false, lazy: true)
 
     timer = next_check_timer(s)
     {rc, t} = Thermostat.state(s.thermostat, "started")

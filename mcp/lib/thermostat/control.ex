@@ -57,13 +57,13 @@ defmodule Thermostat.Control do
       {:ok, t}
     else
       pos = if next_state === "on", do: true, else: false
-      SwitchState.state(Thermostat.switch(t), position: pos)
+      SwitchState.state(Thermostat.switch(t), position: pos, lazy: true)
       Thermostat.state(t, next_state)
     end
   end
 
   def stop(%Thermostat{} = t) do
-    SwitchState.state(Thermostat.switch(t), position: false)
+    SwitchState.state(Thermostat.switch(t), position: false, lazy: true)
     Thermostat.state(t, "off")
   end
 end

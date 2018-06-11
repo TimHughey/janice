@@ -41,13 +41,13 @@ defmodule Mcp.Application do
     specific =
       case build_env do
         "dev" ->
-          [{Janitor, initial}, {Dutycycle.Supervisor, initial}]
+          [{Janitor, initial}, {Dutycycle.Supervisor, initial}, {Thermostat.Supervisor, initial}]
 
         "test" ->
-          [{Janitor, initial}, {Dutycycle.Supervisor, initial}]
+          [{Janitor, initial}, {Dutycycle.Supervisor, initial}, {Thermostat.Supervisor, initial}]
 
         "prod" ->
-          [{Janitor, initial}, {Dutycycle.Supervisor, initial}]
+          [{Janitor, initial}, {Dutycycle.Supervisor, initial}, {Thermostat.Supervisor, initial}]
       end
 
     last = [{Web.Supervisor, initial}]
