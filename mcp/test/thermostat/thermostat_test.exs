@@ -238,4 +238,12 @@ defmodule ThermostatTest do
     assert is_list(t2.profiles)
     assert rc2
   end
+
+  test "can add a new %Profile{}" do
+    p = %Profile{name: "optimal", fixed_setpt: 27.5}
+
+    rc = Server.add_profile(name_str(8), p)
+
+    assert rc > 0
+  end
 end

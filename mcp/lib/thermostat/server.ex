@@ -20,6 +20,11 @@ defmodule Thermostat.Server do
     call_server(name, msg)
   end
 
+  def add_profile(name, %Profile{} = p, opts \\ []) when is_binary(name) and is_list(opts) do
+    msg = %{:msg => :add_profile, profile: p, opts: opts}
+    call_server(name, msg)
+  end
+
   def all(:names) do
     servers = Thermostat.Supervisor.known_servers("Thermo_ID")
 
@@ -123,6 +128,14 @@ defmodule Thermostat.Server do
         else: nil
 
     s = Map.put(s, :thermostat, t) |> Map.put(:phase_timer, timer)
+
+    {:reply, rc, s}
+  end
+
+  def handle_call(%{:msg => :add_profile, profile: p}, _from, s) do
+    rc = Profile.add(s.thermostat, p)
+
+    s = Map.put(s, :need_reload, true) |> reload_thermostat()
 
     {:reply, rc, s}
   end

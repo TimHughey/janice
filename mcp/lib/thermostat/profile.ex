@@ -32,6 +32,10 @@ defmodule Thermostat.Profile do
     if is_nil(t.active_profile), do: :none, else: find_profile(t)
   end
 
+  def add(%Thermostat{} = t, %Profile{} = p) do
+    Ecto.build_assoc(t, :profiles, p) |> Repo.insert!()
+  end
+
   def check_ms(%Profile{} = p), do: p.check_ms
 
   def find_profile(%Thermostat{active_profile: active_profile, profiles: profiles}) do
