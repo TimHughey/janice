@@ -68,7 +68,9 @@ config :mcp, Repo,
 config :mcp, Janice.Scheduler,
   jobs: [
     # Every minute
-    {"* * * * *", {Janice.Jobs, :touch_file, ["/tmp/janice-file"]}}
+    {"* * * * *", {Janice.Jobs, :touch_file, ["/tmp/janice-file"]}},
+    {"*/2 7-19 * * *", {Janice.Jobs, :germination, [true]}},
+    {"*/2 20-6 * * *", {Janice.Jobs, :germination, [false]}}
     # Every 15 minutes
     # {"*/15 * * * *",   fn -> System.cmd("rm", ["/tmp/tmp_"]) end},
     # Runs on 18, 20, 22, 0, 2, 4, 6:
