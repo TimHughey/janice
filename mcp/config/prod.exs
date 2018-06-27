@@ -18,7 +18,7 @@ config :mcp, Dutycycle, routine_check_ms: 1000
 
 config :mcp, Janitor,
   switch_cmds: [purge: true, interval_mins: 30, older_than_hrs: 24 * 90, log: false],
-  orphan_acks: [interval_mins: 1, older_than_mins: 1, log: true]
+  orphan_acks: [interval_mins: 1, older_than_mins: 3, log: true]
 
 config :mcp, MessageSave,
   save: false,

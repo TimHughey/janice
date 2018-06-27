@@ -17,10 +17,10 @@ defmodule Thermostat.Control do
       is_nil(val) or is_nil(set_pt) ->
         "off"
 
-      val >= set_pt + high_offset ->
+      val > set_pt + high_offset ->
         "off"
 
-      val <= set_pt + low_offset ->
+      val < set_pt + low_offset ->
         "on"
 
       true ->
@@ -63,7 +63,7 @@ defmodule Thermostat.Control do
   end
 
   def stop(%Thermostat{} = t) do
-    SwitchState.state(Thermostat.switch(t), position: false, lazy: true)
+    SwitchState.state(Thermostat.switch(t), position: false, lazy: true, ack: false)
     Thermostat.state(t, "off")
   end
 end
