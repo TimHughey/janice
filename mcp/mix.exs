@@ -51,7 +51,8 @@ defmodule Mcp.Mixfile do
         :runtime_tools,
         :ueberauth_identity,
         :ueberauth_github,
-        :lager
+        :lager,
+        :parse_trans
       ],
       mod: {Mcp.Application, args()}
     ]
