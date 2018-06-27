@@ -33,14 +33,15 @@ defmodule SwitchCmd do
   end
 
   def ack_now(refid, opts \\ []) when is_binary(refid) do
-    %{cmdack: true, refid: refid, msg_recv_dt: Timex.now()} |> Map.merge(Enum.into(opts, %{}))
+    %{cmdack: true, refid: refid, msg_recv_dt: Timex.now()}
+    |> Map.merge(Enum.into(opts, %{}))
     |> ack_if_needed()
   end
 
   def ack_if_needed(%{cmdack: true, refid: refid, msg_recv_dt: recv_dt} = m)
       when is_binary(refid) do
     log = Map.get(m, :log, true)
-    latency_warn_ms = Map.get(m, :latency_warn_ms, 150)
+    latency_warn_ms = Map.get(m, :latency_warn_ms, 200)
 
     cmd =
       from(
@@ -64,12 +65,14 @@ defmodule SwitchCmd do
 
         log &&
           Logger.info(fn ->
-            "state name [#{cmd.name}] acking refid [#{refid}] rt_latency=#{rt_latency_ms}ms"
+            "[#{cmd.name}] acking refid [#{refid}] rt_latency=#{rt_latency_ms}ms"
           end)
 
         # log a warning for more than 150ms rt_latency, helps with tracking down prod issues
         rt_latency_ms > latency_warn_ms &&
-          Logger.warn(fn -> "#{inspect(cmd.name)} rt_latency=#{rt_latency_ms}ms" end)
+          Logger.warn(fn ->
+            "#{inspect(cmd.name)} rt_latency=#{rt_latency_ms}ms exceeded #{latency_warn_ms}ms"
+          end)
 
         opts = %{acked: true, rt_latency: rt_latency, ack_at: Timex.now()}
 
