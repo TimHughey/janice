@@ -36,6 +36,10 @@ config :mcp,
 
 config :mcp, OTA, firmware_files: [current: "mcr_esp.bin", previous: "mcr_esp.bin.prev"]
 
+config :mcp, Janice.Scheduler,
+  run_strategy: Quantum.RunStrategy.Local,
+  timezone: "America/New_York"
+
 # Configures the endpoint
 config :mcp, Web.Endpoint,
   # url: [host: "localhost", path: "/janice"],

@@ -50,7 +50,7 @@ defmodule Mcp.Application do
           [{Janitor, initial}, {Dutycycle.Supervisor, initial}, {Thermostat.Supervisor, initial}]
       end
 
-    last = [{Web.Supervisor, initial}]
+    last = [{Janice.Scheduler, []}, {Web.Supervisor, initial}]
 
     first ++ specific ++ last
   end

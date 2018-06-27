@@ -139,7 +139,7 @@ defmodule SwitchStateTest do
     msg2 = capture_log(fn -> SwitchState.get_by("foobar") end)
     msg3 = capture_log(fn -> SwitchState.get_by(foo: "bar") end)
 
-    assert msg1 =~ "received nil"
+    assert msg1 =~ "nil"
     assert msg2 =~ "bad args:"
     assert msg3 =~ "get_by bad args:"
   end

@@ -65,7 +65,7 @@ defmodule Dutycycle do
 
     case one(q) do
       nil ->
-        dc = change(dc, []) |> insert_or_update!()
+        dc = Map.put(dc, :state, %State{}) |> change([]) |> insert_or_update!()
         Dutycycle.Server.start_server(dc)
 
       found ->

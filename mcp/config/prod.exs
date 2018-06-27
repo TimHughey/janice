@@ -4,8 +4,8 @@ use Mix.Config
 
 config :logger,
   # level: :debug
-  # level: :info
-  level: :warn
+  # level: :warn
+  level: :info
 
 config :mcp,
   feeds: [
@@ -68,6 +68,20 @@ config :mcp, Repo,
   password: "** set in prod.secret.exs",
   hostname: "** set in prod.secret.exs",
   pool_size: 20
+
+config :mcp, Janice.Scheduler,
+  jobs: [
+    # Every minute
+    {"* * * * *", {Janice.Jobs, :touch_file, []}},
+    {"*/2 7-19 * * *", {Janice.Jobs, :germination, [true]}},
+    {"*/2 20-6 * * * ", {Janice.Jobs, :germination, {false}}}
+    # Every 15 minutes
+    # {"*/15 * * * *",   fn -> System.cmd("rm", ["/tmp/tmp_"]) end},
+    # Runs on 18, 20, 22, 0, 2, 4, 6:
+    # {"0 18-6/2 * * *", fn -> :mnesia.backup('/var/backup/mnesia') end},
+    # Runs every midnight:
+    # {"@daily",         {Backup, :backup, []}}
+  ]
 
 config :mcp, Mcp.SoakTest,
   # don't start
