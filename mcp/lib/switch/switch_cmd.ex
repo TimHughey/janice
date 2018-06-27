@@ -65,7 +65,7 @@ defmodule SwitchCmd do
 
         log &&
           Logger.info(fn ->
-            "[#{cmd.name}] acking refid [#{refid}] rt_latency=#{rt_latency_ms}ms"
+            "#{inspect(cmd.name)} acking refid #{inspect(refid)} rt_latency=#{rt_latency_ms}ms"
           end)
 
         # log a warning for more than 150ms rt_latency, helps with tracking down prod issues
