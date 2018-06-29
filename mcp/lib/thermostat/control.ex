@@ -17,10 +17,10 @@ defmodule Thermostat.Control do
       is_nil(val) or is_nil(set_pt) ->
         "off"
 
-      (val > set_pt + high_offset and state === "on") or state === "started" ->
+      val > set_pt + high_offset and (state === "on" or state === "started") ->
         "off"
 
-      (val < set_pt + low_offset and state === "off") or state === "started" ->
+      val < set_pt + low_offset and (state === "off" or state === "started") ->
         "on"
 
       true ->
