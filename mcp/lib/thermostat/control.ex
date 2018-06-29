@@ -11,25 +11,27 @@ defmodule Thermostat.Control do
     Sensor.celsius(name: sensor, since_secs: 30)
   end
 
-  def next_state(%{low_offset: low_offset, high_offset: high_offset}, set_pt, val) do
+  def next_state(%{low_offset: low_offset, high_offset: high_offset}, state, set_pt, val) do
     cond do
       # handle the case where the sensor doesn't have a value
       is_nil(val) or is_nil(set_pt) ->
         "off"
 
-      val > set_pt + high_offset ->
+      val > set_pt + high_offset and state === "on" ->
         "off"
 
-      val < set_pt + low_offset ->
+      val < set_pt + low_offset and state === "off" ->
         "on"
 
       true ->
-        "on"
+        # if none of the above then keep the same state
+        # this handles the case when the temperature is between the low / high offsets
+        state
     end
   end
 
-  def next_state(%{}, set_pt, val) do
-    next_state(%{low_offset: 0.0, high_offset: 0.0}, set_pt, val)
+  def next_state(%{}, state, set_pt, val) do
+    next_state(%{low_offset: 0.0, high_offset: 0.0}, state, set_pt, val)
   end
 
   def temperature(%Thermostat{name: name, active_profile: profile} = t) when is_nil(profile) do
@@ -50,7 +52,7 @@ defmodule Thermostat.Control do
     curr_val = current_val(t)
     set_pt = Profile.set_point(profile)
 
-    next_state = next_state(profile, set_pt, curr_val)
+    next_state = next_state(profile, Thermostat.state(t), set_pt, curr_val)
 
     if next_state === Thermostat.state(t) do
       # handle no change in state
