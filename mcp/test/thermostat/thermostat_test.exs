@@ -190,14 +190,14 @@ defmodule ThermostatTest do
 
   test "temperature control turns on when val < set_pt" do
     m = %{low_offset: 0.4, high_offset: 0.6}
-    res = Thermostat.Control.next_state(m, 11.0, 10.0)
+    res = Thermostat.Control.next_state(m, "off", 11.0, 10.0)
 
     assert res === "on"
   end
 
   test "temperature control turns off when val > set_pt" do
     m = %{low_offset: 0.4, high_offset: 0.6}
-    res = Thermostat.Control.next_state(m, 10.0, 11.0)
+    res = Thermostat.Control.next_state(m, "on", 10.0, 11.0)
 
     assert res === "off"
   end
