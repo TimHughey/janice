@@ -7,7 +7,8 @@ defmodule Thermostat.Profile do
   use Timex.Ecto.Timestamps
   use Ecto.Schema
 
-  # import Repo, only: [one: 1, update_all: 2]
+  import Ecto.Changeset, only: [change: 2]
+  # import Repo, only: [one: 1, update!: 1]
   # import Ecto.Query, only: [from: 2]
 
   alias Thermostat.Profile
@@ -44,6 +45,12 @@ defmodule Thermostat.Profile do
     if is_list(found), do: hd(found), else: :none
   end
 
+  def get_profile(%Thermostat{profiles: profiles}, name) when is_binary(name) do
+    found = for p <- profiles, p.name === name, do: p
+
+    if is_list(found) and not Enum.empty?(found), do: hd(found), else: :unknown_profile
+  end
+
   def known?(%Thermostat{} = t, profile) when is_binary(profile) do
     known = for p <- t.profiles, do: p.name
     profile in known
@@ -60,6 +67,18 @@ defmodule Thermostat.Profile do
       profile.fixed_setpt
     else
       Sensor.celsius(name: profile.ref_sensor, since_secs: 90)
+    end
+  end
+
+  def update(%Thermostat{} = t, %{name: name} = data, _opts) when is_map(data) do
+    profile = get_profile(t, name)
+
+    if profile == :unknown_profile do
+      {profile, t}
+    else
+      {rc, _p} = change(profile, data) |> Repo.update()
+
+      if rc === :ok, do: {rc, Thermostat.get_by(id: t.id)}, else: {rc, t}
     end
   end
 end

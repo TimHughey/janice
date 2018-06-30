@@ -50,8 +50,7 @@ defmodule Mixtank.TempTask do
   end
 
   defp next_temp_state(val, ref_val, _temp_diff) do
-    if is_nil(val), do: Logger.warn(fn -> "val is nil" end)
-    if is_nil(ref_val), do: Logger.warn(fn -> "ref val is nil" end)
+    Logger.warn(fn -> "bad args: val=#{inspect(val)} ref_val=#{inspect(ref_val)}" end)
     "off"
   end
 end

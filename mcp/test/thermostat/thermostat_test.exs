@@ -25,23 +25,6 @@ defmodule ThermostatTest do
 
   def name_str(n), do: "thermostat" <> String.pad_leading(Integer.to_string(n), 3, "0")
 
-  def new_dutycycle(n, sw_name) do
-    num_str = String.pad_leading(Integer.to_string(n), 3, "0")
-
-    %Dutycycle{
-      name: name_str(n),
-      comment: "test thermostat dutycycle " <> num_str,
-      device: sw_name,
-      profiles: [
-        %Dutycycle.Profile{name: "on", run_ms: 1_000_000, idle_ms: 0},
-        %Dutycycle.Profile{name: "off", run_ms: 0, idle_ms: 1_000_000}
-      ],
-      state: %Dutycycle.State{},
-      standalone: false
-    }
-    |> Dutycycle.add()
-  end
-
   def new_thermostat(n) do
     num_str = String.pad_leading(Integer.to_string(n), 3, "0")
     sensor = "thermostat" <> num_str
@@ -49,9 +32,6 @@ defmodule ThermostatTest do
 
     create_switch("thermostat", "thermostat", n, 2, false)
     sw_name = device("thermostat", n) <> ":0"
-
-    # dc_name = name_str(n)
-    # new_dutycycle(n, sw_name)
 
     create_temp_sensor("thermostat", sensor, n, tc: 24.0)
     create_temp_sensor("thermostat_follow", follow_sensor, n, tc: 25.0)
@@ -245,5 +225,29 @@ defmodule ThermostatTest do
     rc = Server.add_profile(name_str(8), p)
 
     assert rc > 0
+  end
+
+  test "update profile detects unknown profile" do
+    p = %Profile{name: "bad", low_offset: -0.2, high_offset: 0.2}
+
+    rc = Server.update_profile(name_str(9), p)
+
+    assert rc === :unknown_profile
+  end
+
+  test "can update known profile" do
+    np = %{name: "fixed_25", low_offset: -0.2, high_offset: 0.2}
+
+    rc = Server.update_profile(name_str(10), np)
+    t = Thermostat.get_by(name: name_str(10))
+
+    {rc2, t} = Thermostat.activate_profile(t, "fixed_25")
+
+    p = Profile.active(t)
+
+    assert rc === :ok
+    assert rc2 === :ok
+    assert p.low_offset === -0.2
+    assert p.high_offset == 0.2
   end
 end

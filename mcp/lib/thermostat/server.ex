@@ -7,8 +7,8 @@ defmodule Thermostat.Server do
   use GenServer
   use Timex
 
-  alias Thermostat.Profile
   alias Thermostat.Control
+  alias Thermostat.Profile
 
   ####
   #### API
@@ -62,6 +62,11 @@ defmodule Thermostat.Server do
     call_server(name, msg)
   end
 
+  def release_ownership(name, opts \\ []) when is_binary(name) do
+    msg = %{:msg => :release_ownership, opts: opts}
+    call_server(name, msg)
+  end
+
   def reload(name, opts \\ []) when is_binary(name) do
     msg = %{:msg => :reload, opts: opts}
     call_server(name, msg)
@@ -93,11 +98,6 @@ defmodule Thermostat.Server do
     call_server(name, msg)
   end
 
-  def release_ownership(name, opts \\ []) when is_binary(name) do
-    msg = %{:msg => :release_ownership, opts: opts}
-    call_server(name, msg)
-  end
-
   def take_ownership(name, owner, opts \\ []) when is_binary(name) do
     msg = %{:msg => :take_ownership, owner: owner, opts: opts}
     call_server(name, msg)
@@ -109,6 +109,11 @@ defmodule Thermostat.Server do
     pid = Process.whereis(server_name)
 
     if is_pid(pid), do: GenServer.call(server_name, msg), else: :no_server
+  end
+
+  def update_profile(name, profile, opts \\ []) when is_map(profile) do
+    msg = %{:msg => :update_profile, :profile => profile, opts: opts}
+    call_server(name, msg)
   end
 
   ####
@@ -202,6 +207,13 @@ defmodule Thermostat.Server do
 
   def handle_call(%{:msg => :thermostat, :opts => _opts}, _from, s) do
     {:reply, s.thermostat, s}
+  end
+
+  def handle_call(%{:msg => :update_profile, :profile => profile, :opts => opts}, _from, s) do
+    {res, t} = handle_update_profile(s.thermostat, profile, opts)
+
+    s = Map.put(s, :thermostat, t)
+    {:reply, res, s}
   end
 
   def handle_info(%{:msg => :next_check, :ms => _ms} = msg, s) do
@@ -360,6 +372,10 @@ defmodule Thermostat.Server do
     if rc === :ok, do: {:ok, t}, else: {:failed, s.thermostat}
   end
 
+  defp handle_update_profile(%Thermostat{} = t, profile, opts) when is_map(profile) do
+    Profile.update(t, profile, opts)
+  end
+
   defp next_check_timer(s) when is_map(s) do
     profile = Profile.active(s.thermostat)
 
@@ -379,6 +395,7 @@ defmodule Thermostat.Server do
       Logger.warn(fn -> "failed reload of thermostat id=#{id}" end)
       s
     else
+      Logger.info(fn -> "#{inspect(t.name)} reloaded" end)
       Map.merge(s, %{need_reload: false, thermostat: t})
     end
   end
