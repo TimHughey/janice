@@ -47,6 +47,11 @@ defmodule Thermostat do
     timestamps(usec: true)
   end
 
+  # quietly handle requests to activate a profile that is already active
+  def activate_profile(%Thermostat{active_profile: active} = t, profile)
+      when is_binary(profile) and active === profile,
+      do: {:ok, t}
+
   def activate_profile(%Thermostat{} = t, profile) when is_binary(profile) do
     if Profile.known?(t, profile) do
       {rc, ct} = change(t, active_profile: profile) |> Repo.update()

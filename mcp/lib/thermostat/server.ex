@@ -250,19 +250,23 @@ defmodule Thermostat.Server do
 
   def init(%{server_name: server_name} = s) do
     Process.send_after(server_name, %{:msg => :scheduled_work}, 100)
-    {rc, t} = Control.stop(s.thermostat)
+    {rc1, t} = Control.stop(s.thermostat)
 
-    s = Map.put(s, :thermostat, t) |> start()
+    if rc1 == :ok do
+      s = Map.put(s, :thermostat, t) |> start()
 
-    {rc, t} = first_check({rc, s.thermostat})
+      {rc2, t} = first_check({rc1, s.thermostat})
 
-    s = Map.put(s, :thermostat, t)
+      s = Map.put(s, :thermostat, t)
 
-    timer = next_check_timer(s)
+      timer = next_check_timer(s)
 
-    s = Map.put(s, :timer, timer)
+      s = Map.put(s, :timer, timer)
 
-    {:ok, s}
+      if rc2 === :nil_active_profile or rc2 === :ok, do: {:ok, s}, else: {rc2, s}
+    else
+      {rc1, s}
+    end
   end
 
   def start_link(args) when is_map(args) do
@@ -280,6 +284,12 @@ defmodule Thermostat.Server do
       |> Map.put(:thermostat, t)
 
     GenServer.start_link(__MODULE__, s, name: name_atom)
+  end
+
+  def terminate(_reason, s) do
+    {rc, t} = Thermostat.state(s.thermostat, "stopped")
+    Logger.info(fn -> "#{inspect(t.name)} terminate() #{inspect(rc)}" end)
+    SwitchState.state(t.switch, position: false, lazy: true, ack: false)
   end
 
   ####

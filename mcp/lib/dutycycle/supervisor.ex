@@ -15,7 +15,8 @@ defmodule Dutycycle.Supervisor do
       end
 
     # List all child processes to be supervised
-    children = dc_children ++ [{Mixtank.Control, args}]
+    # children = dc_children ++ [{Mixtank.Control, args}]
+    children = dc_children
 
     # Starts a worker by calling: Mqtt.Worker.start_link(arg)
     # {Mqtt.Worker, arg},
