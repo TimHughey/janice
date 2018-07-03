@@ -213,7 +213,8 @@ defmodule Dutycycle.Server do
       else: %{
         id: server_name,
         start: {Dutycycle.Server, :start_link, [args]},
-        restart: :transient
+        restart: :transient,
+        shutdown: 10_000
       }
   end
 

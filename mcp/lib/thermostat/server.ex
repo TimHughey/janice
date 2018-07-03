@@ -244,7 +244,8 @@ defmodule Thermostat.Server do
       else: %{
         id: server_name,
         start: {Thermostat.Server, :start_link, [args]},
-        restart: :transient
+        restart: :transient,
+        shutdown: 10_000
       }
   end
 
