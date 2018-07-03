@@ -16,8 +16,8 @@ defmodule SwitchCmd do
 
   import Mqtt.Client, only: [publish_switch_cmd: 1]
 
-  alias Mqtt.SetSwitch
   alias Fact.RunMetric
+  alias Mqtt.SetSwitch
 
   schema "switch_cmd" do
     field(:refid, :string)
@@ -64,7 +64,7 @@ defmodule SwitchCmd do
         rt_latency_ms = rt_latency / 1000.0
 
         log &&
-          Logger.info(fn ->
+          Logger.debug(fn ->
             "#{inspect(cmd.name)} acking refid #{inspect(refid)} rt_latency=#{rt_latency_ms}ms"
           end)
 

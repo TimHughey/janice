@@ -1,14 +1,12 @@
 defmodule Dutycycle.Server do
-  @moduledoc """
-
-  """
+  @moduledoc false
 
   require Logger
   use GenServer
   use Timex
 
-  alias Dutycycle.State
   alias Dutycycle.Profile
+  alias Dutycycle.State
 
   ####
   #### API
