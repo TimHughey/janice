@@ -231,6 +231,12 @@ defmodule Thermostat.Server do
     {:noreply, s}
   end
 
+  def handle_info({:EXIT, pid, reason}, state) do
+    Logger.debug(fn -> ":EXIT message " <> "pid: #{inspect(pid)} reason: #{inspect(reason)}" end)
+
+    {:noreply, state}
+  end
+
   ####
   #### GENSERVER BASE FUNCTIONS
   ####
@@ -250,6 +256,7 @@ defmodule Thermostat.Server do
   end
 
   def init(%{server_name: server_name} = s) do
+    Process.flag(:trap_exit, true)
     Process.send_after(server_name, %{:msg => :scheduled_work}, 100)
     {rc1, t} = Control.stop(s.thermostat)
 
@@ -287,10 +294,11 @@ defmodule Thermostat.Server do
     GenServer.start_link(__MODULE__, s, name: name_atom)
   end
 
-  def terminate(_reason, s) do
+  def terminate(reason, s) do
     {rc, t} = Thermostat.state(s.thermostat, "stopped")
-    Logger.info(fn -> "#{inspect(t.name)} terminate() #{inspect(rc)}" end)
+    Logger.info(fn -> "#{inspect(t.name)} terminate(#{inspect(reason)}) #{inspect(rc)}" end)
     SwitchState.state(t.switch, position: false, lazy: true, ack: false)
+    :ok
   end
 
   ####

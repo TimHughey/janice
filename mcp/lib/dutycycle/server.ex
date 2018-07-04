@@ -198,6 +198,12 @@ defmodule Dutycycle.Server do
     {:noreply, s}
   end
 
+  def handle_info({:EXIT, pid, reason}, state) do
+    Logger.debug(fn -> ":EXIT message " <> "pid: #{inspect(pid)} reason: #{inspect(reason)}" end)
+
+    {:noreply, state}
+  end
+
   ####
   #### GENSERVER BASE FUNCTIONS
   ####
@@ -234,6 +240,7 @@ defmodule Dutycycle.Server do
   end
 
   def init(%{server_name: server_name} = s) do
+    Process.flag(:trap_exit, true)
     Process.send_after(server_name, %{:msg => :scheduled_work}, 100)
 
     s = start_standalone(s)
