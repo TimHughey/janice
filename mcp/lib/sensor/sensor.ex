@@ -245,71 +245,90 @@ defmodule Sensor do
     end
   end
 
-  defp record_metrics({%Sensor{type: type} = s, %{hostname: hostname} = r}) do
-    cond do
-      type === "temp" ->
-        Logger.debug(fn ->
-          "#{s.name} " <>
-            "#{String.pad_leading(Float.to_string(r.tf), 8)}F " <>
-            "#{String.pad_leading(Float.to_string(r.tc), 8)}C"
-        end)
-
-        Fahrenheit.record(
-          remote_host: hostname,
-          device: s.device,
-          name: s.name,
-          mtime: r.mtime,
-          val: r.tf
-        )
-
-        Celsius.record(
-          remote_host: hostname,
-          device: s.device,
-          name: s.name,
-          mtime: r.mtime,
-          val: r.tc
-        )
-
-      type === "relhum" ->
-        Logger.debug(fn ->
-          "#{s.name} " <>
-            "#{String.pad_leading(Float.to_string(r.tf), 8)}F " <>
-            "#{String.pad_leading(Float.to_string(r.tc), 8)}C " <>
-            "#{String.pad_leading(Float.to_string(r.rh), 8)}RH"
-        end)
-
-        Fahrenheit.record(
-          remote_host: hostname,
-          device: s.device,
-          name: s.name,
-          mtime: r.mtime,
-          val: r.tf
-        )
-
-        Celsius.record(
-          remote_host: hostname,
-          device: r.device,
-          name: s.name,
-          mtime: r.mtime,
-          val: r.tc
-        )
-
-        RelativeHumidity.record(
-          remote_host: hostname,
-          device: r.device,
-          name: s.name,
-          mtime: r.mtime,
-          val: r.rh
-        )
-
-      true ->
-        Logger.warn(fn -> "invalid switch type [#{inspect(type)}]" end)
-    end
+  defp record_metrics(
+         {%Sensor{type: "temp", name: name} = s, %{hostname: hostname, tc: 85.0} = r}
+       ) do
+    Logger.warn(fn ->
+      "dropping invalid temperature for #{inspect(name)} from #{inspect(hostname)}"
+    end)
 
     {s, r}
   end
 
-  defp record_metrics({%Sensor{} = s, %{} = r}), do: {s, r}
+  defp record_metrics(
+         {%Sensor{type: "temp", device: device, name: name} = s,
+          %{hostname: hostname, mtime: mtime, tc: tc, tf: tf} = r}
+       ) do
+    Logger.debug(fn ->
+      "#{name} " <>
+        "#{String.pad_leading(Float.to_string(tf), 8)}F " <>
+        "#{String.pad_leading(Float.to_string(tc), 8)}C"
+    end)
+
+    Fahrenheit.record(
+      remote_host: hostname,
+      device: device,
+      name: name,
+      mtime: mtime,
+      val: tf
+    )
+
+    Celsius.record(
+      remote_host: hostname,
+      device: device,
+      name: name,
+      mtime: mtime,
+      val: tc
+    )
+
+    {s, r}
+  end
+
+  defp record_metrics(
+         {%Sensor{type: "relhum", device: device, name: name} = s,
+          %{hostname: hostname, mtime: mtime, rh: rh, tc: tc, tf: tf} = r}
+       ) do
+    Logger.debug(fn ->
+      "#{name} " <>
+        "#{String.pad_leading(Float.to_string(tf), 8)}F " <>
+        "#{String.pad_leading(Float.to_string(tc), 8)}C " <>
+        "#{String.pad_leading(Float.to_string(rh), 8)}RH"
+    end)
+
+    Fahrenheit.record(
+      remote_host: hostname,
+      device: device,
+      name: name,
+      mtime: mtime,
+      val: tf
+    )
+
+    Celsius.record(
+      remote_host: hostname,
+      device: device,
+      name: name,
+      mtime: mtime,
+      val: tc
+    )
+
+    RelativeHumidity.record(
+      remote_host: hostname,
+      device: device,
+      name: name,
+      mtime: mtime,
+      val: rh
+    )
+
+    {s, r}
+  end
+
+  defp record_metrics({%Sensor{} = s, %{} = r}) do
+    Logger.warn(fn ->
+      "Unknown sensor / reading #{inspect(s, pretty: true)} #{inspect(r, pretty: true)}"
+    end)
+
+    {s, r}
+  end
 
   defp update_reading({%Sensor{type: "temp"} = s, r})
        when is_map(r) do

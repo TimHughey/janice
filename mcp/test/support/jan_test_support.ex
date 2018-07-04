@@ -41,7 +41,8 @@ defmodule JanTest do
       type: "relhum",
       device: device("relhum", num),
       rh: random_float(),
-      tc: random_float()
+      tc: random_float(),
+      tf: random_float()
     }
 
     Map.merge(base, sensor)
@@ -69,7 +70,8 @@ defmodule JanTest do
     sensor = %{
       type: "temp",
       device: device("sensor", num),
-      tc: tc
+      tc: tc,
+      tf: tc
     }
 
     Map.merge(base, sensor)
