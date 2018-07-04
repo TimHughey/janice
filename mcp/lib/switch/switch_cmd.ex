@@ -41,7 +41,7 @@ defmodule SwitchCmd do
   def ack_if_needed(%{cmdack: true, refid: refid, msg_recv_dt: recv_dt} = m)
       when is_binary(refid) do
     log = Map.get(m, :log, true)
-    latency_warn_ms = Map.get(m, :latency_warn_ms, 200)
+    latency_warn_ms = Map.get(m, :latency_warn_ms, 1000)
 
     cmd =
       from(
