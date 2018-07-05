@@ -17,7 +17,7 @@ defmodule DutycycleTest do
 
   @moduletag :dutycycle
   setup_all do
-    new_dcs = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 99]
+    new_dcs = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 99]
     for n <- new_dcs, do: new_dutycycle(n) |> Dutycycle.add()
     :ok
   end
@@ -267,6 +267,16 @@ defmodule DutycycleTest do
     assert rc1 === :ok
     assert rc2 === :ok
     assert active === "fast"
+  end
+
+  @tag num: 14
+  test "can add a new profile", context do
+    dc = Dutycycle.get_by(name: name_str(context[:num]))
+    p = %Profile{name: "new profile", active: false, run_ms: 1000, idle_ms: 1000}
+    np = Server.add_profile(dc.name, p)
+
+    assert is_map(np)
+    assert Map.has_key?(np, :id)
   end
 
   test "all dutycycle ids (with empty opts)" do

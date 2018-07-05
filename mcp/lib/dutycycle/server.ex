@@ -18,6 +18,11 @@ defmodule Dutycycle.Server do
     call_server(name, msg)
   end
 
+  def add_profile(name, %Profile{} = p, opts \\ []) when is_binary(name) and is_list(opts) do
+    msg = %{:msg => :add_profile, profile: p, opts: opts}
+    call_server(name, msg)
+  end
+
   def all(:dutycycles) do
     servers = Dutycycle.Supervisor.known_servers()
     for s <- servers, d = Dutycycle.Server.dutycycle(s), is_map(d), do: d
@@ -113,6 +118,14 @@ defmodule Dutycycle.Server do
         else: nil
 
     s = Map.put(s, :dutycycle, d) |> Map.put(:phase_timer, timer)
+
+    {:reply, rc, s}
+  end
+
+  def handle_call(%{:msg => :add_profile, profile: p}, _from, s) do
+    rc = Profile.add(s.dutycycle, p)
+
+    s = Map.put(s, :need_reload, true) |> reload_dutycycle()
 
     {:reply, rc, s}
   end
@@ -368,6 +381,20 @@ defmodule Dutycycle.Server do
     msg = %{:msg => :phase_end, :ms => ms}
     Process.send_after(s.server_name, msg, ms)
   end
+
+  defp reload_dutycycle(%{dutycycle_id: id, need_reload: true} = s) do
+    d = Dutycycle.get_by(id: id)
+
+    if is_nil(d) do
+      Logger.warn(fn -> "failed reload of dutycycle id=#{inspect(id)}" end)
+      s
+    else
+      Logger.info(fn -> "#{inspect(d.name)} reloaded" end)
+      Map.merge(s, %{need_reload: false, dutycycle: d})
+    end
+  end
+
+  defp reload_dutycycle(%{} = s), do: s
 
   defp server_name(opts) when is_list(opts) do
     d = Dutycycle.get_by(opts)

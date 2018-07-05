@@ -50,6 +50,10 @@ defmodule Dutycycle.Profile do
     if Enum.empty?(active), do: :none, else: hd(active)
   end
 
+  def add(%Dutycycle{} = d, %Profile{} = p) do
+    Ecto.build_assoc(d, :profiles, p) |> Repo.insert!()
+  end
+
   def as_map(list) when is_list(list) do
     for dcp <- list, do: as_map(dcp)
   end
