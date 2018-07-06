@@ -250,4 +250,20 @@ defmodule ThermostatTest do
     assert p.low_offset === -0.2
     assert p.high_offset == 0.2
   end
+
+  test "can update known profile and request reload" do
+    np = %{name: "fixed_25", low_offset: -0.2, high_offset: 0.2}
+
+    rc = Server.update_profile(name_str(11), np, reload: true)
+    t = Thermostat.get_by(name: name_str(11))
+
+    {rc2, t} = Thermostat.activate_profile(t, "fixed_25")
+
+    p = Profile.active(t)
+
+    assert rc === :ok
+    assert rc2 === :ok
+    assert p.low_offset === -0.2
+    assert p.high_offset == 0.2
+  end
 end

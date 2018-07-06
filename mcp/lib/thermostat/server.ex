@@ -210,9 +210,10 @@ defmodule Thermostat.Server do
   end
 
   def handle_call(%{:msg => :update_profile, :profile => profile, :opts => opts}, _from, s) do
+    reload = Keyword.get(opts, :reload, false)
     {res, t} = handle_update_profile(s.thermostat, profile, opts)
 
-    s = Map.put(s, :thermostat, t)
+    s = Map.merge(s, %{thermostat: t, need_reload: reload}) |> reload_thermostat()
     {:reply, res, s}
   end
 
