@@ -75,6 +75,11 @@ defmodule Dutycycle.Server do
     call_server(name, msg)
   end
 
+  def reload(name, opts \\ []) when is_binary(name) do
+    msg = %{:msg => :reload, opts: opts}
+    call_server(name, msg)
+  end
+
   def shutdown(name, opts \\ []) when is_binary(name) do
     msg = %{:msg => :shutdown, opts: opts}
     call_server(name, msg)
@@ -165,6 +170,12 @@ defmodule Dutycycle.Server do
     {:reply, profiles, s}
   end
 
+  def handle_call(%{:msg => :reload, :opts => _opts}, _from, s) do
+    s = Map.put(s, :need_reload, true)
+
+    {:reply, :reload_queued, s}
+  end
+
   def handle_call(%{:msg => :standalone, :opts => opts}, _from, s) do
     val = Keyword.get(opts, :set, true)
 
@@ -207,7 +218,9 @@ defmodule Dutycycle.Server do
   end
 
   def handle_info(%{:msg => :scheduled_work}, %{server_name: server_name} = s) do
-    Process.send_after(server_name, %{:msg => :scheduled_work}, 100)
+    s = reload_dutycycle(s)
+
+    Process.send_after(server_name, %{:msg => :scheduled_work}, 1000)
     {:noreply, s}
   end
 

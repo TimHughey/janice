@@ -17,7 +17,7 @@ defmodule DutycycleTest do
 
   @moduletag :dutycycle
   setup_all do
-    new_dcs = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 99]
+    new_dcs = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 99]
     for n <- new_dcs, do: new_dutycycle(n) |> Dutycycle.add()
     :ok
   end
@@ -277,6 +277,15 @@ defmodule DutycycleTest do
 
     assert is_map(np)
     assert Map.has_key?(np, :id)
+  end
+
+  @tag num: 15
+  test "can request reload of Dutycycle", context do
+    dc = Dutycycle.get_by(name: name_str(context[:num]))
+    rc = Server.reload(dc.name)
+
+    assert is_atom(rc)
+    assert rc === :reload_queued
   end
 
   test "all dutycycle ids (with empty opts)" do
