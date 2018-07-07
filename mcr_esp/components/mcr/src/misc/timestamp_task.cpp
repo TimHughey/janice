@@ -68,14 +68,14 @@ void mcrTimestampTask::run(void *data) {
   ESP_LOGD(tTAG, "normal ops, entering task loop");
 
   for (;;) {
-    int delta;
+    // int delta;
     size_t curr_heap = 0;
     // uint32_t voltage = 0;
 
     _last_wake = xTaskGetTickCount();
 
     curr_heap = heap_caps_get_free_size(MALLOC_CAP_8BIT);
-    delta = curr_heap - _availHeap;
+    // delta = curr_heap - _availHeap;
     _availHeap = curr_heap;
     _minHeap = std::min(curr_heap, _minHeap);
     _maxHeap = std::max(curr_heap, _maxHeap);
@@ -83,9 +83,10 @@ void mcrTimestampTask::run(void *data) {
     // voltage = vref_voltage();
 
     const char *name = mcr::Net::getName().c_str();
-    ESP_LOGI(name, "%s %uk,%uk,%uk,%+05d (heap,first,min,delta)",
-             dateTimeString(), (curr_heap / 1024), (_firstHeap / 1024),
-             (_maxHeap / 1024), delta);
+    // ESP_LOGI(name, "%s %uk,%uk,%uk,%+05d (heap,first,min,delta)",
+    // dateTimeString(), (curr_heap / 1024), (_firstHeap / 1024),
+    // (_maxHeap / 1024), delta);
+    ESP_LOGI(name, "%s", dateTimeString());
 
     if (_task_report) {
       char *tasks = new char[1024];
