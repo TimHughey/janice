@@ -1122,7 +1122,7 @@ bool mcrDS::setDS2408(mcrCmdSwitch_t &cmd, dsDev_t *dev) {
   // this handles the occasional situation where there is a single dropped
   // bit in either (but hopefully not both)
   uint32_t dev_state = check[1];
-  if ((check[0] == 0xaa) || (dev_state == (new_state & 0xff))) {
+  if ((check[0] == 0xaa) || (dev_state == new_state)) {
     cmd_bitset_t b0 = check[0];
     cmd_bitset_t b1 = check[1];
     ESP_LOGD(tagSetDS2408(), "CONFIRMED check[0]=0b%s check[1]=0b%s for %s",
@@ -1130,8 +1130,9 @@ bool mcrDS::setDS2408(mcrCmdSwitch_t &cmd, dsDev_t *dev) {
              dev->debug().c_str());
     rc = true;
   } else {
-    ESP_LOGW(tagSetDS2408(), "FAILED check[0]=0x%x check[1]=0x%x for %s",
-             check[0], check[1], dev->debug().c_str());
+    ESP_LOGW(tagSetDS2408(), "FAILED for %s", dev->debug().c_str());
+    ESP_LOGW(tagSetDS2408(), "FAILED   expected 0x%x==0xaa *OR* 0x%x==0x%x",
+             check[0], dev_state, new_state);
   }
 
   return rc;
