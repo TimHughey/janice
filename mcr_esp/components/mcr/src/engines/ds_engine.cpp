@@ -1131,7 +1131,7 @@ bool mcrDS::setDS2408(mcrCmdSwitch_t &cmd, dsDev_t *dev) {
     rc = true;
   } else {
     ESP_LOGW(tagSetDS2408(), "FAILED for %s", dev->debug().c_str());
-    ESP_LOGW(tagSetDS2408(), "FAILED   expected 0x%x==0xaa *OR* 0x%x==0x%x",
+    ESP_LOGW(tagSetDS2408(), "FAILED     expected 0x%x==0xaa *OR* 0x%x==0x%x",
              check[0], dev_state, new_state);
   }
 
