@@ -54,7 +54,7 @@ mcrDS::mcrDS() {
   // setLoggingLevel(tagReport(), ESP_LOG_INFO);
   // setLoggingLevel(tagDiscover(), ESP_LOG_INFO);
   // setLoggingLevel(tagCommand(), ESP_LOG_INFO);
-  setLoggingLevel(tagSetDS2408(), ESP_LOG_INFO);
+  // setLoggingLevel(tagSetDS2408(), ESP_LOG_INFO);
 
   // task setup
   _engine_task_name = tagEngine();
@@ -1127,14 +1127,15 @@ bool mcrDS::setDS2408(mcrCmdSwitch_t &cmd, dsDev_t *dev) {
     // cmd_bitset_t b0 = check[0];
     // cmd_bitset_t b1 = check[1];
     ESP_LOGI(tagSetDS2408(), "CONFIRMED for %s", dev->debug().c_str());
-    ESP_LOGI(tagSetDS2408(), "CONFIRMED expected %02x==0xaa *OR* %02x==%02x",
-             check[0], new_state, dev_state);
+    ESP_LOGI(tagSetDS2408(),
+             "CONFIRMED expected 0x%02x==0xaa *OR* 0x%02x==0x%02x", check[0],
+             new_state, dev_state);
 
     rc = true;
   } else {
     ESP_LOGW(tagSetDS2408(), "FAILED for %s", dev->debug().c_str());
-    ESP_LOGW(tagSetDS2408(), "FAILED expected %x==aa *OR* %x==%x", check[0],
-             new_state, dev_state);
+    ESP_LOGW(tagSetDS2408(), "FAILED expected 0x%02x==aa *OR* 0x%02x==0x%02x",
+             check[0], new_state, dev_state);
   }
 
   return rc;
