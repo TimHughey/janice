@@ -15,7 +15,6 @@
       <a class="nav-link" id="nav-sensors-tab" data-toggle="pill" href="#sensorsTab" role="tab" aria-controls="v-pills-profile" aria-selected="false">Sensors</a>
       <a class="nav-link" id="nav-remotes-tab" data-toggle="pill" href="#remotesTab" role="tab" aria-controls="v-pills-profile" aria-selected="false">Remotes</a>
       <a class="nav-link" id="nav-dutycycles-tab" data-toggle="pill" href="#dutycyclesTab" role="tab" aria-controls="v-pills-profile" aria-selected="false">Dutycycles</a>
-      <a class="nav-link" id="nav-mixtanks-tab" data-toggle="pill" href="#mixtanksTab" role="tab" aria-controls="v-pills-profile" aria-selected="false">Mixtanks</a>
     </div>
 </div>
 
@@ -87,24 +86,6 @@
             <th>Run End</th>
             <th>Idle Start</th>
             <th>Idle End</th>
-          </tr>
-        </thead>
-      </table>
-    </div>
-    <div class="tab-pane fade" role="tabpanel" id="mixtanksTab">
-      <table class="table display device-table compact" cellspacing="0" width="100%" id="mixtanksTable">
-        <thead>
-          <tr>
-            <th>Id</th>
-            <th>Name</th>
-            <th>Comment</th>
-            <th>Enabled?</th>
-            <th>State</th>
-            <th>Profile</th>
-            <th>Sensor</th>
-            <th>Ref Sensor</th>
-            <th>State At</th>
-            <th>Started</th>
           </tr>
         </thead>
       </table>

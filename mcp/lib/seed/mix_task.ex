@@ -6,7 +6,6 @@ defmodule Mix.Tasks.Seed do
   use Mix.Task
   import Mix.Ecto
   import Seed.Dutycycles
-  import Seed.Mixtanks
   import Seed.Sensors
   import Seed.Switches
 
@@ -55,12 +54,6 @@ defmodule Mix.Tasks.Seed do
     |> Enum.each(fn x ->
       Logger.info("seeding dutycycle [#{x.name}]")
       Dutycycle.add(x)
-    end)
-
-    mixtanks(Mix.env())
-    |> Enum.each(fn x ->
-      Logger.info("seeding mixtank [#{x.name}]")
-      Mixtank.add(x)
     end)
 
     pid && repo.stop(pid)
