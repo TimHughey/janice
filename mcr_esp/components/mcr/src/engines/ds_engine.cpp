@@ -1119,16 +1119,16 @@ bool mcrDS::setDS2408(mcrCmdSwitch_t &cmd, dsDev_t *dev) {
   // check what the device returned to determine success or failure
   // byte 0 = 0xAA is a success, byte 1 = new_state
   // this might be a bit of a hack however let's accept success if either
-  // the check byte is 0xAA *OR* the reported dev_state == new_state
+  // the check byte is 0xAA, 0x2A *OR* the reported dev_state == new_state
   // this handles the occasional situation where there is a single dropped
   // bit in either (but hopefully not both)
   uint32_t dev_state = check[1];
-  if ((check[0] == 0xaa) || (dev_state == new_state)) {
+  if (((check[0] | 0x80) == 0xaa) || (dev_state == new_state)) {
     // cmd_bitset_t b0 = check[0];
     // cmd_bitset_t b1 = check[1];
     ESP_LOGI(tagSetDS2408(), "CONFIRMED for %s", dev->debug().c_str());
-    ESP_LOGI(tagSetDS2408(), "CONFIRMED expected %x==aa *OR* %x==%x", check[0],
-             new_state, dev_state);
+    ESP_LOGI(tagSetDS2408(), "CONFIRMED expected %02x==0xaa *OR* %02x==%02x",
+             check[0], new_state, dev_state);
 
     rc = true;
   } else {

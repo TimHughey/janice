@@ -179,8 +179,8 @@ bool dsDev::validAddress(mcrDevAddr_t &addr) {
 const std::string dsDev::debug() {
   std::ostringstream debug_str;
 
-  debug_str << "dsDev(family=" << familyDescription().c_str()
-            << " addr=" << addr().debug().c_str() << ")";
+  debug_str << "dsDev(family=" << familyDescription().c_str() << " "
+            << addr().debug().c_str() << ")";
 
   return debug_str.str();
 }
