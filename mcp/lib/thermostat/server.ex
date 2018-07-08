@@ -1,7 +1,5 @@
 defmodule Thermostat.Server do
-  @moduledoc """
-
-  """
+  @moduledoc false
 
   require Logger
   use GenServer

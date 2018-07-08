@@ -1,6 +1,5 @@
 defmodule Dutycycle.Profile do
-  @moduledoc """
-  """
+  @moduledoc false
 
   require Logger
   use Timex

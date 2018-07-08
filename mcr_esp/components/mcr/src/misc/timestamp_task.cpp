@@ -62,6 +62,7 @@ const char *mcrTimestampTask::dateTimeString(time_t t) {
 }
 
 void mcrTimestampTask::run(void *data) {
+  time_t last_timestamp = time(nullptr);
 
   ESP_LOGD(tTAG, "started, wait for normal ops...");
   mcr::Net::waitForNormalOps();
@@ -82,11 +83,14 @@ void mcrTimestampTask::run(void *data) {
 
     // voltage = vref_voltage();
 
-    const char *name = mcr::Net::getName().c_str();
-    // ESP_LOGI(name, "%s %uk,%uk,%uk,%+05d (heap,first,min,delta)",
-    // dateTimeString(), (curr_heap / 1024), (_firstHeap / 1024),
-    // (_maxHeap / 1024), delta);
-    ESP_LOGI(name, "%s", dateTimeString());
+    if ((time(nullptr) - last_timestamp) >= _timestamp_freq_secs) {
+      const char *name = mcr::Net::getName().c_str();
+      // ESP_LOGI(name, "%s %uk,%uk,%uk,%+05d (heap,first,min,delta)",
+      // dateTimeString(), (curr_heap / 1024), (_firstHeap / 1024),
+      // (_maxHeap / 1024), delta);
+      ESP_LOGI(name, "%s", dateTimeString());
+      last_timestamp = time(nullptr);
+    }
 
     if (_task_report) {
       char *tasks = new char[1024];

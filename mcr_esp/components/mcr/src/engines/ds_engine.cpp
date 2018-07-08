@@ -54,6 +54,7 @@ mcrDS::mcrDS() {
   // setLoggingLevel(tagReport(), ESP_LOG_INFO);
   // setLoggingLevel(tagDiscover(), ESP_LOG_INFO);
   // setLoggingLevel(tagCommand(), ESP_LOG_INFO);
+  setLoggingLevel(tagSetDS2408(), ESP_LOG_INFO);
 
   // task setup
   _engine_task_name = tagEngine();
