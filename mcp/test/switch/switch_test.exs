@@ -145,13 +145,25 @@ defmodule SwitchStateTest do
   end
 
   @tag num: 6
-  test "toggle a switch", context do
+  test "toggle a switch (by id)", context do
     n = context[:num]
 
     ss = SwitchState.get_by(name: device_pio(n, 1))
     before_toggle = ss.state
 
     after_toggle = SwitchState.toggle(ss.id)
+
+    refute before_toggle == after_toggle
+  end
+
+  @tag num: 6
+  test "toggle a switch (by name)", context do
+    n = context[:num]
+
+    ss = SwitchState.get_by(name: device_pio(n, 2))
+    before_toggle = ss.state
+
+    after_toggle = SwitchState.toggle(device_pio(n, 2))
 
     refute before_toggle == after_toggle
   end

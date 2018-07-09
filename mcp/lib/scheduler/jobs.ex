@@ -2,6 +2,18 @@ defmodule Janice.Jobs do
   @moduledoc false
   require Logger
 
+  def flush do
+    thermo = "grow heat"
+    profile = "flush"
+
+    if Thermostat.Server.profiles(thermo, active: true) === profile do
+      true
+    else
+      Logger.info(fn -> "thermostat #{inspect(thermo)} set to #{inspect(profile)}" end)
+      Thermostat.Server.activate_profile(thermo, profile)
+    end
+  end
+
   def germination(pos) when is_boolean(pos) do
     sw = "germination_light"
     curr = SwitchState.state(sw)
@@ -11,6 +23,18 @@ defmodule Janice.Jobs do
     else
       SwitchState.state(sw, position: pos, lazy: true)
       Logger.info(fn -> "#{sw} position set to #{inspect(pos)}" end)
+    end
+  end
+
+  def grow do
+    thermo = "grow heat"
+    profile = "optimal"
+
+    if Thermostat.Server.profiles(thermo, active: true) === profile do
+      true
+    else
+      Logger.info(fn -> "thermostat #{inspect(thermo)} set to #{inspect(profile)}" end)
+      Thermostat.Server.activate_profile(thermo, profile)
     end
   end
 

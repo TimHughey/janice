@@ -163,13 +163,22 @@ defmodule SwitchState do
     nil
   end
 
-  def toggle(id) when is_integer(id) do
-    ss = get(SwitchState, id)
+  # toggle() header
+  def toggle(name, opts \\ [])
 
-    if is_nil(ss) do
-      {:error, :not_found}
-    else
+  def toggle(id, opts) when is_integer(id), do: get(SwitchState, id) |> toggle(opts)
+  def toggle(name, opts) when is_binary(name), do: get_by(name: name) |> toggle(opts)
+
+  def toggle(%SwitchState{} = ss, opts) do
+    state(ss, lazy: true, position: not ss.state)
+
+    for_ms = Keyword.get(opts, :for_ms, 0)
+
+    if for_ms > 0 do
+      Process.sleep(for_ms)
       state(ss, lazy: true, position: not ss.state)
     end
   end
+
+  def toggle(nil, _opts), do: {:error, :not_found}
 end
