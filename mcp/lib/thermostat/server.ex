@@ -296,7 +296,7 @@ defmodule Thermostat.Server do
   def terminate(reason, s) do
     {rc, t} = Thermostat.state(s.thermostat, "stopped")
     Logger.info(fn -> "#{inspect(t.name)} terminate(#{inspect(reason)}) #{inspect(rc)}" end)
-    SwitchState.state(t.switch, position: false, lazy: true, ack: false)
+    Switch.state(t.switch, position: false, lazy: true, ack: false)
     :ok
   end
 
@@ -435,7 +435,7 @@ defmodule Thermostat.Server do
 
   # start a __standalone__ thermostat (owner is nil)
   defp start(%{thermostat: %Thermostat{owned_by: owner}} = s) when is_nil(owner) do
-    SwitchState.state(Thermostat.switch(s.thermostat), position: false, lazy: true)
+    Switch.state(Thermostat.switch(s.thermostat), position: false, lazy: true)
 
     timer = next_check_timer(s)
     {rc, t} = Thermostat.state(s.thermostat, "started")

@@ -64,7 +64,7 @@ defmodule SwitchGroup do
     sg = get_by(name: name)
 
     if is_nil(sg) do
-      Logger.warn(fn -> "#{name} not while RETRIEVING state" end)
+      Logger.debug(fn -> "#{name} not while RETRIEVING state" end)
       nil
     else
       state(sg)
@@ -87,7 +87,7 @@ defmodule SwitchGroup do
     sg = get_by(name: name)
 
     if is_nil(sg) do
-      log && Logger.warn(fn -> "#{name} not found while SETTING switch group" end)
+      log && Logger.debug(fn -> "#{name} not found while SETTING switch group" end)
       nil
     else
       state(sg, opts)

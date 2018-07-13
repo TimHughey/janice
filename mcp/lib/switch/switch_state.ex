@@ -123,7 +123,7 @@ defmodule SwitchState do
     ss = get_by(name: name)
 
     if is_nil(ss) do
-      Logger.warn(fn -> "#{name} not found while RETRIEVING state" end)
+      Logger.debug(fn -> "#{name} not found while RETRIEVING state" end)
       nil
     else
       ss.state
@@ -146,7 +146,7 @@ defmodule SwitchState do
 
     cond do
       is_nil(ss) ->
-        log && Logger.warn(fn -> "#{name} not found while SETTING state" end)
+        log && Logger.debug(fn -> "#{name} not found while SETTING state" end)
         nil
 
       # only change the ss if it doesn't match requested position when lazy

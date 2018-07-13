@@ -64,7 +64,7 @@ defmodule Dutycycle.State do
         :no_active_profile
 
       mode === "idle" ->
-        SwitchState.state(dc.device, position: false, lazy: true, log: false)
+        Switch.state(dc.device, position: false, lazy: true, log: false)
 
         idle_end_at =
           Timex.to_datetime(now, "UTC")
@@ -85,7 +85,7 @@ defmodule Dutycycle.State do
         |> Repo.update_all([])
 
       mode === "run" ->
-        SwitchState.state(dc.device, position: true, lazy: true, log: false)
+        Switch.state(dc.device, position: true, lazy: true, log: false)
 
         run_end_at =
           Timex.to_datetime(now, "UTC")
@@ -106,7 +106,7 @@ defmodule Dutycycle.State do
         |> Repo.update_all([])
 
       mode === "stop" ->
-        SwitchState.state(dc.device, position: false, lazy: true, ack: false, log: false)
+        Switch.state(dc.device, position: false, lazy: true, ack: false, log: false)
 
         query
         |> update(

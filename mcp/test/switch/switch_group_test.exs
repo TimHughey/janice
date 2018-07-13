@@ -59,10 +59,12 @@ defmodule SwitchGroupTest do
 
     {rc, _sg} = SwitchGroup.add(nsg)
 
-    state = SwitchGroup.state(name, position: true)
+    state1 = SwitchGroup.state(name, position: true)
+    state2 = Switch.state(name, position: false)
 
     assert rc === :ok
-    assert state === true
+    assert state1 === true
+    assert state2 === false
   end
 
   test "can detect missing members in new SwitchGroup" do

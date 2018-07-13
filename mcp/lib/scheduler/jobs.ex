@@ -16,12 +16,12 @@ defmodule Janice.Jobs do
 
   def germination(pos) when is_boolean(pos) do
     sw = "germination_light"
-    curr = SwitchState.state(sw)
+    curr = Switch.state(sw)
 
     if curr == pos do
       Logger.debug(fn -> "#{sw} position correct" end)
     else
-      SwitchState.state(sw, position: pos, lazy: true)
+      Switch.state(sw, position: pos, lazy: true)
       Logger.info(fn -> "#{sw} position set to #{inspect(pos)}" end)
     end
   end

@@ -199,7 +199,7 @@ defmodule Dutycycle.Server do
   end
 
   def handle_call(%{:msg => :switch_state, :opts => _opts}, _from, s) do
-    state = SwitchState.state(s.dutycycle.device)
+    state = Switch.state(s.dutycycle.device)
 
     {:reply, state, s}
   end
