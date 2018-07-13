@@ -186,6 +186,12 @@ defmodule Switch do
     if sw, do: SwitchCmd.pending_cmds(sw, opts), else: nil
   end
 
+  def state(name) when is_binary(name) do
+    ss = SwitchState.state(name)
+
+    if is_nil(ss), do: SwitchGroup.state(name), else: ss
+  end
+
   def state(name, opts \\ []) when is_binary(name) do
     ss = SwitchState.state(name, opts)
 
