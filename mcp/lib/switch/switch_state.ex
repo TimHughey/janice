@@ -17,8 +17,9 @@ defmodule SwitchState do
     field(:name, :string)
     field(:description, :string, default: "new switch")
     field(:pio, :integer, default: 0)
-    field(:state, :boolean, default: nil)
+    field(:state, :boolean, default: false)
     field(:ttl_ms, :integer)
+
     belongs_to(:switch, Switch)
 
     timestamps(usec: true)
@@ -76,6 +77,18 @@ defmodule SwitchState do
     else
       {:error, :not_found}
     end
+  end
+
+  def exists?([]), do: false
+
+  def exists?(names) when is_list(names) do
+    res = for n <- names, do: exists?(n)
+
+    Enum.all?(res)
+  end
+
+  def exists?(name) when is_binary(name) do
+    if is_nil(get_by(name: name)), do: false, else: true
   end
 
   # def delete(id) when is_integer(id) do
