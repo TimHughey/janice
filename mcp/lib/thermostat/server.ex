@@ -96,6 +96,11 @@ defmodule Thermostat.Server do
     call_server(name, msg)
   end
 
+  def stop(name, opts \\ []) when is_binary(name) do
+    msg = %{:msg => :stop, opts: opts}
+    call_server(name, msg)
+  end
+
   def take_ownership(name, owner, opts \\ []) when is_binary(name) do
     msg = %{:msg => :take_ownership, owner: owner, opts: opts}
     call_server(name, msg)
@@ -109,8 +114,8 @@ defmodule Thermostat.Server do
     if is_pid(pid), do: GenServer.call(server_name, msg), else: :no_server
   end
 
-  def update_profile(name, profile, opts \\ []) when is_map(profile) do
-    msg = %{:msg => :update_profile, :profile => profile, opts: opts}
+  def update_profile(name, %{name: profile} = map, opts \\ []) when is_binary(profile) do
+    msg = %{:msg => :update_profile, :profile => map, opts: opts}
     call_server(name, msg)
   end
 
@@ -194,6 +199,14 @@ defmodule Thermostat.Server do
 
   def handle_call(%{:msg => :state, :opts => _opts}, _from, s) do
     {:reply, s.thermostat.state, s}
+  end
+
+  def handle_call(%{:msg => :stop, :opts => _opts} = msg, _from, s) do
+    {res, t} = handle_stop(msg, s)
+
+    s = Map.merge(s, %{thermostat: t})
+
+    {:reply, :ok, s}
   end
 
   def handle_call(%{:msg => :take_ownership, :owner => owner, :opts => opts}, _from, s) do
@@ -388,6 +401,14 @@ defmodule Thermostat.Server do
     {rc, t} = Thermostat.enable(s.thermostat, msg.set)
 
     if rc === :ok, do: {:ok, t}, else: {:failed, s.thermostat}
+  end
+
+  defp handle_stop(_msg, %{thermostat: t} = s) do
+    {rc, nt} = Thermostat.state(t, "stopped")
+
+    Switch.state(Thermostat.switch(nt), position: false)
+
+    if rc === :ok, do: {:ok, nt}, else: {:failed, t}
   end
 
   defp handle_update_profile(%Thermostat{} = t, profile, opts) when is_map(profile) do

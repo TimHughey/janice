@@ -264,4 +264,12 @@ defmodule ThermostatTest do
     assert p.low_offset === -0.2
     assert p.high_offset == 0.2
   end
+
+  test "can stop a Thermostat" do
+    rc = Thermostat.Server.stop(name_str(12))
+    state = Thermostat.Server.state(name_str(12))
+
+    assert rc === :ok
+    assert state === "stopped"
+  end
 end

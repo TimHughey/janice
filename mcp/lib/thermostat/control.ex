@@ -1,7 +1,5 @@
 defmodule Thermostat.Control do
-  @moduledoc """
-
-  """
+  @moduledoc false
 
   require Logger
 
@@ -14,7 +12,7 @@ defmodule Thermostat.Control do
   def next_state(%{low_offset: low_offset, high_offset: high_offset}, state, set_pt, val) do
     cond do
       # handle the case where the sensor doesn't have a value
-      is_nil(val) or is_nil(set_pt) ->
+      is_nil(val) or is_nil(set_pt) or state === "stopped" ->
         "off"
 
       val > set_pt + high_offset and (state === "on" or state === "started") ->
