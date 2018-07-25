@@ -55,10 +55,23 @@ defmodule Janice.Jobs do
 
   def reefwater(:mix) do
     dcs = [
-      {"reefwater mix air", "high"},
+      {"reefwater mix air", "off"},
       {"reefwater mix pump", "high"},
       {"display tank replenish", "fast"},
       {"reefwater rodi fill", "off"}
+    ]
+
+    for {dc, p} <- dcs, do: Dutycycle.Server.activate_profile(dc, p, enable: true)
+
+    Thermostat.Server.activate_profile("reefwater mix heat", "match display tank")
+  end
+
+  def reefwater(:fill_daytime) do
+    dcs = [
+      {"reefwater mix air", "off"},
+      {"reefwater mix pump", "low"},
+      {"display tank replenish", "slow"},
+      {"reefwater rodi fill", "slow"}
     ]
 
     for {dc, p} <- dcs, do: Dutycycle.Server.activate_profile(dc, p, enable: true)
@@ -79,9 +92,9 @@ defmodule Janice.Jobs do
     Thermostat.Server.activate_profile("reefwater mix heat", "match display tank")
   end
 
-  def reefwater(:low_energy) do
+  def reefwater(:eco) do
     dcs = [
-      {"reefwater mix air", "low"},
+      {"reefwater mix air", "off"},
       {"reefwater mix pump", "low"},
       {"display tank replenish", "fast"},
       {"reefwater rodi fill", "off"}

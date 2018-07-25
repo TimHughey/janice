@@ -77,6 +77,12 @@ config :mcp, Janice.Scheduler,
     {"*/2 22-6 * * *", {Janice.Jobs, :germination, [false]}},
     {"*/2 21-7 * * *", {Janice.Jobs, :flush, []}},
     {"*/2 8-20 * * *", {Janice.Jobs, :grow, []}}
+    # SUN = 0, MON = 1, TUE = 2, WED = 3, THU = 4, FRI = 5, SAT = 6
+    # {"0 18 * * 4", {Janice.Jobs, :reefwater, [:fill_overnight]}},
+    # {"0 7 * * 5", {Janice.Jobs, :reefwater, [:fill_daytime]}},
+    # {"0 18 * * 5", {Janice.Jobs, :reefwater, [:mix]}},
+    # {"0 20 * * 0", {Janice.Jobs, :reefwater, [:eco]}}
+
     # Every 15 minutes
     # {"*/15 * * * *",   fn -> System.cmd("rm", ["/tmp/tmp_"]) end},
     # Runs on 18, 20, 22, 0, 2, 4, 6:
