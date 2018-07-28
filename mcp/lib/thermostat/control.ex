@@ -9,12 +9,13 @@ defmodule Thermostat.Control do
     Sensor.celsius(name: sensor, since_secs: 30)
   end
 
+  # handle the case where the sensor doesn't have a value
+  def next_state(%{}, state, set_pt, val)
+      when is_nil(val) or is_nil(set_pt) or state === "stopped",
+      do: "off"
+
   def next_state(%{low_offset: low_offset, high_offset: high_offset}, state, set_pt, val) do
     cond do
-      # handle the case where the sensor doesn't have a value
-      is_nil(val) or is_nil(set_pt) or state === "stopped" ->
-        "off"
-
       val > set_pt + high_offset and (state === "on" or state === "started") ->
         "off"
 
@@ -28,6 +29,7 @@ defmodule Thermostat.Control do
     end
   end
 
+  # handle invocation with an empty map
   def next_state(%{}, state, set_pt, val) do
     next_state(%{low_offset: 0.0, high_offset: 0.0}, state, set_pt, val)
   end

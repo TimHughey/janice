@@ -180,6 +180,12 @@ defmodule ThermostatTest do
     assert res === "off"
   end
 
+  test "temperature control handles nil value and stopped state" do
+    res = Thermostat.Control.next_state(%{}, "stopped", nil, nil)
+
+    assert res === "off"
+  end
+
   test "can set state directly on a %Thermostat{}" do
     new_state = "on"
     t = Thermostat.get_by(name: name_str(5))
