@@ -34,6 +34,9 @@ defmodule Thermostat.Control do
     next_state(%{low_offset: 0.0, high_offset: 0.0}, state, set_pt, val)
   end
 
+  def state_to_position("on"), do: true
+  def state_to_position(_other), do: false
+
   def temperature(%Thermostat{name: name, active_profile: profile} = t) when is_nil(profile) do
     Thermostat.log?(t) && Logger.warn(fn -> "active profile is nil for thermostat [#{name}]" end)
     {:nil_active_profile, t}
@@ -58,8 +61,7 @@ defmodule Thermostat.Control do
       # handle no change in state
       {:ok, t}
     else
-      pos = if next_state === "on", do: true, else: false
-      Switch.state(Thermostat.switch(t), position: pos, lazy: true)
+      Switch.state(Thermostat.switch(t), position: state_to_position(next_state), lazy: true)
       Thermostat.state(t, next_state)
     end
   end

@@ -12,14 +12,14 @@ config :logger,
   level: :info
 
 # configure erlang's lager (used by emqttc)
-config :lager,
-  handlers: [
-    lager_console_backend: :error,
-    lager_file_backend: [file: 'var/log/error.log', level: :error, size: 4096, count: 2]
-  ],
-  error_logger_redirect: false,
-  error_logger_whitelist: [Logger.ErrorHandler],
-  crash_log: false
+# config :lager,
+#   handlers: [
+#     lager_console_backend: :error,
+#     lager_file_backend: [file: 'var/log/error.log', level: :error, size: 4096, count: 2]
+#   ],
+#   error_logger_redirect: false,
+#   error_logger_whitelist: [Logger.ErrorHandler],
+#   crash_log: false
 
 # General application configuration
 config :mcp,

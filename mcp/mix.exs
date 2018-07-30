@@ -26,7 +26,7 @@ defmodule Mcp.Mixfile do
     [
       app: :mcp,
       version: "0.1.2-#{sha_head()}",
-      elixir: "~> 1.6",
+      elixir: "~> 1.7",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       elixirc_paths: elixirc_paths(Mix.env()),
@@ -51,7 +51,6 @@ defmodule Mcp.Mixfile do
         :runtime_tools,
         :ueberauth_identity,
         :ueberauth_github,
-        :lager,
         :parse_trans
       ],
       mod: {Mcp.Application, args()}
@@ -67,14 +66,14 @@ defmodule Mcp.Mixfile do
     [
       {:timex, "~> 3.0"},
       {:jason, "~> 1.0"},
-      {:instream, "~> 0.16"},
+      {:instream, "~> 0.17"},
       {:hackney, "~> 1.1"},
       {:poolboy, "~> 1.5"},
       {:httpoison, "~> 0.12"},
       {:postgrex, "~> 0.13"},
       {:ecto, "~> 2.1"},
       {:timex_ecto, "~> 3.1"},
-      {:emqttc, github: "emqtt/emqttc"},
+      {:emqttc, github: "rabbitmq/emqttc", tag: "remove-logging"},
       {:uuid, "~> 1.1"},
       {:phoenix, "~> 1.3.0"},
       {:phoenix_pubsub, "~> 1.0"},
