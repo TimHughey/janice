@@ -86,7 +86,8 @@ defmodule Mcp.Mixfile do
       {:ueberauth, "~> 0.4"},
       {:ueberauth_github, "~> 0.4"},
       {:ueberauth_identity, "~> 0.2"},
-      {:distillery, "~> 1.0"},
+      # {:distillery, "~> 2.0"},
+      {:distillery, github: "bitwalker/distillery"},
       {:quantum, "~> 2.2"},
       {:credo, "> 0.0.0", only: [:dev, :test]},
       {:coverex, "~> 1.4.10", only: :test}
