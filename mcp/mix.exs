@@ -98,8 +98,7 @@ defmodule Mcp.Mixfile do
     [
       "ecto.seed": ["seed"],
       "ecto.setup": ["ecto.create", "ecto.migrate --log-sql", "ecto.seed"],
-      "ecto.reset": ["ecto.drop", "ecto.setup"],
-      test: ["ecto.migrate --log-sql", "test"]
+      "ecto.reset": ["ecto.drop", "ecto.setup"]
     ]
   end
 

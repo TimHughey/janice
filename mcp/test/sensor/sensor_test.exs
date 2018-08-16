@@ -82,4 +82,10 @@ defmodule SensorTest do
 
     assert tc === 50.0
   end
+
+  test "can handle unknown sensor" do
+    tc = Sensor.celsius(device: "bad_sensor", since_secs: 60)
+
+    assert is_nil(tc)
+  end
 end
