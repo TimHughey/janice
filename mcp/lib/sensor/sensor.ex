@@ -95,13 +95,13 @@ defmodule Sensor do
   def change_name(id, tobe, comment) when is_integer(id) do
     s = get_by(id: id)
 
-    if not is_nil(s) do
+    if is_nil(s) do
+      Logger.warn(fn -> "change name failed" end)
+      {:error, :not_found}
+    else
       s
       |> changeset(%{name: tobe, description: comment})
       |> update()
-    else
-      Logger.warn(fn -> "change name failed" end)
-      {:error, :not_found}
     end
   end
 
@@ -226,6 +226,8 @@ defmodule Sensor do
   ###
   ### PRIVATE
   ###
+
+  defp normalize_readings(nil), do: %{}
 
   defp normalize_readings(%{tc: nil, tf: nil}), do: %{}
 
