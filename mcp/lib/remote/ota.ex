@@ -69,7 +69,7 @@ defmodule OTA do
     delay_ms = Keyword.get(opts, :start_delay_ms, 3_000)
 
     if is_binary(partition) do
-      for host <- update_hosts do
+      for host <- update_hosts, is_binary(host) do
         log && Logger.info(fn -> "sending begin for #{host}" end)
 
         fw_file_version()
