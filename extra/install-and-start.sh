@@ -60,7 +60,7 @@
 
 	print -n "starting janice..."
 
-	env PORT=4009 mcp start && print " done."
+	env PORT=4009 $jan_bin/mcp start && print " done."
 
 	print -n "removing deploy tar..." && rm -f $release && print " done."
 
