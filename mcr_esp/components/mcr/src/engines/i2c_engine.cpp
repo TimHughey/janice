@@ -415,7 +415,7 @@ bool mcrI2c::readSHT31(i2cDev_t *dev, humidityReading_t **reading) {
   esp_rc = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(1000));
   i2c_cmd_link_delete(cmd);
 
-  delay(100);
+  delay(20);
 
   if (esp_rc != ESP_OK) {
     ESP_LOGW(tagReadSHT31(), "write failed %s %s", dev->debug().c_str(),
@@ -440,7 +440,7 @@ bool mcrI2c::readSHT31(i2cDev_t *dev, humidityReading_t **reading) {
   esp_rc = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(1000));
   i2c_cmd_link_delete(cmd);
 
-  delay(100);
+  delay(20);
 
   dev->stopRead();
 
