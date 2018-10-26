@@ -21,9 +21,9 @@ defmodule SensorTemperature do
     timestamps(usec: true)
   end
 
-  def purge_readings(unit: num) when is_list(opts) do
-    before = Timex.now() |> Timex.shift(opts)
-
-    res = from(st in SensorTemperature, where: st.inserted_at <= before) |> delete_all()
-  end
+  # def purge_readings(opts) when is_list(opts) do
+  #   before = Timex.now() |> Timex.shift(opts)
+  #
+  #   res = from(st in SensorTemperature, where: st.inserted_at <= before) |> delete_all()
+  # end
 end
