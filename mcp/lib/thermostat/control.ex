@@ -15,7 +15,7 @@ defmodule Thermostat.Control do
       do: "off"
 
   # handle the case when a thermostat is in standby
-  def next_state(%{name: "standby"}, state, set_pt, val), do: off
+  def next_state(%{name: "standby"}, state, set_pt, val), do: "off"
 
   # handle typical operational case of enabled thermostat controlling a device
   def next_state(%{low_offset: low_offset, high_offset: high_offset}, state, set_pt, val) do
