@@ -9,8 +9,9 @@ defmodule SensorTemperature do
   use Timex.Ecto.Timestamps
   use Ecto.Schema
 
-  import Ecto.Query, only: [from: 2]
-  import Repo, only: [delete_all: 2]
+  # will be used eventually for purge readings
+  # import Ecto.Query, only: [from: 2]
+  # import Repo, only: [delete_all: 2]
 
   schema "sensor_temperature" do
     field(:tc, :float)

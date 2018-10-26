@@ -202,7 +202,7 @@ defmodule Thermostat.Server do
   end
 
   def handle_call(%{:msg => :stop, :opts => _opts} = msg, _from, s) do
-    {res, t} = handle_stop(msg, s)
+    {_res, t} = handle_stop(msg, s)
 
     s = Map.merge(s, %{thermostat: t})
 
@@ -403,7 +403,7 @@ defmodule Thermostat.Server do
     if rc === :ok, do: {:ok, t}, else: {:failed, s.thermostat}
   end
 
-  defp handle_stop(_msg, %{thermostat: t} = s) do
+  defp handle_stop(_msg, %{thermostat: t}) do
     {rc, nt} = Thermostat.state(t, "stopped")
 
     Switch.state(Thermostat.switch(nt), position: false)
