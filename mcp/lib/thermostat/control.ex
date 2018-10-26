@@ -53,7 +53,7 @@ defmodule Thermostat.Control do
     {:no_active_profile, t}
   end
 
-  def temperatue(%Thermostate{enabled: false}), do: "disabled"
+  def temperatue(%Thermostat{enabled: false}), do: "disabled"
 
   def temperature(%Thermostat{enabled: true} = t) do
     profile = Profile.active(t)
