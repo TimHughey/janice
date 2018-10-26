@@ -12,8 +12,8 @@ defmodule Sensor do
   import Ecto.Query, only: [from: 2]
   import Repo, only: [all: 2, insert!: 1, update: 1, update!: 1, one: 1]
 
-  alias Fact.Fahrenheit
   alias Fact.Celsius
+  alias Fact.Fahrenheit
   alias Fact.RelativeHumidity
 
   schema "sensor" do

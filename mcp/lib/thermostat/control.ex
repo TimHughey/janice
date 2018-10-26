@@ -14,12 +14,16 @@ defmodule Thermostat.Control do
       when is_nil(val) or is_nil(set_pt) or state === "stopped",
       do: "off"
 
+  # handle the case when a thermostat is in standby
+  def next_state(%{name: "standby"}, state, set_pt, val), do: off
+
+  # handle typical operational case of enabled thermostat controlling a device
   def next_state(%{low_offset: low_offset, high_offset: high_offset}, state, set_pt, val) do
     cond do
-      val > set_pt + high_offset and (state === "on" or state === "started") ->
+      val > set_pt + high_offset and state in ["on", "started", "disabled"] ->
         "off"
 
-      val < set_pt + low_offset and (state === "off" or state === "started") ->
+      val < set_pt + low_offset and state in ["off", "started", "disabled"] ->
         "on"
 
       true ->
@@ -49,7 +53,9 @@ defmodule Thermostat.Control do
     {:no_active_profile, t}
   end
 
-  def temperature(%Thermostat{} = t) do
+  def temperatue(%Thermostate{enabled: false}), do: "disabled"
+
+  def temperature(%Thermostat{enabled: true} = t) do
     profile = Profile.active(t)
 
     curr_val = current_val(t)
