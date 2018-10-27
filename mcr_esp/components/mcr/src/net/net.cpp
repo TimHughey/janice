@@ -233,8 +233,8 @@ bool Net::start() {
 
   if (waitForIP()) {
     sntp_setoperatingmode(SNTP_OPMODE_POLL);
-    sntp_setservername(0, (char *)"jophiel.wisslanding.com");
-    sntp_setservername(1, (char *)"loki.wisslanding.com");
+    sntp_setservername(0, (char *)"ntp1.wisslanding.com");
+    sntp_setservername(1, (char *)"gabriel.wisslanding.com");
     sntp_init();
 
     ensureTimeIsSet();
