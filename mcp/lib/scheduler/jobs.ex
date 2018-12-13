@@ -105,6 +105,27 @@ defmodule Janice.Jobs do
     Thermostat.Server.activate_profile("reefwater mix heat", "low energy")
   end
 
+  def reefwater(:standby) do
+    dcs = [
+      {"reefwater mix air", "standby"},
+      {"reefwater mix pump", "standby"},
+      {"display tank replenish", "standby"},
+      {"reefwater rodi fill", "standby"}
+    ]
+
+    for {dc, p} <- dcs, do: Dutycycle.Server.activate_profile(dc, p, enable: true)
+
+    Thermostat.Server.activate_profile("reefwater mix heat", "standby")
+  end
+
+  def sump(:standby) do
+    Dutycycle.Server.activate_profile("display tank replenish", "standby")
+  end
+
+  def sump(:resume) do
+    Dutycycle.Server.activate_profile("display tank replenish", "fast")
+  end
+
   def touch_file do
     System.cmd("touch", ["/tmp/janice-every-minute"])
   end
