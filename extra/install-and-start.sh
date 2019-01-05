@@ -45,7 +45,10 @@
 	$jan_bin/mcp ping 1> /dev/null 2>&1
 	if [[ $? -eq 0 ]]; then
 		print -n "stopping janice before swapping old and new..."
+		# HACK - to solve issue with /run permissions
+		sudo chmod go+w /run ; sleep 5
 		run_cmd $jan_base/bin/mcp stop 1> /dev/null 2>&1 && print " done."
+		sudo chmod go-w /run
 	fi
 
 	print "executing mix ecto.migrate:"
@@ -60,7 +63,9 @@
 
 	print -n "starting janice..."
 
+	sudo chmod go+w /run
 	env PORT=4009 $jan_bin/mcp start && print " done."
+	sleep 5 ; sudo chmod go+w /run
 
 	print -n "removing deploy tar..." && rm -f $release && print " done."
 
