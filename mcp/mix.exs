@@ -72,14 +72,14 @@ defmodule Mcp.Mixfile do
       {:httpoison, "~> 0.12"},
       {:postgrex, "~> 0.13"},
       {:ecto, "~> 2.1"},
-      {:timex_ecto, "~> 3.1"},
+      {:timex_ecto, "~> 3.3"},
       {:emqttc, github: "rabbitmq/emqttc", tag: "remove-logging"},
       {:uuid, "~> 1.1"},
-      {:phoenix, "~> 1.3.0"},
+      {:phoenix, "~> 1.4.0"},
       {:phoenix_pubsub, "~> 1.0"},
-      {:phoenix_ecto, "~> 3.2"},
+      {:phoenix_ecto, "~> 3.0"},
       {:phoenix_html, "~> 2.10"},
-      {:phoenix_live_reload, "~> 1.0", only: :dev},
+      {:phoenix_live_reload, "~> 1.2", only: :dev},
       {:gettext, "~> 0.11"},
       {:cowboy, "~> 1.0"},
       {:guardian, "~> 1.0"},
@@ -90,7 +90,7 @@ defmodule Mcp.Mixfile do
       {:distillery, github: "bitwalker/distillery"},
       {:quantum, "~> 2.2"},
       {:credo, "> 0.0.0", only: [:dev, :test]},
-      {:coverex, "~> 1.4.10", only: :test}
+      {:coverex, "~> 1.0", only: :test}
     ]
   end
 
