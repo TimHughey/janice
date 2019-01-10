@@ -30,7 +30,7 @@ defmodule Mix.Tasks.Seed do
         else: opts
 
     ensure_repo(repo, args)
-    {:ok, pid, db} = ensure_started(repo, opts)
+    {:ok, pid, db} = Application.ensure_started(repo, opts)
 
     Logger.info(fn -> "#{inspect(repo)} started #{inspect(db)}" end)
 

@@ -57,7 +57,7 @@ config :mcp, Fact.Influx,
 config :mcp, Mixtank.Control, control_temp_secs: 600
 
 config :mcp, Repo,
-  adapter: Ecto.Adapters.Postgres,
+  migration_timestamps: [:utc_datetime_usec],
   database: "jan_dev",
   username: "jan_dev",
   password: "jan_dev",

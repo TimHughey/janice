@@ -6,7 +6,6 @@ defmodule SwitchCmd do
 
   require Logger
   use Timex
-  use Timex.Ecto.Timestamps
   use Ecto.Schema
 
   import Ecto.Changeset, only: [change: 2]
@@ -25,8 +24,8 @@ defmodule SwitchCmd do
     field(:acked, :boolean)
     field(:orphan, :boolean)
     field(:rt_latency, :integer)
-    field(:sent_at, Timex.Ecto.DateTime)
-    field(:ack_at, Timex.Ecto.DateTime)
+    field(:sent_at, :utc_datetime_usec)
+    field(:ack_at, :utc_datetime_usec)
     belongs_to(:switch, Switch)
 
     timestamps(usec: true)

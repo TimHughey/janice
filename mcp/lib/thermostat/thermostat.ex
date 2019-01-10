@@ -20,7 +20,6 @@ defmodule Thermostat do
   """
 
   require Logger
-  use Timex.Ecto.Timestamps
   use Ecto.Schema
   use Timex
 
@@ -39,12 +38,12 @@ defmodule Thermostat do
     field(:active_profile)
     field(:sensor)
     field(:state)
-    field(:state_at, Timex.Ecto.DateTime)
+    field(:state_at, :utc_datetime_usec)
     field(:log_activity, :boolean)
 
     has_many(:profiles, Profile)
 
-    timestamps(usec: true)
+    timestamps()
   end
 
   # quietly handle requests to activate a profile that is already active

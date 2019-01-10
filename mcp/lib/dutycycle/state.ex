@@ -4,7 +4,6 @@ defmodule Dutycycle.State do
 
   require Logger
   use Timex
-  use Timex.Ecto.Timestamps
   use Ecto.Schema
 
   import Ecto.Query, only: [from: 2, update: 2]
@@ -14,12 +13,12 @@ defmodule Dutycycle.State do
   schema "dutycycle_state" do
     field(:state)
     field(:dev_state, :boolean)
-    field(:run_at, Timex.Ecto.DateTime)
-    field(:run_end_at, Timex.Ecto.DateTime)
-    field(:idle_at, Timex.Ecto.DateTime)
-    field(:idle_end_at, Timex.Ecto.DateTime)
-    field(:started_at, Timex.Ecto.DateTime)
-    field(:state_at, Timex.Ecto.DateTime)
+    field(:run_at, :utc_datetime_usec)
+    field(:run_end_at, :utc_datetime_usec)
+    field(:idle_at, :utc_datetime_usec)
+    field(:idle_end_at, :utc_datetime_usec)
+    field(:started_at, :utc_datetime_usec)
+    field(:state_at, :utc_datetime_usec)
     belongs_to(:dutycycle, Dutycycle)
 
     timestamps(usec: true)
@@ -53,7 +52,7 @@ defmodule Dutycycle.State do
     dc_id = Map.get(dc, :id, false)
     profile = Map.get(dc, :profiles) |> Profile.active()
 
-    now = Timex.now()
+    now = DateTime.utc_now()
     query = from(s in Dutycycle.State, where: s.dutycycle_id == ^dc_id)
 
     cond do

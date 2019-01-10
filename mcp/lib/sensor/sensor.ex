@@ -5,7 +5,6 @@ defmodule Sensor do
 
   require Logger
   use Timex
-  use Timex.Ecto.Timestamps
   use Ecto.Schema
 
   import Ecto.Changeset
@@ -22,12 +21,12 @@ defmodule Sensor do
     field(:device, :string)
     field(:type, :string)
     field(:dev_latency, :integer)
-    field(:reading_at, Timex.Ecto.DateTime)
-    field(:last_seen_at, Timex.Ecto.DateTime)
+    field(:reading_at, :utc_datetime_usec)
+    field(:last_seen_at, :utc_datetime_usec)
     has_many(:temperature, SensorTemperature)
     has_one(:relhum, SensorRelHum)
 
-    timestamps(usec: true)
+    timestamps()
   end
 
   def add([]), do: []
@@ -337,7 +336,7 @@ defmodule Sensor do
     _temp = update_temperature(s, r)
 
     {change(s, %{
-       last_seen_at: Timex.from_unix(r.mtime),
+       last_seen_at: Timex.from_unix(r.mtime) |> Timex.shift(microseconds: 1),
        reading_at: Timex.now(),
        dev_latency: Map.get(r, :read_us, Timex.diff(r.msg_recv_dt, Timex.from_unix(r.mtime)))
      })
@@ -350,7 +349,7 @@ defmodule Sensor do
     _relhum = update_relhum(s, r)
 
     {change(s, %{
-       last_seen_at: Timex.from_unix(r.mtime),
+       last_seen_at: Timex.from_unix(r.mtime) |> Timex.shift(microseconds: 1),
        reading_at: Timex.now(),
        dev_latency: Map.get(r, :read_us, Timex.diff(r.msg_recv_dt, Timex.from_unix(r.mtime)))
      })

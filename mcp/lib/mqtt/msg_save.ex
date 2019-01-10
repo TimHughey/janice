@@ -5,7 +5,6 @@ defmodule MessageSave do
   require Logger
   use GenServer
   use Timex
-  use Timex.Ecto.Timestamps
   use Ecto.Schema
 
   import Application, only: [get_env: 3]

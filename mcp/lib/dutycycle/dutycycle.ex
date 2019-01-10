@@ -20,7 +20,6 @@ defmodule Dutycycle do
   """
 
   require Logger
-  use Timex.Ecto.Timestamps
   use Ecto.Schema
   use Timex
 

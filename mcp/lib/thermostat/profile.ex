@@ -4,7 +4,6 @@ defmodule Thermostat.Profile do
 
   require Logger
   use Timex
-  use Timex.Ecto.Timestamps
   use Ecto.Schema
 
   import Ecto.Changeset, only: [change: 2]
@@ -26,7 +25,7 @@ defmodule Thermostat.Profile do
 
     belongs_to(:thermostat, Thermostat)
 
-    timestamps(usec: true)
+    timestamps()
   end
 
   def active(%Thermostat{} = t) do

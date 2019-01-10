@@ -5,7 +5,6 @@ defmodule SwitchState do
 
   require Logger
   use Timex
-  use Timex.Ecto.Timestamps
   use Ecto.Schema
 
   # import Ecto.Changeset, only: [cast: 2, change: 2]

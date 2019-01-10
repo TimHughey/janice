@@ -6,7 +6,6 @@ defmodule SensorTemperature do
 
   require Logger
   use Timex
-  use Timex.Ecto.Timestamps
   use Ecto.Schema
 
   # will be used eventually for purge readings
@@ -19,7 +18,7 @@ defmodule SensorTemperature do
     field(:ttl_ms, :integer)
     belongs_to(:sensor, Sensor)
 
-    timestamps(usec: true)
+    timestamps()
   end
 
   # def purge_readings(opts) when is_list(opts) do

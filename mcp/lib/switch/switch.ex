@@ -21,7 +21,6 @@ defmodule Switch do
 
   require Logger
   use Timex
-  use Timex.Ecto.Timestamps
   use Ecto.Schema
 
   # import Application, only: [get_env: 2]
@@ -46,13 +45,13 @@ defmodule Switch do
     field(:device, :string)
     field(:enabled, :boolean, default: true)
     field(:dev_latency, :integer)
-    field(:discovered_at, Timex.Ecto.DateTime)
-    field(:last_cmd_at, Timex.Ecto.DateTime)
-    field(:last_seen_at, Timex.Ecto.DateTime)
+    field(:discovered_at, :utc_datetime_usec)
+    field(:last_cmd_at, :utc_datetime_usec)
+    field(:last_seen_at, :utc_datetime_usec)
     has_many(:states, SwitchState)
     has_many(:cmds, SwitchCmd)
 
-    timestamps(usec: true)
+    timestamps()
   end
 
   def add([]), do: []
@@ -284,7 +283,7 @@ defmodule Switch do
 
         # always note that we've seen the switch and update the dev latency
         # if it is greater than 0
-        opts = %{last_seen_at: Timex.from_unix(r.mtime)}
+        opts = %{last_seen_at: Timex.from_unix(r.mtime) |> Timex.shift(microseconds: 1)}
 
         opts =
           if Map.get(r, :latency, 0) > 0,
