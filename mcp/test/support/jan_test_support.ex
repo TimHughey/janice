@@ -1,7 +1,7 @@
 defmodule JanTest do
-  @moduledoc """
+  @moduledoc false
 
-  """
+  alias Janice.TimeSupport
 
   def base_ext(name, num),
     do: %{
@@ -9,7 +9,7 @@ defmodule JanTest do
       name: name(name, num),
       hw: "esp32",
       vsn: preferred_vsn(),
-      mtime: Timex.now() |> Timex.to_unix(),
+      mtime: TimeSupport.unix_now(:seconds),
       log: false
     }
 
@@ -107,7 +107,7 @@ defmodule JanTest do
       pio_count: num_pios,
       states: pios(num_pios, pos),
       vsn: preferred_vsn(),
-      mtime: Timex.now() |> Timex.to_unix(),
+      mtime: TimeSupport.unix_now(:seconds),
       log: false
     }
     |> Switch.external_update()
@@ -125,7 +125,7 @@ defmodule JanTest do
       pio_count: num_pios,
       states: pios(num_pios, pos),
       vsn: preferred_vsn(),
-      mtime: Timex.now() |> Timex.to_unix(),
+      mtime: TimeSupport.unix_now(:seconds),
       log: false
     }
 end

@@ -1,10 +1,8 @@
 defmodule DutycycleControllerTest do
-  @moduledoc """
+  @moduledoc false
 
-  """
   use ExUnit.Case, async: false
   # import ExUnit.CaptureLog
-  use Timex
 
   setup do
     :ok

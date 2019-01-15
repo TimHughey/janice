@@ -1,11 +1,12 @@
 defmodule Fact.LedFlashes do
-  @moduledoc """
-  """
+  @moduledoc false
+
   use Instream.Series
-  use Timex
 
   alias Fact.LedFlashes
   import(Fact.Influx, only: [write: 2])
+
+  alias Janice.TimeSupport
 
   series do
     database(Application.get_env(:mcp, Fact.Influx) |> Keyword.get(:database))
@@ -20,7 +21,7 @@ defmodule Fact.LedFlashes do
 
   def record(opts)
       when is_list(opts) do
-    def_mtime = Timex.now() |> Timex.to_unix()
+    def_mtime = TimeSupport.unix_now(:seconds)
     f = %LedFlashes{}
 
     f = set_tag(f, opts, :name)

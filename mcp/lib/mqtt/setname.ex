@@ -1,9 +1,9 @@
 defmodule Mqtt.SetName do
-  @moduledoc """
-  """
+  @moduledoc false
 
   require Logger
-  use Timex
+
+  alias Janice.TimeSupport
 
   @setname_cmd "set.name"
 
@@ -13,7 +13,7 @@ defmodule Mqtt.SetName do
       %{}
       |> Map.put(:vsn, Application.get_env(:mcp, :git_sha))
       |> Map.put(:cmd, @setname_cmd)
-      |> Map.put(:mtime, Timex.now() |> Timex.to_unix())
+      |> Map.put(:mtime, TimeSupport.unix_now(:seconds))
       |> Map.put_new(:host, host)
       |> Map.put_new(:name, String.replace_prefix(name, "mcr.", ""))
 

@@ -2,7 +2,6 @@ defmodule Dutycycle.Profile do
   @moduledoc false
 
   require Logger
-  use Timex
   use Ecto.Schema
 
   import Repo, only: [one: 1, update_all: 2]

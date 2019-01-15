@@ -4,7 +4,6 @@ defmodule SwitchGroup do
   """
 
   require Logger
-  use Timex
   use Ecto.Schema
 
   import Ecto.Query, only: [from: 2]

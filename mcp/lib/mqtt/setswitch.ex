@@ -1,9 +1,9 @@
 defmodule Mqtt.SetSwitch do
-  @moduledoc """
-  """
+  @moduledoc false
 
   require Logger
-  use Timex
+
+  alias Janice.TimeSupport
 
   @setswitch_cmd "set.switch"
 
@@ -24,7 +24,7 @@ defmodule Mqtt.SetSwitch do
     cmd = %{
       vsn: 1,
       cmd: @setswitch_cmd,
-      mtime: Timex.now() |> Timex.to_unix(),
+      mtime: TimeSupport.unix_now(:seconds),
       switch: device,
       states: states,
       refid: refid

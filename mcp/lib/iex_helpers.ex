@@ -1,9 +1,10 @@
 defmodule Mcp.IExHelpers do
-  require Logger
-  use Timex
+  @moduledoc false
 
-  @moduledoc """
-  """
+  require Logger
+
+  alias Janice.TimeSupport
+
   # def main_grow do
   #   Mcp.Chamber.status("main grow", :print)
   # end
@@ -17,7 +18,7 @@ defmodule Mcp.IExHelpers do
   end
 
   def make_mtime_current(json) do
-    mtime = Timex.now() |> Timex.to_unix()
+    mtime = TimeSupport.unix_now(:seconds)
 
     Jason.decode!(json, keys: :atoms)
     |> Map.put(:mtime, mtime)
@@ -146,7 +147,7 @@ defmodule Mcp.IExHelpers do
       version: "aac8961",
       host: "mcr.f8f005e755da",
       device: cmd.switch.device,
-      mtime: Timex.now() |> Timex.to_unix(),
+      mtime: TimeSupport.unix_now(:seconds),
       type: "switch",
       pio_count: pio_count,
       states: states,

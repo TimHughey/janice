@@ -3,7 +3,6 @@ defmodule Dutycycle.Server do
 
   require Logger
   use GenServer
-  use Timex
 
   alias Dutycycle.Profile
   alias Dutycycle.State

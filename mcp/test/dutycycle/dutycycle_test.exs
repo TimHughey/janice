@@ -3,7 +3,6 @@ defmodule DutycycleTest do
 
   use ExUnit.Case, async: false
   # import ExUnit.CaptureLog
-  use Timex
 
   alias Dutycycle.Profile
   alias Dutycycle.Server

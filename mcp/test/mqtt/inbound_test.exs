@@ -1,10 +1,10 @@
 defmodule MqttInboundMessageTest do
-  @moduledoc """
+  @moduledoc false
 
-  """
   use ExUnit.Case, async: true
   # import ExUnit.CaptureLog
-  use Timex
+
+  alias Janice.TimeSupport
 
   def preferred_vsn, do: "b4edefc"
 
@@ -23,7 +23,7 @@ defmodule MqttInboundMessageTest do
       name: name(num),
       hw: "esp32",
       vsn: preferred_vsn(),
-      mtime: Timex.now() |> Timex.to_unix(),
+      mtime: TimeSupport.unix_now(:seconds),
       log: false
     }
 

@@ -1,10 +1,10 @@
 defmodule OTATest do
-  @moduledoc """
+  @moduledoc false
 
-  """
   use ExUnit.Case, async: true
   # import ExUnit.CaptureLog
-  use Timex
+
+  alias Janice.TimeSupport
 
   def preferred_vsn, do: "b4edefc"
   def host(num), do: "mcr.ota" <> Integer.to_string(num)
@@ -15,7 +15,7 @@ defmodule OTATest do
       host: host(num),
       hw: "esp32",
       vsn: "1234567",
-      mtime: Timex.now() |> Timex.to_unix(),
+      mtime: TimeSupport.unix_now(:seconds),
       log: false
     }
 

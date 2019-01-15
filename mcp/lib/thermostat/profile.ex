@@ -1,9 +1,7 @@
 defmodule Thermostat.Profile do
-  @moduledoc """
-  """
+  @moduledoc false
 
   require Logger
-  use Timex
   use Ecto.Schema
 
   import Ecto.Changeset, only: [change: 2]

@@ -5,7 +5,6 @@ defmodule SensorRelHum do
   """
 
   require Logger
-  use Timex
   use Ecto.Schema
 
   schema "sensor_relhum" do

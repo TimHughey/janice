@@ -15,6 +15,8 @@ defmodule Remote do
   alias Fact.RunMetric
   alias Fact.StartupAnnouncement
 
+  alias Janice.TimeSupport
+
   alias Mqtt.Client
   alias Mqtt.SetName
 
@@ -39,8 +41,8 @@ defmodule Remote do
         name: host,
         hw: hw,
         firmware_vsn: vsn,
-        last_seen_at: Timex.from_unix(mtime) |> Timex.shift(microseconds: 1),
-        last_start_at: Timex.from_unix(mtime) |> Timex.shift(microseconds: 1)
+        last_seen_at: TimeSupport.from_unix(mtime),
+        last_start_at: TimeSupport.from_unix(mtime)
       }
     ]
     |> add()
@@ -212,7 +214,7 @@ defmodule Remote do
         host
 
       rem ->
-        mark_as_seen(rem, Timex.from_unix(mtime) |> Timex.shift(microseconds: 1), threshold_secs)
+        mark_as_seen(rem, TimeSupport.from_unix(mtime), threshold_secs)
     end
   end
 
@@ -318,8 +320,8 @@ defmodule Remote do
     StartupAnnouncement.record(host: rem.name, vsn: eu.vsn, hw: eu.hw)
 
     opts = [
-      last_start_at: Timex.from_unix(eu.mtime) |> Timex.shift(microseconds: 1),
-      last_seen_at: Timex.from_unix(eu.mtime) |> Timex.shift(microseconds: 1),
+      last_start_at: TimeSupport.from_unix(eu.mtime),
+      last_seen_at: TimeSupport.from_unix(eu.mtime),
       firmware_vsn: eu.vsn,
       hw: eu.hw
     ]

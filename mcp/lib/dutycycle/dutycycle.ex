@@ -21,7 +21,6 @@ defmodule Dutycycle do
 
   require Logger
   use Ecto.Schema
-  use Timex
 
   import Repo, only: [one: 1, insert_or_update!: 1]
   import Ecto.Changeset, only: [change: 2]

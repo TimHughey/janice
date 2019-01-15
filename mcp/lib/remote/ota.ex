@@ -1,9 +1,9 @@
 defmodule OTA do
-  @moduledoc """
-  """
+  @moduledoc false
 
   require Logger
-  use Timex
+
+  alias Janice.TimeSupport
 
   alias Mqtt.Client
 
@@ -17,7 +17,7 @@ defmodule OTA do
     %{}
     |> Map.put(:vsn, Application.get_env(:mcp, :git_sha))
     |> Map.put(:cmd, @boot_factory_next)
-    |> Map.put(:mtime, Timex.now() |> Timex.to_unix())
+    |> Map.put(:mtime, TimeSupport.unix_now(:seconds))
     |> Map.put(:host, host)
     |> json()
     |> Client.publish()
@@ -55,7 +55,7 @@ defmodule OTA do
     %{}
     |> Map.put(:vsn, Application.get_env(:mcp, :git_sha))
     |> Map.put(:cmd, @restart_cmd)
-    |> Map.put(:mtime, Timex.now() |> Timex.to_unix())
+    |> Map.put(:mtime, TimeSupport.unix_now(:seconds))
     |> Map.put(:host, host)
     |> Map.put(:delay_ms, delay_ms)
     |> json()
@@ -75,7 +75,7 @@ defmodule OTA do
         fw_file_version()
         |> Map.put(:vsn, Application.get_env(:mcp, :git_sha))
         |> Map.put(:cmd, @ota_begin_cmd)
-        |> Map.put(:mtime, Timex.now() |> Timex.to_unix())
+        |> Map.put(:mtime, TimeSupport.unix_now(:seconds))
         |> Map.put(:host, host)
         |> Map.put(:partition, partition)
         |> Map.put(:start_delay_ms, delay_ms)
@@ -96,7 +96,7 @@ defmodule OTA do
     %{}
     |> Map.put(:vsn, Application.get_env(:mcp, :git_sha))
     |> Map.put(:cmd, @ota_end_cmd)
-    |> Map.put(:mtime, Timex.now() |> Timex.to_unix())
+    |> Map.put(:mtime, TimeSupport.unix_now(:seconds))
     |> Map.put(:reboot_delay_ms, delay_ms)
     |> json()
     |> Client.publish()

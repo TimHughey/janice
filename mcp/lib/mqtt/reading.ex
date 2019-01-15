@@ -1,11 +1,13 @@
 defmodule Mqtt.Reading do
-  @moduledoc """
-  """
-  use Timex
+  @moduledoc false
+
   require Logger
 
-  alias Jason
   alias Fact.EngineMetric
+
+  alias Janice.TimeSupport
+
+  alias Jason
 
   @boot_t "boot"
   @startup_t "startup"
@@ -34,7 +36,7 @@ defmodule Mqtt.Reading do
       {:ok, r} ->
         r =
           Map.put(r, :json, json)
-          |> Map.put(:msg_recv_dt, Timex.now())
+          |> Map.put(:msg_recv_dt, TimeSupport.utc_now())
           |> Map.put_new(:vsn, Map.get(r, :version, "novsn"))
           |> Map.put_new(:hw, "m0")
           |> check_metadata()

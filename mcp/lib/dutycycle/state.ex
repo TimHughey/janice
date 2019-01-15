@@ -1,6 +1,5 @@
 defmodule Dutycycle.State do
-  @moduledoc """
-  """
+  @moduledoc false
 
   require Logger
   use Timex
@@ -9,6 +8,7 @@ defmodule Dutycycle.State do
   import Ecto.Query, only: [from: 2, update: 2]
 
   alias Dutycycle.Profile
+  alias Janice.TimeSupport
 
   schema "dutycycle_state" do
     field(:state)
@@ -65,9 +65,7 @@ defmodule Dutycycle.State do
       mode === "idle" ->
         Switch.state(dc.device, position: false, lazy: true, log: false)
 
-        idle_end_at =
-          Timex.to_datetime(now, "UTC")
-          |> Timex.shift(milliseconds: profile.idle_ms)
+        idle_end_at = TimeSupport.utc_now() |> Timex.shift(milliseconds: profile.idle_ms)
 
         query
         |> update(
@@ -86,9 +84,7 @@ defmodule Dutycycle.State do
       mode === "run" ->
         Switch.state(dc.device, position: true, lazy: true, log: false)
 
-        run_end_at =
-          Timex.to_datetime(now, "UTC")
-          |> Timex.shift(milliseconds: profile.run_ms)
+        run_end_at = TimeSupport.utc_now() |> Timex.shift(milliseconds: profile.run_ms)
 
         query
         |> update(

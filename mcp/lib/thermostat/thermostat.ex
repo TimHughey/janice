@@ -21,11 +21,12 @@ defmodule Thermostat do
 
   require Logger
   use Ecto.Schema
-  use Timex
 
   import Repo, only: [one: 1, insert_or_update!: 1]
   import Ecto.Changeset, only: [change: 2]
   import Ecto.Query, only: [from: 2]
+
+  alias Janice.TimeSupport
 
   alias Thermostat.Profile
 
@@ -160,7 +161,7 @@ defmodule Thermostat do
   def state(%Thermostat{state: curr_state}), do: curr_state
 
   def state(%Thermostat{} = t, new_state) when is_binary(new_state) do
-    {rc, ct} = change(t, state: new_state, state_at: Timex.now()) |> Repo.update()
+    {rc, ct} = change(t, state: new_state, state_at: TimeSupport.utc_now()) |> Repo.update()
 
     if rc === :ok, do: {rc, Repo.preload(ct, :profiles)}, else: {rc, t}
   end

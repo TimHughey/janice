@@ -20,7 +20,6 @@ defmodule Switch do
   """
 
   require Logger
-  use Timex
   use Ecto.Schema
 
   # import Application, only: [get_env: 2]
@@ -40,6 +39,8 @@ defmodule Switch do
     ]
 
   alias Fact.RunMetric
+
+  alias Janice.TimeSupport
 
   schema "switch" do
     field(:device, :string)
@@ -202,7 +203,7 @@ defmodule Switch do
   ##
 
   defp create_cmds(%{}) do
-    [%SwitchCmd{refid: uuid1(), acked: true, ack_at: Timex.now()}]
+    [%SwitchCmd{refid: uuid1(), acked: true, ack_at: TimeSupport.utc_now()}]
   end
 
   defp create_states(%{device: device, pio_count: pio_count})
@@ -283,7 +284,7 @@ defmodule Switch do
 
         # always note that we've seen the switch and update the dev latency
         # if it is greater than 0
-        opts = %{last_seen_at: Timex.from_unix(r.mtime) |> Timex.shift(microseconds: 1)}
+        opts = %{last_seen_at: TimeSupport.from_unix(r.mtime)}
 
         opts =
           if Map.get(r, :latency, 0) > 0,
