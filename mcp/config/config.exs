@@ -82,6 +82,7 @@ config :mcp, Web.ApiAuthAccessPipeline,
   module: Web.Guardian,
   error_handler: Web.ApiAuthErrorHandler
 
-config :phoenix, :format_encoders, json: Jason
-
+# added for Phoneix 1.3
+# config :phoenix, :format_encoders, json: Jason
+config :phoenix, :json_library, Jason
 import_config "#{Mix.env()}.exs"

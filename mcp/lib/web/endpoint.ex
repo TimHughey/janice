@@ -1,7 +1,10 @@
 defmodule Web.Endpoint do
   use Phoenix.Endpoint, otp_app: :mcp
 
-  socket("/janice/socket", Web.UserSocket)
+  socket("/janice/socket", Web.UserSocket,
+    websocket: true,
+    longpoll: [checkorigin: true]
+  )
 
   # Serve at "/" the static files from "priv/static" directory.
   #
