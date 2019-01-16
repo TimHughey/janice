@@ -25,7 +25,7 @@ defmodule Mcp.Mixfile do
   def project do
     [
       app: :mcp,
-      version: "0.1.2-#{sha_head()}",
+      version: "0.1.3-#{sha_head()}",
       elixir: "~> 1.7",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
