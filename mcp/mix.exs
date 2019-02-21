@@ -90,6 +90,7 @@ defmodule Mcp.Mixfile do
       # {:distillery, "~> 2.0"},
       {:distillery, github: "bitwalker/distillery"},
       {:quantum, "~> 2.2"},
+      {:scribe, "~> 0.8.2"},
       {:credo, "> 0.0.0", only: [:dev, :test]},
       {:coverex, "~> 1.0", only: :test}
     ]
