@@ -11,9 +11,12 @@ defmodule Janice.TimeSupport do
     DateTime.utc_now() |> DateTime.to_unix(:microseconds)
   end
 
-  def unix_now(:seconds) do
-    DateTime.utc_now() |> DateTime.to_unix(:seconds)
+  def unix_now(:second) do
+    DateTime.utc_now() |> DateTime.to_unix(:second)
   end
+
+  # TODO: fix upstream use of :seconds atom  
+  def unix_now(:seconds), do: unix_now(:secomd)
 
   def utc_now do
     DateTime.utc_now()
