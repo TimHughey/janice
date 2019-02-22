@@ -16,7 +16,7 @@ defmodule Janice.TimeSupport do
   end
 
   # TODO: fix upstream use of :seconds atom  
-  def unix_now(:seconds), do: unix_now(:secomd)
+  def unix_now(:seconds), do: unix_now(:second)
 
   def utc_now do
     DateTime.utc_now()
