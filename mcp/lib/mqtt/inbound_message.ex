@@ -1,15 +1,16 @@
 defmodule Mqtt.InboundMessage do
-  @moduledoc """
-  """
+  @moduledoc false
+
   require Logger
   use GenServer
   import Application, only: [get_env: 2]
   import Process, only: [send_after: 3]
 
-  alias Mqtt.Reading
+  alias Fact.EngineMetric
   alias Fact.FreeRamStat
   alias Fact.RunMetric
-  alias Fact.EngineMetric
+
+  alias Mqtt.Reading
 
   def start_link(s) do
     GenServer.start_link(Mqtt.InboundMessage, s, name: Mqtt.InboundMessage)

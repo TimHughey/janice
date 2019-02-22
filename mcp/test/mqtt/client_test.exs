@@ -1,10 +1,8 @@
 defmodule MqttClientTest do
-  @moduledoc """
+  @moduledoc false
 
-  """
   use ExUnit.Case, async: true
   import ExUnit.CaptureLog
-  use Timex
 
   setup_all do
     :ok

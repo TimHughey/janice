@@ -1,12 +1,7 @@
 defmodule SensorTemperature do
-  @moduledoc """
-    The SensorTemperature module provides individual temperature readings for
-    a Sensor
-  """
+  @moduledoc false
 
   require Logger
-  use Timex
-  use Timex.Ecto.Timestamps
   use Ecto.Schema
 
   # will be used eventually for purge readings
@@ -19,11 +14,11 @@ defmodule SensorTemperature do
     field(:ttl_ms, :integer)
     belongs_to(:sensor, Sensor)
 
-    timestamps(usec: true)
+    timestamps()
   end
 
   # def purge_readings(opts) when is_list(opts) do
-  #   before = Timex.now() |> Timex.shift(opts)
+  #   before = TimeSupport.utc_now() |> Timex.shift(opts)
   #
   #   res = from(st in SensorTemperature, where: st.inserted_at <= before) |> delete_all()
   # end

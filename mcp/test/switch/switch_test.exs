@@ -1,11 +1,9 @@
 defmodule SwitchStateTest do
-  @moduledoc """
+  @moduledoc false
 
-  """
   use ExUnit.Case, async: true
   import ExUnit.CaptureLog
   import JanTest
-  use Timex
 
   setup do
     :ok

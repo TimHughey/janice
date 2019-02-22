@@ -5,8 +5,6 @@ defmodule SensorRelHum do
   """
 
   require Logger
-  use Timex
-  use Timex.Ecto.Timestamps
   use Ecto.Schema
 
   schema "sensor_relhum" do
@@ -14,6 +12,6 @@ defmodule SensorRelHum do
     field(:ttl_ms, :integer)
     belongs_to(:sensor, Sensor)
 
-    timestamps(usec: true)
+    timestamps()
   end
 end

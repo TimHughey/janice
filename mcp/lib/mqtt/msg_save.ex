@@ -1,17 +1,16 @@
 defmodule MessageSave do
-  @moduledoc """
-  """
+  @moduledoc false
 
   require Logger
   use GenServer
-  use Timex
-  use Timex.Ecto.Timestamps
   use Ecto.Schema
 
   import Application, only: [get_env: 3]
   import Process, only: [send_after: 3]
   import Ecto.Query, only: [from: 2]
   import Repo, only: [one!: 1, insert!: 1]
+
+  alias Janice.TimeSupport
 
   schema "message" do
     field(:direction, :string)
@@ -84,9 +83,7 @@ defmodule MessageSave do
 
         older_than_hrs = get_in(s.opts, [:delete, :older_than_hrs]) * -1
 
-        older_dt =
-          Timex.to_datetime(Timex.now(), "UTC")
-          |> Timex.shift(hours: older_than_hrs)
+        older_dt = TimeSupport.utc_now() |> Timex.shift(hours: older_than_hrs)
 
         from(ms in MessageSave, where: ms.inserted_at < ^older_dt)
         |> Repo.delete_all()

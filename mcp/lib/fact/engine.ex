@@ -1,14 +1,14 @@
 defmodule Fact.EngineMetric do
-  @moduledoc """
-  """
+  @moduledoc false
 
   require Logger
-  use Timex
 
   use Instream.Series
   import(Fact.Influx, only: [write: 2])
   import(Map, only: [has_key?: 2])
   alias Fact.EngineMetric
+
+  alias Janice.TimeSupport
 
   @metric_type "mcr_stat"
   @metric_name "engine_phase"
@@ -52,7 +52,7 @@ defmodule Fact.EngineMetric do
     pt = set_field(pt, fields, :report_us)
     pt = set_field(pt, fields, :switch_cmd_us)
 
-    %{pt | timestamp: Map.get(r, :mtime, Timex.now() |> Timex.to_unix())}
+    %{pt | timestamp: Map.get(r, :mtime, TimeSupport.unix_now(:seconds))}
   end
 
   # trap when the input map doesn't match

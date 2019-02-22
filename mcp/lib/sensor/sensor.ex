@@ -5,12 +5,13 @@ defmodule Sensor do
 
   require Logger
   use Timex
-  use Timex.Ecto.Timestamps
   use Ecto.Schema
 
   import Ecto.Changeset
   import Ecto.Query, only: [from: 2]
   import Repo, only: [all: 2, insert!: 1, update: 1, update!: 1, one: 1]
+
+  alias Janice.TimeSupport
 
   alias Fact.Celsius
   alias Fact.Fahrenheit
@@ -22,12 +23,12 @@ defmodule Sensor do
     field(:device, :string)
     field(:type, :string)
     field(:dev_latency, :integer)
-    field(:reading_at, Timex.Ecto.DateTime)
-    field(:last_seen_at, Timex.Ecto.DateTime)
+    field(:reading_at, :utc_datetime_usec)
+    field(:last_seen_at, :utc_datetime_usec)
     has_many(:temperature, SensorTemperature)
     has_one(:relhum, SensorRelHum)
 
-    timestamps(usec: true)
+    timestamps()
   end
 
   def add([]), do: []
@@ -183,7 +184,7 @@ defmodule Sensor do
     if is_nil(sen) do
       nil
     else
-      dt = Timex.now() |> Timex.shift(seconds: since_secs)
+      dt = TimeSupport.utc_now() |> Timex.shift(seconds: since_secs)
 
       query =
         from(
@@ -208,7 +209,7 @@ defmodule Sensor do
     if is_nil(sen) do
       nil
     else
-      dt = Timex.now() |> Timex.shift(seconds: since_secs)
+      dt = TimeSupport.utc_now() |> Timex.shift(seconds: since_secs)
 
       query =
         from(
@@ -337,9 +338,10 @@ defmodule Sensor do
     _temp = update_temperature(s, r)
 
     {change(s, %{
-       last_seen_at: Timex.from_unix(r.mtime),
-       reading_at: Timex.now(),
-       dev_latency: Map.get(r, :read_us, Timex.diff(r.msg_recv_dt, Timex.from_unix(r.mtime)))
+       last_seen_at: TimeSupport.from_unix(r.mtime),
+       reading_at: TimeSupport.utc_now(),
+       dev_latency:
+         Map.get(r, :read_us, Timex.diff(r.msg_recv_dt, TimeSupport.from_unix(r.mtime)))
      })
      |> update!(), r}
   end
@@ -350,9 +352,10 @@ defmodule Sensor do
     _relhum = update_relhum(s, r)
 
     {change(s, %{
-       last_seen_at: Timex.from_unix(r.mtime),
-       reading_at: Timex.now(),
-       dev_latency: Map.get(r, :read_us, Timex.diff(r.msg_recv_dt, Timex.from_unix(r.mtime)))
+       last_seen_at: TimeSupport.from_unix(r.mtime),
+       reading_at: TimeSupport.utc_now(),
+       dev_latency:
+         Map.get(r, :read_us, Timex.diff(r.msg_recv_dt, TimeSupport.from_unix(r.mtime)))
      })
      |> update!(), r}
   end

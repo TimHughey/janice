@@ -3,7 +3,6 @@ defmodule Thermostat.Server do
 
   require Logger
   use GenServer
-  use Timex
 
   alias Thermostat.Control
   alias Thermostat.Profile

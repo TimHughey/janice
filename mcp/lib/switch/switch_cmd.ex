@@ -6,13 +6,14 @@ defmodule SwitchCmd do
 
   require Logger
   use Timex
-  use Timex.Ecto.Timestamps
   use Ecto.Schema
 
   import Ecto.Changeset, only: [change: 2]
   import Ecto.Query, only: [from: 2]
 
   import Repo, only: [all: 1, all: 2, one: 1, query: 1, preload: 2, update: 1, update_all: 2]
+
+  alias Janice.TimeSupport
 
   import Mqtt.Client, only: [publish_switch_cmd: 1]
 
@@ -25,15 +26,15 @@ defmodule SwitchCmd do
     field(:acked, :boolean)
     field(:orphan, :boolean)
     field(:rt_latency, :integer)
-    field(:sent_at, Timex.Ecto.DateTime)
-    field(:ack_at, Timex.Ecto.DateTime)
+    field(:sent_at, :utc_datetime_usec)
+    field(:ack_at, :utc_datetime_usec)
     belongs_to(:switch, Switch)
 
     timestamps(usec: true)
   end
 
   def ack_now(refid, opts \\ []) when is_binary(refid) do
-    %{cmdack: true, refid: refid, msg_recv_dt: Timex.now()}
+    %{cmdack: true, refid: refid, msg_recv_dt: TimeSupport.utc_now()}
     |> Map.merge(Enum.into(opts, %{}))
     |> ack_if_needed()
   end
@@ -74,7 +75,7 @@ defmodule SwitchCmd do
             "#{inspect(cmd.name)} rt_latency=#{rt_latency_ms}ms exceeded #{latency_warn_ms}ms"
           end)
 
-        opts = %{acked: true, rt_latency: rt_latency, ack_at: Timex.now()}
+        opts = %{acked: true, rt_latency: rt_latency, ack_at: TimeSupport.utc_now()}
 
         RunMetric.record(
           module: "#{__MODULE__}",
@@ -94,16 +95,12 @@ defmodule SwitchCmd do
     interval_mins = opts.interval_mins
     minutes_ago = opts.older_than_mins
 
-    before =
-      Timex.to_datetime(Timex.now(), "UTC")
-      |> Timex.shift(minutes: minutes_ago * -1)
+    before = TimeSupport.utc_now() |> Timex.shift(minutes: minutes_ago * -1)
 
     # set the lower limit on the check to the interval minutes converted to hours
-    lower =
-      Timex.to_datetime(Timex.now(), "UTC")
-      |> Timex.shift(hours: interval_mins * -1)
+    lower = TimeSupport.utc_now() |> Timex.shift(hours: interval_mins * -1)
 
-    ack_at = Timex.now()
+    ack_at = TimeSupport.utc_now()
 
     from(
       sc in SwitchCmd,
@@ -154,9 +151,7 @@ defmodule SwitchCmd do
       when is_list(opts) do
     minutes_ago = Keyword.get(opts, :minutes_ago, 0)
 
-    earlier =
-      Timex.to_datetime(Timex.now(), "UTC")
-      |> Timex.shift(minutes: minutes_ago * -1)
+    earlier = TimeSupport.utc_now() |> Timex.shift(minutes: minutes_ago * -1)
 
     from(
       c in SwitchCmd,
@@ -173,9 +168,7 @@ defmodule SwitchCmd do
     timescale = Keyword.get(opts, :milliseconds, timescale)
 
     # a reasonable default for the timescale of pending cmds appears to be 15mins
-    since =
-      Timex.to_datetime(Timex.now(), "UTC")
-      |> Timex.shift(milliseconds: timescale)
+    since = TimeSupport.utc_now() |> Timex.shift(milliseconds: timescale)
 
     from(
       cmd in SwitchCmd,
@@ -207,14 +200,14 @@ defmodule SwitchCmd do
     {elapsed_us, refid} =
       :timer.tc(fn ->
         # create and presist a new switch comamnd (also updates last switch cmd)
-        refid = Switch.add_cmd(name, ss.switch, Timex.now())
+        refid = Switch.add_cmd(name, ss.switch, TimeSupport.utc_now())
 
         # NOTE: if :ack is missing from opts then default to true
         if Keyword.get(opts, :ack, true) do
           # nothing, will be acked by remote device
         else
           # ack is false so create a simulated ack and immediately process it
-          %{cmdack: true, refid: refid, msg_recv_dt: Timex.now(), log: log}
+          %{cmdack: true, refid: refid, msg_recv_dt: TimeSupport.utc_now(), log: log}
           |> ack_if_needed()
         end
 

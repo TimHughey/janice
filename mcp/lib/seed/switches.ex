@@ -1,8 +1,5 @@
 defmodule Seed.Switches do
-  @moduledoc """
-  """
-
-  use Timex
+  @moduledoc false
 
   def switches(env) when env in [:dev, :test] do
     [

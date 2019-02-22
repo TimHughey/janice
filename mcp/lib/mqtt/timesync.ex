@@ -1,14 +1,14 @@
 defmodule Mqtt.Timesync do
-  @moduledoc """
-  """
+  @moduledoc false
 
   alias __MODULE__
 
   require Logger
-  use Timex
   use Task
 
   import Mqtt.Client, only: [publish: 1]
+
+  alias Janice.TimeSupport
 
   @timesync_cmd "time.sync"
 
@@ -60,7 +60,7 @@ defmodule Mqtt.Timesync do
   def new_cmd do
     %{}
     |> Map.put(:vsn, 1)
-    |> Map.put(:mtime, Timex.now() |> Timex.to_unix())
+    |> Map.put(:mtime, TimeSupport.unix_now(:seconds))
     |> Map.put(:cmd, @timesync_cmd)
   end
 

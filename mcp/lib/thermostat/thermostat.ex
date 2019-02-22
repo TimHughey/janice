@@ -20,13 +20,13 @@ defmodule Thermostat do
   """
 
   require Logger
-  use Timex.Ecto.Timestamps
   use Ecto.Schema
-  use Timex
 
   import Repo, only: [one: 1, insert_or_update!: 1]
   import Ecto.Changeset, only: [change: 2]
   import Ecto.Query, only: [from: 2]
+
+  alias Janice.TimeSupport
 
   alias Thermostat.Profile
 
@@ -39,12 +39,12 @@ defmodule Thermostat do
     field(:active_profile)
     field(:sensor)
     field(:state)
-    field(:state_at, Timex.Ecto.DateTime)
+    field(:state_at, :utc_datetime_usec)
     field(:log_activity, :boolean)
 
     has_many(:profiles, Profile)
 
-    timestamps(usec: true)
+    timestamps()
   end
 
   # quietly handle requests to activate a profile that is already active
@@ -161,7 +161,7 @@ defmodule Thermostat do
   def state(%Thermostat{state: curr_state}), do: curr_state
 
   def state(%Thermostat{} = t, new_state) when is_binary(new_state) do
-    {rc, ct} = change(t, state: new_state, state_at: Timex.now()) |> Repo.update()
+    {rc, ct} = change(t, state: new_state, state_at: TimeSupport.utc_now()) |> Repo.update()
 
     if rc === :ok, do: {rc, Repo.preload(ct, :profiles)}, else: {rc, t}
   end

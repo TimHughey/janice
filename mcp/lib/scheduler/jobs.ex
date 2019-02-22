@@ -43,7 +43,7 @@ defmodule Janice.Jobs do
     IO.puts("reefwater(:atom) -> control reefwater mix system")
     IO.puts("sump(:atom)      -> control display tank replenish")
     IO.puts(" ")
-    IO.puts(yellow <> ":help displays the various options for each" <> reset)
+    IO.puts(yellow() <> ":help displays the various options for each" <> reset())
   end
 
   def reefwater(:help) do

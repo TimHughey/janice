@@ -4,8 +4,6 @@ defmodule SwitchState do
   """
 
   require Logger
-  use Timex
-  use Timex.Ecto.Timestamps
   use Ecto.Schema
 
   # import Ecto.Changeset, only: [cast: 2, change: 2]
@@ -56,13 +54,13 @@ defmodule SwitchState do
   def change_name(id, tobe, comment) when is_integer(id) do
     ss = get(SwitchState, id)
 
-    if not is_nil(ss) do
+    if is_nil(ss) do
+      Logger.info(fn -> "change name failed" end)
+      {:error, :not_found}
+    else
       ss
       |> changeset(%{name: tobe, description: comment})
       |> update()
-    else
-      Logger.info(fn -> "change name failed" end)
-      {:error, :not_found}
     end
   end
 
@@ -70,12 +68,12 @@ defmodule SwitchState do
       when is_binary(asis) and is_binary(tobe) do
     ss = get_by(name: asis)
 
-    if not is_nil(ss) do
+    if is_nil(ss) do
+      {:error, :not_found}
+    else
       ss
       |> changeset(%{name: tobe, description: comment})
       |> update()
-    else
-      {:error, :not_found}
     end
   end
 

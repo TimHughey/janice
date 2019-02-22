@@ -1,12 +1,11 @@
 defmodule WebRemoteControllerTest do
-  @moduledoc """
+  @moduledoc false
 
-  """
   use ExUnit.Case, async: false
   import ExUnit.CaptureLog
   use Web.ConnCase
-  use Timex
 
+  alias Janice.TimeSupport
   alias Web.RemoteController, as: Controller
 
   def preferred_vsn, do: "b4edefc"
@@ -18,7 +17,7 @@ defmodule WebRemoteControllerTest do
       host: host(num),
       hw: "esp32",
       vsn: "1234567",
-      mtime: Timex.now() |> Timex.to_unix(),
+      mtime: TimeSupport.unix_now(:seconds),
       log: false
     }
 

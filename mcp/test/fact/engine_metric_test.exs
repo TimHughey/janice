@@ -1,10 +1,10 @@
 defmodule FactEngineMetricTest do
-  @moduledoc """
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: true
   import ExUnit.CaptureLog
-  use Timex
+
+  alias Janice.TimeSupport
 
   def preferred_vsn, do: "b4edefc"
   def host(num), do: "mcr.010203040" <> Integer.to_string(num)
@@ -22,7 +22,7 @@ defmodule FactEngineMetricTest do
       convert_us: 0,
       report_us: 0,
       switch_cmd_us: 0,
-      mtime: Timex.now() |> Timex.to_unix(),
+      mtime: TimeSupport.unix_now(:seconds),
       log: false
     }
 
@@ -35,7 +35,8 @@ defmodule FactEngineMetricTest do
   test "bad input reading" do
     msg =
       capture_log(fn ->
-        ext(0, "dsTest") |> Map.delete(:type)
+        ext(0, "dsTest")
+        |> Map.delete(:type)
         |> Fact.EngineMetric.make_point()
       end)
 

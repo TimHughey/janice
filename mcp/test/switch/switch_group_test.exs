@@ -4,7 +4,6 @@ defmodule SwitchGroupTest do
   use ExUnit.Case, async: true
   # import ExUnit.CaptureLog
   import JanTest
-  use Timex
 
   setup do
     :ok

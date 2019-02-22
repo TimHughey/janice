@@ -3,7 +3,6 @@ defmodule ThermostatTest do
 
   use ExUnit.Case, async: false
   # import ExUnit.CaptureLog
-  use Timex
 
   import JanTest, only: [create_switch: 5, create_temp_sensor: 4, device: 2]
 

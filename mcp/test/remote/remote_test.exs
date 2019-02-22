@@ -1,10 +1,11 @@
 defmodule RemoteTest do
-  @moduledoc """
+  @moduledoc false
 
-  """
   use ExUnit.Case, async: true
   import ExUnit.CaptureLog
   use Timex
+
+  alias Janice.TimeSupport
 
   def preferred_vsn, do: "b4edefc"
   def host(num), do: "mcr.remote" <> String.pad_leading(Integer.to_string(num), 3, "0")
@@ -15,7 +16,7 @@ defmodule RemoteTest do
       host: host(num),
       hw: "esp32",
       vsn: "1234567",
-      mtime: Timex.now() |> Timex.to_unix(),
+      mtime: TimeSupport.unix_now(:seconds),
       log: false
     }
 
@@ -41,7 +42,7 @@ defmodule RemoteTest do
     ext(6) |> Remote.external_update()
     before_mark = Remote.get_by(host: host(6))
 
-    Remote.mark_as_seen(host(1), Timex.now() |> Timex.to_unix())
+    Remote.mark_as_seen(host(1), TimeSupport.unix_now(:seconds))
 
     after_mark = Remote.get_by(host: host(6))
 
@@ -53,7 +54,7 @@ defmodule RemoteTest do
     ext(5) |> Remote.external_update()
     before_mark = Remote.get_by(host: host(5))
     :timer.sleep(1001)
-    Remote.mark_as_seen(host(5), Timex.now() |> Timex.to_unix(), 0)
+    Remote.mark_as_seen(host(5), TimeSupport.unix_now(:seconds), 0)
     after_mark = Remote.get_by(host: host(5))
 
     assert Timex.compare(after_mark.last_seen_at, before_mark.last_seen_at) == 1

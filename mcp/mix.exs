@@ -25,7 +25,7 @@ defmodule Mcp.Mixfile do
   def project do
     [
       app: :mcp,
-      version: "0.1.2-#{sha_head()}",
+      version: "0.1.3-#{sha_head()}",
       elixir: "~> 1.7",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
@@ -69,19 +69,20 @@ defmodule Mcp.Mixfile do
       {:instream, "~> 0.17"},
       {:hackney, "~> 1.1"},
       {:poolboy, "~> 1.5"},
-      {:httpoison, "~> 0.12"},
+      {:httpoison, "~> 1.0"},
       {:postgrex, "~> 0.13"},
-      {:ecto, "~> 2.1"},
-      {:timex_ecto, "~> 3.1"},
+      {:ecto_sql, "~> 3.0"},
+      # {:timex_ecto, "~> 3.3"},
       {:emqttc, github: "rabbitmq/emqttc", tag: "remove-logging"},
       {:uuid, "~> 1.1"},
-      {:phoenix, "~> 1.3.0"},
+      {:phoenix, "~> 1.4.0"},
       {:phoenix_pubsub, "~> 1.0"},
-      {:phoenix_ecto, "~> 3.2"},
+      {:phoenix_ecto, "~> 4.0"},
       {:phoenix_html, "~> 2.10"},
-      {:phoenix_live_reload, "~> 1.0", only: :dev},
+      {:phoenix_live_reload, "~> 1.2", only: :dev},
       {:gettext, "~> 0.11"},
-      {:cowboy, "~> 1.0"},
+      {:plug_cowboy, "~> 2.0"},
+      {:plug, "~> 1.7"},
       {:guardian, "~> 1.0"},
       {:ueberauth, "~> 0.4"},
       {:ueberauth_github, "~> 0.4"},
@@ -89,8 +90,9 @@ defmodule Mcp.Mixfile do
       # {:distillery, "~> 2.0"},
       {:distillery, github: "bitwalker/distillery"},
       {:quantum, "~> 2.2"},
+      {:scribe, "~> 0.8.2"},
       {:credo, "> 0.0.0", only: [:dev, :test]},
-      {:coverex, "~> 1.4.10", only: :test}
+      {:coverex, "~> 1.0", only: :test}
     ]
   end
 

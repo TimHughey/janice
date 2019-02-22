@@ -50,8 +50,7 @@ release :mcp do
 
   set(
     applications: [
-      :runtime_tools,
-      mqtt: :permanent
+      :runtime_tools
     ]
   )
 end

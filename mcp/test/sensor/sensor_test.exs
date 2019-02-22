@@ -1,11 +1,9 @@
 defmodule SensorTest do
-  @moduledoc """
+  @moduledoc false
 
-  """
   use ExUnit.Case, async: true
   import JanTest
   # import ExUnit.CaptureLog
-  use Timex
 
   @moduletag :sensor
   @moduletag report: [:device, :sensor]

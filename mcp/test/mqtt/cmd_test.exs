@@ -1,9 +1,6 @@
 defmodule MqttSetSwitchTest do
-  @moduledoc """
-
-  """
+  @moduledoc false
   use ExUnit.Case, async: true
-  use Timex
   alias Mqtt.SetSwitch
 
   def states, do: [%{pio: 0, state: true}, %{pio: 1, state: false}]

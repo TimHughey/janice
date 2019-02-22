@@ -6,7 +6,6 @@ defmodule Remote do
 
   require Logger
   use Timex
-  use Timex.Ecto.Timestamps
   use Ecto.Schema
 
   import Ecto.Changeset
@@ -15,6 +14,8 @@ defmodule Remote do
 
   alias Fact.RunMetric
   alias Fact.StartupAnnouncement
+
+  alias Janice.TimeSupport
 
   alias Mqtt.Client
   alias Mqtt.SetName
@@ -25,10 +26,10 @@ defmodule Remote do
     field(:hw, :string)
     field(:firmware_vsn, :string)
     field(:preferred_vsn, :string)
-    field(:last_start_at, Timex.Ecto.DateTime)
-    field(:last_seen_at, Timex.Ecto.DateTime)
+    field(:last_start_at, :utc_datetime_usec)
+    field(:last_seen_at, :utc_datetime_usec)
 
-    timestamps(usec: true)
+    timestamps()
   end
 
   def add(%Remote{} = r), do: add([r])
@@ -40,8 +41,8 @@ defmodule Remote do
         name: host,
         hw: hw,
         firmware_vsn: vsn,
-        last_seen_at: Timex.from_unix(mtime),
-        last_start_at: Timex.from_unix(mtime)
+        last_seen_at: TimeSupport.from_unix(mtime),
+        last_start_at: TimeSupport.from_unix(mtime)
       }
     ]
     |> add()
@@ -95,12 +96,17 @@ defmodule Remote do
     end
   end
 
+  def browse do
+    sorted = all() |> Enum.sort(fn a, b -> a.name <= b.name end)
+    Scribe.console(sorted, data: [:id, :name, :host, :hw, :inserted_at])
+  end
+
   def changeset(ss, params \\ %{}) do
     ss
     |> cast(params, [:name, :preferred_vsn])
     |> validate_required([:name])
     |> validate_inclusion(:preferred_vsn, ["head", "stable"])
-    |> validate_format(:name, ~r/^[\w]+[\w ]{1,}[\w]$/)
+    |> validate_format(:name, ~r/^[\w]+[\w .-]{1,}[\w]$/)
     |> unique_constraint(:name)
   end
 
@@ -124,7 +130,6 @@ defmodule Remote do
     if is_nil(check) do
       case remote do
         %Remote{} ->
-          new_name = String.replace(new_name, " ", "_")
           {res, rem} = changeset(remote, %{name: new_name}) |> update()
 
           if res == :ok,
@@ -209,8 +214,11 @@ defmodule Remote do
   def mark_as_seen(host, mtime, threshold_secs)
       when is_binary(host) and is_integer(mtime) do
     case get_by(host: host) do
-      nil -> host
-      rem -> mark_as_seen(rem, Timex.from_unix(mtime), threshold_secs)
+      nil ->
+        host
+
+      rem ->
+        mark_as_seen(rem, TimeSupport.from_unix(mtime), threshold_secs)
     end
   end
 
@@ -316,8 +324,8 @@ defmodule Remote do
     StartupAnnouncement.record(host: rem.name, vsn: eu.vsn, hw: eu.hw)
 
     opts = [
-      last_start_at: Timex.from_unix(eu.mtime),
-      last_seen_at: Timex.from_unix(eu.mtime),
+      last_start_at: TimeSupport.from_unix(eu.mtime),
+      last_seen_at: TimeSupport.from_unix(eu.mtime),
       firmware_vsn: eu.vsn,
       hw: eu.hw
     ]

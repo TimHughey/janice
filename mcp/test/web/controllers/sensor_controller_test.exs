@@ -1,12 +1,10 @@
 defmodule WebSensorControllerTest do
-  @moduledoc """
+  @moduledoc false
 
-  """
   use ExUnit.Case, async: false
   # import ExUnit.CaptureLog
   import JanTest
   use Web.ConnCase
-  use Timex
 
   alias Web.SensorController, as: Controller
 

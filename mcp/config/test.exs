@@ -57,6 +57,7 @@ config :mcp, Mixtank.Control, control_temp_ms: 100
 
 config :mcp, Repo,
   adapter: Ecto.Adapters.Postgres,
+  migration_timestamps: [:utc_datetime_usec],
   username: "jan_test",
   password: "jan_test",
   database: "jan_test",

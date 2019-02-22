@@ -15,5 +15,7 @@ defmodule Repo do
   #    You should have received a copy of the GNU General Public License
   #    along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-  use Ecto.Repo, otp_app: :mcp
+  use Ecto.Repo,
+    otp_app: :mcp,
+    adapter: Ecto.Adapters.Postgres
 end
