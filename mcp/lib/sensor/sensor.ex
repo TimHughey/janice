@@ -83,6 +83,11 @@ defmodule Sensor do
     |> all(timeout: 100)
   end
 
+  def browse do
+    sorted = all(:everything) |> Enum.sort(fn a, b -> a.name <= b.name end)
+    Scribe.console(sorted, data: [:id, :name, :device, :last_seen_at, :inserted_at])
+  end
+
   def celsius(name) when is_binary(name), do: celsius(name: name)
 
   def celsius(opts) when is_list(opts) do

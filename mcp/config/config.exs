@@ -11,6 +11,8 @@ config :logger,
   backends: [:console],
   level: :info
 
+config :scribe, style: Scribe.Style.Psql
+
 # configure erlang's lager (used by emqttc)
 # config :lager,
 #   handlers: [
