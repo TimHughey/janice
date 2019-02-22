@@ -1,4 +1,4 @@
-seconddefmodule Fact.RunMetric do
+defmodule Fact.RunMetric do
   @moduledoc false
 
   use Instream.Series
