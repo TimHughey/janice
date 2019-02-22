@@ -1,4 +1,4 @@
-defmodule Fact.RunMetric do
+seconddefmodule Fact.RunMetric do
   @moduledoc false
 
   use Instream.Series
@@ -23,7 +23,7 @@ defmodule Fact.RunMetric do
 
   def record(opts)
       when is_list(opts) do
-    def_mtime = TimeSupport.unix_now(:seconds)
+    def_mtime = TimeSupport.unix_now(:second)
     f = %RunMetric{}
 
     f = set_tag(f, opts, :application)
