@@ -96,12 +96,17 @@ defmodule Remote do
     end
   end
 
+  def browse do
+    sorted = all() |> Enum.sort(fn a, b -> a.name <= b.name end)
+    Scribe.console(sorted, data: [:id, :name, :host, :inserted_at])
+  end
+
   def changeset(ss, params \\ %{}) do
     ss
     |> cast(params, [:name, :preferred_vsn])
     |> validate_required([:name])
     |> validate_inclusion(:preferred_vsn, ["head", "stable"])
-    |> validate_format(:name, ~r/^[\w]+[\w .]{1,}[\w]$/)
+    |> validate_format(:name, ~r/^[\w]+[\w .-]{1,}[\w]$/)
     |> unique_constraint(:name)
   end
 
@@ -125,7 +130,6 @@ defmodule Remote do
     if is_nil(check) do
       case remote do
         %Remote{} ->
-          new_name = String.replace(new_name, " ", "-")
           {res, rem} = changeset(remote, %{name: new_name}) |> update()
 
           if res == :ok,
