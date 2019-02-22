@@ -98,7 +98,7 @@ defmodule Remote do
 
   def browse do
     sorted = all() |> Enum.sort(fn a, b -> a.name <= b.name end)
-    Scribe.console(sorted, data: [:id, :name, :host, :inserted_at])
+    Scribe.console(sorted, data: [:id, :name, :host, :hw, :inserted_at])
   end
 
   def changeset(ss, params \\ %{}) do
