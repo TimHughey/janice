@@ -85,7 +85,16 @@ defmodule Sensor do
 
   def browse do
     sorted = all(:everything) |> Enum.sort(fn a, b -> a.name <= b.name end)
-    Scribe.console(sorted, data: [:id, :name, :device, :last_seen_at, :inserted_at])
+
+    Scribe.console(sorted,
+      data: [
+        {"ID", :id},
+        {"Name", :name},
+        {"Device", :device},
+        {"Last Seen", fn x -> Timex.format!(x.last_seen_at, "{RFC3339z}") end},
+        {"Inserted", fn x -> Timex.format!(x.inserted_at, "{RFC3339z}") end}
+      ]
+    )
   end
 
   def celsius(name) when is_binary(name), do: celsius(name: name)
@@ -138,6 +147,29 @@ defmodule Sensor do
 
   def delete_all(:dangerous) do
     from(s in Sensor, where: s.id >= 0) |> Repo.delete_all()
+  end
+
+  def deprecate(id) when is_integer(id) do
+    s = get_by(id: id)
+
+    if is_nil(s) do
+      Logger.warn(fn -> "deprecate(#{id}) failed" end)
+      {:error, :not_found}
+    else
+      tobe = "zz #{s.name} #{Timex.now() |> Timex.format!("{ISO:Basic:Z}")}"
+      comment = "deprecated"
+
+      s
+      |> changeset(%{name: tobe, description: comment})
+      |> update()
+    end
+  end
+
+  def deprecate(:help), do: deprecate()
+
+  def deprecate do
+    IO.puts("Usage:")
+    IO.puts("\tSensor.deprecate(id)")
   end
 
   def external_update(%{device: device, host: host, mtime: mtime, type: type} = r) do
