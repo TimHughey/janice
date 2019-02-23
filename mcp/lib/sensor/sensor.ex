@@ -156,7 +156,7 @@ defmodule Sensor do
       Logger.warn(fn -> "deprecate(#{id}) failed" end)
       {:error, :not_found}
     else
-      tobe = "zz #{s.name} #{Timex.now() |> Timex.format!("{ISO:Basic:Z}")}"
+      tobe = "zz #{s.name} #{Timex.now() |> Timex.format!("{ASN1:UTCtime}")}"
       comment = "deprecated"
 
       s
