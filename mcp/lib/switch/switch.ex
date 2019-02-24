@@ -125,6 +125,8 @@ defmodule Switch do
     |> all(timeout: 100)
   end
 
+  def broswe, do: SwitchState.browse()
+
   def delete(id) when is_integer(id) do
     from(s in Switch, where: s.id == ^id)
     |> Repo.delete_all()
