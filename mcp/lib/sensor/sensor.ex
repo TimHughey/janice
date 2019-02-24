@@ -91,8 +91,7 @@ defmodule Sensor do
         {"ID", :id},
         {"Name", :name},
         {"Device", :device},
-        {"Last Seen", fn x -> Timex.format!(x.last_seen_at, "{RFC3339z}") end},
-        {"Inserted", fn x -> Timex.format!(x.inserted_at, "{RFC3339z}") end}
+        {"Last Seen", fn x -> Timex.format!(x.last_seen_at, "{RFC3339z}") end}
       ]
     )
   end
@@ -104,6 +103,19 @@ defmodule Sensor do
   end
 
   def celsius(nil), do: nil
+
+  def change_description(id, comment) when is_integer(id) and is_binary(comment) do
+    s = get_by(id: id)
+
+    if is_nil(s) do
+      Logger.warn(fn -> "change description failed" end)
+      {:error, :not_found}
+    else
+      s
+      |> changeset(%{description: comment})
+      |> update()
+    end
+  end
 
   def change_name(id, to_be, comment \\ "")
 
@@ -156,7 +168,7 @@ defmodule Sensor do
       Logger.warn(fn -> "deprecate(#{id}) failed" end)
       {:error, :not_found}
     else
-      tobe = "zz #{s.name} #{Timex.now() |> Timex.format!("{ASN1:UTCtime}")}"
+      tobe = "z-#{s.name}-#{Timex.now() |> Timex.format!("{ASN1:UTCtime}")}"
       comment = "deprecated"
 
       s

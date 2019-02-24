@@ -41,6 +41,19 @@ defmodule SwitchState do
 
   def as_list_of_maps(list) when is_list(list), do: for(ss <- list, do: as_map(ss))
 
+  def browse do
+    sorted = all(:everything) |> Enum.sort(fn a, b -> a.name <= b.name end)
+
+    Scribe.console(sorted,
+      data: [
+        {"ID", :id},
+        {"Name", :name},
+        {"Device", fn x -> x.switch.device end},
+        {"Last Seen", fn x -> Timex.format!(x.switch.last_seen_at, "{RFC3339z}") end}
+      ]
+    )
+  end
+
   def changeset(ss, params) do
     ss
     |> cast(params, [:name, :description])
