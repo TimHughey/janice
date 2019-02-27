@@ -159,22 +159,26 @@ defmodule Janice.Jobs do
 
     case curr do
       # switch is not found
-      is_nil(curr) ->
+      x when is_nil(x) ->
         Logger.warn(fn -> "switch #{sw} does not exist" end)
 
       # switch is already in desired position, do nothing
-      curr == pos ->
+      x when x == pos ->
         Logger.debug(fn -> "#{sw} position is correct" end)
 
       # switch is not in the desired position, set it
-      curr != pos ->
+      x when x != pos ->
         Switch.state(sw, position: pos, lazy: true)
-        Loggr.info(fn -> "#{sw} position set to #{inspect(pos)}" end)
+        Logger.info(fn -> "#{sw} position set to #{inspect(pos)}" end)
 
       # catch all, log a warning with what is returned
       _ ->
         Logger.warn(fn -> "#{sw} current position is #{inspect(curr)}" end)
     end
+  end
+
+  def switch_control(a, b) do
+    Logger.warn(fn -> "switch_control invalid arguments: #{inspect(a)} #{inspect(b)}" end)
   end
 
   def touch_file do
