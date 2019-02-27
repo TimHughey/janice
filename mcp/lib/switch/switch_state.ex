@@ -90,6 +90,28 @@ defmodule SwitchState do
     end
   end
 
+  def deprecate(id) when is_integer(id) do
+    ss = get_by(id: id)
+
+    if is_nil(ss) do
+      Logger.warn(fn -> "deprecate(#{id}) failed" end)
+      {:error, :not_found}
+    else
+      tobe = "~ #{ss.name}-#{Timex.now() |> Timex.format!("{ASN1:UTCtime}")}"
+
+      ss
+      |> changeset(%{name: tobe, description: "deprecated"})
+      |> update()
+    end
+  end
+
+  def deprecate(:help), do: deprecate()
+
+  def deprecate do
+    IO.puts("Usage:")
+    IO.puts("\tSwitchState.deprecate(id)")
+  end
+
   def exists?([]), do: false
 
   def exists?(names) when is_list(names) do

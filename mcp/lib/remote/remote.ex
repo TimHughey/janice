@@ -160,6 +160,28 @@ defmodule Remote do
       from(rem in Remote, where: rem.id >= 0)
       |> Repo.delete_all()
 
+  def deprecate(id) when is_integer(id) do
+    r = get_by(id: id)
+
+    if is_nil(r) do
+      Logger.warn(fn -> "deprecate(#{id}) failed" end)
+      {:error, :not_found}
+    else
+      tobe = "~ #{r.name}-#{Timex.now() |> Timex.format!("{ASN1:UTCtime}")}"
+
+      r
+      |> changeset(%{name: tobe})
+      |> update()
+    end
+  end
+
+  def deprecate(:help), do: deprecate()
+
+  def deprecate do
+    IO.puts("Usage:")
+    IO.puts("\tRemote.deprecate(id)")
+  end
+
   def external_update(%{host: host, vsn: _vsn, mtime: _mtime, hw: _hw} = eu) do
     result =
       :timer.tc(fn ->

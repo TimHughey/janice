@@ -141,6 +141,8 @@ defmodule Switch do
     from(sw in Switch, where: sw.id >= 0) |> Repo.delete_all()
   end
 
+  def deprecate(id), do: SwitchState.deprecate(id)
+
   def external_update(%{host: host, device: device, mtime: mtime} = r) do
     result =
       :timer.tc(fn ->
