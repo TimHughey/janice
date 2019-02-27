@@ -16,7 +16,7 @@ defmodule Janice.Jobs do
   end
 
   def germination(pos) when is_boolean(pos) do
-    sw = "germination_light"
+    sw = "germination_heat"
     curr = Switch.state(sw)
 
     if curr == pos do
