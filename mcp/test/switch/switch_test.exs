@@ -224,4 +224,18 @@ defmodule SwitchStateTest do
     assert count == 1
     assert is_nil(sw_rc)
   end
+
+  @tag num: 9
+  @tag pio: 0
+  test "can deprecate a Switch", context do
+    name = context[:device_pio]
+
+    ss1 = SwitchState.get_by(name: name)
+    id = Map.get(ss1, :id)
+
+    {rc, ss} = Switch.deprecate(id)
+
+    assert rc == :ok
+    assert String.contains?(ss.name, "~")
+  end
 end

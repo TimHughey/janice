@@ -55,10 +55,16 @@ defmodule SwitchState do
   end
 
   def changeset(ss, params) do
+    # validate name:
+    #  -starts with a ~ or alpha char
+    #  -contains a mix of:
+    #      alpha numeric, slash (/), dash (-), underscore (_), colon (:) and
+    #      spaces
+    #  -ends with an alpha char
     ss
     |> cast(params, [:name, :description])
     |> validate_required([:name])
-    |> validate_format(:name, ~r/^[\w~]+[\w ]{1,}[\w]$/)
+    |> validate_format(:name, ~r'^[\w~]+[\w\/ \-\:]{1,}[\w]$')
     |> unique_constraint(:name)
   end
 
@@ -133,7 +139,7 @@ defmodule SwitchState do
   # end
 
   def get_by(opts) when is_list(opts) do
-    filter = Keyword.take(opts, [:name])
+    filter = Keyword.take(opts, [:name, :id])
     select = Keyword.take(opts, [:only]) |> Keyword.get_values(:only) |> List.flatten()
 
     if Enum.empty?(filter) do

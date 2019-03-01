@@ -32,6 +32,9 @@ defmodule Remote do
     timestamps()
   end
 
+  # 15 minutes (as millesconds)
+  @delete_timeout_ms 15 * 60 * 1000
+
   def add(%Remote{} = r), do: add([r])
 
   def add(%{host: host, hw: hw, vsn: vsn, mtime: mtime}) do
@@ -153,12 +156,12 @@ defmodule Remote do
   end
 
   def delete(id) when is_integer(id),
-    do: from(s in Remote, where: s.id == ^id) |> Repo.delete_all()
+    do: from(s in Remote, where: s.id == ^id) |> Repo.delete_all(timeout: @delete_timeout_ms)
 
   def delete_all(:dangerous),
     do:
       from(rem in Remote, where: rem.id >= 0)
-      |> Repo.delete_all()
+      |> Repo.delete_all(timeout: @delete_timeout_ms)
 
   def deprecate(id) when is_integer(id) do
     r = get_by(id: id)

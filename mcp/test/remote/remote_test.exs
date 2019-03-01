@@ -224,4 +224,14 @@ defmodule RemoteTest do
 
     assert res == :ok
   end
+
+  test "can deprecate a Remote" do
+    n = 15
+    ext(n) |> Remote.external_update()
+    rem = Remote.get_by(host: host(n))
+
+    {rc, res} = Remote.deprecate(rem.id)
+
+    assert rc == :ok and String.contains?(res.name, "~")
+  end
 end

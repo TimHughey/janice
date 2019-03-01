@@ -55,6 +55,9 @@ defmodule Switch do
     timestamps()
   end
 
+  # 15 minutes (as millesconds)
+  @delete_timeout_ms 15 * 60 * 1000
+
   def add([]), do: []
 
   def add([%Switch{} = sw | rest]) do
@@ -129,16 +132,16 @@ defmodule Switch do
 
   def delete(id) when is_integer(id) do
     from(s in Switch, where: s.id == ^id)
-    |> Repo.delete_all()
+    |> Repo.delete_all(timeout: @delete_timeout_ms)
   end
 
   def delete(device) when is_binary(device) do
     from(s in Switch, where: s.device == ^device)
-    |> Repo.delete_all()
+    |> Repo.delete_all(timeout: @delete_timeout_ms)
   end
 
   def delete_all(:dangerous) do
-    from(sw in Switch, where: sw.id >= 0) |> Repo.delete_all()
+    from(sw in Switch, where: sw.id >= 0) |> Repo.delete_all(timeout: @delete_timeout_ms)
   end
 
   def deprecate(id), do: SwitchState.deprecate(id)

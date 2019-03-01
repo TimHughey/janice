@@ -62,7 +62,7 @@ defmodule SensorTest do
     assert is_number(tf)
   end
 
-  @tag num: 3
+  @tag num: 2
   test "can get avg temperature map", context do
     map = Sensor.temperature(device: context[:device])
 
@@ -71,6 +71,14 @@ defmodule SensorTest do
 
     assert is_number(tf)
     assert is_number(tc)
+  end
+
+  @tag num: 9
+  test "can deprecate a sensor", context do
+    id = context[:sensor] |> Map.get(:id)
+    {rc, sensor} = Sensor.deprecate(id)
+
+    assert rc == :ok and String.contains?(sensor.name, "~")
   end
 
   # sensor011 has temperatures of all the same value
@@ -85,5 +93,17 @@ defmodule SensorTest do
     tc = Sensor.celsius(device: "bad_sensor", since_secs: 60)
 
     assert is_nil(tc)
+  end
+
+  test "can purge SensorTemperature readings" do
+    {count, returned} = SensorTemperature.purge_readings(days: -1)
+
+    assert count >= 0 and is_nil(returned)
+  end
+
+  test "can purge SensorRelHum readings" do
+    {count, returned} = SensorRelHum.purge_readings(days: -1)
+
+    assert count >= 0 and is_nil(returned)
   end
 end

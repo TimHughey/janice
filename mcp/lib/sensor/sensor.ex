@@ -31,6 +31,9 @@ defmodule Sensor do
     timestamps()
   end
 
+  # 15 minutes (as millesconds)
+  @delete_timeout_ms 15 * 60 * 1000
+
   def add([]), do: []
 
   def add([%Sensor{} = s | rest]) do
@@ -150,15 +153,15 @@ defmodule Sensor do
   end
 
   def delete(id) when is_integer(id) do
-    from(s in Sensor, where: s.id == ^id) |> Repo.delete_all()
+    from(s in Sensor, where: s.id == ^id) |> Repo.delete_all(timeout: @delete_timeout_ms)
   end
 
   def delete(name) when is_binary(name) do
-    from(s in Sensor, where: s.name == ^name) |> Repo.delete_all()
+    from(s in Sensor, where: s.name == ^name) |> Repo.delete_all(timeout: @delete_timeout_ms)
   end
 
   def delete_all(:dangerous) do
-    from(s in Sensor, where: s.id >= 0) |> Repo.delete_all()
+    from(s in Sensor, where: s.id >= 0) |> Repo.delete_all(timeout: @delete_timeout_ms)
   end
 
   def deprecate(id) when is_integer(id) do

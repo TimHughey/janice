@@ -4,9 +4,10 @@ defmodule SensorTemperature do
   require Logger
   use Ecto.Schema
 
-  # will be used eventually for purge readings
-  # import Ecto.Query, only: [from: 2]
-  # import Repo, only: [delete_all: 2]
+  import Ecto.Query, only: [from: 2]
+  import Repo, only: [delete_all: 2]
+
+  alias Janice.TimeSupport
 
   schema "sensor_temperature" do
     field(:tc, :float)
@@ -17,9 +18,13 @@ defmodule SensorTemperature do
     timestamps()
   end
 
-  # def purge_readings(opts) when is_list(opts) do
-  #   before = TimeSupport.utc_now() |> Timex.shift(opts)
-  #
-  #   res = from(st in SensorTemperature, where: st.inserted_at <= before) |> delete_all()
-  # end
+  # 15 minutes (as milliseconds)
+  @delete_timeout_ms 15 * 60 * 1000
+
+  def purge_readings(opts) when is_list(opts) do
+    before = TimeSupport.utc_now() |> Timex.shift(opts)
+
+    from(st in SensorTemperature, where: st.inserted_at < ^before)
+    |> delete_all(timeout: @delete_timeout_ms)
+  end
 end
