@@ -22,6 +22,8 @@ defmodule SensorTest do
     :timer.sleep(2000)
     for _j <- 0..20, do: temp_ext_msg(11, tc: 50)
 
+    # :timer.sleep(30_000)
+
     :ok
   end
 
@@ -48,21 +50,21 @@ defmodule SensorTest do
     assert sensor
   end
 
-  @tag num: 2
+  @tag num: 11
   test "can get avg temperature (F)", context do
     tf = Sensor.fahrenheit(device: context[:device])
 
     assert is_number(tf)
   end
 
-  @tag num: 2
+  @tag num: 11
   test "can get avg temperature (C)", context do
-    tf = Sensor.celsius(device: context[:device])
+    tc = Sensor.celsius(device: context[:device])
 
-    assert is_number(tf)
+    assert is_number(tc)
   end
 
-  @tag num: 2
+  @tag num: 11
   test "can get avg temperature map", context do
     map = Sensor.temperature(device: context[:device])
 

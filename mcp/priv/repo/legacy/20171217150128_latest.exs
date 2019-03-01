@@ -140,9 +140,11 @@ defmodule Repo.Migrations.Latest do
     drop_if_exists(index(:dutycycle, [:name]))
     drop_if_exists(index(:dutycycle_state, [:dutycycle_id]))
     drop_if_exists(index(:dutycycle_mode, [:dutycycle_id, :name]))
+    drop_if_exists(index(:dutycycle_profile, [:dutycycle_id]))
 
     drop_if_exists(table(:dutycycle_state))
     drop_if_exists(table(:dutycycle_mode))
+    drop_if_exists(table(:dutycycle_profile))
     drop_if_exists(table(:dutycycle))
 
     create table(:dutycycle) do

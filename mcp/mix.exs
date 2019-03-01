@@ -98,11 +98,20 @@ defmodule Mcp.Mixfile do
 
   defp aliases do
     [
-      "ecto.seed": ["seed"],
-      "ecto.setup": ["ecto.create", "ecto.migrate --log-sql", "ecto.seed"],
+      "ecto.migrate": ["ecto.migrate", "ecto.dump"],
+      "ecto.setup": ["ecto.create", "ecto.load", "ecto.migrate"],
       "ecto.reset": ["ecto.drop", "ecto.setup"]
+      # test: ["ecto.create --quiet", "ecto.load", "ecto.migrate", "test"]
     ]
   end
+
+  # defp aliases do
+  #   [
+  #     "ecto.seed": ["seed"],
+  #     "ecto.setup": ["ecto.create", "ecto.migrate --log-sql", "ecto.seed"],
+  #     "ecto.reset": ["ecto.drop", "ecto.setup"]
+  #   ]
+  # end
 
   defp args do
     [
@@ -164,12 +173,6 @@ defmodule Mcp.Mixfile do
         Fact.RunMetric.Tags,
         Fact.StartupAnnouncement.Fields,
         Fact.StartupAnnouncement.Tags,
-        Mix.Tasks.Seed,
-        Seed.Chambers,
-        Seed.Dutycycles,
-        Seed.Mixtanks,
-        Seed.Sensors,
-        Seed.Switches,
         Web.Router.Helpers,
         Repo
       ]

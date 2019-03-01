@@ -61,7 +61,7 @@ config :mcp, Repo,
   username: "jan_test",
   password: "jan_test",
   database: "jan_test",
-  hostname: "jophiel.wisslanding.com",
+  hostname: "standby.db.wisslanding.com",
   pool_size: 10
 
 config :mcp, Janice.Scheduler,
