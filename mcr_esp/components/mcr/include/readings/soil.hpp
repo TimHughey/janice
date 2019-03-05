@@ -1,5 +1,5 @@
 /*
-    readings/all.hpp - Readings used within Master Control Remote
+    soil.hpp - Master Control Remote Soil Moisture Reading from Seesaw
     Copyright (C) 2017  Tim Hughey
 
     This program is free software: you can redistribute it and/or modify
@@ -18,10 +18,34 @@
     https://www.wisslanding.com
 */
 
+#ifndef soil_seesaw_h
+#define soil_seesaw_h
+
+#include <string>
+
+#include <external/ArduinoJson.h>
+#include <freertos/FreeRTOS.h>
+#include <sys/time.h>
+#include <time.h>
+
+#include "devs/id.hpp"
 #include "readings/celsius.hpp"
-#include "readings/engine.hpp"
-#include "readings/humidity.hpp"
-#include "readings/positions.hpp"
-#include "readings/ramutil.hpp"
-#include "readings/soil.hpp"
-#include "readings/startup_reading.hpp"
+
+typedef class soilReading soilReading_t;
+
+class soilReading : public celsiusReading_t {
+private:
+  // actual reading data
+  int _soil_moisture = 0;
+
+public:
+  // undefined reading
+  // celsiusReading(){};
+  soilReading(const mcrDevID_t &id, time_t mtime, float celsius,
+              int soil_moisture);
+
+protected:
+  virtual void populateJSON(JsonObject &root);
+};
+
+#endif // __cplusplus

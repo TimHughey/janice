@@ -1,5 +1,5 @@
 /*
-    readings/all.hpp - Readings used within Master Control Remote
+    celsius.cpp - Master Control Remote Seesaw Soil Reading
     Copyright (C) 2017  Tim Hughey
 
     This program is free software: you can redistribute it and/or modify
@@ -18,10 +18,29 @@
     https://www.wisslanding.com
 */
 
-#include "readings/celsius.hpp"
-#include "readings/engine.hpp"
-#include "readings/humidity.hpp"
-#include "readings/positions.hpp"
-#include "readings/ramutil.hpp"
+#include <string>
+
+#include <external/ArduinoJson.h>
+#include <sys/time.h>
+#include <time.h>
+
+#include "devs/id.hpp"
 #include "readings/soil.hpp"
-#include "readings/startup_reading.hpp"
+
+soilReading::soilReading(const mcrDevID_t &id, time_t mtime, float celsius,
+                         int soil_moisture)
+    : celsiusReading(id, mtime, celsius) {
+  _soil_moisture = soil_moisture;
+};
+
+void soilReading::populateJSON(JsonObject &root) {
+  // the reading is:
+  //  1. capacitive reading of soil moisture
+  //  2. celsius temperature of the probe
+
+  celsiusReading::populateJSON(root);
+
+  // override the reading type from the base class
+  root["type"] = "soil";
+  root["cap"] = _soil_moisture;
+};

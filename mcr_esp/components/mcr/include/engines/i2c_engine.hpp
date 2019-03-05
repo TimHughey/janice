@@ -76,10 +76,15 @@ private:
 
   uint32_t _bus_selects = 0;
   uint32_t _bus_select_errors = 0;
+  const TickType_t _cmd_timeout = pdMS_TO_TICKS(1000);
 
 private:
-  mcrDevAddr_t _search_addrs[3] = {
-      {mcrDevAddr(0x44)}, {mcrDevAddr(0x5C)}, {mcrDevAddr(0x00)}};
+  // array is zero terminated
+  mcrDevAddr_t _search_addrs[5] = {{mcrDevAddr(0x44)},
+                                   {mcrDevAddr(0x5C)},
+                                   {mcrDevAddr(0x20)},
+                                   {mcrDevAddr(0x36)},
+                                   {mcrDevAddr(0x00)}};
   mcrDevAddr_t *search_addrs() { return _search_addrs; };
   inline uint32_t search_addrs_count() {
     return sizeof(_search_addrs) / sizeof(mcrDevAddr_t);
@@ -90,14 +95,20 @@ private:
 
   // specific methods to read devices
   bool readAM2315(i2cDev_t *dev, humidityReading_t **reading, bool wake = true);
+  bool readMCP23008(i2cDev_t *dev, positionsReading_t **reading);
+  bool readSeesawSoil(i2cDev_t *dev, soilReading_t **reading);
   bool readSHT31(i2cDev_t *dev, humidityReading_t **reading);
 
   // utility methods
+  esp_err_t bus_read(i2cDev_t *dev, uint8_t *buff, uint32_t len,
+                     esp_err_t prev_esp_rc = ESP_OK);
+  esp_err_t bus_write(i2cDev_t *dev, uint8_t *buff, uint32_t len,
+                      esp_err_t prev_esp_rc = ESP_OK);
   bool crcSHT31(const uint8_t *data);
   bool detectDevice(mcrDevAddr_t &addr);
   bool detectDevicesOnBus(int bus);
 
-  bool detectMultiplexer();
+  bool detectMultiplexer(const int max_attempts = 1);
   bool hardReset();
   bool installDriver();
   uint32_t maxBuses();

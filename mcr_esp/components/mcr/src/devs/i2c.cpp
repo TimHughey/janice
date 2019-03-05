@@ -24,6 +24,7 @@
 #include <sstream>
 #include <string>
 
+#include <driver/i2c.h>
 #include <esp_log.h>
 #include <freertos/FreeRTOS.h>
 #include <sys/time.h>
@@ -42,6 +43,14 @@ const char *i2cDev::i2cDevDesc(uint8_t addr) {
 
   case 0x44:
     return (const char *)"sht31";
+    break;
+
+  case 0x20:
+    return (const char *)"mcp23008";
+    break;
+
+  case 0x36:
+    return (const char *)"soil";
     break;
 
   default:
@@ -85,6 +94,14 @@ const mcrDevID_t &i2cDev::externalName() {
 uint8_t i2cDev::devAddr() { return firstAddressByte(); };
 bool i2cDev::useMultiplexer() { return _use_multiplexer; };
 uint8_t i2cDev::bus() const { return _bus; };
+
+uint8_t i2cDev::readAddr() {
+  return (firstAddressByte() << 1) | I2C_MASTER_READ;
+};
+
+uint8_t i2cDev::writeAddr() {
+  return (firstAddressByte() << 1) | I2C_MASTER_WRITE;
+};
 
 const std::string i2cDev::debug() {
   mcrDevID_t ext_name = externalName();
