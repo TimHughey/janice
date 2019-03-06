@@ -379,7 +379,7 @@ defmodule Sensor do
 
   defp record_metrics({%Sensor{} = s, %{} = r}) do
     Logger.warn(fn ->
-      "Unknown sensor / reading #{inspect(s, pretty: true)} #{inspect(r, pretty: true)}"
+      "Unknown sensor or reading:\n#{inspect(s, pretty: true)}\n#{inspect(r, pretty: true)}"
     end)
 
     {s, r}
@@ -410,6 +410,12 @@ defmodule Sensor do
          Map.get(r, :read_us, Timex.diff(r.msg_recv_dt, TimeSupport.from_unix(r.mtime)))
      })
      |> update!(), r}
+  end
+
+  # handle unknown Sensors by simply passing through
+  # useful when bringing new sensors online via mcr
+  defp update_reading({%Sensor{} = s, %{} = r}) do
+    {s, r}
   end
 
   defp update_relhum(%Sensor{relhum: _relhum} = sen, r)
