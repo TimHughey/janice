@@ -54,14 +54,15 @@ mcrI2c::mcrI2c() {
   setLoggingLevel(tagEngine(), ESP_LOG_INFO);
   setLoggingLevel(tagDetectDev(), ESP_LOG_INFO);
   setLoggingLevel(tagDiscover(), ESP_LOG_INFO);
+  setLoggingLevel(tagReport(), ESP_LOG_INFO);
 
   _engine_task_name = tagEngine();
   _engine_stack_size = 5 * 1024;
   _engine_priority = CONFIG_MCR_I2C_TASK_CORE_PRIORITY;
 }
 
-esp_err_t mcrI2c::bus_read(i2cDev_t *dev, uint8_t *buff, uint32_t len,
-                           esp_err_t prev_esp_rc) {
+esp_err_t mcrI2c::busRead(i2cDev_t *dev, uint8_t *buff, uint32_t len,
+                          esp_err_t prev_esp_rc) {
   i2c_cmd_handle_t cmd = nullptr;
   esp_err_t esp_rc;
 
@@ -88,7 +89,7 @@ esp_err_t mcrI2c::bus_read(i2cDev_t *dev, uint8_t *buff, uint32_t len,
 
   if (esp_rc == ESP_OK) {
     // TODO: set to debug for production release
-    ESP_LOGI(tagEngine(), "ESP_OK: bus_read(%s, %p, %d, %s)",
+    ESP_LOGD(tagEngine(), "ESP_OK: bus_read(%s, %p, %d, %s)",
              dev->debug().c_str(), buff, len, esp_err_to_name(prev_esp_rc));
   } else {
     ESP_LOGE(tagEngine(), "%s: bus_read(%s, %p, %d, %s)",
@@ -99,8 +100,8 @@ esp_err_t mcrI2c::bus_read(i2cDev_t *dev, uint8_t *buff, uint32_t len,
   return esp_rc;
 }
 
-esp_err_t mcrI2c::bus_write(i2cDev_t *dev, uint8_t *bytes, uint32_t len,
-                            esp_err_t prev_esp_rc) {
+esp_err_t mcrI2c::busWrite(i2cDev_t *dev, uint8_t *bytes, uint32_t len,
+                           esp_err_t prev_esp_rc) {
   i2c_cmd_handle_t cmd = nullptr;
   esp_err_t esp_rc;
 
@@ -126,8 +127,7 @@ esp_err_t mcrI2c::bus_write(i2cDev_t *dev, uint8_t *bytes, uint32_t len,
   i2c_cmd_link_delete(cmd);
 
   if (esp_rc == ESP_OK) {
-    // TODO: set to debug for production release
-    ESP_LOGI(tagEngine(), "ESP_OK: bus_write(%s, %p, %d, %s)",
+    ESP_LOGD(tagEngine(), "ESP_OK: bus_write(%s, %p, %d, %s)",
              dev->debug().c_str(), bytes, len, esp_err_to_name(prev_esp_rc));
   } else {
     ESP_LOGE(tagEngine(), "%s: bus_write(%s, %p, %d, %s)",
@@ -178,7 +178,6 @@ bool mcrI2c::detectDevice(mcrDevAddr_t &addr) {
     esp_rc = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(100));
     i2c_cmd_link_delete(cmd);
 
-    delay(100);
     break;
 
   // SHT-31 humidity sensor
@@ -194,7 +193,6 @@ bool mcrI2c::detectDevice(mcrDevAddr_t &addr) {
     esp_rc = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(100));
     i2c_cmd_link_delete(cmd);
 
-    delay(100);
     break;
 
   // AM2315 needs to be woken up
@@ -208,8 +206,6 @@ bool mcrI2c::detectDevice(mcrDevAddr_t &addr) {
       i2c_master_stop(cmd);
       esp_rc = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(100));
       i2c_cmd_link_delete(cmd);
-
-      delay(100);
     } else {
       esp_rc = ESP_FAIL;
     }
@@ -227,7 +223,7 @@ bool mcrI2c::detectDevice(mcrDevAddr_t &addr) {
     esp_rc = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(100));
     i2c_cmd_link_delete(cmd);
 
-    delay(100);
+    break;
 
   case 0x36:
     cmd = i2c_cmd_link_create();
@@ -239,8 +235,6 @@ bool mcrI2c::detectDevice(mcrDevAddr_t &addr) {
 
     esp_rc = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(100));
     i2c_cmd_link_delete(cmd);
-
-    delay(100);
 
     break;
   }
@@ -329,6 +323,8 @@ void mcrI2c::discover(void *task_data) {
   }
 
   trackDiscover(false);
+
+  delay(50); // pause, report is next
 }
 
 bool mcrI2c::hardReset() {
@@ -388,7 +384,7 @@ void mcrI2c::printUnhandledDev(i2cDev_t *dev) {
 
 bool mcrI2c::useMultiplexer() { return _use_multiplexer; }
 
-bool mcrI2c::readAM2315(i2cDev_t *dev, humidityReading_t **reading, bool wake) {
+bool mcrI2c::readAM2315(i2cDev_t *dev, bool wake) {
   auto rc = false;
   i2c_cmd_handle_t cmd = nullptr;
   esp_err_t esp_rc;
@@ -487,8 +483,10 @@ bool mcrI2c::readAM2315(i2cDev_t *dev, humidityReading_t **reading, bool wake) {
     float tc =
         ((((buff[4] & 0x7F) * 256) + buff[5]) / 10) * ((buff[4] >> 7) ? -1 : 1);
 
-    *reading =
+    humidityReading_t *reading =
         new humidityReading(dev->externalName(), dev->readTimestamp(), tc, rh);
+
+    dev->setReading(reading);
 
     rc = true;
   } else { // crc did not match
@@ -498,22 +496,25 @@ bool mcrI2c::readAM2315(i2cDev_t *dev, humidityReading_t **reading, bool wake) {
   return rc;
 }
 
-bool mcrI2c::readMCP23008(i2cDev_t *dev, positionsReading_t **reading) {
+bool mcrI2c::readMCP23008(i2cDev_t *dev) {
   auto rc = true;
   auto positions = 0b00000000;
 
-  *reading = new positionsReading(dev->externalName(), time(nullptr), positions,
-                                  (uint8_t)8);
+  positionsReading_t *reading = new positionsReading(
+      dev->externalName(), time(nullptr), positions, (uint8_t)8);
+
+  dev->justSeen();
+  dev->setReading(reading);
 
   return rc;
 }
 
-bool mcrI2c::readSeesawSoil(i2cDev_t *dev, soilReading_t **reading) {
-  auto rc = true;
+bool mcrI2c::readSeesawSoil(i2cDev_t *dev) {
+  auto rc = false;
   esp_err_t esp_rc;
   float tempC = 0.0;
   int soil_moisture;
-  int sw_version;
+  // int sw_version;
 
   // seesaw data queries are two bytes that describe:
   //   1. module
@@ -545,8 +546,9 @@ bool mcrI2c::readSeesawSoil(i2cDev_t *dev, soilReading_t **reading) {
   // first, request and receive the onboard temperature
   data_request[0] = 0x00; // SEESAW_STATUS_BASE
   data_request[1] = 0x04; // SEESAW_STATUS_TEMP
-  esp_rc = bus_write(dev, data_request, 2);
-  esp_rc = bus_read(dev, buff, 4, esp_rc);
+  esp_rc = busWrite(dev, data_request, 2);
+  delay(20);
+  esp_rc = busRead(dev, buff, 4, esp_rc);
 
   // conversion copied from AdaFruit Seesaw library
   tempC = (1.0 / (1UL << 16)) *
@@ -557,30 +559,40 @@ bool mcrI2c::readSeesawSoil(i2cDev_t *dev, soilReading_t **reading) {
   data_request[0] = 0x0f; // SEESAW_TOUCH_BASE
   data_request[1] = 0x10; // SEESAW_TOUCH_CHANNEL_OFFSET
 
-  esp_rc = bus_write(dev, data_request, 2);
-  esp_rc = bus_read(dev, buff, 2, esp_rc);
+  esp_rc = busWrite(dev, data_request, 2);
+  delay(20);
+  esp_rc = busRead(dev, buff, 2, esp_rc);
 
   soil_moisture = ((uint16_t)buff[0] << 8) | buff[1];
 
   // third, request and receive the board version
-  data_request[0] = 0x00; // SEESAW_STATUS_BASE
-  data_request[1] = 0x02; // SEESAW_STATUS_VERSION
-
-  esp_rc = bus_write(dev, data_request, 2);
-  esp_rc = bus_read(dev, buff, 4, esp_rc);
-
-  sw_version = ((uint32_t)buff[0] << 24) | ((uint32_t)buff[1] << 16) |
-               ((uint32_t)buff[2] << 8) | (uint32_t)buff[3];
+  // data_request[0] = 0x00; // SEESAW_STATUS_BASE
+  // data_request[1] = 0x02; // SEESAW_STATUS_VERSION
+  //
+  // esp_rc = bus_write(dev, data_request, 2);
+  // esp_rc = bus_read(dev, buff, 4, esp_rc);
+  //
+  // sw_version = ((uint32_t)buff[0] << 24) | ((uint32_t)buff[1] << 16) |
+  //              ((uint32_t)buff[2] << 8) | (uint32_t)buff[3];
 
   dev->stopRead();
 
-  ESP_LOGI(tagEngine(), "soil => sw_version=0x%04x tempC=%3.1f moisture=%d",
-           sw_version, tempC, soil_moisture);
+  if (esp_rc == ESP_OK) {
+    dev->justSeen();
+
+    soilReading_t *reading = new soilReading(
+        dev->externalName(), dev->readTimestamp(), tempC, soil_moisture);
+
+    dev->setReading(reading);
+    rc = true;
+  }
+  // ESP_LOGI(tagEngine(), "soil => sw_version=0x%04x tempC=%3.1f moisture=%d",
+  //          sw_version, tempC, soil_moisture);
 
   return rc;
 }
 
-bool mcrI2c::readSHT31(i2cDev_t *dev, humidityReading_t **reading) {
+bool mcrI2c::readSHT31(i2cDev_t *dev) {
   auto rc = false;
   i2c_cmd_handle_t cmd = nullptr;
   esp_err_t esp_rc;
@@ -647,8 +659,12 @@ bool mcrI2c::readSHT31(i2cDev_t *dev, humidityReading_t **reading) {
     float tc = (float)((stc * 175) / 0xffff) - 45;
     float rh = (float)((srh * 100) / 0xffff);
 
-    *reading =
+    dev->justSeen();
+
+    humidityReading_t *reading =
         new humidityReading(dev->externalName(), dev->readTimestamp(), tc, rh);
+
+    dev->setReading(reading);
 
     rc = true;
   } else { // crc did not match
@@ -667,61 +683,38 @@ void mcrI2c::report(void *task_data) {
   for (auto it = knownDevices(); moreDevices(it); it++) {
     auto rc = false;
     i2cDev_t *dev = (i2cDev_t *)*it;
-    humidityReading_t *humidity = nullptr;
-    positionsReading_t *positions = nullptr;
-    soilReading_t *soil = nullptr;
 
     if (selectBus(dev->bus())) {
       switch (dev->devAddr()) {
       case 0x5C:
-        rc = readAM2315(dev, &humidity, true);
-        dev->setReading(humidity);
-
-        if (rc && (humidity)) {
-          publish(humidity);
-          dev->justSeen();
-        } else {
-          hardReset();
-        }
+        rc = readAM2315(dev);
         break;
 
       case 0x44:
-        rc = readSHT31(dev, &humidity);
-        dev->setReading(humidity);
-
-        if (rc && (humidity)) {
-          publish(humidity);
-          dev->justSeen();
-        } else {
-          hardReset();
-        }
-
+        rc = readSHT31(dev);
         break;
 
       case 0x20:
-        rc = readMCP23008(dev, &positions);
-
-        if (rc && (positions != nullptr)) {
-          publish(positions);
-          dev->justSeen();
-        } else {
-          hardReset();
-        }
-
+        rc = readMCP23008(dev);
         break;
 
-      case 0x36:
-        rc = readSeesawSoil(dev, &soil);
-
-        if (rc) {
-          dev->justSeen();
-        }
+      case 0x36: // Seesaw Soil Probe
+        rc = readSeesawSoil(dev);
         break;
 
       default:
         printUnhandledDev(dev);
+        rc = true;
         break;
       }
+    }
+
+    if (rc) {
+      publish(dev);
+      ESP_LOGI(tagReport(), "%s success", dev->debug().c_str());
+    } else {
+      ESP_LOGE(tagReport(), "%s failed", dev->debug().c_str());
+      hardReset();
     }
   }
 

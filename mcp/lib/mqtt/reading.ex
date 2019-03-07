@@ -38,7 +38,6 @@ defmodule Mqtt.Reading do
           Map.put(r, :json, json)
           |> Map.put(:msg_recv_dt, TimeSupport.utc_now())
           |> Map.put_new(:vsn, Map.get(r, :version, "novsn"))
-          |> Map.put_new(:hw, "m0")
           |> check_metadata()
 
         {:ok, r}
