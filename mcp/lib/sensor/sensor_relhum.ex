@@ -31,7 +31,7 @@ defmodule SensorRelHum do
   end
 
   def purge_readings(_) do
-    IO.puts(fn -> "Usage:" end)
-    IO.puts(fn -> "\tSensorRelHum.purge_readings(days: <val <= 30>)" end)
+    IO.puts("Usage:")
+    IO.puts("\tSensorRelHum.purge_readings(days: <val <= 30>)")
   end
 end

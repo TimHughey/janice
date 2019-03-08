@@ -16,6 +16,7 @@ defmodule Sensor do
   alias Fact.Celsius
   alias Fact.Fahrenheit
   alias Fact.RelativeHumidity
+  alias Fact.SoilMoisture
 
   schema "sensor" do
     field(:name, :string)
@@ -26,7 +27,8 @@ defmodule Sensor do
     field(:reading_at, :utc_datetime_usec)
     field(:last_seen_at, :utc_datetime_usec)
     has_many(:temperature, SensorTemperature)
-    has_one(:relhum, SensorRelHum)
+    has_many(:relhum, SensorRelHum)
+    has_many(:soil, SensorSoil)
 
     timestamps()
   end
@@ -52,7 +54,14 @@ defmodule Sensor do
         relhum = %SensorRelHum{rh: rh}
         temp = %SensorTemperature{tc: tc, tf: tf}
 
-        %Sensor{device: device, name: device, type: type, temperature: [temp], relhum: relhum}
+        %Sensor{device: device, name: device, type: type, temperature: [temp], relhum: [relhum]}
+        |> insert!()
+
+      %{found: nil, cap: cap, tc: tc, tf: tf, type: type} ->
+        soil = %SensorSoil{moisture: cap}
+        temp = %SensorTemperature{tc: tc, tf: tf}
+
+        %Sensor{device: device, name: device, type: type, temperature: [temp], soil: [soil]}
         |> insert!()
 
       %{found: nil, tc: tc, tf: tf, type: type} ->
@@ -63,8 +72,8 @@ defmodule Sensor do
 
       %{found: nil} ->
         type = Map.get(r, :type, nil)
-        Logger.warn(fn -> "#{device} unknown type #{type}, defaulting to temp" end)
-        %Sensor{device: device, name: device, type: "temp"} |> insert!()
+        Logger.warn(fn -> "#{device} unknown type #{type}, defaulting to unknown" end)
+        %Sensor{device: device, name: device, type: "unknown"} |> insert!()
     end
   end
 
@@ -254,6 +263,33 @@ defmodule Sensor do
   def relhum(%Sensor{relhum: %SensorRelHum{rh: rh}}), do: rh
   def relhum(_anything), do: nil
 
+  def soil_moisture(name) when is_binary(name), do: soil_moisture(name: name)
+
+  def soil_moisture(opts) when is_list(opts) do
+    since_secs = Keyword.get(opts, :since_secs, 30) * -1
+    sen = get_by(opts)
+
+    if is_nil(sen) do
+      nil
+    else
+      dt = TimeSupport.utc_now() |> Timex.shift(seconds: since_secs)
+
+      query =
+        from(
+          soil in SensorSoil,
+          join: s in assoc(soil, :sensor),
+          where: s.id == ^sen.id,
+          where: soil.inserted_at >= ^dt,
+          select: avg(soil.moisture)
+        )
+
+      if res = Repo.all(query), do: hd(res), else: nil
+    end
+  end
+
+  def soil_moisture(%Sensor{soil: %SensorSoil{moisture: moisture}}), do: moisture
+  def soil_moisture(_anything), do: nil
+
   def temperature(opts) when is_list(opts) do
     since_secs = Keyword.get(opts, :since_secs, 30) * -1
     sen = get_by(opts)
@@ -377,9 +413,47 @@ defmodule Sensor do
     {s, r}
   end
 
+  defp record_metrics(
+         {%Sensor{type: "soil", device: device, name: name} = s,
+          %{hostname: hostname, mtime: mtime, cap: cap, tc: tc, tf: tf} = r}
+       ) do
+    Logger.debug(fn ->
+      "#{name} " <>
+        "#{String.pad_leading(Float.to_string(tf), 8)}F " <>
+        "#{String.pad_leading(Float.to_string(tc), 8)}C " <>
+        "#{cap} moisture"
+    end)
+
+    Fahrenheit.record(
+      remote_host: hostname,
+      device: device,
+      name: name,
+      mtime: mtime,
+      val: tf
+    )
+
+    Celsius.record(
+      remote_host: hostname,
+      device: device,
+      name: name,
+      mtime: mtime,
+      val: tc
+    )
+
+    SoilMoisture.record(
+      remote_host: hostname,
+      device: device,
+      name: name,
+      mtime: mtime,
+      val: cap
+    )
+
+    {s, r}
+  end
+
   defp record_metrics({%Sensor{name: name} = s, %{} = r}) do
     Logger.warn(fn ->
-      "Unhandled reading for #{name}:\n#{inspect(r, pretty: true)}"
+      "Unable to record metrics for #{name}:\n#{inspect(r, pretty: true)}"
     end)
 
     {s, r}
@@ -412,10 +486,37 @@ defmodule Sensor do
      |> update!(), r}
   end
 
+  defp update_reading({%Sensor{type: "soil"} = s, %{} = r}) do
+    _temp = update_temperature(s, r)
+    _moisture = update_moisture(s, r)
+
+    {change(s, %{
+       last_seen_at: TimeSupport.from_unix(r.mtime),
+       reading_at: TimeSupport.utc_now(),
+       dev_latency:
+         Map.get(r, :read_us, Timex.diff(r.msg_recv_dt, TimeSupport.from_unix(r.mtime)))
+     })
+     |> update!(), r}
+  end
+
   # handle unknown Sensors by simply passing through
   # useful when bringing new sensors online via mcr
   defp update_reading({%Sensor{} = s, %{} = r}) do
     {s, r}
+  end
+
+  #
+  # Insert new readings by building associations and inserting
+  #
+
+  defp update_moisture(%Sensor{soil: _soil} = sen, r)
+       when is_map(r) do
+    Ecto.build_assoc(sen, :soil, %{
+      moisture: r.cap
+    })
+    |> insert!()
+
+    {sen, r}
   end
 
   defp update_relhum(%Sensor{relhum: _relhum} = sen, r)

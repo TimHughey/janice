@@ -17,6 +17,10 @@ defmodule SensorTest do
         _k <- 0..10,
         do: temp_ext_msg(j)
 
+    for j <- 20..30,
+        _k <- 0..10,
+        do: soil_ext_msg(j)
+
     # sensor011 has 40 readings in two groups separated by 2 seconds
     for _j <- 0..20, do: temp_ext_msg(11, tc: 100)
     :timer.sleep(2000)
@@ -91,6 +95,13 @@ defmodule SensorTest do
     assert tc === 50.0
   end
 
+  @tag num: 20
+  test "can get avg soil moisture", context do
+    moisture = Sensor.soil_moisture(device: context[:device])
+
+    assert is_number(moisture)
+  end
+
   test "can handle unknown sensor" do
     tc = Sensor.celsius(device: "bad_sensor", since_secs: 60)
 
@@ -98,13 +109,13 @@ defmodule SensorTest do
   end
 
   test "can purge SensorTemperature readings" do
-    {count, returned} = SensorTemperature.purge_readings(days: -1)
+    {count, returned} = SensorTemperature.purge_readings(days: -30)
 
     assert count >= 0 and is_nil(returned)
   end
 
   test "can purge SensorRelHum readings" do
-    {count, returned} = SensorRelHum.purge_readings(days: -1)
+    {count, returned} = SensorRelHum.purge_readings(days: -30)
 
     assert count >= 0 and is_nil(returned)
   end

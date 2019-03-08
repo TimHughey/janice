@@ -333,6 +333,39 @@ ALTER SEQUENCE public.sensor_relhum_id_seq OWNED BY public.sensor_relhum.id;
 
 
 --
+-- Name: sensor_soil; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.sensor_soil (
+    id bigint NOT NULL,
+    sensor_id bigint,
+    moisture double precision,
+    ttl_ms integer DEFAULT 10000 NOT NULL,
+    inserted_at timestamp(0) without time zone NOT NULL,
+    updated_at timestamp(0) without time zone NOT NULL
+);
+
+
+--
+-- Name: sensor_soil_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.sensor_soil_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: sensor_soil_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.sensor_soil_id_seq OWNED BY public.sensor_soil.id;
+
+
+--
 -- Name: sensor_temperature; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -644,6 +677,13 @@ ALTER TABLE ONLY public.sensor_relhum ALTER COLUMN id SET DEFAULT nextval('publi
 
 
 --
+-- Name: sensor_soil id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sensor_soil ALTER COLUMN id SET DEFAULT nextval('public.sensor_soil_id_seq'::regclass);
+
+
+--
 -- Name: sensor_temperature id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -762,6 +802,14 @@ ALTER TABLE ONLY public.sensor
 
 ALTER TABLE ONLY public.sensor_relhum
     ADD CONSTRAINT sensor_relhum_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: sensor_soil sensor_soil_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sensor_soil
+    ADD CONSTRAINT sensor_soil_pkey PRIMARY KEY (id);
 
 
 --
@@ -912,6 +960,13 @@ CREATE INDEX sensor_relhum_sensor_id_index ON public.sensor_relhum USING btree (
 
 
 --
+-- Name: sensor_soil_sensor_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX sensor_soil_sensor_id_index ON public.sensor_soil USING btree (sensor_id);
+
+
+--
 -- Name: sensor_temperature_inserted_at_index; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1041,6 +1096,14 @@ ALTER TABLE ONLY public.sensor_relhum
 
 
 --
+-- Name: sensor_soil sensor_soil_sensor_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sensor_soil
+    ADD CONSTRAINT sensor_soil_sensor_id_fkey FOREIGN KEY (sensor_id) REFERENCES public.sensor(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
 -- Name: sensor_temperature sensor_temperature_sensor_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1076,5 +1139,5 @@ ALTER TABLE ONLY public.thermostat_profile
 -- PostgreSQL database dump complete
 --
 
-INSERT INTO public."schema_migrations" (version) VALUES (20171217150128), (20171224164529), (20171224225113), (20171228191703), (20171229001359), (20171231182344), (20180101153253), (20180102171624), (20180102175335), (20180217212153), (20180218021213), (20180222165118), (20180222184042), (20180305193804), (20180307143400), (20180517201719), (20180708221600), (20180709181021);
+INSERT INTO public."schema_migrations" (version) VALUES (20171217150128), (20171224164529), (20171224225113), (20171228191703), (20171229001359), (20171231182344), (20180101153253), (20180102171624), (20180102175335), (20180217212153), (20180218021213), (20180222165118), (20180222184042), (20180305193804), (20180307143400), (20180517201719), (20180708221600), (20180709181021), (20190308124055);
 

@@ -1,4 +1,4 @@
-defmodule SensorTemperature do
+defmodule SensorSoil do
   @moduledoc false
 
   require Logger
@@ -9,9 +9,8 @@ defmodule SensorTemperature do
 
   alias Janice.TimeSupport
 
-  schema "sensor_temperature" do
-    field(:tc, :float)
-    field(:tf, :float)
+  schema "sensor_soil" do
+    field(:moisture, :integer)
     field(:ttl_ms, :integer)
     belongs_to(:sensor, Sensor)
 
@@ -24,12 +23,12 @@ defmodule SensorTemperature do
   def purge_readings([days: days] = opts) when days <= -30 do
     before = TimeSupport.utc_now() |> Timex.shift(opts)
 
-    from(st in SensorTemperature, where: st.inserted_at < ^before)
+    from(st in SensorSoil, where: st.inserted_at < ^before)
     |> delete_all(timeout: @delete_timeout_ms)
   end
 
   def purge_readings(_) do
-    IO.puts("Usage:")
-    IO.puts("\tSensorTemperature.purge_readings(days: <val <= 30>)")
+    IO.puts(fn -> "Usage:" end)
+    IO.puts(fn -> "\tSensorSoil.purge_readings(days: <val <= 30>)" end)
   end
 end

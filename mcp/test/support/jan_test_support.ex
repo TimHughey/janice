@@ -63,6 +63,26 @@ defmodule JanTest do
   def sen_host(n), do: host("sensor", n)
   def sen_name(n), do: name("sensor", n)
 
+  def soil_ext(num, opts \\ []) do
+    tc = Keyword.get(opts, :tc, random_float())
+    cap = Keyword.get(opts, :cap, :rand.uniform(600))
+    base = base_ext("sensor", num)
+
+    sensor = %{
+      type: "soil",
+      device: device("sensor", num),
+      tc: tc,
+      tf: tc,
+      cap: cap
+    }
+
+    Map.merge(base, sensor)
+  end
+
+  def soil_ext_msg(n, opts \\ []) do
+    soil_ext(n, opts) |> Jason.encode!() |> Mqtt.InboundMessage.process(async: false)
+  end
+
   def temp_ext(num, opts \\ []) do
     tc = Keyword.get(opts, :tc, random_float())
     base = base_ext("sensor", num)
