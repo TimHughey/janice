@@ -21,7 +21,7 @@ defmodule SensorTemperature do
   # 15 minutes (as milliseconds)
   @delete_timeout_ms 15 * 60 * 1000
 
-  def purge_readings(days: days) when days <= -30 do
+  def purge_readings([days: days] = opts) when days <= -30 do
     before = TimeSupport.utc_now() |> Timex.shift(opts)
 
     from(st in SensorTemperature, where: st.inserted_at < ^before)
