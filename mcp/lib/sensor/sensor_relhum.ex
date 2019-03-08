@@ -23,10 +23,15 @@ defmodule SensorRelHum do
   # 15 minutes (as milliseconds)
   @delete_timeout_ms 15 * 60 * 1000
 
-  def purge_readings(opts) when is_list(opts) do
+  def purge_readings(days: days) when days <= -30 do
     before = TimeSupport.utc_now() |> Timex.shift(opts)
 
     from(sr in SensorRelHum, where: sr.inserted_at < ^before)
     |> delete_all(timeout: @delete_timeout_ms)
+  end
+
+  def purge_readings(_) do
+    IO.puts(fn -> "Usage:" end)
+    IO.puts(fn -> "\tSensorRelHum.purge_readings(days: <val <= 30>)" end)
   end
 end

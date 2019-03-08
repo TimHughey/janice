@@ -53,6 +53,8 @@ defmodule Janice.Jobs do
     IO.puts("                -> heat=match display tank")
     IO.puts(":mix            -> air=off, pump=high, replenish=fast, fill=off")
     IO.puts("                -> heat=match display tank")
+    IO.puts(":stir           -> air=off, pump=low stir, replenish=fast, fill=off")
+    IO.puts("                -> heat=match display tank")
     IO.puts(":fill_daytime   -> air=off, pump=low, replenish=slow, fill=slow")
     IO.puts("                -> heat=match display tank")
     IO.puts(":fill_overnight -> air=off, pump=low, replenish=slow, fill=fast")
@@ -80,6 +82,19 @@ defmodule Janice.Jobs do
     dcs = [
       {"reefwater mix air", "off"},
       {"reefwater mix pump", "high"},
+      {"display tank replenish", "fast"},
+      {"reefwater rodi fill", "off"}
+    ]
+
+    for {dc, p} <- dcs, do: Dutycycle.Server.activate_profile(dc, p, enable: true)
+
+    Thermostat.Server.activate_profile("reefwater mix heat", "match display tank")
+  end
+
+  def reefwater(:stir) do
+    dcs = [
+      {"reefwater mix air", "off"},
+      {"reefwater mix pump", "30sx5m"},
       {"display tank replenish", "fast"},
       {"reefwater rodi fill", "off"}
     ]

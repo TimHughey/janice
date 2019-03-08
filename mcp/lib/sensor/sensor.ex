@@ -377,9 +377,9 @@ defmodule Sensor do
     {s, r}
   end
 
-  defp record_metrics({%Sensor{} = s, %{} = r}) do
+  defp record_metrics({%Sensor{name: name} = s, %{} = r}) do
     Logger.warn(fn ->
-      "Unknown sensor or reading:\n#{inspect(s, pretty: true)}\n#{inspect(r, pretty: true)}"
+      "Unhandled reading for #{name}:\n#{inspect(r, pretty: true)}"
     end)
 
     {s, r}
