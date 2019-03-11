@@ -131,7 +131,8 @@ defmodule Sensor do
 
   def change_name(id, to_be, comment \\ "")
 
-  def change_name(id, tobe, comment) when is_integer(id) do
+  def change_name(id, tobe, comment)
+      when is_integer(id) and is_binary(tobe) and is_binary(comment) do
     s = get_by(id: id)
 
     if is_nil(s) do
@@ -150,14 +151,14 @@ defmodule Sensor do
 
     if is_nil(s),
       do: {:error, :not_found},
-      else: changeset(s, %{name: tobe, description: comment})
+      else: changeset(s, %{name: tobe, description: comment}) |> update()
   end
 
   def changeset(ss, params \\ %{}) do
     ss
     |> cast(params, [:name, :description])
     |> validate_required([:name])
-    # |> validate_format(:name, ~r'^[\w]+[\\ \\/\\:\\.\\_\\-]{1,}[\w]$')
+    |> validate_format(:name, ~r'^[\w]+[\\ \\/\\:\\.\\_\\-]{1,}[\w]$')
     |> unique_constraint(:name)
   end
 
