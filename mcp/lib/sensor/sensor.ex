@@ -158,7 +158,7 @@ defmodule Sensor do
     ss
     |> cast(params, [:name, :description])
     |> validate_required([:name])
-    |> validate_format(:name, ~r'^[\w]+[\\ \\/\\:\\.\\_\\-]{1,}[\w]$')
+    |> validate_format(:name, ~r'^[\\~\w]+[\w\\ \\/\\:\\.\\_\\-]{1,}[\w]$')
     |> unique_constraint(:name)
   end
 
