@@ -109,7 +109,7 @@ defmodule Remote do
     |> cast(params, [:name, :preferred_vsn])
     |> validate_required([:name])
     |> validate_inclusion(:preferred_vsn, ["head", "stable"])
-    |> validate_format(:name, ~r'^[\w~]+[\w\/ \-\:._]{1,}[\w]$')
+    |> validate_format(:name, ~r'^[\w]+[\w /:._-]{1,}[\w]$')
     |> unique_constraint(:name)
   end
 
