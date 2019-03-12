@@ -11,6 +11,8 @@ defmodule SwitchState do
   import Ecto.Query, only: [from: 2]
   import Repo, only: [all: 2, get: 2, update!: 1, update: 1, one: 1]
 
+  import Janice.Common.DB, only: [name_regex: 0]
+
   schema "switch_state" do
     field(:name, :string)
     field(:description, :string, default: "new switch")
@@ -64,7 +66,7 @@ defmodule SwitchState do
     ss
     |> cast(params, [:name, :description])
     |> validate_required([:name])
-    # |> validate_format(:name, ~r'^[\w]+[\\ \\/\\:\\.\\_\\-]{1,}[\w]$')
+    |> validate_format(:name, name_regex())
     |> unique_constraint(:name)
   end
 

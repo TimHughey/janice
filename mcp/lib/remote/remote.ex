@@ -15,6 +15,7 @@ defmodule Remote do
   alias Fact.RunMetric
   alias Fact.StartupAnnouncement
 
+  import Janice.Common.DB, only: [name_regex: 0]
   alias Janice.TimeSupport
 
   alias Mqtt.Client
@@ -109,7 +110,7 @@ defmodule Remote do
     |> cast(params, [:name, :preferred_vsn])
     |> validate_required([:name])
     |> validate_inclusion(:preferred_vsn, ["head", "stable"])
-    # |> validate_format(:name, ~r'^[\w]+[\\ \\/\\:\\.\\_\\-]{1,}[\w]$')
+    |> validate_format(:name, name_regex())
     |> unique_constraint(:name)
   end
 
