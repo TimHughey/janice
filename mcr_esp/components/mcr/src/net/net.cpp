@@ -16,7 +16,7 @@
 #include <sys/time.h>
 #include <time.h>
 
-#include "apps/sntp/sntp.h"
+#include "lwip/apps/sntp.h"
 #include "lwip/err.h"
 
 #include "net/mcr_net.hpp"
