@@ -24,6 +24,7 @@
 #include <cstdlib>
 #include <string>
 
+#include <driver/gpio.h>
 #include <driver/i2c.h>
 #include <esp_log.h>
 #include <freertos/FreeRTOS.h>
@@ -55,6 +56,8 @@ typedef struct {
 #define SDA_PIN (gpio_num_t)18
 #define SCL_PIN (gpio_num_t)19
 #define I2C_PWR_PIN (gpio_num_t)12
+#define RST_PIN GPIO_NUM_21
+#define RST_PIN_SEL GPIO_SEL_21
 
 typedef class mcrI2c mcrI2c_t;
 class mcrI2c : public mcrEngine<i2cDev_t> {
@@ -78,6 +81,10 @@ private:
   uint32_t _bus_select_errors = 0;
   const TickType_t _cmd_timeout = pdMS_TO_TICKS(1000);
 
+  mcrDevAddr_t _mplex_addr = mcrDevAddr(0x70);
+  i2cDev_t _multiplexer_dev = i2cDev(_mplex_addr);
+  int _reset_pin_level = 0;
+
 private:
   // array is zero terminated
   mcrDevAddr_t _search_addrs[5] = {{mcrDevAddr(0x44)},
@@ -99,13 +106,19 @@ private:
   bool readSeesawSoil(i2cDev_t *dev);
   bool readSHT31(i2cDev_t *dev);
 
+  // request data by sending command bytes and then reading the result
+  // NOTE:  send and recv are executed as a single i2c transaction
+  esp_err_t requestData(const char *TAG, i2cDev_t *dev, uint8_t *send,
+                        uint8_t send_len, uint8_t *recv, uint8_t recv_len,
+                        esp_err_t prev_esp_rc = ESP_OK, int timeout = 0);
+
   // utility methods
   esp_err_t busRead(i2cDev_t *dev, uint8_t *buff, uint32_t len,
                     esp_err_t prev_esp_rc = ESP_OK);
   esp_err_t busWrite(i2cDev_t *dev, uint8_t *buff, uint32_t len,
                      esp_err_t prev_esp_rc = ESP_OK);
   bool crcSHT31(const uint8_t *data);
-  bool detectDevice(mcrDevAddr_t &addr);
+  bool detectDevice(i2cDev_t *dev);
   bool detectDevicesOnBus(int bus);
 
   bool detectMultiplexer(const int max_attempts = 1);
@@ -116,7 +129,7 @@ private:
   bool selectBus(uint32_t bus);
   void printUnhandledDev(i2cDev_t *dev);
 
-  bool wakeAM2315(mcrDevAddr_t &addr);
+  bool wakeAM2315(i2cDev_t *dev);
 
   mcrEngineTagMap_t &localTags() {
     static std::map<std::string, std::string> tag_map = {
@@ -127,6 +140,7 @@ private:
         {"command", "mcrI2c command"},
         {"detect", "mcrI2c detectDev"},
         {"readAM2315", "mcrI2c readAM2315"},
+        {"readMCP23008", "mcrI2c readMCP23008"},
         {"readSHT31", "mcrI2c readSHT31"},
         {"selectbus", "mcrI2c selectBus"}};
 
@@ -154,6 +168,14 @@ private:
     static const char *tag = nullptr;
     if (tag == nullptr) {
       tag = _tags["readAM2315"].c_str();
+    }
+    return tag;
+  }
+
+  const char *tagReadMCP23008() {
+    static const char *tag = nullptr;
+    if (tag == nullptr) {
+      tag = _tags["readMCP23008"].c_str();
     }
     return tag;
   }
