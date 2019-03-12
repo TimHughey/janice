@@ -51,11 +51,11 @@ static mcrI2c_t *__singleton__ = nullptr;
 mcrI2c::mcrI2c() {
   setTags(localTags());
   setLoggingLevel(ESP_LOG_WARN);
-  setLoggingLevel(tagEngine(), ESP_LOG_INFO);
-  setLoggingLevel(tagDetectDev(), ESP_LOG_INFO);
-  setLoggingLevel(tagDiscover(), ESP_LOG_INFO);
-  setLoggingLevel(tagReport(), ESP_LOG_INFO);
-  setLoggingLevel(tagReadSHT31(), ESP_LOG_INFO);
+  // setLoggingLevel(tagEngine(), ESP_LOG_INFO);
+  // setLoggingLevel(tagDetectDev(), ESP_LOG_INFO);
+  // setLoggingLevel(tagDiscover(), ESP_LOG_INFO);
+  // setLoggingLevel(tagReport(), ESP_LOG_INFO);
+  // setLoggingLevel(tagReadSHT31(), ESP_LOG_INFO);
 
   _engine_task_name = tagEngine();
   _engine_stack_size = 5 * 1024;
