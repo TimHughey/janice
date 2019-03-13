@@ -47,25 +47,25 @@ defmodule Janice.Jobs do
   end
 
   def reefwater(:help) do
-    IO.puts(":standby        -> all subsystems on standby")
-    IO.puts("                -> heat=low energy")
-    IO.puts(":change         -> air=off, pump=on, replenish=off, fill=off")
-    IO.puts("                -> heat=match display tank")
-    IO.puts(":mix            -> air=off, pump=high, replenish=fast, fill=off")
-    IO.puts("                -> heat=match display tank")
-    IO.puts(":stir           -> air=off, pump=low stir, replenish=fast, fill=off")
-    IO.puts("                -> heat=match display tank")
-    IO.puts(":fill_daytime   -> air=off, pump=low, replenish=slow, fill=slow")
-    IO.puts("                -> heat=match display tank")
-    IO.puts(":fill_overnight -> air=off, pump=low, replenish=slow, fill=fast")
-    IO.puts("                -> heat=match display tank")
-    IO.puts(":eco            -> air=off, pump=low, replenish=fast, fill=standby")
-    IO.puts("                -> heat=low energy")
+    IO.puts(":standby        -> all subsystems on standby\n")
+
+    IO.puts(":standby_mix    -> pump=standby, replenish=fast, fill=standby, heat=standby\n")
+
+    IO.puts(":change         -> pump=on, replenish=off, fill=off, heat=match\n")
+
+    IO.puts(":mix            -> pump=high, replenish=fast, fill=off, heat=match\n")
+
+    IO.puts(":stir           -> pump=low stir, replenish=fast, fill=off, heat=match\n")
+
+    IO.puts(":fill_daytime   -> pump=low, replenish=slow, fill=slow, heat=match\n")
+
+    IO.puts(":fill_overnight -> pump=low, replenish=slow, fill=fast, heat=match\n")
+
+    :ok = IO.puts(":eco            -> pump=low, replenish=fast, fill=standby, heat=low\n")
   end
 
   def reefwater(:change) do
     dcs = [
-      {"reefwater mix air", "off"},
       {"reefwater mix pump", "on"},
       {"display tank replenish", "off"},
       {"reefwater rodi fill", "off"}
@@ -80,7 +80,6 @@ defmodule Janice.Jobs do
 
   def reefwater(:mix) do
     dcs = [
-      {"reefwater mix air", "off"},
       {"reefwater mix pump", "high"},
       {"display tank replenish", "fast"},
       {"reefwater rodi fill", "off"}
@@ -93,7 +92,6 @@ defmodule Janice.Jobs do
 
   def reefwater(:stir) do
     dcs = [
-      {"reefwater mix air", "off"},
       {"reefwater mix pump", "30sx5m"},
       {"display tank replenish", "fast"},
       {"reefwater rodi fill", "off"}
@@ -106,7 +104,6 @@ defmodule Janice.Jobs do
 
   def reefwater(:fill_daytime) do
     dcs = [
-      {"reefwater mix air", "off"},
       {"reefwater mix pump", "low"},
       {"display tank replenish", "slow"},
       {"reefwater rodi fill", "slow"}
@@ -119,7 +116,6 @@ defmodule Janice.Jobs do
 
   def reefwater(:fill_overnight) do
     dcs = [
-      {"reefwater mix air", "off"},
       {"reefwater mix pump", "low"},
       {"display tank replenish", "slow"},
       {"reefwater rodi fill", "fast"}
@@ -132,7 +128,6 @@ defmodule Janice.Jobs do
 
   def reefwater(:eco) do
     dcs = [
-      {"reefwater mix air", "off"},
       {"reefwater mix pump", "low"},
       {"display tank replenish", "fast"},
       {"reefwater rodi fill", "standby"}
@@ -145,9 +140,20 @@ defmodule Janice.Jobs do
 
   def reefwater(:standby) do
     dcs = [
-      {"reefwater mix air", "standby"},
       {"reefwater mix pump", "standby"},
       {"display tank replenish", "standby"},
+      {"reefwater rodi fill", "standby"}
+    ]
+
+    for {dc, p} <- dcs, do: Dutycycle.Server.activate_profile(dc, p, enable: true)
+
+    Thermostat.Server.activate_profile("reefwater mix heat", "standby")
+  end
+
+  def reefwater(:standby_mix) do
+    dcs = [
+      {"reefwater mix pump", "standby"},
+      {"display tank replenish", "fast"},
       {"reefwater rodi fill", "standby"}
     ]
 

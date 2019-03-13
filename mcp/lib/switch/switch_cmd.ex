@@ -191,7 +191,10 @@ defmodule SwitchCmd do
     query(sql) |> check_purge_acked_cmds()
   end
 
-  def record_cmd(name, %SwitchState{} = ss, opts \\ []) do
+  # header for function with optional args
+  def record_cmd(name, ss, opts \\ [])
+
+  def record_cmd(name, %SwitchState{} = ss, opts) when is_binary(name) do
     log = Keyword.get(opts, :log, true)
 
     # ensure the associated switch is loaded
@@ -230,6 +233,14 @@ defmodule SwitchCmd do
     )
 
     {:ok, refid}
+  end
+
+  def record_cmd(name, %SwitchState{} = ss, opts) do
+    Logger.warn(fn -> "SwitchCmd.record_cmd() invoked with bad args:" end)
+    Logger.warn(fn -> "  name: #{inspect(name)}" end)
+    Logger.warn(fn -> "  ss: #{inspect(ss)}" end)
+    Logger.warn(fn -> "  opts: #{inspect(opts)}" end)
+    {:fail, nil}
   end
 
   #

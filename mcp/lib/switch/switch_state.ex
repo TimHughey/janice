@@ -204,7 +204,7 @@ defmodule SwitchState do
     end
   end
 
-  def state(%SwitchState{name: name} = ss, opts) when is_list(opts) do
+  def state(%SwitchState{name: name} = ss, opts) when is_binary(name) and is_list(opts) do
     position = Keyword.get(opts, :position)
 
     new_ss = change(ss, state: position) |> update!()
@@ -213,7 +213,8 @@ defmodule SwitchState do
   end
 
   def state(bad, opts) when is_list(opts) do
-    Logger.warn(fn -> "state() invoked with bad args #{inspect(bad)}" end)
+    Logger.warn(fn -> "state() invoked with bad args:" end)
+    Logger.warn(fn -> "  #{inspect(bad)}" end)
     nil
   end
 

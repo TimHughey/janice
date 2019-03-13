@@ -254,7 +254,7 @@ bool mcrI2c::detectMultiplexer(const int max_attempts) {
   } else {
     // DEPRECATED as of 2019-03-10
     // support for old hardware that does not use the RST pin
-    ESP_LOGI(tagDetectDev(), "rst pin is low, using deprecated detection");
+    ESP_LOGW(tagDetectDev(), "rst pin is low, using deprecated detection");
     for (int i = 1; ((i <= max_attempts) && (_use_multiplexer == false)); i++) {
       ESP_LOGD(tagDetectDev(), "detecting TCA9548A (attempt %d/%d)", i,
                max_attempts);
