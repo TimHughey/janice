@@ -346,9 +346,12 @@ defmodule Remote do
 
     log &&
       Logger.warn(fn ->
-        "#{rem.name} startup (host=#{rem.host},hw=#{eu.hw},vsn=#{eu.vsn},last_restart=#{
-          eu.last_restart
-        })"
+        eu = Map.put_new(eu, :reset_reason, "reset reason not provided")
+
+        "#{rem.name} startup #{rem.host} " <>
+          "#{eu.hw} " <>
+          "#{eu.vsn} " <>
+          "[#{eu.reset_reason})"
       end)
 
     StartupAnnouncement.record(host: rem.name, vsn: eu.vsn, hw: eu.hw)
