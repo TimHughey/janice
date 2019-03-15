@@ -212,6 +212,10 @@ bool Net::start() {
   rc = ::esp_wifi_set_mode(WIFI_MODE_STA);
   checkError(__PRETTY_FUNCTION__, rc);
 
+  esp_wifi_set_protocol(WIFI_IF_STA, WIFI_PROTOCOL_11B | WIFI_PROTOCOL_11G |
+                                         WIFI_PROTOCOL_11N);
+  checkError(__PRETTY_FUNCTION__, rc);
+
   wifi_config_t cfg;
   ::memset(&cfg, 0, sizeof(cfg));
   cfg.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;

@@ -351,7 +351,7 @@ defmodule Remote do
         "#{rem.name} startup #{rem.host} " <>
           "#{eu.hw} " <>
           "#{eu.vsn} " <>
-          "[#{eu.reset_reason})"
+          "[#{eu.reset_reason}]"
       end)
 
     StartupAnnouncement.record(host: rem.name, vsn: eu.vsn, hw: eu.hw)

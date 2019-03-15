@@ -23,6 +23,7 @@
 
 #include <string>
 
+#include <esp_system.h>
 #include <external/ArduinoJson.h>
 #include <freertos/FreeRTOS.h>
 #include <sys/time.h>
@@ -35,10 +36,12 @@ typedef class startupReading startupReading_t;
 
 class startupReading : public Reading {
 private:
-  std::string last_reboot_m;
+  std::string reset_reason_m;
+
+  const std::string &decodeResetReason(esp_reset_reason_t reason);
 
 public:
-  startupReading(time_t mtime, const std::string &last_reboot);
+  startupReading(time_t mtime);
 
 protected:
   virtual void populateJSON(JsonObject &root);
