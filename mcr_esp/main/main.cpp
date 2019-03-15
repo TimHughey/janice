@@ -5,6 +5,7 @@
 #include <driver/periph_ctrl.h>
 #include <esp_log.h>
 #include <esp_spi_flash.h>
+#include <esp_system.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 
@@ -57,6 +58,10 @@ void app_main() {
   if (nvs_rc == ESP_OK) {
     ESP_LOGI(TAG, "nvs initialized");
   }
+
+  esp_reset_reason_t last_reset = esp_reset_reason();
+
+  ESP_LOGW(TAG, "last reset reason = %d", last_reset);
 
   // must create network first
   network = mcr::Net::instance(); // singleton

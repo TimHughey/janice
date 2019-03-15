@@ -235,7 +235,7 @@ void mcrDS::convert(void *task_data) {
     owb_s = owb_reset(ds, &present);
 
     if (!present) {
-      ESP_LOGW(tagConvert(), "no devices present");
+      ESP_LOGW(tagConvert(), "no devices present (but there should be)");
       xSemaphoreGive(_bus_mutex);
       vTaskDelayUntil(&(_convertTask.lastWake), _convert_frequency);
       continue;
@@ -352,7 +352,7 @@ void mcrDS::discover(void *task_data) {
     owb_s = owb_reset(ds, &present);
 
     if (!present) {
-      ESP_LOGW(tagDiscover(), "no devices present");
+      ESP_LOGI(tagDiscover(), "no devices present");
       xSemaphoreGive(_bus_mutex);
       trackDiscover(false);
       vTaskDelayUntil(&(_discoverTask.lastWake), _discover_frequency);

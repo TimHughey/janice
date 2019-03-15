@@ -46,6 +46,8 @@ public:
 
   static const char *tagEngine() { return (const char *)"mcrNet"; };
 
+  static uint32_t vref() { return 1058; };
+
 private: // member functions
   Net(); // SINGLETON!  constructor is private
   void acquiredIP(system_event_t *event);

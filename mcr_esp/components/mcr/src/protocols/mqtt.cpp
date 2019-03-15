@@ -76,8 +76,9 @@ mcrMQTT::mcrMQTT() {
 }
 
 void mcrMQTT::announceStartup() {
-  std::string reason = "none";
-  startupReading_t reading(time(nullptr), reason);
+  std::ostringstream reason;
+  reason << (int)esp_reset_reason();
+  startupReading_t reading(time(nullptr), reason.str());
 
   publish(&reading);
 }

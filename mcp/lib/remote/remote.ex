@@ -345,7 +345,11 @@ defmodule Remote do
     log = Map.get(eu, :log, true)
 
     log &&
-      Logger.warn(fn -> "#{rem.name} startup (host=#{rem.host},hw=#{eu.hw},vsn=#{eu.vsn})" end)
+      Logger.warn(fn ->
+        "#{rem.name} startup (host=#{rem.host},hw=#{eu.hw},vsn=#{eu.vsn},last_restart=#{
+          eu.last_restart
+        })"
+      end)
 
     StartupAnnouncement.record(host: rem.name, vsn: eu.vsn, hw: eu.hw)
 

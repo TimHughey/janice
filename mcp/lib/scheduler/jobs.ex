@@ -80,7 +80,7 @@ defmodule Janice.Jobs do
 
   def reefwater(:mix) do
     dcs = [
-      {"reefwater mix pump", "high"},
+      {"reefwater mix pump", "slow stir"},
       {"display tank replenish", "fast"},
       {"reefwater rodi fill", "off"}
     ]
