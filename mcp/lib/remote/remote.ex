@@ -29,6 +29,8 @@ defmodule Remote do
     field(:preferred_vsn, :string)
     field(:last_start_at, :utc_datetime_usec)
     field(:last_seen_at, :utc_datetime_usec)
+    field(:batt_mv, :integer)
+    field(:reset_reason, :string)
 
     timestamps()
   end
@@ -339,6 +341,11 @@ defmodule Remote do
     # only the feather m0 remote devices need the time
     if eu.hw in ["m0"], do: Client.send_timesync()
 
+    # ensure new fields are present for legacy mcr code
+    eu =
+      Map.put_new(eu, :reset_reason, "reset reason not provided")
+      |> Map.put_new(:batt_mv, 0)
+
     # all devices are sent their name
     SetName.new_cmd(rem.host, rem.name) |> SetName.json() |> Client.publish()
 
@@ -346,11 +353,10 @@ defmodule Remote do
 
     log &&
       Logger.warn(fn ->
-        eu = Map.put_new(eu, :reset_reason, "reset reason not provided")
-
         "#{rem.name} startup #{rem.host} " <>
           "#{eu.hw} " <>
           "#{eu.vsn} " <>
+          "#{eu.batt_mv}mv " <>
           "[#{eu.reset_reason}]"
       end)
 
@@ -360,7 +366,9 @@ defmodule Remote do
       last_start_at: TimeSupport.from_unix(eu.mtime),
       last_seen_at: TimeSupport.from_unix(eu.mtime),
       firmware_vsn: eu.vsn,
-      hw: eu.hw
+      hw: eu.hw,
+      batt_mv: eu.batt_mv,
+      reset_reason: eu.reset_reason
     ]
 
     change(rem, opts) |> update()

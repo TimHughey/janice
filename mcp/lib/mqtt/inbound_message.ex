@@ -138,7 +138,9 @@ defmodule Mqtt.InboundMessage do
         else: apply(mod, func, [r])
     end
 
-    if Reading.free_ram_stat?(r), do: FreeRamStat.record(remote_host: r.host, val: r.freeram)
+    if Reading.free_ram_stat?(r) do
+      FreeRamStat.record(remote_host: r.host, val: r.freeram)
+    end
 
     if Reading.engine_metric?(r), do: EngineMetric.record(r)
 

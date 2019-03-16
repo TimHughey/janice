@@ -17,7 +17,9 @@ defmodule RemoteTest do
       hw: "esp32",
       vsn: "1234567",
       mtime: TimeSupport.unix_now(:seconds),
-      log: false
+      log: false,
+      reset_reason: "software reset",
+      batt_mv: 3800
     }
 
   setup_all do
