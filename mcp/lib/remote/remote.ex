@@ -341,11 +341,6 @@ defmodule Remote do
     # only the feather m0 remote devices need the time
     if eu.hw in ["m0"], do: Client.send_timesync()
 
-    # ensure new fields are present for legacy mcr code
-    eu =
-      Map.put_new(eu, :reset_reason, "reset reason not provided")
-      |> Map.put_new(:batt_mv, 0)
-
     # all devices are sent their name
     SetName.new_cmd(rem.host, rem.name) |> SetName.json() |> Client.publish()
 
@@ -356,8 +351,8 @@ defmodule Remote do
         "#{rem.name} startup #{rem.host} " <>
           "#{eu.hw} " <>
           "#{eu.vsn} " <>
-          "#{eu.batt_mv}mv " <>
-          "[#{eu.reset_reason}]"
+          "#{Map.get(eu, :batt_mv, "0")}mv " <>
+          "[#{Map.get(eu, :reset_reason, "not provided")}]"
       end)
 
     StartupAnnouncement.record(host: rem.name, vsn: eu.vsn, hw: eu.hw)
@@ -367,8 +362,8 @@ defmodule Remote do
       last_seen_at: TimeSupport.from_unix(eu.mtime),
       firmware_vsn: eu.vsn,
       hw: eu.hw,
-      batt_mv: eu.batt_mv,
-      reset_reason: eu.reset_reason
+      batt_mv: Map.get(eu, :batt_mv, 0),
+      reset_reason: Map.get(eu, :reset_reason)
     ]
 
     change(rem, opts) |> update()

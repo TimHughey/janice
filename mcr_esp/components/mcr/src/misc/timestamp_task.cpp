@@ -23,9 +23,6 @@
 #include "protocols/mqtt.hpp"
 #include "readings/readings.hpp"
 
-static const adc_channel_t battery_adc = ADC_CHANNEL_7;
-static const adc_atten_t attenuaton = ADC_ATTEN_DB_11;
-
 extern "C" {
 int setenv(const char *envname, const char *envval, int overwrite);
 void tzset(void);
@@ -68,34 +65,9 @@ void mcrTimestampTask::run(void *data) {
   mcr::Net::waitForNormalOps();
   ESP_LOGD(tTAG, "normal ops, entering task loop");
 
-  esp_adc_cal_characteristics_t *adc_chars;
-
-  // Characterize ADC
-  adc_chars = (esp_adc_cal_characteristics_t *)calloc(
-      1, sizeof(esp_adc_cal_characteristics_t));
-  esp_adc_cal_value_t val_type = esp_adc_cal_characterize(
-      ADC_UNIT_1, attenuaton, ADC_WIDTH_BIT_12, mcr::Net::vref(), adc_chars);
-
-  // if (esp_adc_cal_check_efuse(ESP_ADC_CAL_VAL_EFUSE_TP) == ESP_OK) {
-  //   ESP_LOGI(tTAG, "eFuse Two Point is supported");
-  // } else {
-  //   ESP_LOGW(tTAG, "eFuse Two Point NOT supported");
-  // }
-  //
-  // // Check Vref is burned into eFuse
-  // if (esp_adc_cal_check_efuse(ESP_ADC_CAL_VAL_EFUSE_VREF) == ESP_OK) {
-  //   ESP_LOGI(tTAG, "eFuse Vref: Supported\n");
-  // } else {
-  //   ESP_LOGW(tTAG, "eFuse Vref: NOT supported\n");
-  // }
-
-  adc1_config_width(ADC_WIDTH_BIT_12);
-  adc1_config_channel_atten((adc1_channel_t)battery_adc, attenuaton);
-
   for (;;) {
     int delta;
     size_t curr_heap = 0;
-    // uint32_t voltage = 0;
 
     _last_wake = xTaskGetTickCount();
 
@@ -105,25 +77,13 @@ void mcrTimestampTask::run(void *data) {
     _minHeap = std::min(curr_heap, _minHeap);
     _maxHeap = std::max(curr_heap, _maxHeap);
 
-    // voltage = vref_voltage();
-
     if ((time(nullptr) - last_timestamp) >= _timestamp_freq_secs) {
-      uint32_t adc_reading = 0;
-
-      ESP_LOGD(tTAG, "ADC characterize = %d", val_type);
-
-      for (int i = 0; i < 64; i++) {
-        adc_reading += adc1_get_raw((adc1_channel_t)battery_adc);
-      }
-
-      adc_reading /= 64;
-      uint32_t batt_volts =
-          esp_adc_cal_raw_to_voltage(adc_reading, adc_chars) * 2;
-
       const char *name = mcr::Net::getName().c_str();
+      uint32_t batt_mv = mcr::Net::instance()->batt_mv();
+
       ESP_LOGI(name, "%s %uk,%uk,%uk,%+05d (heap,first,min,delta) batt=%dv",
                dateTimeString(), (curr_heap / 1024), (_firstHeap / 1024),
-               (_maxHeap / 1024), delta, batt_volts);
+               (_maxHeap / 1024), delta, batt_mv);
       // ESP_LOGI(name, "%s", dateTimeString());
       last_timestamp = time(nullptr);
     }
@@ -150,12 +110,3 @@ void mcrTimestampTask::run(void *data) {
     vTaskDelayUntil(&_last_wake, _loop_frequency);
   }
 }
-
-// uint32_t mcrTimestampTask::vref_voltage() {
-//  esp_adc_cal_characteristics_t characteristics;
-//  adc1_config_width(ADC_WIDTH_BIT_12);
-//  adc1_config_channel_atten(ADC1_TEST_CHANNEL, ADC_ATTEN_DB_0);
-//  esp_adc_cal_get_characteristics(V_REF, ADC_ATTEN_DB_0, ADC_WIDTH_BIT_12,
-//                                  &characteristics);
-//  return adc1_to_voltage(ADC1_TEST_CHANNEL, &characteristics);
-//}

@@ -26,7 +26,8 @@
 
 #include "readings/startup_reading.hpp"
 
-startupReading::startupReading(time_t mtime) : Reading(mtime) {
+startupReading::startupReading(time_t mtime, uint32_t batt_mv)
+    : Reading(mtime), batt_mv_m(batt_mv) {
   reset_reason_m = decodeResetReason(esp_reset_reason());
 
   ESP_LOGI("mcrStartup", "reason: %s", reset_reason_m.c_str());
@@ -36,6 +37,7 @@ void startupReading::populateJSON(JsonObject &root) {
   root["type"] = "boot";
   root["hw"] = "esp32";
   root["reset_reason"] = reset_reason_m;
+  root["batt_mv"] = batt_mv_m;
 };
 
 const std::string &
@@ -44,7 +46,7 @@ startupReading::decodeResetReason(esp_reset_reason_t reason) {
 
   switch (reason) {
   case ESP_RST_UNKNOWN:
-    _reason = "undetermined";
+    _reason = "unknown";
     break;
 
   case ESP_RST_POWERON:
@@ -59,7 +61,7 @@ startupReading::decodeResetReason(esp_reset_reason_t reason) {
     break;
 
   case ESP_RST_PANIC:
-    _reason = "sofware panic";
+    _reason = "software panic";
     break;
 
   case ESP_RST_INT_WDT:
@@ -88,8 +90,6 @@ startupReading::decodeResetReason(esp_reset_reason_t reason) {
   default:
     _reason = "undefined";
   }
-
-  _reason.append(" reset");
 
   return _reason;
 }

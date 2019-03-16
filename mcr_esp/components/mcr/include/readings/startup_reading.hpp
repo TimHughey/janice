@@ -37,11 +37,12 @@ typedef class startupReading startupReading_t;
 class startupReading : public Reading {
 private:
   std::string reset_reason_m;
+  uint32_t batt_mv_m = 0;
 
   const std::string &decodeResetReason(esp_reset_reason_t reason);
 
 public:
-  startupReading(time_t mtime);
+  startupReading(time_t mtime, uint32_t batt_mv);
 
 protected:
   virtual void populateJSON(JsonObject &root);

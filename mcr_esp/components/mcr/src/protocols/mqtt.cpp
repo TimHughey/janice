@@ -76,7 +76,8 @@ mcrMQTT::mcrMQTT() {
 }
 
 void mcrMQTT::announceStartup() {
-  startupReading_t reading(time(nullptr));
+  uint32_t batt_mv = mcr::Net::instance()->batt_mv();
+  startupReading_t reading(time(nullptr), batt_mv);
 
   publish(&reading);
 }
