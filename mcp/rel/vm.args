@@ -5,7 +5,7 @@
 -setcookie <%= release.profile.cookie %>
 
 ## Adjust log file size
---env RUN_ERL_LOG_MAXSIZE 524288
+-env RUN_ERL_LOG_MAXSIZE 1048576
 
 ## Heartbeat management; auto-restarts VM if it dies or becomes unresponsive
 ## (Disabled by default..use with caution!)
