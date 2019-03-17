@@ -23,7 +23,7 @@ defmodule RemoteTest do
       batt_mv: 3800,
       ap_rssi: -45,
       ap_pri_chan: 6,
-      ap_sec_chan: 1,
+      # ap_sec_chan: 1,
       heap_min: 100 * 1024,
       heap_free: 101 * 1024
     }

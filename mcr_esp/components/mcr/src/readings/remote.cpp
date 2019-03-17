@@ -49,7 +49,7 @@ void remoteReading::populateJSON(JsonObject &root) {
   // root["bssid"] = ap_.bssid;
   root["ap_rssi"] = ap_.rssi;
   root["ap_pri_chan"] = ap_.primary;
-  root["ap_sec_chan"] = ap_.second;
+  // root["ap_sec_chan"] = ap_.second;
   root["batt_mv"] = batt_mv_;
   root["heap_free"] = heap_free_;
   root["heap_min"] = heap_min_;
