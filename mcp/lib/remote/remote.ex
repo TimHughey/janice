@@ -107,8 +107,8 @@ defmodule Remote do
     Scribe.console(sorted, data: [:id, :name, :host, :hw, :inserted_at])
   end
 
-  def changeset(ss, params \\ %{}) do
-    ss
+  def changeset(rem, params \\ %{}) do
+    rem
     |> cast(params, [
       :name,
       :hw,
@@ -366,22 +366,24 @@ defmodule Remote do
       end)
 
     StartupAnnouncement.record(host: rem.name, vsn: eu.vsn, hw: eu.hw)
-    update_from_external([rem], eu)
+
+    # use the message mtime to update the last start at time
+    eu = Map.put_new(eu, :last_start_at, TimeSupport.from_unix(eu.mtime))
+    update_from_external(rem, eu)
   end
 
-  defp send_remote_config([%Remote{} = rem], %{type: _type} = eu) do
-    update_from_external([rem], eu)
-  end
+  defp send_remote_config([%Remote{} = rem], %{type: _type} = eu),
+    do: update_from_external(rem, eu)
 
   # DEPRECATED!
   # if :type is missing then assume this is a boot message
-  defp send_remote_config([rem], eu) do
+  defp send_remote_config([rem], %{} = eu) do
     send_remote_config([rem], Map.put(eu, :type, "boot"))
   end
 
-  defp update_from_external([%Remote{} = rem], eu) do
+  defp update_from_external(%Remote{} = rem, eu) do
     params = %{
-      last_start_at: Map.get(eu, :mtime, rem.last_start_at) |> TimeSupport.from_unix(),
+      last_start_at: Map.get(eu, :last_start_at, rem.last_start_at),
       last_seen_at: Map.get(eu, :mtime, rem.last_seen_at) |> TimeSupport.from_unix(),
       firmware_vsn: Map.get(eu, :vsn, rem.firmware_vsn),
       hw: Map.get(eu, :hw, rem.hw),

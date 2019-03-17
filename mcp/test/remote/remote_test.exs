@@ -22,21 +22,45 @@ defmodule RemoteTest do
       batt_mv: 3800
     }
 
+  def runtime(m), do: Map.put(m, :type, "runtime")
+  def boot(m), do: Map.put(m, :type, "boot")
+
   setup_all do
-    ext(99) |> Remote.external_update()
+    ext(99) |> boot() |> Remote.external_update()
     :ok
   end
 
   test "process well formed external remote update" do
-    res = ext(1) |> Remote.external_update()
+    res = ext(1) |> runtime() |> Remote.external_update()
 
     assert res === :ok
   end
 
   test "process external update of type 'boot'" do
-    res = ext(16) |> Map.put_new(:type, "boot") |> Remote.external_update()
+    eu = ext(16)
+
+    initial_mtime = Map.get(eu, :mtime)
+    later_mtime = Map.get(eu, :mtime) + 30
+
+    res =
+      eu
+      |> boot()
+      |> Map.put(:mtime, later_mtime)
+      |> Remote.external_update()
+
+    rem = Remote.get_by(host: host(16))
 
     assert res === :ok
+    assert Timex.to_unix(rem.last_start_at) >= initial_mtime
+  end
+
+  test "can create a changeset from an external update" do
+    rem = Remote.get_by(host: host(1))
+    eu = ext(1) |> boot() |> Map.put(:reset_reason, "test")
+
+    cs = Remote.changeset(rem, eu)
+
+    assert cs.valid? === true
   end
 
   test "process external update of type 'remote_runtime'" do

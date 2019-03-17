@@ -17,9 +17,8 @@ defmodule Mqtt.Reading do
   @remote_run_t "remote_runtime"
   @mcr_stat_t "stats"
 
-  def boot?(%{} = r) do
-    metadata?(r) and r.type === @boot_t
-  end
+  def boot?(%{type: @boot_t} = r), do: metadata?(r)
+  def boot?(%{}), do: false
 
   def check_metadata(%{} = r) do
     if metadata?(r), do: Map.put_new(r, :metadata, :ok), else: Map.put_new(r, :metadata, :fail)
@@ -109,9 +108,8 @@ defmodule Mqtt.Reading do
     r.mtime > epoch_first_year
   end
 
-  def remote_runtime?(%{} = r) do
-    metadata?(r) and r.type === @remote_run_t
-  end
+  def remote_runtime?(%{type: @remote_run_t} = r), do: metadata?(r)
+  def remote_runtime?(%{}), do: false
 
   @doc ~S"""
   Is the Reading a startup announcement?
