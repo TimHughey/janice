@@ -46,8 +46,9 @@ defmodule Mqtt.Reading do
 
         {:ok, r}
 
-      {:error, %Jason.DecodeError{} = e} ->
-        {:error, "inbound msg parse failed #{inspect(e)}"}
+      {:error, %Jason.DecodeError{data: data} = e} ->
+        opts = [binaries: :as_strings, pretty: true, limit: :infinity]
+        {:error, "inbound msg parse failed:\n#{inspect(data, opts)}"}
     end
   end
 

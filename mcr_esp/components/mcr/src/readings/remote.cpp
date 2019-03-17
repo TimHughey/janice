@@ -44,7 +44,7 @@ remoteReading::remoteReading(uint32_t batt_mv)
 void remoteReading::populateJSON(JsonObject &root) {
   root["type"] = type_.c_str();
   root["hw"] = "esp32";
-  root["bssid"] = ap_.bssid;
+  // root["bssid"] = ap_.bssid;
   root["ap_rssi"] = ap_.rssi;
   root["batt_mv"] = batt_mv_;
   root["heap_free"] = heap_free_;

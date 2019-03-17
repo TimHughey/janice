@@ -22,7 +22,7 @@ defmodule RemoteTest do
       batt_mv: 3800
     }
 
-  def runtime(m), do: Map.put(m, :type, "runtime")
+  def runtime(m), do: Map.put(m, :type, "remote_runtime")
   def boot(m), do: Map.put(m, :type, "boot")
 
   setup_all do

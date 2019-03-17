@@ -35,9 +35,8 @@ startupReading::startupReading(uint32_t batt_mv) : remoteReading(batt_mv) {
 
 void startupReading::populateJSON(JsonObject &root) {
   remoteReading::populateJSON(root);
-  root["type"] = "boot"; // override the reading type
-  root["hw"] = "esp32";
-  root["reset_reason"] = reset_reason_;
+  // root["type"] = "boot"; // override the reading type
+  root["reset_reason"] = reset_reason_.c_str();
 };
 
 const std::string &

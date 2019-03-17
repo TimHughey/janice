@@ -372,13 +372,15 @@ defmodule Remote do
     update_from_external(rem, eu)
   end
 
-  defp send_remote_config([%Remote{} = rem], %{type: _type} = eu),
+  defp send_remote_config([%Remote{} = rem], %{type: "remote_runtime"} = eu),
     do: update_from_external(rem, eu)
 
-  # DEPRECATED!
-  # if :type is missing then assume this is a boot message
   defp send_remote_config([rem], %{} = eu) do
-    send_remote_config([rem], Map.put(eu, :type, "boot"))
+    Logger.warn(fn ->
+      "attempt to process unknown message type: #{Map.get(eu, :type, "unknown")}"
+    end)
+
+    {:error, "unknown message type"}
   end
 
   defp update_from_external(%Remote{} = rem, eu) do
