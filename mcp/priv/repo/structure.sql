@@ -231,7 +231,12 @@ CREATE TABLE public.remote (
     updated_at timestamp without time zone NOT NULL,
     preferred_vsn character varying(255) DEFAULT 'stable'::character varying,
     batt_mv integer DEFAULT 0,
-    reset_reason character varying(25) DEFAULT 'unknown'::character varying
+    reset_reason character varying(25) DEFAULT 'unknown'::character varying,
+    ap_rssi integer DEFAULT 0,
+    ap_pri_chan integer DEFAULT 0,
+    ap_sec_chan integer DEFAULT 0,
+    heap_free integer DEFAULT 0,
+    heap_min integer DEFAULT 0
 );
 
 
@@ -1141,5 +1146,5 @@ ALTER TABLE ONLY public.thermostat_profile
 -- PostgreSQL database dump complete
 --
 
-INSERT INTO public."schema_migrations" (version) VALUES (20171217150128), (20171224164529), (20171224225113), (20171228191703), (20171229001359), (20171231182344), (20180101153253), (20180102171624), (20180102175335), (20180217212153), (20180218021213), (20180222165118), (20180222184042), (20180305193804), (20180307143400), (20180517201719), (20180708221600), (20180709181021), (20190308124055), (20190316032007);
+INSERT INTO public."schema_migrations" (version) VALUES (20171217150128), (20171224164529), (20171224225113), (20171228191703), (20171229001359), (20171231182344), (20180101153253), (20180102171624), (20180102175335), (20180217212153), (20180218021213), (20180222165118), (20180222184042), (20180305193804), (20180307143400), (20180517201719), (20180708221600), (20180709181021), (20190308124055), (20190316032007), (20190317155502);
 

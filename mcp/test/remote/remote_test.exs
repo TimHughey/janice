@@ -14,12 +14,18 @@ defmodule RemoteTest do
   def ext(num),
     do: %{
       host: host(num),
+      type: "remote_runtime",
       hw: "esp32",
       vsn: "1234567",
       mtime: TimeSupport.unix_now(:seconds),
       log: false,
       reset_reason: "software reset",
-      batt_mv: 3800
+      batt_mv: 3800,
+      ap_rssi: -45,
+      ap_pri_chan: 6,
+      ap_sec_chan: 1,
+      heap_min: 100 * 1024,
+      heap_free: 101 * 1024
     }
 
   def runtime(m), do: Map.put(m, :type, "remote_runtime")
@@ -70,10 +76,11 @@ defmodule RemoteTest do
   end
 
   test "process poorly formed external remote update" do
-    eu = %{host: host(1), log: false}
-    res = Remote.external_update(eu)
+    fun = fn -> %{host: host(1), type: "boot"} |> Remote.external_update() end
+    msg = capture_log(fun)
 
-    assert res === :error
+    # assert msg =~ host(1)
+    assert msg =~ "unknown" or msg =~ "bad map"
   end
 
   test "mark as seen (default threshold)" do
@@ -199,11 +206,11 @@ defmodule RemoteTest do
   end
 
   test "external update started log message" do
-    fun = fn -> Map.put(ext(4), :log, true) |> Remote.external_update() end
+    fun = fn -> Map.put(ext(4), :log, true) |> boot() |> Remote.external_update() end
     msg = capture_log(fun)
 
     assert msg =~ host(4)
-    assert msg =~ "startup"
+    assert msg =~ "boot"
   end
 
   test "all Remotes" do

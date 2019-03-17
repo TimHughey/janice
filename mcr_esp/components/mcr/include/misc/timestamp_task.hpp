@@ -47,7 +47,7 @@ private:
   size_t _maxHeap = 0;
 
   TickType_t _last_wake;
-  const TickType_t _loop_frequency = pdMS_TO_TICKS(60 * 1000); // one minute
+  const TickType_t _loop_frequency = pdMS_TO_TICKS(13 * 1000); // 13 seconds
   bool _task_report = false;
   time_t _timestamp_freq_secs = (1 * 60);
 

@@ -31,6 +31,11 @@ defmodule Remote do
     field(:last_seen_at, :utc_datetime_usec)
     field(:batt_mv, :integer)
     field(:reset_reason, :string)
+    field(:ap_rssi, :integer)
+    field(:ap_pri_chan, :integer)
+    field(:ap_sec_chan, :integer)
+    field(:heap_free, :integer)
+    field(:heap_min, :integer)
 
     timestamps()
   end
@@ -117,7 +122,12 @@ defmodule Remote do
       :reset_reason,
       :firmware_vsn,
       :last_start_at,
-      :last_seen_at
+      :last_seen_at,
+      :ap_rssi,
+      :ap_pri_chan,
+      :ap_sec_chan,
+      :heap_free,
+      :heap_min
     ])
     |> validate_required([:name])
     |> validate_inclusion(:preferred_vsn, ["head", "stable"])
@@ -200,8 +210,8 @@ defmodule Remote do
   def external_update(%{host: host, vsn: _vsn, mtime: _mtime, hw: _hw} = eu) do
     result =
       :timer.tc(fn ->
-        Logger.warn(fn -> "external_update() handling:" end)
-        Logger.warn(fn -> "#{inspect(eu, binaries: :as_strings, pretty: true)}" end)
+        Logger.debug(fn -> "external_update() handling:" end)
+        Logger.debug(fn -> "#{inspect(eu, binaries: :as_strings, pretty: true)}" end)
         eu |> add() |> send_remote_config(eu)
       end)
 
@@ -350,9 +360,8 @@ defmodule Remote do
 
   # handle boot and startup (depcreated) messages
   defp send_remote_config([%Remote{} = rem], %{type: "boot"} = eu) do
-    Logger.warn(fn -> "send_remote_config handling: #{rem.host} #{eu.type}" end)
-    # Logger.warn(fn -> "#{inspect(rem, pretty: true)}" end)
-    # Logger.warn(fn -> "#{inspect(eu, binaries: :as_strings, pretty: true)}" end)
+    Logger.debug(fn -> "send_remote_config handling: #{rem.host} #{eu.type}" end)
+
     # only the feather m0 remote devices need the time
     if eu.hw in ["m0"], do: Client.send_timesync()
 
@@ -363,11 +372,15 @@ defmodule Remote do
 
     log &&
       Logger.warn(fn ->
-        "#{rem.name} startup #{rem.host} " <>
-          "#{eu.hw} " <>
+        heap_free = Map.get(eu, :heap_free, 0) / 1024
+        heap_min = Map.get(eu, :heap_min, 0) / 1024
+
+        "#{rem.name} boot #{rem.host} " <>
           "#{eu.vsn} " <>
           "#{Map.get(eu, :batt_mv, "0")}mv " <>
-          "[#{Map.get(eu, :reset_reason, "not provided")}]"
+          "#{Map.get(eu, :ap_rssi, "0")}db " <>
+          "heap(min:#{heap_min}k free:#{heap_free}k)" <>
+          "[#{Map.get(eu, :reset_reason, "no reset reason")}]"
       end)
 
     StartupAnnouncement.record(host: rem.name, vsn: eu.vsn, hw: eu.hw)
@@ -377,8 +390,11 @@ defmodule Remote do
     update_from_external(rem, eu)
   end
 
-  defp send_remote_config([%Remote{} = rem], %{type: "remote_runtime"} = eu),
-    do: update_from_external(rem, eu)
+  defp send_remote_config([%Remote{} = rem], %{type: "remote_runtime"} = eu) do
+    # use the message mtime to update the last seen at time
+    eu = Map.put_new(eu, :last_seen_at, TimeSupport.from_unix(eu.mtime))
+    update_from_external(rem, eu)
+  end
 
   defp send_remote_config([_rem], %{} = eu) do
     Logger.warn(fn ->
@@ -390,11 +406,22 @@ defmodule Remote do
 
   defp update_from_external(%Remote{} = rem, eu) do
     params = %{
-      last_start_at: Map.get(eu, :last_start_at, rem.last_start_at),
-      last_seen_at: Map.get(eu, :mtime, rem.last_seen_at) |> TimeSupport.from_unix(),
+      # remote_runtime messages:
+      #  :last_start_at is added to map for boot messages when not available
+      #   keep existing time
+      last_seen_at: Map.get(eu, :last_seen_at, rem.last_seen_at),
       firmware_vsn: Map.get(eu, :vsn, rem.firmware_vsn),
       hw: Map.get(eu, :hw, rem.hw),
+      # reset the following metrics when not present
+      ap_rssi: Map.get(eu, :ap_rssi, 0),
+      ap_pri_chan: Map.get(eu, :ap_pri_chan, 0),
+      ap_sec_chan: Map.get(eu, :ap_sec_chan, 0),
       batt_mv: Map.get(eu, :batt_mv, 0),
+
+      # boot messages:
+      #  :last_start_at is added to map for boot messages not present
+      #   keep existing time
+      last_start_at: Map.get(eu, :last_start_at, rem.last_start_at),
       reset_reason: Map.get(eu, :reset_reason, rem.reset_reason)
     }
 
