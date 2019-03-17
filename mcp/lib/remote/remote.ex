@@ -200,6 +200,9 @@ defmodule Remote do
   def external_update(%{host: host, vsn: _vsn, mtime: _mtime, hw: _hw} = eu) do
     result =
       :timer.tc(fn ->
+        Logger.warn(fn -> "external_update() handling:" end)
+        Logger.warn(fn -> "#{inspect(rem, pretty: true)}" end)
+        Logger.warn(fn -> "#{inspect(eu, binaries: :as_strings, pretty: true)}" end)
         eu |> add() |> send_remote_config(eu)
       end)
 
@@ -348,9 +351,9 @@ defmodule Remote do
 
   # handle boot and startup (depcreated) messages
   defp send_remote_config([%Remote{} = rem], %{type: "boot"} = eu) do
-    Logger.warn(fn -> "send_remote_config handling:" end)
-    Logger.warn(fn -> "#{inspect(rem, pretty: true)}" end)
-    Logger.warn(fn -> "#{inspect(eu, binaries: :as_strings, pretty: true)}" end)
+    Logger.warn(fn -> "send_remote_config handling: #{rem.host} #{eu.type}" end)
+    # Logger.warn(fn -> "#{inspect(rem, pretty: true)}" end)
+    # Logger.warn(fn -> "#{inspect(eu, binaries: :as_strings, pretty: true)}" end)
     # only the feather m0 remote devices need the time
     if eu.hw in ["m0"], do: Client.send_timesync()
 
