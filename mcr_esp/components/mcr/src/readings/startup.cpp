@@ -27,7 +27,7 @@
 #include "readings/startup.hpp"
 
 startupReading::startupReading(uint32_t batt_mv) : remoteReading(batt_mv) {
-  type_ = "boot";
+  type_ = std::string("boot");
   reset_reason_ = decodeResetReason(esp_reset_reason());
 
   ESP_LOGI("mcrStartup", "reason: %s", reset_reason_.c_str());

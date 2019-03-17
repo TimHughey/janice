@@ -234,6 +234,7 @@ void mcrMQTT::outboundMsg() {
     size_t json_len = entry->len;
 
     ESP_LOGD(tagEngine(), "send msg(len=%u), payload(len=%u)", len, json_len);
+    // ESP_LOGI(tagEngine(), "json: %s", json->c_str());
 
     mg_mqtt_publish(_connection, _rpt_feed, _msg_id++, MG_MQTT_QOS(1),
                     json->data(), json_len);

@@ -17,7 +17,11 @@ defmodule Mqtt.Reading do
   @remote_run_t "remote_runtime"
   @mcr_stat_t "stats"
 
-  def boot?(%{type: @boot_t} = r), do: metadata?(r)
+  def boot?(%{type: @boot_t, host: host} = r) do
+    Logger.warn(fn -> "detected boot message for #{host}" end)
+    metadata?(r)
+  end
+
   def boot?(%{}), do: false
 
   def check_metadata(%{} = r) do

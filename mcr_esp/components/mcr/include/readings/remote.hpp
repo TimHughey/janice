@@ -44,7 +44,7 @@ private:
   uint32_t heap_min_;
 
 protected:
-  std::string type_ = "remote_runtime";
+  std::string type_;
 
 public:
   remoteReading(uint32_t batt_mv);

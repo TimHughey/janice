@@ -31,6 +31,8 @@
 remoteReading::remoteReading(uint32_t batt_mv)
     : Reading(time(nullptr)), batt_mv_(batt_mv) {
 
+  type_ = std::string("remote_runtime");
+
   ap_rc_ = esp_wifi_sta_get_ap_info(&ap_);
 
   if (ap_rc_ != ESP_OK) {
