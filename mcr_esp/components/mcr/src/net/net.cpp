@@ -69,7 +69,7 @@ void Net::checkError(const char *func, esp_err_t err) {
     vTaskDelay(pdMS_TO_TICKS(3000)); // let things settle
     ESP_LOGE(tagEngine(), "%s err=%02x, core dump", func, err);
 
-    int *ptr = (int *)0xdead0000;
+    int *ptr = (int *)0x0000000;
     *ptr = 0;
 
     // should never get here
@@ -243,8 +243,8 @@ bool Net::start() {
   rc = ::esp_wifi_set_mode(WIFI_MODE_STA);
   checkError(__PRETTY_FUNCTION__, rc);
 
-  esp_wifi_set_protocol(WIFI_IF_STA, WIFI_PROTOCOL_11B | WIFI_PROTOCOL_11G |
-                                         WIFI_PROTOCOL_11N);
+  rc = ::esp_wifi_set_protocol(
+      WIFI_IF_STA, WIFI_PROTOCOL_11B | WIFI_PROTOCOL_11G | WIFI_PROTOCOL_11N);
   checkError(__PRETTY_FUNCTION__, rc);
 
   wifi_config_t cfg;
@@ -267,6 +267,7 @@ bool Net::start() {
   checkError(__PRETTY_FUNCTION__, rc);
 
   if (waitForIP()) {
+    wifi_ap_record_t ap;
     sntp_setoperatingmode(SNTP_OPMODE_POLL);
     sntp_setservername(0, (char *)"ntp1.wisslanding.com");
     sntp_setservername(1, (char *)"ntp2.wisslanding.com");
@@ -277,6 +278,10 @@ bool Net::start() {
     uint8_t *ip = (uint8_t *)&(ipInfo_.ip);
     ESP_LOGI(tagEngine(), "connected, acquired ip address %u.%u.%u.%u", ip[0],
              ip[1], ip[2], ip[3]);
+
+    esp_err_t ap_rc = esp_wifi_sta_get_ap_info(&ap);
+    ESP_LOGI(tagEngine(), "[%s] AP channel(%d,%d) rssi(%d)",
+             esp_err_to_name(ap_rc), ap.primary, ap.second, ap.rssi);
 
     // NOTE: once we've reached here the network is connected, ip address
     //       acquired and the time is set -- signal to other tasks

@@ -109,7 +109,16 @@ defmodule Remote do
 
   def changeset(ss, params \\ %{}) do
     ss
-    |> cast(params, [:name, :preferred_vsn])
+    |> cast(params, [
+      :name,
+      :hw,
+      :preferred_vsn,
+      :batt_mv,
+      :reset_reason,
+      :firmware_vsn,
+      :last_start_at,
+      :last_seen_at
+    ])
     |> validate_required([:name])
     |> validate_inclusion(:preferred_vsn, ["head", "stable"])
     |> validate_format(:name, name_regex())
@@ -191,7 +200,7 @@ defmodule Remote do
   def external_update(%{host: host, vsn: _vsn, mtime: _mtime, hw: _hw} = eu) do
     result =
       :timer.tc(fn ->
-        eu |> add() |> update_from_external(eu)
+        eu |> add() |> send_remote_config(eu)
       end)
 
     case result do
@@ -337,7 +346,8 @@ defmodule Remote do
   # PRIVATE FUNCTIONS
   #
 
-  defp update_from_external([%Remote{} = rem], eu) do
+  # handle boot and startup (depcreated) messages
+  defp send_remote_config([%Remote{} = rem], %{type: "boot"} = eu) do
     # only the feather m0 remote devices need the time
     if eu.hw in ["m0"], do: Client.send_timesync()
 
@@ -356,17 +366,30 @@ defmodule Remote do
       end)
 
     StartupAnnouncement.record(host: rem.name, vsn: eu.vsn, hw: eu.hw)
+    update_from_external([rem], eu)
+  end
 
-    opts = [
-      last_start_at: TimeSupport.from_unix(eu.mtime),
-      last_seen_at: TimeSupport.from_unix(eu.mtime),
-      firmware_vsn: eu.vsn,
-      hw: eu.hw,
+  defp send_remote_config([%Remote{} = rem], %{type: _type} = eu) do
+    update_from_external([rem], eu)
+  end
+
+  # DEPRECATED!
+  # if :type is missing then assume this is a boot message
+  defp send_remote_config([rem], eu) do
+    send_remote_config([rem], Map.put(eu, :type, "boot"))
+  end
+
+  defp update_from_external([%Remote{} = rem], eu) do
+    params = %{
+      last_start_at: Map.get(eu, :mtime, rem.last_start_at) |> TimeSupport.from_unix(),
+      last_seen_at: Map.get(eu, :mtime, rem.last_seen_at) |> TimeSupport.from_unix(),
+      firmware_vsn: Map.get(eu, :vsn, rem.firmware_vsn),
+      hw: Map.get(eu, :hw, rem.hw),
       batt_mv: Map.get(eu, :batt_mv, 0),
-      reset_reason: Map.get(eu, :reset_reason)
-    ]
+      reset_reason: Map.get(eu, :reset_reason, rem.reset_reason)
+    }
 
-    change(rem, opts) |> update()
+    changeset(rem, params) |> update()
   end
 
   defp update_from_external({:error, _}, _), do: {:error, "bad update"}

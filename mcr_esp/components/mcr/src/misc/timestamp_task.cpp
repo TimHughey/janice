@@ -68,6 +68,7 @@ void mcrTimestampTask::run(void *data) {
   for (;;) {
     int delta;
     size_t curr_heap = 0;
+    uint32_t batt_mv = mcr::Net::instance()->batt_mv();
 
     _last_wake = xTaskGetTickCount();
 
@@ -79,7 +80,6 @@ void mcrTimestampTask::run(void *data) {
 
     if ((time(nullptr) - last_timestamp) >= _timestamp_freq_secs) {
       const char *name = mcr::Net::getName().c_str();
-      uint32_t batt_mv = mcr::Net::instance()->batt_mv();
 
       ESP_LOGI(name, "%s %uk,%uk,%uk,%+05d (heap,first,min,delta) batt=%dv",
                dateTimeString(), (curr_heap / 1024), (_firstHeap / 1024),
@@ -103,9 +103,15 @@ void mcrTimestampTask::run(void *data) {
     }
 
     mcrMQTT_t *mqtt = mcrMQTT::instance();
-    ramUtilReading_t *reading = new ramUtilReading(curr_heap);
-    mqtt->publish(reading);
-    delete reading;
+    // deprecated by remoteReading_t
+    ramUtilReading_t *ram = new ramUtilReading(curr_heap);
+    mqtt->publish(ram);
+    delete ram;
+
+    // ramUtilReading_t replacement
+    remoteReading_t *remote = new remoteReading(batt_mv);
+    mqtt->publish(remote);
+    delete remote;
 
     vTaskDelayUntil(&_last_wake, _loop_frequency);
   }

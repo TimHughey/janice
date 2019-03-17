@@ -1,5 +1,5 @@
 /*
-    readings/all.hpp - Readings used within Master Control Remote
+    remote.cpp - Master Control Remote Reading
     Copyright (C) 2017  Tim Hughey
 
     This program is free software: you can redistribute it and/or modify
@@ -18,11 +18,35 @@
     https://www.wisslanding.com
 */
 
-#include "readings/celsius.hpp"
-#include "readings/engine.hpp"
-#include "readings/humidity.hpp"
-#include "readings/positions.hpp"
-#include "readings/ramutil.hpp"
+#include <cstdlib>
+#include <ctime>
+
+#include <esp_log.h>
+#include <esp_system.h>
+#include <esp_wifi.h>
+#include <external/ArduinoJson.h>
+
 #include "readings/remote.hpp"
-#include "readings/soil.hpp"
-#include "readings/startup.hpp"
+
+remoteReading::remoteReading(uint32_t batt_mv)
+    : Reading(time(nullptr)), batt_mv_(batt_mv) {
+
+  ap_rc_ = esp_wifi_sta_get_ap_info(&ap_);
+
+  if (ap_rc_ != ESP_OK) {
+    bzero(&ap_, sizeof(ap_));
+  }
+
+  heap_free_ = esp_get_free_heap_size();
+  heap_min_ = esp_get_minimum_free_heap_size();
+};
+
+void remoteReading::populateJSON(JsonObject &root) {
+  root["type"] = type_.c_str();
+  root["hw"] = "esp32";
+  root["bssid"] = ap_.bssid;
+  root["ap_rssi"] = ap_.rssi;
+  root["batt_mv"] = batt_mv_;
+  root["heap_free"] = heap_free_;
+  root["heap_min"] = heap_min_;
+};

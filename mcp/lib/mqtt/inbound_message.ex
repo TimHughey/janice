@@ -26,9 +26,9 @@ defmodule Mqtt.InboundMessage do
       Map.put_new(s, :log_reading, config(:log_reading))
       |> Map.put_new(:messages_dispatched, 0)
       |> Map.put_new(:json_log, nil)
-      |> Map.put_new(:startup_msgs, config(:startup_msgs))
       |> Map.put_new(:temperature_msgs, config(:temperature_msgs))
       |> Map.put_new(:switch_msgs, config(:switch_msgs))
+      |> Map.put_new(:boot_msgs, config(:remote_msgs))
 
     if Map.get(s, :autostart, false),
       do: send_after(self(), {:periodic_log}, config(:periodic_log_first_ms))
@@ -117,32 +117,54 @@ defmodule Mqtt.InboundMessage do
     #       to process incoming messages.  we also spin up a Task
     #       for the benefits of parallel processing.
 
-    if Reading.startup?(r) do
-      {mod, func} = s.startup_msgs
-      Task.start(mod, func, [r])
+    {mod, func} =
+      cond do
+        Reading.boot?(r) ->
+          Map.get(s, :remote_msgs, {nil, nil})
+
+        Reading.startup?(r) ->
+          Map.get(s, :remote_msgs, {nil, nil})
+
+        Reading.remote_runtime?(r) ->
+          Map.get(s, :remote_msgs, {nil, nil})
+
+        Reading.relhum?(r) ->
+          Map.get(s, :temperature_msgs, {nil, nil})
+
+        Reading.temperature?(r) ->
+          Map.get(s, :temperature_msgs, {nil, nil})
+
+        Reading.switch?(r) ->
+          Map.get(s, :switch_msgs, {nil, nil})
+
+        Reading.free_ram_stat?(r) ->
+          FreeRamStat.record(remote_host: r.host, val: r.freeram)
+          {nil, nil}
+
+        Reading.engine_metric?(r) ->
+          EngineMetric.record(r)
+          {nil, nil}
+
+        true ->
+          Logger.warn(fn -> "unhandled message [#{Map.get(r, :type, "unknown")}]" end)
+          {nil, nil}
+      end
+
+    cond do
+      # either the above cond didn't detect a valid reading OR
+      # the reading was processed
+      # in either case, do nothing
+      is_nil(mod) or is_nil(func) ->
+        nil
+
+      # reading needs to be processed, sould we do it async?
+      async ->
+        Task.start(mod, func, [r])
+
+      # process msg inline
+      true ->
+        apply(mod, func, [r])
     end
-
-    if Reading.temperature?(r) || Reading.relhum?(r) do
-      {mod, func} = s.temperature_msgs
-
-      if async,
-        do: Task.start(mod, func, [r]),
-        else: apply(mod, func, [r])
-    end
-
-    if Reading.switch?(r) do
-      {mod, func} = s.switch_msgs
-
-      if async,
-        do: Task.start(mod, func, [r]),
-        else: apply(mod, func, [r])
-    end
-
-    if Reading.free_ram_stat?(r) do
-      FreeRamStat.record(remote_host: r.host, val: r.freeram)
-    end
-
-    if Reading.engine_metric?(r), do: EngineMetric.record(r)
 
     nil
   end

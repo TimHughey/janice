@@ -33,6 +33,18 @@ defmodule RemoteTest do
     assert res === :ok
   end
 
+  test "process external update of type 'boot'" do
+    res = ext(16) |> Map.put_new(:type, "boot") |> Remote.external_update()
+
+    assert res === :ok
+  end
+
+  test "process external update of type 'remote_runtime'" do
+    res = ext(17) |> Map.put_new(:type, "remote_runtime") |> Remote.external_update()
+
+    assert res === :ok
+  end
+
   test "process poorly formed external remote update" do
     eu = %{host: host(1), log: false}
     res = Remote.external_update(eu)
@@ -170,7 +182,7 @@ defmodule RemoteTest do
     assert msg =~ "startup"
   end
 
-  test "all Remote" do
+  test "all Remotes" do
     ext(1) |> Remote.external_update()
     remotes = Remote.all()
 

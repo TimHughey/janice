@@ -77,9 +77,9 @@ mcrMQTT::mcrMQTT() {
 
 void mcrMQTT::announceStartup() {
   uint32_t batt_mv = mcr::Net::instance()->batt_mv();
-  startupReading_t reading(time(nullptr), batt_mv);
+  startupReading_t startup(batt_mv);
 
-  publish(&reading);
+  publish(&startup);
 }
 
 void mcrMQTT::connect(int wait_ms) {

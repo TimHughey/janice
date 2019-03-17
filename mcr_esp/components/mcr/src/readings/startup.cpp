@@ -1,5 +1,5 @@
 /*
-    celsius.cpp - Master Control Remote Celsius Reading
+    startup_reading.cpp - Master Control Remote Startup Reading
     Copyright (C) 2017  Tim Hughey
 
     This program is free software: you can redistribute it and/or modify
@@ -24,20 +24,20 @@
 #include <esp_log.h>
 #include <external/ArduinoJson.h>
 
-#include "readings/startup_reading.hpp"
+#include "readings/startup.hpp"
 
-startupReading::startupReading(time_t mtime, uint32_t batt_mv)
-    : Reading(mtime), batt_mv_m(batt_mv) {
-  reset_reason_m = decodeResetReason(esp_reset_reason());
+startupReading::startupReading(uint32_t batt_mv) : remoteReading(batt_mv) {
+  type_ = "boot";
+  reset_reason_ = decodeResetReason(esp_reset_reason());
 
-  ESP_LOGI("mcrStartup", "reason: %s", reset_reason_m.c_str());
+  ESP_LOGI("mcrStartup", "reason: %s", reset_reason_.c_str());
 };
 
 void startupReading::populateJSON(JsonObject &root) {
-  root["type"] = "boot";
+  remoteReading::populateJSON(root);
+  root["type"] = "boot"; // override the reading type
   root["hw"] = "esp32";
-  root["reset_reason"] = reset_reason_m;
-  root["batt_mv"] = batt_mv_m;
+  root["reset_reason"] = reset_reason_;
 };
 
 const std::string &

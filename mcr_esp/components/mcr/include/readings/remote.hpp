@@ -1,5 +1,5 @@
 /*
-    readings/all.hpp - Readings used within Master Control Remote
+    remote_reading.hpp - Master Control Remote Celsius Reading
     Copyright (C) 2017  Tim Hughey
 
     This program is free software: you can redistribute it and/or modify
@@ -18,11 +18,39 @@
     https://www.wisslanding.com
 */
 
-#include "readings/celsius.hpp"
-#include "readings/engine.hpp"
-#include "readings/humidity.hpp"
-#include "readings/positions.hpp"
-#include "readings/ramutil.hpp"
-#include "readings/remote.hpp"
-#include "readings/soil.hpp"
-#include "readings/startup.hpp"
+#ifndef remote_reading_hpp
+#define remote_reading_hpp
+
+#include <string>
+
+#include <esp_system.h>
+#include <esp_wifi.h>
+#include <external/ArduinoJson.h>
+#include <freertos/FreeRTOS.h>
+#include <sys/time.h>
+#include <time.h>
+
+#include "devs/id.hpp"
+#include "readings/reading.hpp"
+
+typedef class remoteReading remoteReading_t;
+
+class remoteReading : public Reading {
+private:
+  wifi_ap_record_t ap_;
+  esp_err_t ap_rc_;
+  uint32_t batt_mv_;
+  uint32_t heap_free_;
+  uint32_t heap_min_;
+
+protected:
+  std::string type_ = "remote_runtime";
+
+public:
+  remoteReading(uint32_t batt_mv);
+
+protected:
+  virtual void populateJSON(JsonObject &root);
+};
+
+#endif

@@ -30,19 +30,18 @@
 #include <time.h>
 
 #include "devs/id.hpp"
-#include "readings/reading.hpp"
+#include "readings/remote.hpp"
 
 typedef class startupReading startupReading_t;
 
-class startupReading : public Reading {
+class startupReading : public remoteReading {
 private:
-  std::string reset_reason_m;
-  uint32_t batt_mv_m = 0;
+  std::string reset_reason_;
 
   const std::string &decodeResetReason(esp_reset_reason_t reason);
 
 public:
-  startupReading(time_t mtime, uint32_t batt_mv);
+  startupReading(uint32_t batt_mv);
 
 protected:
   virtual void populateJSON(JsonObject &root);
