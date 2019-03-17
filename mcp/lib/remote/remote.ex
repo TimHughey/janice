@@ -201,7 +201,6 @@ defmodule Remote do
     result =
       :timer.tc(fn ->
         Logger.warn(fn -> "external_update() handling:" end)
-        Logger.warn(fn -> "#{inspect(rem, pretty: true)}" end)
         Logger.warn(fn -> "#{inspect(eu, binaries: :as_strings, pretty: true)}" end)
         eu |> add() |> send_remote_config(eu)
       end)
