@@ -380,7 +380,7 @@ defmodule Remote do
   defp send_remote_config([%Remote{} = rem], %{type: "remote_runtime"} = eu),
     do: update_from_external(rem, eu)
 
-  defp send_remote_config([rem], %{} = eu) do
+  defp send_remote_config([_rem], %{} = eu) do
     Logger.warn(fn ->
       "attempt to process unknown message type: #{Map.get(eu, :type, "unknown")}"
     end)

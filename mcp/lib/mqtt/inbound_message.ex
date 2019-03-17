@@ -28,7 +28,7 @@ defmodule Mqtt.InboundMessage do
       |> Map.put_new(:json_log, nil)
       |> Map.put_new(:temperature_msgs, config(:temperature_msgs))
       |> Map.put_new(:switch_msgs, config(:switch_msgs))
-      |> Map.put_new(:boot_msgs, config(:remote_msgs))
+      |> Map.put_new(:remote_msgs, config(:remote_msgs))
 
     if Map.get(s, :autostart, false),
       do: send_after(self(), {:periodic_log}, config(:periodic_log_first_ms))
@@ -120,22 +120,22 @@ defmodule Mqtt.InboundMessage do
     {mod, func} =
       cond do
         Reading.boot?(r) ->
-          Map.get(s, :remote_msgs, {nil, nil})
+          Map.get(s, :remote_msgs, {:missing, :missing})
 
         Reading.startup?(r) ->
-          Map.get(s, :remote_msgs, {nil, nil})
+          Map.get(s, :remote_msgs, {:missing, :missing})
 
         Reading.remote_runtime?(r) ->
-          Map.get(s, :remote_msgs, {nil, nil})
+          Map.get(s, :remote_msgs, {:missing, :missing})
 
         Reading.relhum?(r) ->
-          Map.get(s, :temperature_msgs, {nil, nil})
+          Map.get(s, :temperature_msgs, {:missing, :missing})
 
         Reading.temperature?(r) ->
-          Map.get(s, :temperature_msgs, {nil, nil})
+          Map.get(s, :temperature_msgs, {:missing, :missing})
 
         Reading.switch?(r) ->
-          Map.get(s, :switch_msgs, {nil, nil})
+          Map.get(s, :switch_msgs, {:missing, :missing})
 
         Reading.free_ram_stat?(r) ->
           FreeRamStat.record(remote_host: r.host, val: r.freeram)
@@ -156,6 +156,9 @@ defmodule Mqtt.InboundMessage do
       # in either case, do nothing
       is_nil(mod) or is_nil(func) ->
         nil
+
+      :missing == mod ->
+        Logger.warn(fn -> "missing configuration for reading type: #{r.type}" end)
 
       # reading needs to be processed, sould we do it async?
       async ->
