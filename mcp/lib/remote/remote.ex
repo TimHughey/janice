@@ -228,9 +228,11 @@ defmodule Remote do
         :ok
 
       # TODO: extract the actual error from update
-      {_t, {_, _}} ->
+      {_t, {err, details}} ->
         Logger.warn(fn ->
-          "external update failed for [#{host}]"
+          "external update failed for [#{host}]\n" <>
+            "#{inspect(err, pretty: true)}\n" <>
+            "#{inspect(details, pretty: true)}"
         end)
 
         :error
@@ -372,8 +374,8 @@ defmodule Remote do
 
     log &&
       Logger.warn(fn ->
-        heap_free = Map.get(eu, :heap_free, 0) / 1024
-        heap_min = Map.get(eu, :heap_min, 0) / 1024
+        heap_free = (Map.get(eu, :heap_free, 0) / 1024) |> Float.round(1)
+        heap_min = (Map.get(eu, :heap_min, 0) / 1024) |> Float.round(1)
 
         "#{rem.name} boot #{rem.host} " <>
           "#{eu.vsn} " <>
@@ -417,6 +419,8 @@ defmodule Remote do
       ap_pri_chan: Map.get(eu, :ap_pri_chan, 0),
       ap_sec_chan: Map.get(eu, :ap_sec_chan, 0),
       batt_mv: Map.get(eu, :batt_mv, 0),
+      heap_free: Map.get(eu, :heap_free, 0),
+      heap_min: Map.get(eu, :heap_min, 0),
 
       # boot messages:
       #  :last_start_at is added to map for boot messages not present
