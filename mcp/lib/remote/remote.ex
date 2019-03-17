@@ -348,6 +348,9 @@ defmodule Remote do
 
   # handle boot and startup (depcreated) messages
   defp send_remote_config([%Remote{} = rem], %{type: "boot"} = eu) do
+    Logger.warn(fn -> "send_remote_config handling:" end)
+    Logger.warn(fn -> "#{inspect(rem, pretty: true)}" end)
+    Logger.warn(fn -> "#{inspect(eu, binaries: :as_strings, pretty: true)}" end)
     # only the feather m0 remote devices need the time
     if eu.hw in ["m0"], do: Client.send_timesync()
 
