@@ -333,6 +333,16 @@ bool Net::waitForNormalOps() {
   return (res == ESP_OK) ? true : false;
 }
 
+bool Net::isTimeSet() {
+  // do not wait for the timeset bit, only query it
+  EventBits_t bits =
+      xEventGroupWaitBits(eventGroup(), timesetBit(), false, true, 0);
+
+  // xEventGroupWaitBits returns the bits set in the event group even if
+  // the wait times out (which we want in this case if it's not set)
+  return (bits & timesetBit()) ? true : false;
+}
+
 bool Net::waitForTimeset() {
   xEventGroupWaitBits(eventGroup(), timesetBit(), false, true, portMAX_DELAY);
   return true;

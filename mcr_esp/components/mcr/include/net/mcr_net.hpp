@@ -38,6 +38,7 @@ public:
   static bool waitForIP(int wait_ms = pdMS_TO_TICKS(10000));
   static bool waitForName(int wait_ms = 0);
   static bool waitForNormalOps();
+  static bool isTimeSet();
   static bool waitForTimeset();
 
   static EventBits_t connectedBit() { return BIT0; };

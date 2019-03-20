@@ -292,11 +292,18 @@ void mcrMQTT::run(void *data) {
 
   connect();
 
-  // ESP_LOGI(tagEngine(), "waiting for normal ops...");
-  // mcr::Net::waitForNormalOps();
-  // ESP_LOGI(tagEngine(), "normal ops, proceeding to task loop")
+  bool startup_announced = false;
 
   for (;;) {
+    // send the startup announcement once the time is available.
+    // this solves a race condition when mqtt connection and subscription
+    // to the commend feed completes before the time is set and avoids
+    // mcp receiving the announced statup time as epoch
+    if ((startup_announced == false) && (mcr::Net::isTimeSet())) {
+      announceStartup();
+      startup_announced = true;
+    }
+
     // we wait here AND we wait in outboundMsg -- this alternates between
     // prioritizing inbound and outbound messages
     mg_mgr_poll(&_mgr, _inbound_msg_ms);
@@ -313,7 +320,9 @@ void mcrMQTT::subACK(struct mg_mqtt_message *msg) {
   if (msg->message_id == _cmd_feed_msg_id) {
     ESP_LOGI(tagEngine(), "subscribed to CMD feed");
     _mqtt_ready = true;
-    announceStartup();
+    // announcing startup here creates a race conditino the results
+    // in occasionally using epach as the startup time
+    // announceStartup();
   } else if (msg->message_id == _ota_feed_msg_id) {
     ESP_LOGI(tagEngine(), "subscribed to OTA feed");
     _ota_subscribed = true;
