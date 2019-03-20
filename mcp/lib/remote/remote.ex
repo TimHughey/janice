@@ -36,6 +36,7 @@ defmodule Remote do
     field(:ap_sec_chan, :integer)
     field(:heap_free, :integer)
     field(:heap_min, :integer)
+    field(:uptime_us, :integer)
 
     timestamps()
   end
@@ -127,7 +128,8 @@ defmodule Remote do
       :ap_pri_chan,
       # :ap_sec_chan,
       :heap_free,
-      :heap_min
+      :heap_min,
+      :bigint
     ])
     |> validate_required([:name])
     |> validate_inclusion(:preferred_vsn, ["head", "stable"])
@@ -421,6 +423,7 @@ defmodule Remote do
       batt_mv: Map.get(eu, :batt_mv, 0),
       heap_free: Map.get(eu, :heap_free, 0),
       heap_min: Map.get(eu, :heap_min, 0),
+      uptime_us: Map.get(eu, :uptime_us, 0),
 
       # boot messages:
       #  :last_start_at is added to map for boot messages not present

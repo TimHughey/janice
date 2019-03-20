@@ -69,8 +69,11 @@ void Net::checkError(const char *func, esp_err_t err) {
     vTaskDelay(pdMS_TO_TICKS(3000)); // let things settle
     ESP_LOGE(tagEngine(), "%s err=%02x, core dump", func, err);
 
-    int *ptr = (int *)0x0000000;
-    *ptr = 0;
+    // prevent the compiler from optimzing out this code
+    uint32_t volatile *ptr = (uint32_t *)0x0000000;
+
+    // write to a nullptr to trigger core dump
+    ptr[0] = 0;
 
     // should never get here
     ESP_LOGE(tagEngine(), "core dump failed");

@@ -41,6 +41,7 @@ remoteReading::remoteReading(uint32_t batt_mv)
 
   heap_free_ = esp_get_free_heap_size();
   heap_min_ = esp_get_minimum_free_heap_size();
+  uptime_us_ = esp_timer_get_time();
 };
 
 void remoteReading::populateJSON(JsonObject &root) {
@@ -49,8 +50,8 @@ void remoteReading::populateJSON(JsonObject &root) {
   // root["bssid"] = ap_.bssid;
   root["ap_rssi"] = ap_.rssi;
   root["ap_pri_chan"] = ap_.primary;
-  // root["ap_sec_chan"] = ap_.second;
   root["batt_mv"] = batt_mv_;
   root["heap_free"] = heap_free_;
   root["heap_min"] = heap_min_;
+  root["uptime_us"] = uptime_us_;
 };

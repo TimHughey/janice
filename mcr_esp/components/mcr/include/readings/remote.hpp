@@ -42,6 +42,7 @@ private:
   uint32_t batt_mv_;
   uint32_t heap_free_;
   uint32_t heap_min_;
+  uint64_t uptime_us_;
 
 protected:
   std::string type_;
