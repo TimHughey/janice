@@ -126,10 +126,9 @@ defmodule Remote do
       :last_seen_at,
       :ap_rssi,
       :ap_pri_chan,
-      # :ap_sec_chan,
       :heap_free,
       :heap_min,
-      :bigint
+      :uptime_us
     ])
     |> validate_required([:name])
     |> validate_inclusion(:preferred_vsn, ["head", "stable"])

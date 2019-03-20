@@ -25,7 +25,8 @@ defmodule RemoteTest do
       ap_pri_chan: 6,
       # ap_sec_chan: 1,
       heap_min: 100 * 1024,
-      heap_free: 101 * 1024
+      heap_free: 101 * 1024,
+      uptime_us: 15000
     }
 
   def runtime(m), do: Map.put(m, :type, "remote_runtime")
