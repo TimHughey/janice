@@ -2,6 +2,7 @@
 
 #include <driver/adc.h>
 #include <driver/gpio.h>
+#include <driver/ledc.h>
 #include <esp_adc_cal.h>
 #include <esp_attr.h>
 #include <esp_event_loop.h>
@@ -25,6 +26,7 @@ class Net {
 public:
   void ensureTimeIsSet();
   static EventGroupHandle_t eventGroup();
+  static mcrHardwareConfig_t hardwareConfig();
   static const std::string &getName();
 
   static const std::string &hostID();
@@ -32,6 +34,7 @@ public:
   static const std::string &macAddress();
   static void setName(const std::string name);
   bool start();
+  static void statusLED(bool on);
   static void resumeNormalOps();
   static void suspendNormalOps();
   static bool waitForConnection(int wait_ms = portMAX_DELAY);
@@ -72,6 +75,10 @@ private:
   uint32_t batt_measurements_ = 64; // measurements to avg out noise
 
   static const adc_channel_t battery_adc_ = ADC_CHANNEL_7;
+  static const gpio_num_t led_gpio_ = GPIO_NUM_13;
+  const uint64_t hw_gpio_pin_sel_ = (GPIO_SEL_34 | GPIO_SEL_36 | GPIO_SEL_39);
+  const gpio_num_t hw_gpio_[3] = {GPIO_NUM_36, GPIO_NUM_39, GPIO_NUM_34};
+  mcrHardwareConfig_t hw_conf_ = LEGACY;
 
   std::string _name;
 };

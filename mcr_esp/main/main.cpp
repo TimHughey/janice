@@ -36,7 +36,7 @@ void app_main() {
   ESP_LOGI(TAG, "%s", embed_vsn_sha);
 
   // ensure all peripherals have been completely reset
-  // important after OTA and if an internal error occur that force a restart
+  // important after OTA and if an internal error occured that forced a restart
   periph_module_disable(PERIPH_WIFI_MODULE);
   periph_module_disable(PERIPH_I2C0_MODULE);
   periph_module_disable(PERIPH_RMT_MODULE);

@@ -45,6 +45,12 @@ typedef struct {
   QueueHandle_t q;
 } cmdQueue_t;
 
+typedef enum mcrHardwareConfig {
+  LEGACY = 0x00,
+  BASIC,
+  I2C_MULTIPLEXER
+} mcrHardwareConfig_t;
+
 typedef std::vector<char> mcrRawMsg_t;
 
 #endif // mcr_type_h

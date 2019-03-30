@@ -60,6 +60,20 @@ mcrI2c::mcrI2c() {
   _engine_task_name = tagEngine();
   _engine_stack_size = 5 * 1024;
   _engine_priority = CONFIG_MCR_I2C_TASK_CORE_PRIORITY;
+
+  if (mcr::Net::hardwareConfig() == I2C_MULTIPLEXER) {
+    gpio_config_t rst_pin_cfg;
+
+    rst_pin_cfg.pin_bit_mask = RST_PIN_SEL;
+    rst_pin_cfg.mode = GPIO_MODE_OUTPUT;
+    rst_pin_cfg.pull_up_en = GPIO_PULLUP_DISABLE;
+    rst_pin_cfg.pull_down_en = GPIO_PULLDOWN_DISABLE;
+    rst_pin_cfg.intr_type = GPIO_INTR_DISABLE;
+
+    gpio_config(&rst_pin_cfg);
+
+    gpio_set_level(RST_PIN, 1); // set RST pin high}
+  }
 }
 
 esp_err_t mcrI2c::busRead(i2cDev_t *dev, uint8_t *buff, uint32_t len,
@@ -238,35 +252,24 @@ bool mcrI2c::detectMultiplexer(const int max_attempts) {
   // will be updated below depending on detection
   _use_multiplexer = false;
 
-  int pin_level_now = gpio_get_level(RST_PIN);
-
-  if (pin_level_now != _reset_pin_level) {
-    ESP_LOGW(tagDetectDev(), "rst pin level changed (startup=%d, now=%d)",
-             _reset_pin_level, pin_level_now);
-  }
-
-  _reset_pin_level = pin_level_now;
-
-  if (_reset_pin_level) {
-    ESP_LOGI(tagDetectDev(), "rst pin is high, will use multiplexer");
-
-    _use_multiplexer = true;
-  } else {
+  switch (mcr::Net::hardwareConfig()) {
+  case LEGACY:
     // DEPRECATED as of 2019-03-10
     // support for old hardware that does not use the RST pin
-    ESP_LOGW(tagDetectDev(), "rst pin is low, using deprecated detection");
-    for (int i = 1; ((i <= max_attempts) && (_use_multiplexer == false)); i++) {
-      ESP_LOGD(tagDetectDev(), "detecting TCA9548A (attempt %d/%d)", i,
-               max_attempts);
-
-      if (detectDevice(&_multiplexer_dev)) {
-        ESP_LOGD(tagDetectDev(), "found TCA9548A");
-        _use_multiplexer = true;
-      }
+    if (detectDevice(&_multiplexer_dev)) {
+      ESP_LOGD(tagDetectDev(), "found TCA9548A multiplexer");
+      _use_multiplexer = true;
     }
+    break;
 
-    ESP_LOGI(tagDetectDev(), "%s use multiplexer",
-             ((_use_multiplexer) ? "will" : "will not"));
+  case BASIC:
+    _use_multiplexer = false;
+    break;
+
+  case I2C_MULTIPLEXER:
+    ESP_LOGI(tagDetectDev(), "hardware configured for multiplexer");
+    _use_multiplexer = true;
+    break;
   }
 
   return _use_multiplexer;
@@ -694,17 +697,6 @@ void mcrI2c::run(void *task_data) {
   ESP_LOGI(tagEngine(), "waiting for normal ops...");
   mcr::Net::waitForNormalOps();
   ESP_LOGI(tagEngine(), "normal ops, proceeding to task loop");
-
-  gpio_config_t rst_pin_cfg;
-
-  rst_pin_cfg.pin_bit_mask = RST_PIN_SEL;
-  rst_pin_cfg.mode = GPIO_MODE_INPUT;
-  rst_pin_cfg.pull_up_en = GPIO_PULLUP_DISABLE;
-  rst_pin_cfg.pull_down_en = GPIO_PULLDOWN_DISABLE;
-  rst_pin_cfg.intr_type = GPIO_INTR_DISABLE;
-
-  gpio_config(&rst_pin_cfg);
-  _reset_pin_level = gpio_get_level(RST_PIN);
 
   _last_wake.engine = xTaskGetTickCount();
   for (;;) {

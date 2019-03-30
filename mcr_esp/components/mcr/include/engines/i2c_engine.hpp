@@ -53,9 +53,9 @@ typedef struct {
 // I2C master will not check ack from slave
 #define ACK_CHECK_DIS (i2c_ack_type_t)0x0
 
-#define SDA_PIN (gpio_num_t)18
-#define SCL_PIN (gpio_num_t)19
-#define I2C_PWR_PIN (gpio_num_t)12
+#define SDA_PIN ((gpio_num_t)18)
+#define SCL_PIN ((gpio_num_t)19)
+
 #define RST_PIN GPIO_NUM_21
 #define RST_PIN_SEL GPIO_SEL_21
 

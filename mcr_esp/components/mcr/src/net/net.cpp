@@ -37,7 +37,71 @@ Net::Net() {
 
   adc1_config_width(ADC_WIDTH_BIT_12);
   adc1_config_channel_atten((adc1_channel_t)battery_adc_, ADC_ATTEN_DB_11);
-}
+
+  // gpio_config_t led_gpio;
+  // led_gpio.intr_type = GPIO_INTR_DISABLE;
+  // led_gpio.mode = GPIO_MODE_OUTPUT;
+  // led_gpio.pin_bit_mask = GPIO_SEL_13;
+  // led_gpio.pull_down_en = GPIO_PULLDOWN_DISABLE;
+  // led_gpio.pull_up_en = GPIO_PULLUP_DISABLE;
+  //
+  // gpio_config(&led_gpio);
+  // gpio_set_level(led_gpio_, true);
+
+  // setup hardware configuration jumpers
+  gpio_config_t hw_conf_gpio;
+  hw_conf_gpio.intr_type = GPIO_INTR_DISABLE;
+  hw_conf_gpio.mode = GPIO_MODE_INPUT;
+  hw_conf_gpio.pin_bit_mask = hw_gpio_pin_sel_;
+  hw_conf_gpio.pull_down_en = GPIO_PULLDOWN_DISABLE;
+  hw_conf_gpio.pull_up_en = GPIO_PULLUP_DISABLE;
+  gpio_config(&hw_conf_gpio);
+
+  ledc_timer_config_t ledc_timer;
+  ledc_timer.speed_mode = LEDC_HIGH_SPEED_MODE;   // timer mode
+  ledc_timer.duty_resolution = LEDC_TIMER_13_BIT; // resolution of PWM duty
+  ledc_timer.timer_num = LEDC_TIMER_0;            // timer index
+  ledc_timer.freq_hz = 5000;                      // frequency of PWM signal
+
+  esp_err_t esp_rc;
+  esp_rc = ledc_timer_config(&ledc_timer);
+  ESP_LOGI(tagEngine(), "[%s] ledc_timer_config()", esp_err_to_name(esp_rc));
+
+  esp_rc = ledc_fade_func_install(0);
+  ESP_LOGI(tagEngine(), "[%s] ledc_fade_func_install()",
+           esp_err_to_name(esp_rc));
+
+  ledc_channel_config_t ledc_channel;
+  ledc_channel.channel = LEDC_CHANNEL_0;
+  ledc_channel.duty = 0;
+  ledc_channel.gpio_num = led_gpio_;
+  ledc_channel.speed_mode = LEDC_HIGH_SPEED_MODE;
+  ledc_channel.hpoint = 0;
+  ledc_channel.timer_sel = LEDC_TIMER_0;
+
+  esp_rc = ledc_channel_config(&ledc_channel);
+  ESP_LOGI(tagEngine(), "[%s] ledc_channel_config()", esp_err_to_name(esp_rc));
+
+  esp_rc = ledc_set_fade_with_time(ledc_channel.speed_mode,
+                                   ledc_channel.channel, 8000, 5000);
+  ESP_LOGI(tagEngine(), "[%s] ledc_set_fade_with_time()",
+           esp_err_to_name(esp_rc));
+
+  esp_rc = ledc_fade_start(ledc_channel.speed_mode, ledc_channel.channel,
+                           LEDC_FADE_NO_WAIT);
+  ESP_LOGI(tagEngine(), "[%s] ledc_fade_start()", esp_err_to_name(esp_rc));
+
+  uint8_t hw_conf = 0;
+  for (auto conf_bit = 0; conf_bit < 3; conf_bit++) {
+    int level = gpio_get_level(hw_gpio_[conf_bit]);
+    ESP_LOGD(tagEngine(), "hw_gpio_[%d] = 0x%02x", conf_bit, level);
+    hw_conf |= level << conf_bit;
+  }
+
+  hw_conf_ = (mcrHardwareConfig_t)hw_conf;
+
+  ESP_LOGI(tagEngine(), "hardware jumper config = 0x%02x", hw_conf_);
+} // namespace mcr
 
 void Net::acquiredIP(system_event_t *event) {
   vTaskDelay(pdMS_TO_TICKS(3000));
@@ -70,7 +134,7 @@ void Net::checkError(const char *func, esp_err_t err) {
     ESP_LOGE(tagEngine(), "%s err=%02x, core dump", func, err);
 
     // prevent the compiler from optimzing out this code
-    uint32_t volatile *ptr = (uint32_t *)0x0000000;
+    volatile uint32_t *ptr = (uint32_t *)0x0000000;
 
     // write to a nullptr to trigger core dump
     ptr[0] = 0;
@@ -192,6 +256,8 @@ void Net::ensureTimeIsSet() {
   }
 }
 
+mcrHardwareConfig_t Net::hardwareConfig() { return instance()->hw_conf_; }
+
 const std::string &Net::getName() {
   if (instance()->_name.length() == 0) {
     return macAddress();
@@ -296,6 +362,13 @@ bool Net::start() {
   }
 
   return true;
+}
+void Net::statusLED(bool on) { // gpio_set_level(instance()->led_gpio_, on);
+  esp_err_t esp_rc;
+
+  esp_rc = ledc_stop(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0, 0);
+
+  ESP_LOGI(tagEngine(), "[%s] ledc_stop()", esp_err_to_name(esp_rc));
 }
 
 void Net::resumeNormalOps() {
