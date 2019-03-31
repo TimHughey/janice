@@ -125,6 +125,8 @@ defmodule Reef do
     Thermostat.Server.activate_profile("reefwater mix heat", "standby")
   end
 
+  def mix(_anything), do: mix(:help)
+
   def mix do
     mix(:help)
   end
@@ -134,11 +136,26 @@ defmodule Reef do
     IO.puts(":resume  -> replenish=fast")
   end
 
+  def sump(:resume) do
+    Dutycycle.Server.activate_profile("display tank replenish", "fast")
+  end
+
   def sump(:standby) do
     Dutycycle.Server.activate_profile("display tank replenish", "standby")
   end
 
-  def sump(:resume) do
-    Dutycycle.Server.activate_profile("display tank replenish", "fast")
+  def sump(:toggle) do
+    curr = Dutycycle.Server.profiles("display tank replenish", only_active: true)
+    next = sump_next(curr)
+
+    with :ok = Dutycycle.Server.activate_profile("display tank replenish", next) do
+      _discard = IO.puts("sump toggled:  #{curr} --> #{next}")
+    else
+      _discard = IO.puts("toggle failed!")
+    end
   end
+
+  def sump_next("standby"), do: "fast"
+  def sump_next("fast"), do: "standby"
+  def sump_next(_anything), do: "standby"
 end
