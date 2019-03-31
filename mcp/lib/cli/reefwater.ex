@@ -148,10 +148,11 @@ defmodule Reef do
     curr = Dutycycle.Server.profiles("display tank replenish", only_active: true)
     next = sump_next(curr)
 
-    with :ok = Dutycycle.Server.activate_profile("display tank replenish", next) do
+    with :ok <- Dutycycle.Server.activate_profile("display tank replenish", next) do
       _discard = IO.puts("sump toggled:  #{curr} --> #{next}")
     else
-      _discard = IO.puts("toggle failed!")
+      err ->
+        _discard = IO.puts("toggle failed! #{inspect(err)}")
     end
   end
 
