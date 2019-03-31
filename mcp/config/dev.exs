@@ -123,5 +123,3 @@ config :ueberauth, Ueberauth,
          nickname_field: :username
        ]}
   ]
-
-config :phoenix, :stacktrace_depth, 20

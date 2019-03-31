@@ -25,12 +25,12 @@ defmodule Mcp.Mixfile do
   def project do
     [
       app: :mcp,
-      version: "0.1.3-#{sha_head()}",
+      version: "0.1.4-#{sha_head()}",
       elixir: "~> 1.7",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       elixirc_paths: elixirc_paths(Mix.env()),
-      compilers: [:phoenix, :gettext] ++ Mix.compilers(),
+      compilers: [:gettext] ++ Mix.compilers(),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
@@ -49,8 +49,6 @@ defmodule Mcp.Mixfile do
       extra_applications: [
         :logger,
         :runtime_tools,
-        :ueberauth_identity,
-        :ueberauth_github,
         :parse_trans
       ],
       mod: {Mcp.Application, args()}
@@ -72,22 +70,20 @@ defmodule Mcp.Mixfile do
       {:httpoison, "~> 1.0"},
       {:postgrex, "~> 0.13"},
       {:ecto_sql, "~> 3.0"},
-      # {:timex_ecto, "~> 3.3"},
       {:emqttc, github: "rabbitmq/emqttc", tag: "remove-logging"},
       {:uuid, "~> 1.1"},
-      {:phoenix, "~> 1.4.0"},
-      {:phoenix_pubsub, "~> 1.0"},
-      {:phoenix_ecto, "~> 4.0"},
-      {:phoenix_html, "~> 2.10"},
-      {:phoenix_live_reload, "~> 1.2", only: :dev},
+      # {:phoenix, "~> 1.4.0"},
+      # {:phoenix_pubsub, "~> 1.0"},
+      # {:phoenix_ecto, "~> 4.0"},
+      # {:phoenix_html, "~> 2.10"},
+      # {:phoenix_live_reload, "~> 1.2", only: :dev},
       {:gettext, "~> 0.11"},
-      {:plug_cowboy, "~> 2.0"},
-      {:plug, "~> 1.7"},
-      {:guardian, "~> 1.0"},
-      {:ueberauth, "~> 0.4"},
-      {:ueberauth_github, "~> 0.4"},
-      {:ueberauth_identity, "~> 0.2"},
-      # {:distillery, "~> 2.0"},
+      # {:plug_cowboy, "~> 2.0"},
+      # {:plug, "~> 1.7"},
+      # {:guardian, "~> 1.0"},
+      # {:ueberauth, "~> 0.4"},
+      # {:ueberauth_github, "~> 0.4"},
+      # {:ueberauth_identity, "~> 0.2"},
       {:distillery, github: "bitwalker/distillery"},
       {:quantum, "~> 2.2"},
       {:scribe, "~> 0.8.2"},
@@ -149,11 +145,6 @@ defmodule Mcp.Mixfile do
     [
       tool: Coverex.Task,
       ignore_modules: [
-        Mcp.Chamber,
-        Mcp.Chamber.AutoPopulate,
-        Mcp.Chamber.Device,
-        Mcp.Chamber.RunState,
-        Mcp.Chamber.ServerState,
         Mcp.IExHelpers,
         Fact.Celsius.Fields,
         Fact.Celsius.Tags,
@@ -173,7 +164,6 @@ defmodule Mcp.Mixfile do
         Fact.RunMetric.Tags,
         Fact.StartupAnnouncement.Fields,
         Fact.StartupAnnouncement.Tags,
-        Web.Router.Helpers,
         Repo
       ]
     ]
