@@ -28,7 +28,6 @@
 	jan_bin=$jan_base/bin
 	release=/run/janice/mcp.tar.gz
 
-
 	if [[ ! -f $release ]]; then
 		print "deploy tar $release doesn't exist, doing nothing."
 		return 1
@@ -39,16 +38,15 @@
 	run_cmd sudo rm -rf $jan_base_new
 	run_cmd sudo mkdir --mode 0775 $jan_base_new
 	run_cmd sudo chown janice:janice $jan_base_new
-	run_cmd tar -C $jan_base_new -xf $release && print " done."
-
+	run_cmd sudo -u janice tar -C $jan_base_new -xf $release && print " done."
 
 	$jan_bin/mcp ping 1> /dev/null 2>&1
 	if [[ $? -eq 0 ]]; then
 		print -n "stopping janice before swapping old and new..."
 		# HACK - to solve issue with /run permissions
-		sudo chmod go+w /run ; sleep 5
+		# sudo chmod go+w /run ; sleep 5
 		run_cmd $jan_base/bin/mcp stop 1> /dev/null 2>&1 && print " done."
-		sudo chmod go-w /run
+		# sudo chmod go-w /run
 	fi
 
 	print "executing mix ecto.migrate:"
@@ -63,9 +61,9 @@
 
 	print -n "starting janice..."
 
-	sudo chmod go+w /run
-	env PORT=4009 $jan_bin/mcp start && print " done."
-	sleep 5 ; sudo chmod go+w /run
+	# sudo chmod go+w /run
+	sudo -u janice --login env PORT=4009 $jan_bin/mcp start && print " done."
+	# sleep 5 ; sudo chmod go+w /run
 
 	print -n "removing deploy tar..." && rm -f $release && print " done."
 
