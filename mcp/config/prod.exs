@@ -74,8 +74,8 @@ config :mcp, Janice.Scheduler,
     # Every minute
     {"* * * * *", {Janice.Jobs, :touch_file, []}},
     # control germination light and heat
-    {"*/2 8-17 * * *", {Janice.Jobs, :switch_control, ["germination_light", true]}},
-    {"*/2 18-7 * * *", {Janice.Jobs, :switch_control, ["germination_light", false]}},
+    {"*/2 8-19 * * *", {Janice.Jobs, :switch_control, ["germination_light", true]}},
+    {"*/2 20-7 * * *", {Janice.Jobs, :switch_control, ["germination_light", false]}},
     {"*/2 * * * *", {Janice.Jobs, :switch_control, ["germination_heat", true]}}
     # {"*/2 21-7 * * *", {Janice.Jobs, :flush, []}},
     # {"*/2 8-20 * * *", {Janice.Jobs, :grow, []}}
