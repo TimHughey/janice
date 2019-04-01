@@ -5,8 +5,9 @@
 -setcookie <%= release.profile.cookie %>
 
 ## Adjust log file size and frequency of ALIVE messages
--env RUN_ERL_LOG_MAXSIZE 1048576
--env RUN_ERL_LOG_ALIVE_MINUTES 60
+## NOTE: configured within the environment of the starting user
+## -env RUN_ERL_LOG_MAXSIZE 1048576
+## -env RUN_ERL_LOG_ALIVE_MINUTES 60
 
 ## Heartbeat management; auto-restarts VM if it dies or becomes unresponsive
 ## (Disabled by default..use with caution!)
