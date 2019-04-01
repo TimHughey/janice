@@ -62,7 +62,8 @@
 	print -n "starting janice..."
 
 	# sudo chmod go+w /run
-	sudo -u janice --login env PORT=4009 $jan_bin/mcp start && print " done."
+	sudo -u janice --set-home --preserve-env env PORT=4009 $jan_bin/mcp start && print " done."
+	# sudo -u janice env PORT=4009 $jan_bin/mcp start && print " done."
 	# sleep 5 ; sudo chmod go+w /run
 
 	print -n "removing deploy tar..." && rm -f $release && print " done."
