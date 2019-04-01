@@ -378,12 +378,12 @@ defmodule Remote do
         heap_free = (Map.get(eu, :heap_free, 0) / 1024) |> Float.round(1)
         heap_min = (Map.get(eu, :heap_min, 0) / 1024) |> Float.round(1)
 
-        "#{rem.name} boot #{rem.host} " <>
+        "#{rem.name} BOOT " <>
+          "#{Map.get(eu, :reset_reason, "no reset reason")} " <>
           "#{eu.vsn} " <>
           "#{Map.get(eu, :batt_mv, "0")}mv " <>
-          "#{Map.get(eu, :ap_rssi, "0")}db " <>
-          "heap(min:#{heap_min}k free:#{heap_free}k)" <>
-          "[#{Map.get(eu, :reset_reason, "no reset reason")}]"
+          "#{Map.get(eu, :ap_rssi, "0")}dB " <>
+          "heap(#{heap_min}k,#{heap_free}k) "
       end)
 
     StartupAnnouncement.record(host: rem.name, vsn: eu.vsn, hw: eu.hw)
