@@ -29,9 +29,12 @@
 #include <freertos/event_groups.h>
 #include <freertos/ringbuf.h>
 #include <freertos/task.h>
+#include <lwip/dns.h>
+#include <lwip/netdb.h>
+#include <lwip/sockets.h>
+#include <mqtt_client.h>
 #include <sdkconfig.h>
 
-#include "external/mongoose.h"
 #include "protocols/mqtt_in.hpp"
 #include "readings/readings.hpp"
 
@@ -46,17 +49,15 @@ public:
   static mcrMQTT_t *instance(); // singleton, use instance() for object
 
   void connect(int wait_ms = 0);
-  void connectionClosed();
 
-  void handshake(struct mg_connection *nc);
-  void incomingMsg(struct mg_str *topic, struct mg_str *payload);
+  void incomingMsg(esp_mqtt_event_handle_t event);
   static void otaFinish() { instance()->__otaFinish(); };
   static void otaPrep() { instance()->__otaPrep(); };
   void publish(Reading_t *reading);
   void run(void *data);
   void setSubscribedOTA() { _ota_subscribed = true; };
-  void subACK(struct mg_mqtt_message *msg);
-  void subscribeCommandFeed(struct mg_connection *nc);
+  void subACK(esp_mqtt_event_handle_t event);
+  void subscribeCommandFeed();
   bool isReady() { return _mqtt_ready; };
 
   void start(void *task_data = nullptr) {
@@ -88,16 +89,20 @@ private:
   mcrMQTT(); // singleton, constructor is private
 
   std::string _client_id;
-  std::string _endpoint;
+
   mcrTask_t _task = {.handle = nullptr,
                      .data = nullptr,
                      .lastWake = 0,
                      .priority = CONFIG_MCR_MQTT_TASK_PRIORITY,
                      .stackSize = (5 * 1024)};
 
-  struct mg_mgr _mgr;
-  struct mg_connection *_connection = nullptr;
-  uint16_t _msg_id = 0;
+  esp_mqtt_client_config_t _mqtt_config = {};
+  esp_mqtt_client_handle_t _client = nullptr;
+
+  const char *_uri = CONFIG_MCR_MQTT_URI;
+  const char *_user = CONFIG_MCR_MQTT_USER;
+  const char *_passwd = CONFIG_MCR_MQTT_PASSWD;
+
   bool _mqtt_ready = false;
   bool _prefer_outbound_ticks = 0;
 
@@ -105,25 +110,15 @@ private:
   int _inbound_msg_ms = CONFIG_MCR_MQTT_INBOUND_MSG_WAIT_MS;
   TickType_t _inbound_rb_wait_ticks =
       pdMS_TO_TICKS(CONFIG_MCR_MQTT_INBOUND_RB_WAIT_MS);
-  TickType_t _outbound_msg_ticks =
-      pdMS_TO_TICKS(CONFIG_MCR_MQTT_OUTBOUND_MSG_WAIT_MS);
 
-  const size_t _rb_out_size =
-      (sizeof(mqttOutMsg_t) * CONFIG_MCR_MQTT_RINGBUFFER_PENDING_MSGS);
   const size_t _rb_in_size =
       (sizeof(mqttInMsg_t) * CONFIG_MCR_MQTT_RINGBUFFER_PENDING_MSGS);
   size_t _rb_in_lowwater = 0;
   size_t _rb_in_highwater = 0;
-  RingbufHandle_t _rb_out = nullptr;
   RingbufHandle_t _rb_in = nullptr;
 
   mcrMQTTin_t *_mqtt_in = nullptr;
 
-  const char *_dns_server = CONFIG_MCR_DNS_SERVER;
-  const std::string _host = CONFIG_MCR_MQTT_HOST;
-  const int _port = CONFIG_MCR_MQTT_PORT;
-  const char *_user = CONFIG_MCR_MQTT_USER;
-  const char *_passwd = CONFIG_MCR_MQTT_PASSWD;
   const char *_rpt_feed = CONFIG_MCR_MQTT_RPT_FEED;
 
   const char *_cmd_feed = CONFIG_MCR_MQTT_CMD_FEED;

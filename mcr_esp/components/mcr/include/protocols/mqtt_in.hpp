@@ -34,16 +34,8 @@
 #include <freertos/ringbuf.h>
 #include <freertos/task.h>
 
-#include "external/mongoose.h"
 #include "misc/mcr_types.hpp"
 #include "readings/readings.hpp"
-
-#define mcr_mqtt_version_1 1
-
-// Set the version of MCP Remote
-#ifndef mcr_mqtt_version
-#define mcr_mqtt_version mcr_mqtt_version_1
-#endif
 
 typedef struct {
   std::string *topic = nullptr;
@@ -61,8 +53,6 @@ private:
   RingbufHandle_t _rb;
   void *_task_data = nullptr;
 
-  struct mg_mgr _mgr;
-  struct mg_connection *_connection = nullptr;
   time_t _lastLoop;
   uint16_t _msg_id = 0;
 

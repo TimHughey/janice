@@ -31,7 +31,6 @@
 #include <freertos/task.h>
 
 // MCR specific includes
-#include "external/mongoose.h"
 #include "misc/mcr_types.hpp"
 #include "misc/version.hpp"
 #include "net/mcr_net.hpp"
@@ -42,7 +41,7 @@
 static mcrMQTT *__singleton = nullptr;
 
 // prototype for the event handler
-static void _ev_handler(struct mg_connection *nc, int ev, void *);
+static esp_err_t _event_handler(esp_mqtt_event_handle_t event);
 
 // SINGLETON!  use instance() for object access
 mcrMQTT_t *mcrMQTT::instance() {
@@ -55,24 +54,21 @@ mcrMQTT_t *mcrMQTT::instance() {
 
 // SINGLETON! constructor is private
 mcrMQTT::mcrMQTT() {
-  // convert the port number to a string
-  std::ostringstream endpoint_ss;
-  endpoint_ss << _host << ':' << _port;
 
-  // create the endpoint URI
-  _endpoint = endpoint_ss.str();
+  // configure logging for the mqtt client library
+  esp_log_level_set("MQTT_CLIENT", ESP_LOG_VERBOSE);
+  esp_log_level_set("TRANSPORT_TCP", ESP_LOG_VERBOSE);
+  esp_log_level_set("TRANSPORT", ESP_LOG_VERBOSE);
+  esp_log_level_set("OUTBOX", ESP_LOG_VERBOSE);
 
   _rb_in_lowwater = _rb_in_size * .1;
   _rb_in_highwater = _rb_in_size * .9;
 
-  _rb_out = xRingbufferCreate(_rb_out_size, RINGBUF_TYPE_NOSPLIT);
   _rb_in = xRingbufferCreate(_rb_in_size, RINGBUF_TYPE_NOSPLIT);
 
-  ESP_LOGI(tagEngine(), "ringb in  size=%u msgs=%d low_water=%u high_water=%u",
+  ESP_LOGI(tagEngine(), "ringb <- size=%u msgs=%d low_water=%u high_water=%u",
            _rb_in_size, (_rb_in_size / sizeof(mqttInMsg_t)), _rb_in_lowwater,
            _rb_in_highwater);
-  ESP_LOGI(tagEngine(), "ringb out size=%u msgs=%d", _rb_out_size,
-           (_rb_out_size / sizeof(mqttOutMsg_t)));
 }
 
 void mcrMQTT::announceStartup() {
@@ -84,11 +80,7 @@ void mcrMQTT::announceStartup() {
 }
 
 void mcrMQTT::connect(int wait_ms) {
-
-  // establish the client id
-  if (_client_id.length() == 0) {
-    _client_id = "esp-" + mcr::Net::macAddress();
-  }
+  esp_err_t esp_rc;
 
   TickType_t last_wake = xTaskGetTickCount();
 
@@ -98,38 +90,26 @@ void mcrMQTT::connect(int wait_ms) {
     vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(wait_ms));
   }
 
-  _connection = mg_connect(&_mgr, _endpoint.c_str(), _ev_handler);
+  esp_rc = esp_mqtt_client_start(_client);
+  ESP_LOGI(tagEngine(), "[%s] started mqtt client(%p)", esp_err_to_name(esp_rc),
+           _client);
 
-  if (_connection) {
-    ESP_LOGI(tagEngine(), "mongoose connection created to endpoint %s (%p)",
-             _endpoint.c_str(), (void *)_connection);
+  if (_client) {
+    ESP_LOGI(tagEngine(), "mqtt client(%p) created to endpoint %s", &_client,
+             _mqtt_config.uri);
   }
 }
 
-void mcrMQTT::connectionClosed() {
-  ESP_LOGW(tagEngine(), "connection closed");
-  _mqtt_ready = false;
-  _connection = nullptr;
-
-  connect(5 * 1000); // wait five seconds before reconnect
-}
-
-void mcrMQTT::handshake(struct mg_connection *nc) {
-  struct mg_send_mqtt_handshake_opts opts;
-  bzero(&opts, sizeof(opts));
-
-  opts.user_name = _user;
-  opts.password = _passwd;
-
-  mg_set_protocol_mqtt(nc);
-  mg_send_mqtt_handshake_opt(nc, _client_id.c_str(), opts);
-}
-
-void mcrMQTT::incomingMsg(struct mg_str *in_topic, struct mg_str *in_payload) {
+void mcrMQTT::incomingMsg(esp_mqtt_event_handle_t event) {
   // allocate a new string here and deallocate it once processed through MQTTin
-  std::string *topic = new std::string(in_topic->p, in_topic->len);
+  std::string *topic = new std::string(event->topic);
+
+  // copy the incoming data to a vector
+  // first argument:  pointer to data
+  // second argument: pointer to end of data
+  // these arguments define the number of bytes of data to copy to the vector
   std::vector<char> *data =
-      new std::vector<char>(in_payload->p, (in_payload->p + in_payload->len));
+      new std::vector<char>(event->data, (event->data + event->data_len));
   mqttInMsg_t entry;
   BaseType_t rb_rc;
 
@@ -137,7 +117,8 @@ void mcrMQTT::incomingMsg(struct mg_str *in_topic, struct mg_str *in_payload) {
   entry.data = data;
 
   if ((_ota_start_time) && ((time(nullptr) - _ota_start_time) > 60)) {
-    ESP_LOGW(tagEngine(), "detected stalled ota, spooling ftl");
+    ESP_LOGW(tagEngine(), "detected stalled ota, spooling ftl...");
+    vTaskDelay(2000);
     ESP_LOGW(tagEngine(), "JUMP!");
     esp_restart();
   }
@@ -166,7 +147,7 @@ void mcrMQTT::incomingMsg(struct mg_str *in_topic, struct mg_str *in_payload) {
   if (rb_rc) {
     ESP_LOGD(tagEngine(),
              "INCOMING msg SENT to ringbuff (topic=%s,len=%u,json_len=%u)",
-             topic->c_str(), sizeof(mqttInMsg_t), in_payload->len);
+             topic->c_str(), sizeof(mqttInMsg_t), event->data_len);
   } else {
     ESP_LOGW(tagEngine(), "INCOMING msg(len=%u) FAILED send to ringbuff, JUMP!",
              sizeof(mqttInMsg_t));
@@ -177,13 +158,10 @@ void mcrMQTT::incomingMsg(struct mg_str *in_topic, struct mg_str *in_payload) {
 }
 
 void mcrMQTT::__otaFinish() {
-  char **unsub = (char **)&_ota_feed; // override const to align with mongoose
+  ESP_LOGI(tagEngine(), "finish ota, unsubscribe %s", _ota_feed);
 
-  _ota_feed_msg_id = _msg_id++;
-  ESP_LOGI(tagEngine(), "finish ota, unsubscribe feed=%s msg_id=%d", _ota_feed,
-           _ota_feed_msg_id);
-  if (_connection) {
-    mg_mqtt_unsubscribe(_connection, unsub, 1, _ota_feed_msg_id);
+  if (_client) {
+    esp_mqtt_client_unsubscribe(_client, _ota_feed);
   } else {
     ESP_LOGW(tagEngine(), "can not unsubcribe ota feed, no connection");
   }
@@ -192,15 +170,12 @@ void mcrMQTT::__otaFinish() {
 }
 
 void mcrMQTT::__otaPrep() {
-  struct mg_mqtt_topic_expression sub = {.topic = _ota_feed, .qos = 0};
-
   _ota_start_time = time(nullptr);
 
-  _ota_feed_msg_id = _msg_id++;
-  ESP_LOGI(tagEngine(), "prep for ota, subscribe feed=%s msg_id=%d", sub.topic,
-           _ota_feed_msg_id);
-  if (_connection) {
-    mg_mqtt_subscribe(_connection, &sub, 1, _ota_feed_msg_id);
+  ESP_LOGI(tagEngine(), "prep for ota, subscribe %s", _ota_feed);
+
+  if (_client) {
+    esp_mqtt_client_subscribe(_client, _ota_feed, 0);
   } else {
     ESP_LOGW(tagEngine(), "can not prep for ota, no connection");
   }
@@ -215,81 +190,53 @@ void mcrMQTT::publish(Reading_t *reading) {
   publish(json);
 }
 
-void mcrMQTT::outboundMsg() {
-  size_t len = 0;
-  mqttOutMsg_t *entry = nullptr;
-
-  entry =
-      (mqttOutMsg_t *)xRingbufferReceive(_rb_out, &len, _prefer_outbound_ticks);
-
-  while (entry) {
-    int64_t start_us = esp_timer_get_time();
-
-    if (len != sizeof(mqttOutMsg_t)) {
-      ESP_LOGW(tagEngine(), "skipping ringbuffer msg of wrong length=%u", len);
-      vRingbufferReturnItem(_rb_out, entry);
-      break;
-    }
-
-    const std::string *json = entry->data;
-    size_t json_len = entry->len;
-
-    ESP_LOGD(tagEngine(), "send msg(len=%u), payload(len=%u)", len, json_len);
-    // ESP_LOGI(tagEngine(), "json: %s", json->c_str());
-
-    mg_mqtt_publish(_connection, _rpt_feed, _msg_id++, MG_MQTT_QOS(1),
-                    json->data(), json_len);
-
-    delete json;
-    vRingbufferReturnItem(_rb_out, entry);
-
-    int64_t publish_us = esp_timer_get_time() - start_us;
-    if (publish_us > 1500) {
-      ESP_LOGW(tagOutbound(), "publish msg took %0.2fms",
-               ((float)publish_us / 1000.0));
-    } else {
-      ESP_LOGD(tagOutbound(), "publish msg took %lluus", publish_us);
-    }
-
-    entry =
-        (mqttOutMsg_t *)xRingbufferReceive(_rb_out, &len, _outbound_msg_ticks);
-  }
-}
-
 void mcrMQTT::publish(std::string *json) {
-  BaseType_t rb_rc = false;
-  mqttOutMsg_t entry;
+  int msg_id;
+  int64_t start_us = esp_timer_get_time();
 
-  // setup the entry noting that the actual pointer to the string will
-  // be included so be certain to deallocate when it comes out of the ringbuffer
-  entry.len = json->length();
-  entry.data = json;
+  msg_id = esp_mqtt_client_publish(_client, _rpt_feed, json->data(),
+                                   json->length(), 1, 0);
 
-  rb_rc = xRingbufferSend(_rb_out, (void *)&entry, sizeof(mqttOutMsg_t), 0);
-
-  if (!rb_rc) {
-    ESP_LOGW(tagEngine(),
-             "PUBLISH msg(len=%u) FAILED to ringbuffer, msg dropped",
-             entry.len);
-    delete json;
-    esp_restart();
+  int64_t publish_us = esp_timer_get_time() - start_us;
+  if (publish_us > 10000) {
+    ESP_LOGW(tagEngine(), "publish took %0.2fms [msg_id=%d]",
+             ((float)publish_us / 1000.0), msg_id);
+  } else {
+    ESP_LOGD(tagEngine(), "publish took %lluus [msg_id=%d]", publish_us,
+             msg_id);
   }
+
+  // be certain to free the json (it was allocated by the caller)
+  delete json;
 }
 
 void mcrMQTT::run(void *data) {
-  struct mg_mgr_init_opts opts;
 
   _mqtt_in = new mcrMQTTin(_rb_in);
   ESP_LOGI(tagEngine(), "started, created mcrMQTTin task %p", (void *)_mqtt_in);
   _mqtt_in->start();
 
-  ESP_LOGD(tagEngine(), "waiting for ip address...");
-  mcr::Net::waitForIP();
+  // establish the client id
+  if (_client_id.length() == 0) {
+    _client_id = "esp-" + mcr::Net::macAddress();
+  }
 
-  bzero(&opts, sizeof(opts));
-  opts.nameserver = _dns_server;
+  // setup the mqtt client configuration
+  // unset values will default to reasonable values
+  // any items set will override values configured through menuconfig
+  _mqtt_config.event_handle = _event_handler;
+  _mqtt_config.uri = _uri;
+  _mqtt_config.client_id = _client_id.c_str();
+  _mqtt_config.username = _user;
+  _mqtt_config.password = _passwd;
+  _mqtt_config.task_prio = CONFIG_MCR_MQTT_TASK_PRIORITY;
 
-  mg_mgr_init_opt(&_mgr, NULL, opts);
+  _client = esp_mqtt_client_init(&_mqtt_config);
+  ESP_LOGI(tagEngine(), "client(%p) initialized", _client);
+
+  ESP_LOGD(tagEngine(), "waiting for time to be set...");
+  // mcr::Net::waitForIP(pdMS_TO_TICKS(30000));
+  mcr::Net::waitForTimeset();
 
   connect();
 
@@ -298,33 +245,28 @@ void mcrMQTT::run(void *data) {
   for (;;) {
     // send the startup announcement once the time is available.
     // this solves a race condition when mqtt connection and subscription
-    // to the commend feed completes before the time is set and avoids
-    // mcp receiving the announced statup time as epoch
-    if ((startup_announced == false) && (mcr::Net::isTimeSet())) {
+    // to the command feed completes before the time is set.
+    // also avoids mcp receiving the announced startup time as epoch
+    if ((startup_announced == false) && _mqtt_ready &&
+        (mcr::Net::isTimeSet())) {
       announceStartup();
       startup_announced = true;
     }
 
-    // we wait here AND we wait in outboundMsg -- this alternates between
-    // prioritizing inbound and outbound messages
-    mg_mgr_poll(&_mgr, _inbound_msg_ms);
-
-    if (isReady()) {
-      outboundMsg();
-    }
+    vTaskDelay(pdMS_TO_TICKS(1000));
   }
 }
 
-void mcrMQTT::subACK(struct mg_mqtt_message *msg) {
-  ESP_LOGI(tagEngine(), "suback msg_id=%d", msg->message_id);
+void mcrMQTT::subACK(esp_mqtt_event_handle_t event) {
+  ESP_LOGI(tagEngine(), "suback msg_id=%d", event->msg_id);
 
-  if (msg->message_id == _cmd_feed_msg_id) {
+  if (event->msg_id == _cmd_feed_msg_id) {
     ESP_LOGI(tagEngine(), "subscribed to CMD feed");
     _mqtt_ready = true;
-    // announcing startup here creates a race conditino the results
+    // do not announce startup here to avoid a race condition that results
     // in occasionally using epach as the startup time
     // announceStartup();
-  } else if (msg->message_id == _ota_feed_msg_id) {
+  } else if (event->msg_id == _ota_feed_msg_id) {
     ESP_LOGI(tagEngine(), "subscribed to OTA feed");
     _ota_subscribed = true;
   } else {
@@ -332,76 +274,63 @@ void mcrMQTT::subACK(struct mg_mqtt_message *msg) {
   }
 }
 
-void mcrMQTT::subscribeCommandFeed(struct mg_connection *nc) {
-  struct mg_mqtt_topic_expression sub = {.topic = _cmd_feed, .qos = 0};
+void mcrMQTT::subscribeCommandFeed() {
 
-  _cmd_feed_msg_id = _msg_id++;
-  ESP_LOGI(tagEngine(), "subscribe feed=%s msg_id=%d", sub.topic,
+  _cmd_feed_msg_id = esp_mqtt_client_subscribe(_client, _cmd_feed, 0);
+
+  ESP_LOGI(tagEngine(), "subscription request: %s [msg_id=%d]", _cmd_feed,
            _cmd_feed_msg_id);
-  mg_mqtt_subscribe(nc, &sub, 1, _cmd_feed_msg_id);
 }
 
-static void _ev_handler(struct mg_connection *nc, int ev, void *p) {
-  struct mg_mqtt_message *msg = (struct mg_mqtt_message *)p;
+static esp_err_t _event_handler(esp_mqtt_event_handle_t event) {
 
-  switch (ev) {
-  case MG_EV_CONNECT: {
-    int *status = (int *)p;
-    ESP_LOGI(mcrMQTT::tagEngine(), "CONNECT msg=%p err_code=%d err_str=%s",
-             (void *)msg, *status, strerror(*status));
+  switch (event->event_id) {
+  case MQTT_EVENT_CONNECTED: {
+    ESP_LOGI(mcrMQTT::tagEngine(), "CONNECTED event=%p client=%p",
+             (void *)event, event->client);
 
-    mcrMQTT::instance()->handshake(nc);
+    mcrMQTT::instance()->subscribeCommandFeed();
     break;
   }
 
-  case MG_EV_MQTT_CONNACK:
-    if (msg->connack_ret_code != MG_EV_MQTT_CONNACK_ACCEPTED) {
-      ESP_LOGW(mcrMQTT::tagEngine(), "mqtt connection error: %d",
-               msg->connack_ret_code);
-      return;
-    }
-
-    ESP_LOGD(mcrMQTT::tagEngine(), "MG_EV_MQTT_CONNACK rc=%d",
-             msg->connack_ret_code);
-    mcrMQTT::instance()->subscribeCommandFeed(nc);
-
+  case MQTT_EVENT_SUBSCRIBED:
+    mcrMQTT::instance()->subACK(event);
+    mcr::Net::setTransportReady(true);
     break;
 
-  case MG_EV_MQTT_SUBACK:
-    mcrMQTT::instance()->subACK(msg);
-
+  case MQTT_EVENT_DATA:
+    mcrMQTT::instance()->incomingMsg(event);
     break;
 
-  case MG_EV_MQTT_SUBSCRIBE:
-    ESP_LOGI(mcrMQTT::tagEngine(), "subscribe event, payload=%s",
-             msg->payload.p);
+  case MQTT_EVENT_DISCONNECTED:
+    // mcrMQTT::instance()->connectionClosed();
+    mcr::Net::setTransportReady(false);
+    ESP_LOGW(mcrMQTT::tagEngine(), "DISCONNECTED event=%p client=%p",
+             (void *)event, event->client);
     break;
 
-  case MG_EV_MQTT_UNSUBACK:
-    ESP_LOGI(mcrMQTT::tagEngine(), "unsub ack");
+  case MQTT_EVENT_PUBLISHED:
+    ESP_LOGD(mcrMQTT::tagEngine(), "PUBLISHED msg_id=%d", event->msg_id);
     break;
 
-  case MG_EV_MQTT_PUBLISH:
-    mcrMQTT::instance()->incomingMsg(&(msg->topic), &(msg->payload));
+  case MQTT_EVENT_ERROR:
+    ESP_LOGW(mcrMQTT::tagEngine(), "ERROR event=%p client=%p", (void *)event,
+             event->client);
     break;
 
-  case MG_EV_MQTT_PINGRESP:
-    ESP_LOGD(mcrMQTT::tagEngine(), "ping response");
+  case MQTT_EVENT_UNSUBSCRIBED:
+    ESP_LOGI(mcrMQTT::tagEngine(), "UNSUBCRIBED event=%p", (void *)event);
     break;
 
-  case MG_EV_CLOSE:
-    mcrMQTT::instance()->connectionClosed();
-    break;
-
-  case MG_EV_POLL:
-  case MG_EV_RECV:
-  case MG_EV_SEND:
-  case MG_EV_MQTT_PUBACK:
-    // events to ignore
+  case MQTT_EVENT_BEFORE_CONNECT:
+    mcr::Net::setTransportReady(false);
+    ESP_LOGI(mcrMQTT::tagEngine(), "BEFORE_CONNECT event=%p", (void *)event);
     break;
 
   default:
-    ESP_LOGW(mcrMQTT::tagEngine(), "unhandled event 0x%04x", ev);
+    ESP_LOGW(mcrMQTT::tagEngine(), "unhandled event 0x%04x", event->event_id);
     break;
   }
+
+  return ESP_OK;
 }

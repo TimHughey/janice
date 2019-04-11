@@ -241,20 +241,12 @@ menu "IoT"
 			default y
 
 
-		config MCR_MQTT_HOST
+		config MCR_MQTT_URI
 			depends on MCR_MQTT_CONFIG
-			string "IoT Endpoint Host"
-			default "jophiel.wisslanding.com"
+			string "IoT Endpoint URI"
+			default "mqtt://live.mqtt.wisslanding.com:1883"
 			help
-				Endpoint host name for the IoT MQTT/S gateway
-
-		config MCR_MQTT_PORT
-			depends on MCR_MQTT_CONFIG
-			int "IoT Endpoint Port"
-			default 1883
-			range 0 65535
-			help
-				Endpoint port for the IoT MQTT/S gateway
+				Endpoint URI for MQTT
 
 		config MCR_MQTT_USER
 			depends on MCR_MQTT_CONFIG

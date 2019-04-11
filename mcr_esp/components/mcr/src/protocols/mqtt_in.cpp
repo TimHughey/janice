@@ -32,15 +32,12 @@
 
 // MCR specific includes
 #include "cmds/cmd_factory.hpp"
-#include "external/mongoose.h"
 #include "misc/mcr_types.hpp"
 #include "misc/version.hpp"
 #include "net/mcr_net.hpp"
 #include "protocols/mqtt_in.hpp"
 #include "readings/readings.hpp"
 
-// static uint32_t cmd_callback_count = 0;
-// static cmdCallback_t cmd_callback[10] = {nullptr};
 static char tTAG[] = "mcrMQTTin";
 
 static mcrMQTTin_t *__singleton = nullptr;
