@@ -113,20 +113,4 @@ config :mcp, Web.Endpoint,
   # root: ".",
   version: Application.spec(:mcp, :vsn)
 
-# secret_key_base: set in prod.secret.exs
-config :ueberauth, Ueberauth,
-  providers: [
-    github:
-      {Ueberauth.Strategy.Github,
-       [
-         default_scope: "user,public_repo",
-         # set URI redirect mismatch errors since we are
-         # proxied behind nginx
-         send_redirect_uri: false
-       ]}
-  ]
-
-# Tell phoenix to actually serve endpoints when run as a release
-config :phoenix, :serve_endpoints, true
-
 import_config "prod.secret.exs"

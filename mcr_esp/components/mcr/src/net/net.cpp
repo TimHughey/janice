@@ -319,6 +319,10 @@ bool Net::start() {
   rc = ::esp_wifi_set_mode(WIFI_MODE_STA);
   checkError(__PRETTY_FUNCTION__, rc);
 
+  rc = ::esp_wifi_set_ps(WIFI_PS_NONE);
+  checkError(__PRETTY_FUNCTION__, rc);
+  ESP_LOGI(tagEngine(), "[%s] wifi powersave set to none", esp_err_to_name(rc));
+
   rc = ::esp_wifi_set_protocol(
       WIFI_IF_STA, WIFI_PROTOCOL_11B | WIFI_PROTOCOL_11G | WIFI_PROTOCOL_11N);
   checkError(__PRETTY_FUNCTION__, rc);

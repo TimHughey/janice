@@ -192,13 +192,14 @@ void mcrMQTT::publish(Reading_t *reading) {
 
 void mcrMQTT::publish(std::string *json) {
   int msg_id;
+  int publish_warn_ms = 19999;
   int64_t start_us = esp_timer_get_time();
 
   msg_id = esp_mqtt_client_publish(_client, _rpt_feed, json->data(),
                                    json->length(), 1, 0);
 
   int64_t publish_us = esp_timer_get_time() - start_us;
-  if (publish_us > 10000) {
+  if (publish_us > publish_warn_ms) {
     ESP_LOGW(tagEngine(), "publish took %0.2fms [msg_id=%d]",
              ((float)publish_us / 1000.0), msg_id);
   } else {

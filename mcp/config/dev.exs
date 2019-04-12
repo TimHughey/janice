@@ -111,15 +111,3 @@ config :mcp, Web.Endpoint,
       ~r{lib/web/templates/.*(eex)$}
     ]
   ]
-
-config :ueberauth, Ueberauth,
-  providers: [
-    identity:
-      {Ueberauth.Strategy.Identity,
-       [
-         callback_methods: ["POST"],
-         callback_path: "/janice/auth/identity/callback",
-         uid_field: :username,
-         nickname_field: :username
-       ]}
-  ]
