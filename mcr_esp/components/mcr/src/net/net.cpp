@@ -104,7 +104,6 @@ Net::Net() {
 } // namespace mcr
 
 void Net::acquiredIP(system_event_t *event) {
-  vTaskDelay(pdMS_TO_TICKS(3000));
   xEventGroupSetBits(evg_, ipBit());
 }
 
