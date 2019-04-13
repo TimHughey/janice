@@ -32,7 +32,6 @@
 
 // MCR specific includes
 #include "cmds/cmd_factory.hpp"
-#include "external/mongoose.h"
 #include "misc/mcr_types.hpp"
 #include "misc/version.hpp"
 #include "net/mcr_net.hpp"

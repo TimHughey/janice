@@ -291,6 +291,9 @@ void mcrMQTT::run(void *data) {
 
   mg_mgr_init_opt(&_mgr, NULL, opts);
 
+  ESP_LOGI(tagEngine(), "waiting for time to be set...");
+  mcr::Net::waitForTimeset();
+
   connect();
 
   bool startup_announced = false;
