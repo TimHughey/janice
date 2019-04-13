@@ -359,6 +359,7 @@ bool Net::start() {
     sntp_init();
 
     ensureTimeIsSet();
+
     tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip_info_);
     tcpip_adapter_get_dns_info(TCPIP_ADAPTER_IF_STA, TCPIP_ADAPTER_DNS_MAIN,
                                &primary_dns_);
