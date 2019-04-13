@@ -41,12 +41,11 @@ mcrTimestampTask::mcrTimestampTask() {
 mcrTimestampTask::~mcrTimestampTask() {}
 
 const char *mcrTimestampTask::dateTimeString(time_t t) {
-  static char buf[64] = {0x00};
+  static char buf[20] = {0x00};
   const auto buf_size = sizeof(buf);
-  time_t now;
+  time_t now = time(nullptr);
   struct tm timeinfo = {};
 
-  time(&now);
   // Set timezone to Eastern Standard Time and print local time
   setenv("TZ", "EST5EDT,M3.2.0/2,M11.1.0", 1);
   tzset();
@@ -61,14 +60,13 @@ const char *mcrTimestampTask::dateTimeString(time_t t) {
 void mcrTimestampTask::run(void *data) {
   time_t last_timestamp = time(nullptr);
 
-  ESP_LOGD(tTAG, "started, wait for normal ops...");
-  mcr::Net::waitForNormalOps();
-  ESP_LOGD(tTAG, "normal ops, entering task loop");
-
   for (;;) {
     int delta;
     size_t curr_heap, max_alloc = 0;
     uint32_t batt_mv = mcr::Net::instance()->batt_mv();
+
+    ESP_LOGD(tTAG, "wait for normal ops...");
+    mcr::Net::waitForNormalOps();
 
     _last_wake = xTaskGetTickCount();
 
