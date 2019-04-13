@@ -79,6 +79,17 @@ void app_main() {
   i2cEngineTask->start();
 
   network->start();
+  network->waitForNormalOps();
+
+  esp_err_t mark_valid_rc = esp_ota_mark_app_valid_cancel_rollback();
+
+  if (mark_valid_rc == ESP_OK) {
+    ESP_LOGI(TAG, "[%s] marked app partition as valid",
+             esp_err_to_name(mark_valid_rc));
+  } else {
+    ESP_LOGW(TAG, "[%s] failed to make app partiaion as valid",
+             esp_err_to_name(mark_valid_rc));
+  }
 
   for (;;) {
     vTaskDelay(pdMS_TO_TICKS(10 * 60 * 1000));

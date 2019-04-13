@@ -263,7 +263,7 @@ void mcrMQTT::run(void *data) {
   _mqtt_config.client_id = _client_id.c_str();
   _mqtt_config.username = _user;
   _mqtt_config.password = _passwd;
-  _mqtt_config.task_prio = CONFIG_MCR_MQTT_TASK_PRIORITY;
+  _mqtt_config.task_prio = CONFIG_MCR_MQTT_INBOUND_TASK_PRIORITY - 1; // HACK!!
 
   _client = esp_mqtt_client_init(&_mqtt_config);
   ESP_LOGI(tagEngine(), "client(%p) initialized", _client);

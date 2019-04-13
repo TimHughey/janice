@@ -52,7 +52,6 @@ const char *mcrTimestampTask::dateTimeString(time_t t) {
   tzset();
   localtime_r(&now, &timeinfo);
 
-  // strftime(buf, buf_size, "%c", &timeinfo);
   strftime(buf, buf_size, "%b-%d %R", &timeinfo);
 
   return buf;
@@ -61,18 +60,19 @@ const char *mcrTimestampTask::dateTimeString(time_t t) {
 void mcrTimestampTask::run(void *data) {
   time_t last_timestamp = time(nullptr);
 
-  ESP_LOGD(tTAG, "started, wait for normal ops...");
+  ESP_LOGD(tTAG, "started, waiting for normal ops...");
   mcr::Net::waitForNormalOps();
   ESP_LOGD(tTAG, "normal ops, entering task loop");
 
   for (;;) {
     int delta;
-    size_t curr_heap = 0;
+    size_t curr_heap, max_alloc = 0;
     uint32_t batt_mv = mcr::Net::instance()->batt_mv();
 
     _last_wake = xTaskGetTickCount();
 
-    curr_heap = heap_caps_get_free_size(MALLOC_CAP_8BIT);
+    curr_heap = xPortGetFreeHeapSize();
+    max_alloc = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT);
     delta = curr_heap - _availHeap;
     _availHeap = curr_heap;
     _minHeap = std::min(curr_heap, _minHeap);
@@ -81,10 +81,11 @@ void mcrTimestampTask::run(void *data) {
     if ((time(nullptr) - last_timestamp) >= _timestamp_freq_secs) {
       const char *name = mcr::Net::getName().c_str();
 
-      ESP_LOGI(name, "%s %uk,%uk,%uk,%+05d (heap,first,min,delta) batt=%dv",
+      ESP_LOGI(name,
+               "%s %uk,%uk,%uk,%+05d,%uk (heap,first,min,delta,max_alloc) "
+               "batt=%dv",
                dateTimeString(), (curr_heap / 1024), (_firstHeap / 1024),
-               (_maxHeap / 1024), delta, batt_mv);
-      // ESP_LOGI(name, "%s", dateTimeString());
+               (_maxHeap / 1024), delta, (max_alloc / 1024), batt_mv);
       last_timestamp = time(nullptr);
     }
 
@@ -102,16 +103,19 @@ void mcrTimestampTask::run(void *data) {
       delete tasks;
     }
 
-    mcrMQTT_t *mqtt = mcrMQTT::instance();
-    // deprecated by remoteReading_t
-    ramUtilReading_t *ram = new ramUtilReading(curr_heap);
-    mqtt->publish(ram);
-    delete ram;
+    // only publish metrics if normal operations
+    if (mcr::Net::waitForNormalOps(0)) {
+      mcrMQTT_t *mqtt = mcrMQTT::instance();
+      // deprecated by remoteReading_t
+      ramUtilReading_t *ram = new ramUtilReading(curr_heap);
+      mqtt->publish(ram);
+      delete ram;
 
-    // ramUtilReading_t replacement
-    remoteReading_t *remote = new remoteReading(batt_mv);
-    mqtt->publish(remote);
-    delete remote;
+      // ramUtilReading_t replacement
+      remoteReading_t *remote = new remoteReading(batt_mv);
+      mqtt->publish(remote);
+      delete remote;
+    }
 
     vTaskDelayUntil(&_last_wake, _loop_frequency);
   }
