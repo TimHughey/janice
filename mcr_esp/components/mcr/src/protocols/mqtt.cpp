@@ -105,8 +105,9 @@ void mcrMQTT::incomingMsg(esp_mqtt_event_handle_t event) {
   std::vector<char> *data = nullptr;
 
   if (event->topic == nullptr) {
-    ESP_LOGW(tagEngine(), "incoming msg topic==%p data=%p data_len=%d",
-             event->topic, event->data, event->data_len);
+    ESP_LOGW(tagEngine(),
+             "incoming msg topic=%p data=%p data_len=%d total_data_len=%d",
+             event->topic, event->data, event->data_len, event->total_data_len);
   } else {
 
     // allocate a new string here and deallocate it once processed through
