@@ -102,9 +102,11 @@ void mcrMQTT::connect(int wait_ms) {
 
 void mcrMQTT::incomingMsg(esp_mqtt_event_handle_t event) {
   std::string *topic = nullptr;
+  std::vector<char> *data = nullptr;
 
   if (event->topic == nullptr) {
-    ESP_LOGW(tagEngine(), "incoming msg topic == nullptr");
+    ESP_LOGW(tagEngine(), "incoming msg topic==%p data=%p data_len=%d",
+             event->topic, event->data, event->data_len);
   } else {
 
     // allocate a new string here and deallocate it once processed through
@@ -116,8 +118,12 @@ void mcrMQTT::incomingMsg(esp_mqtt_event_handle_t event) {
   // first argument:  pointer to data
   // second argument: pointer to end of data
   // these arguments define the number of bytes of data to copy to the vector
-  std::vector<char> *data =
-      new std::vector<char>(event->data, (event->data + event->data_len));
+  if (event->data == nullptr) {
+    ESP_LOGW(tagEngine(), "incoming msg topic==%p data=%p data_len=%d",
+             event->topic, event->data, event->data_len);
+  } else {
+    data = new std::vector<char>(event->data, (event->data + event->data_len));
+  }
   mqttInMsg_t entry;
   BaseType_t rb_rc;
 
@@ -183,7 +189,7 @@ void mcrMQTT::__otaPrep() {
   ESP_LOGI(tagEngine(), "prep for ota, subscribe %s", _ota_feed);
 
   if (_client) {
-    esp_mqtt_client_subscribe(_client, _ota_feed, 0);
+    _ota_feed_msg_id = esp_mqtt_client_subscribe(_client, _ota_feed, 0);
   } else {
     ESP_LOGW(tagEngine(), "can not prep for ota, no connection");
   }

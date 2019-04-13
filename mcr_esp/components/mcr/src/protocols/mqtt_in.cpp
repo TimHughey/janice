@@ -88,7 +88,10 @@ void mcrMQTTin::run(void *data) {
     vRingbufferReturnItem(_rb, msg);
     mcrCmd_t *cmd = factory.fromRaw(entry.data);
 
-    if (entry.topic->find("command") != std::string::npos) {
+    if (entry.topic == nullptr) {
+      ESP_LOGW(tagEngine(), "entry.topic=%p while processing inbound cmd",
+               entry.topic);
+    } else if (entry.topic->find("command") != std::string::npos) {
       cmd && cmd->process();
     } else if (entry.topic->find("ota") != std::string::npos) {
       cmd && cmd->process();
@@ -97,9 +100,14 @@ void mcrMQTTin::run(void *data) {
     }
 
     // ok, we're done with the originally allocated inbound msg and the command
-    delete cmd;
-    delete entry.topic;
-    delete entry.data;
+    if (cmd)
+      delete cmd;
+
+    if (entry.topic)
+      delete entry.topic;
+
+    if (entry.data)
+      delete entry.data;
 
     // never returns
   }
