@@ -119,8 +119,9 @@ void mcrMQTT::incomingMsg(esp_mqtt_event_handle_t event) {
   // second argument: pointer to end of data
   // these arguments define the number of bytes of data to copy to the vector
   if (event->data == nullptr) {
-    ESP_LOGW(tagEngine(), "incoming msg topic==%p data=%p data_len=%d",
-             event->topic, event->data, event->data_len);
+    ESP_LOGW(tagEngine(),
+             "incoming msg topic=%p data=%p data_len=%d total_data_len=%d",
+             event->topic, event->data, event->data_len, event->total_data_len);
   } else {
     data = new std::vector<char>(event->data, (event->data + event->data_len));
   }

@@ -82,14 +82,15 @@ void mcrMQTTin::run(void *data) {
     memcpy(&entry, msg, sizeof(mqttInMsg_t));
 
     ESP_LOGD(tTAG, "recv msg(len=%u): topic(%s) data(ptr=%p)", msg_len,
-             entry.topic->c_str(), (void *)entry.data);
+             (entry.topic == nullptr) ? 0x0 : entry.topic->c_str(),
+             (void *)entry.data);
 
     // done with message, give it back to ringbuffer
     vRingbufferReturnItem(_rb, msg);
     mcrCmd_t *cmd = factory.fromRaw(entry.data);
 
     if (entry.topic == nullptr) {
-      ESP_LOGW(tagEngine(), "entry.topic=%p while processing inbound cmd",
+      ESP_LOGD(tagEngine(), "entry.topic=%p while processing inbound cmd",
                entry.topic);
     } else if (entry.topic->find("command") != std::string::npos) {
       cmd && cmd->process();
