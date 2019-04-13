@@ -40,7 +40,7 @@ public:
   static void suspendNormalOps();
   static bool waitForConnection(uint32_t wait_ms = UINT32_MAX);
   static bool waitForInitialization(uint32_t wait_ms = UINT32_MAX);
-  static bool waitForIP(uint32_t wait_ms = pdMS_TO_TICKS(30000));
+  static bool waitForIP(uint32_t wait_ms = 30000);
   static bool waitForName(uint32_t wait_ms = 0);
   static bool waitForNormalOps(uint32_t wait_ms = UINT32_MAX);
   static bool isTimeSet();

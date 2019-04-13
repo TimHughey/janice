@@ -66,7 +66,7 @@ void mcrTimestampTask::run(void *data) {
     uint32_t batt_mv = mcr::Net::instance()->batt_mv();
 
     ESP_LOGD(tTAG, "wait for name and normal ops...");
-    mcr::Net::waitForName();
+    mcr::Net::waitForName(15000);
     mcr::Net::waitForNormalOps();
 
     _last_wake = xTaskGetTickCount();
