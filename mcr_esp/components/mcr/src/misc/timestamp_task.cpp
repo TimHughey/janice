@@ -65,7 +65,8 @@ void mcrTimestampTask::run(void *data) {
     size_t curr_heap, max_alloc = 0;
     uint32_t batt_mv = mcr::Net::instance()->batt_mv();
 
-    ESP_LOGD(tTAG, "wait for normal ops...");
+    ESP_LOGD(tTAG, "wait for name and normal ops...");
+    mcr::Net::waitForName();
     mcr::Net::waitForNormalOps();
 
     _last_wake = xTaskGetTickCount();
