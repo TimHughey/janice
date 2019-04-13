@@ -104,15 +104,15 @@ void mcrMQTT::incomingMsg(esp_mqtt_event_handle_t event) {
   std::string *topic = nullptr;
   std::vector<char> *data = nullptr;
 
-  if (event->data_len == event->total_data_len) {
+  if (event->current_data_offset == 0) {
     ESP_LOGD(tagEngine(), "unfragmented in msg");
   } else {
-    const char *null_str = "<NULL>";
+    const char *null_str = "<NONE>";
 
     ESP_LOGW(tagEngine(),
-             "fragmented msg_id=%d\n"
-             "...data_len=%d total_data_len=%d current_data_offset=%d\n"
-             "...topic=%.*s",
+             "fragmented msg id=%d "
+             "len=%d total_len=%d offset=%d "
+             "topic=%.*s",
              event->msg_id, event->data_len, event->total_data_len,
              event->current_data_offset,
              (event->topic_len == 0) ? strlen(null_str) : event->topic_len,
