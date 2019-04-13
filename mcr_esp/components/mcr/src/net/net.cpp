@@ -352,6 +352,14 @@ bool Net::start() {
 
   ESP_LOGI(tagEngine(), "waiting for IP address...");
   if (waitForIP()) {
+
+    sntp_setoperatingmode(SNTP_OPMODE_POLL);
+    sntp_setservername(0, (char *)"ntp1.wisslanding.com");
+    sntp_setservername(1, (char *)"ntp2.wisslanding.com");
+    sntp_init();
+
+    ensureTimeIsSet();
+
     wifi_ap_record_t ap;
 
     tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip_info_);
@@ -368,13 +376,6 @@ bool Net::start() {
     esp_err_t ap_rc = esp_wifi_sta_get_ap_info(&ap);
     ESP_LOGI(tagEngine(), "[%s] AP channel(%d,%d) rssi(%d)",
              esp_err_to_name(ap_rc), ap.primary, ap.second, ap.rssi);
-
-    sntp_setoperatingmode(SNTP_OPMODE_POLL);
-    sntp_setservername(0, (char *)"ntp1.wisslanding.com");
-    sntp_setservername(1, (char *)"ntp2.wisslanding.com");
-    sntp_init();
-
-    ensureTimeIsSet();
 
     // NOTE: once we've reached here the network is connected, ip address
     //       acquired and the time is set -- signal to other tasks
