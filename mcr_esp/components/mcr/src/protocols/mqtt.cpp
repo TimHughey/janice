@@ -101,8 +101,16 @@ void mcrMQTT::connect(int wait_ms) {
 }
 
 void mcrMQTT::incomingMsg(esp_mqtt_event_handle_t event) {
-  // allocate a new string here and deallocate it once processed through MQTTin
-  std::string *topic = new std::string(event->topic);
+  std::string *topic = nullptr;
+
+  if (event->topic == nullptr) {
+    ESP_LOGW(tagEngine(), "incoming msg topic == nullptr");
+  } else {
+
+    // allocate a new string here and deallocate it once processed through
+    // MQTTin
+    topic = new std::string(event->topic);
+  }
 
   // copy the incoming data to a vector
   // first argument:  pointer to data
