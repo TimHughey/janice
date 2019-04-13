@@ -21,6 +21,11 @@
 
 #include "net/mcr_net.hpp"
 
+extern "C" {
+int setenv(const char *envname, const char *envval, int overwrite);
+void tzset(void);
+}
+
 namespace mcr {
 
 static Net_t *__singleton__ = nullptr;
@@ -272,9 +277,20 @@ void Net::ensureTimeIsSet() {
     ESP_LOGE(tagEngine(), "timeout waiting for SNTP");
     checkError(__PRETTY_FUNCTION__, 0xFE);
   } else {
+    char buf[20] = {};
+    const auto buf_len = sizeof(buf);
+    struct tm timeinfo = {};
+    time_t now = time(nullptr);
+
+    // Set timezone to Eastern Standard Time and print local time
+    setenv("TZ", "EST5EDT,M3.2.0/2,M11.1.0", 1);
+    tzset();
+    localtime_r(&now, &timeinfo);
+    strftime(buf, buf_len, "%Y-%m-%d %T", &timeinfo);
+
     xEventGroupSetBits(evg_, timeSetBit());
-    ESP_LOGI(tagEngine(), "SNTP responded: tv_sec=%lu tv_usec=%lu",
-             curr_time.tv_sec, curr_time.tv_usec);
+    ESP_LOGI(tagEngine(), "SNTP complete: %s (%lu.%lu)", buf, curr_time.tv_sec,
+             curr_time.tv_usec);
   }
 }
 
