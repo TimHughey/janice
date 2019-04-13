@@ -481,6 +481,19 @@ bool Net::isTimeSet() {
 }
 
 // wait_ms defaults to portMAX_DELAY
+bool Net::waitForReady(uint32_t wait_ms) {
+  EventBits_t wait_bit = readyBit();
+  EventGroupHandle_t eg = instance()->eventGroup();
+  uint32_t wait_ticks =
+      (wait_ms == UINT32_MAX) ? portMAX_DELAY : pdMS_TO_TICKS(wait_ms);
+  EventBits_t bits_set;
+
+  bits_set = xEventGroupWaitBits(eg, wait_bit, false, true, wait_ticks);
+
+  return (bits_set & wait_bit) ? true : false;
+}
+
+// wait_ms defaults to portMAX_DELAY
 bool Net::waitForTimeset(uint32_t wait_ms) {
   EventBits_t wait_bit = timeSetBit();
   EventGroupHandle_t eg = instance()->eventGroup();

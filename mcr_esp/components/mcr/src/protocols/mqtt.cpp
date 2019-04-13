@@ -283,9 +283,9 @@ void mcrMQTT::run(void *data) {
   ESP_LOGI(tagEngine(), "started, created mcrMQTTin task %p", (void *)_mqtt_in);
   _mqtt_in->start();
 
-  // wait for the time to be set to ensure DHCP resolution
-  ESP_LOGI(tagEngine(), "waiting for time to be set...");
-  mcr::Net::waitForTimeset();
+  // wait for network to be ready to ensure dns resolver is available
+  ESP_LOGI(tagEngine(), "waiting for network...");
+  mcr::Net::waitForReady();
 
   // mongoose uses it's own dns resolver so set the namserver from dhcp
   opts.nameserver = mcr::Net::instance()->dnsIP();

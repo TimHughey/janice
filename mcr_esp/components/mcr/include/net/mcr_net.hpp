@@ -44,6 +44,7 @@ public:
   static bool waitForName(uint32_t wait_ms = 0);
   static bool waitForNormalOps(uint32_t wait_ms = UINT32_MAX);
   static bool isTimeSet();
+  static bool waitForReady(uint32_t wait_ms = UINT32_MAX);
   static bool waitForTimeset(uint32_t wait_ms = UINT32_MAX);
   static void setTransportReady(bool val = true);
 
