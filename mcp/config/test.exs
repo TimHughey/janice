@@ -83,24 +83,3 @@ config :mcp, Mcp.SoakTest,
   flash_led_ms: 1000
 
 config :mcp, Switch, logCmdAck: false
-
-config :mcp, Web.Endpoint,
-  http: [port: 4000],
-  # url: [scheme: "https", url: "www.wisslanding.com", port: 443],
-  static_url: [path: "/janice"],
-  debug_errors: true,
-  check_origin: false
-
-config :ueberauth, Ueberauth,
-  providers: [
-    identity:
-      {Ueberauth.Strategy.Identity,
-       [
-         callback_methods: ["POST"],
-         callback_path: "/janice/auth/identity/callback",
-         uid_field: :username,
-         nickname_field: :username
-       ]}
-  ]
-
-config :phoenix, :stacktrace_depth, 20

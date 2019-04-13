@@ -130,18 +130,20 @@ uint32_t Net::batt_mv() {
 // STATIC!!
 void Net::checkError(const char *func, esp_err_t err) {
   if (err != ESP_OK) {
-    vTaskDelay(pdMS_TO_TICKS(3000)); // let things settle
-    ESP_LOGE(tagEngine(), "%s err=%02x, core dump", func, err);
+    vTaskDelay(pdMS_TO_TICKS(1000)); // let things settle
+    ESP_LOGE(tagEngine(), "[%s] %s", esp_err_to_name(err), func);
+    ESP_LOGE(tagEngine(), "spooling ftl...");
 
     // prevent the compiler from optimzing out this code
-    volatile uint32_t *ptr = (uint32_t *)0x0000000;
+    // volatile uint32_t *ptr = (uint32_t *)0x0000000;
 
     // write to a nullptr to trigger core dump
-    ptr[0] = 0;
+    // ptr[0] = 0;
 
     // should never get here
-    ESP_LOGE(tagEngine(), "core dump failed");
-    vTaskDelay(pdMS_TO_TICKS(3000)); // let things settle
+    // ESP_LOGE(tagEngine(), "core dump failed");
+    vTaskDelay(pdMS_TO_TICKS(5000)); // let things settle
+    ESP_LOGE(tagEngine(), "JUMP!");
     esp_restart();
   }
 }
@@ -162,6 +164,8 @@ void Net::disconnected(system_event_t *event) {
 
   start();
 }
+
+const char *Net::dnsIP() { return dns_str_; }
 
 // STATIC!!
 esp_err_t Net::evHandler(void *ctx, system_event_t *event) {
@@ -343,10 +347,16 @@ bool Net::start() {
     sntp_init();
 
     ensureTimeIsSet();
-    tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ipInfo_);
-    uint8_t *ip = (uint8_t *)&(ipInfo_.ip);
-    ESP_LOGI(tagEngine(), "connected, acquired ip address %u.%u.%u.%u", ip[0],
-             ip[1], ip[2], ip[3]);
+    tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip_info_);
+    tcpip_adapter_get_dns_info(TCPIP_ADAPTER_IF_STA, TCPIP_ADAPTER_DNS_MAIN,
+                               &primary_dns_);
+
+    uint8_t *dns_ip = (uint8_t *)&(primary_dns_.ip);
+    snprintf(dns_str_, sizeof(dns_str_), IPSTR, dns_ip[0], dns_ip[1], dns_ip[2],
+             dns_ip[3]);
+
+    ESP_LOGI(tagEngine(), "connected, ip=" IPSTR " dns=%s",
+             IP2STR(&ip_info_.ip), dns_str_);
 
     esp_err_t ap_rc = esp_wifi_sta_get_ap_info(&ap);
     ESP_LOGI(tagEngine(), "[%s] AP channel(%d,%d) rssi(%d)",

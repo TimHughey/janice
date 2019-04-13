@@ -1,11 +1,7 @@
 menu "MCR"
 
 menu "Network"
-	config MCR_DNS_SERVER
-		string "DNS server"
-		default "192.168.2.4"
-		help
-			IP address of the DNS server to use for host name resolution
+
 endmenu
 
 menu "Engines"

@@ -277,17 +277,17 @@ void mcrMQTT::publish(std::string *json) {
 }
 
 void mcrMQTT::run(void *data) {
-  struct mg_mgr_init_opts opts;
+  struct mg_mgr_init_opts opts = {};
 
   _mqtt_in = new mcrMQTTin(_rb_in);
   ESP_LOGI(tagEngine(), "started, created mcrMQTTin task %p", (void *)_mqtt_in);
   _mqtt_in->start();
 
-  ESP_LOGD(tagEngine(), "waiting for ip address...");
-  mcr::Net::waitForIP();
+  ESP_LOGD(tagEngine(), "waiting for normal ops...");
+  mcr::Net::waitForNormalOps();
 
-  bzero(&opts, sizeof(opts));
-  opts.nameserver = _dns_server;
+  // mongoose uses it's own dns resolver so set the namserver from dhcp
+  opts.nameserver = mcr::Net::instance()->dnsIP();
 
   mg_mgr_init_opt(&_mgr, NULL, opts);
 

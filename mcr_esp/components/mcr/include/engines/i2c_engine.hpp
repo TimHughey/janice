@@ -37,7 +37,6 @@
 #include "devs/id.hpp"
 #include "engines/engine.hpp"
 #include "engines/i2c_engine.hpp"
-#include "external/mongoose.h"
 #include "misc/mcr_types.hpp"
 #include "protocols/mqtt.hpp"
 

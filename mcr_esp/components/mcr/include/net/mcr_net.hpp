@@ -24,16 +24,17 @@ namespace mcr {
 typedef class Net Net_t;
 class Net {
 public:
+  const char *dnsIP();
   void ensureTimeIsSet();
+  bool start();
+
   static EventGroupHandle_t eventGroup();
   static mcrHardwareConfig_t hardwareConfig();
   static const std::string &getName();
-
   static const std::string &hostID();
   static Net_t *instance();
   static const std::string &macAddress();
   static void setName(const std::string name);
-  bool start();
   static void statusLED(bool on);
   static void resumeNormalOps();
   static void suspendNormalOps();
@@ -69,7 +70,9 @@ private: // member functions
 private:
   EventGroupHandle_t evg_;
   bool init_done_ = false;
-  tcpip_adapter_ip_info_t ipInfo_;
+  tcpip_adapter_ip_info_t ip_info_;
+  tcpip_adapter_dns_info_t primary_dns_;
+  char dns_str_[16] = {};
   esp_adc_cal_characteristics_t *adc_chars_ = nullptr;
   esp_adc_cal_value_t adc_cal_;
   uint32_t batt_measurements_ = 64; // measurements to avg out noise

@@ -119,7 +119,7 @@ private:
 
   mcrMQTTin_t *_mqtt_in = nullptr;
 
-  const char *_dns_server = CONFIG_MCR_DNS_SERVER;
+  // const char *_dns_server = CONFIG_MCR_DNS_SERVER;
   const std::string _host = CONFIG_MCR_MQTT_HOST;
   const int _port = CONFIG_MCR_MQTT_PORT;
   const char *_user = CONFIG_MCR_MQTT_USER;
