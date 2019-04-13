@@ -106,8 +106,10 @@ void mcrMQTT::incomingMsg(esp_mqtt_event_handle_t event) {
 
   if (event->topic == nullptr) {
     ESP_LOGW(tagEngine(),
-             "incoming msg topic=%p data=%p data_len=%d total_data_len=%d",
-             event->topic, event->data, event->data_len, event->total_data_len);
+             "incoming msg NULL TOPIC data_offset=%d data_len=%d "
+             "total_data_len=%d",
+             event->topic, event->current_data_offset, event->data_len,
+             event->total_data_len);
   } else {
 
     // allocate a new string here and deallocate it once processed through
@@ -121,8 +123,8 @@ void mcrMQTT::incomingMsg(esp_mqtt_event_handle_t event) {
   // these arguments define the number of bytes of data to copy to the vector
   if (event->data == nullptr) {
     ESP_LOGW(tagEngine(),
-             "incoming msg topic=%p data=%p data_len=%d total_data_len=%d",
-             event->topic, event->data, event->data_len, event->total_data_len);
+             "incoming msg NULL DATA topic=%p data_len=%d total_data_len=%d",
+             event->topic, event->data_len, event->total_data_len);
   } else {
     data = new std::vector<char>(event->data, (event->data + event->data_len));
   }
