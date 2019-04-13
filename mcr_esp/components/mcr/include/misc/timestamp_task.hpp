@@ -49,7 +49,7 @@ private:
   TickType_t _last_wake;
   const TickType_t _loop_frequency = pdMS_TO_TICKS(13 * 1000); // 13 seconds
   bool _task_report = false;
-  time_t _timestamp_freq_secs = (1 * 60);
+  time_t _timestamp_freq_secs = (15 * 60);
 
   // Task implementation
   void delay(int ms) { ::vTaskDelay(pdMS_TO_TICKS(ms)); }
