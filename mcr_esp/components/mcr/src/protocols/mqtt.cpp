@@ -283,16 +283,14 @@ void mcrMQTT::run(void *data) {
   ESP_LOGI(tagEngine(), "started, created mcrMQTTin task %p", (void *)_mqtt_in);
   _mqtt_in->start();
 
-  ESP_LOGD(tagEngine(), "waiting for normal ops...");
-  mcr::Net::waitForNormalOps();
+  // wait for the time to be set to ensure DHCP resolution
+  ESP_LOGI(tagEngine(), "waiting for time to be set...");
+  mcr::Net::waitForTimeset();
 
   // mongoose uses it's own dns resolver so set the namserver from dhcp
   opts.nameserver = mcr::Net::instance()->dnsIP();
 
   mg_mgr_init_opt(&_mgr, NULL, opts);
-
-  ESP_LOGI(tagEngine(), "waiting for time to be set...");
-  mcr::Net::waitForTimeset();
 
   connect();
 
@@ -324,6 +322,7 @@ void mcrMQTT::subACK(struct mg_mqtt_message *msg) {
   if (msg->message_id == _cmd_feed_msg_id) {
     ESP_LOGI(tagEngine(), "subscribed to CMD feed");
     _mqtt_ready = true;
+    mcr::Net::setTransportReady();
     // announcing startup here creates a race conditino the results
     // in occasionally using epach as the startup time
     // announceStartup();
