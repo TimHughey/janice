@@ -1,8 +1,18 @@
 menu "MCR"
 
 menu "Network"
+	config WIFI_SSID
+	    string "WiFi SSID"
+		default "WissLanding"
+		help
+			SSID (network name)
 
-endmenu
+	config WIFI_PASSWORD
+	    string "WiFi Password"
+		default "password"
+		help
+			WiFi password (WPA or WPA2)
+	endmenu
 
 menu "Engines"
 	config MCR_DS_ENABLE
