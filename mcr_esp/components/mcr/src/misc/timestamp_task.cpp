@@ -41,7 +41,7 @@ mcrTimestampTask::mcrTimestampTask() {
 mcrTimestampTask::~mcrTimestampTask() {}
 
 const char *mcrTimestampTask::dateTimeString(time_t t) {
-  static char buf[20] = {0x00};
+  static char buf[20] = {};
   const auto buf_size = sizeof(buf);
   time_t now = time(nullptr);
   struct tm timeinfo = {};

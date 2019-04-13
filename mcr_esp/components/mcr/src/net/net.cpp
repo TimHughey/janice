@@ -277,9 +277,9 @@ void Net::ensureTimeIsSet() {
     ESP_LOGE(tagEngine(), "timeout waiting for SNTP");
     checkError(__PRETTY_FUNCTION__, 0xFE);
   } else {
-    char buf[20] = {0x00};
+    char buf[20] = {};
     const auto buf_len = sizeof(buf);
-    struct tm timeinfo = {0x00};
+    struct tm timeinfo = {};
     time_t now = time(nullptr);
 
     // Set timezone to Eastern Standard Time and print local time
