@@ -38,19 +38,24 @@ public:
   static void statusLED(bool on);
   static void resumeNormalOps();
   static void suspendNormalOps();
-  static bool waitForConnection(int wait_ms = portMAX_DELAY);
-  static bool waitForIP(int wait_ms = pdMS_TO_TICKS(10000));
-  static bool waitForName(int wait_ms = 0);
-  static bool waitForNormalOps();
+  static bool waitForConnection(uint32_t wait_ms = UINT32_MAX);
+  static bool waitForInitialization(uint32_t wait_ms = UINT32_MAX);
+  static bool waitForIP(uint32_t wait_ms = pdMS_TO_TICKS(30000));
+  static bool waitForName(uint32_t wait_ms = 0);
+  static bool waitForNormalOps(uint32_t wait_ms = UINT32_MAX);
   static bool isTimeSet();
-  static bool waitForTimeset();
+  static bool waitForTimeset(uint32_t wait_ms = UINT32_MAX);
+  static void setTransportReady(bool val = true);
 
   static EventBits_t connectedBit() { return BIT0; };
   static EventBits_t ipBit() { return BIT1; };
   static EventBits_t nameBit() { return BIT2; };
   static EventBits_t normalOpsBit() { return BIT3; };
   static EventBits_t readyBit() { return BIT4; };
-  static EventBits_t timesetBit() { return BIT5; };
+  static EventBits_t timeSetBit() { return BIT5; };
+  static EventBits_t mqttReadyBit() { return BIT6; };
+  static EventBits_t initializedBit() { return BIT7; };
+  static EventBits_t transportBit() { return BIT8; };
 
   static const char *tagEngine() { return (const char *)"mcrNet"; };
 

@@ -574,7 +574,7 @@ bool mcrI2c::readSHT31(i2cDev_t *dev) {
 }
 
 void mcrI2c::report(void *task_data) {
-  mcr::Net::waitForName(10000);
+  mcr::Net::waitForNormalOps();
 
   trackReport(true);
 
@@ -689,13 +689,30 @@ esp_err_t mcrI2c::requestData(const char *TAG, i2cDev_t *dev, uint8_t *send,
 }
 
 void mcrI2c::run(void *task_data) {
+  int wait_for_name_ms = 30000;
   bool driver_ready = false;
+  bool net_name = false;
   while (!driver_ready) {
     driver_ready = installDriver();
   }
 
   ESP_LOGI(tagEngine(), "waiting for normal ops...");
   mcr::Net::waitForNormalOps();
+
+  // wait for up to 30 seconds for name assigned by mcp
+  // if the assigned name is not available then device names will use
+  // the i2.c/mcr.<mac addr>.<bus>.<device> format
+
+  // this is because i2c devices do not have a globally assigned
+  // unique identifier (like Maxim / Dallas Semiconductors devices)
+  ESP_LOGI(tagEngine(), "waiting up to %dms for network name...",
+           wait_for_name_ms);
+  net_name = mcr::Net::waitForName(pdMS_TO_TICKS(wait_for_name_ms));
+
+  if (net_name == false) {
+    ESP_LOGW(tagEngine(), "network name not available, using host name");
+  }
+
   ESP_LOGI(tagEngine(), "normal ops, proceeding to task loop");
 
   _last_wake.engine = xTaskGetTickCount();

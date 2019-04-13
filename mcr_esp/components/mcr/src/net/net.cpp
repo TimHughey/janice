@@ -236,27 +236,29 @@ void Net::init() {
 
 void Net::ensureTimeIsSet() {
   // wait for time to be set
-  time_t now = 0;
-  struct tm timeinfo = {};
+  struct timeval curr_time = {};
   int retry = 0;
-  const int retry_count = 10;
+  const int retry_count = 500;
 
-  ESP_LOGI(tagEngine(), "waiting for time to be set...");
-  while (timeinfo.tm_year < (2016 - 1900) && ++retry < retry_count) {
-    if (retry > 6) {
-      ESP_LOGW(tagEngine(), "waiting for system time to be set... (%d/%d)",
-               retry, retry_count);
+  ESP_LOGI(tagEngine(), "waiting for SNTP...");
+
+  // continue to query the system time until seconds since epoch are
+  // sufficiently greater than a known recent time
+  while ((curr_time.tv_sec < 1554830134) && (++retry < retry_count)) {
+    if (retry > 495) {
+      ESP_LOGW(tagEngine(), "waiting for SNTP... (%d/%d)", retry, retry_count);
     }
-    vTaskDelay(pdMS_TO_TICKS(1000));
-    time(&now);
-    localtime_r(&now, &timeinfo);
+    vTaskDelay(pdMS_TO_TICKS(100));
+    gettimeofday(&curr_time, nullptr);
   }
 
   if (retry == retry_count) {
-    ESP_LOGE(tagEngine(), "timeout while acquiring time");
+    ESP_LOGE(tagEngine(), "timeout waiting for SNTP");
     checkError(__PRETTY_FUNCTION__, 0xFE);
   } else {
-    xEventGroupSetBits(evg_, timesetBit());
+    xEventGroupSetBits(evg_, timeSetBit());
+    ESP_LOGI(tagEngine(), "SNTP responded: tv_sec=%lu tv_usec=%lu",
+             curr_time.tv_sec, curr_time.tv_usec);
   }
 }
 
@@ -284,9 +286,12 @@ const std::string &Net::hostID() {
 const std::string &Net::macAddress() {
   static std::string _mac;
 
+  // must wait for initialization of wifi before providing mac address
+  waitForInitialization();
+
   if (_mac.length() == 0) {
     std::stringstream bytes;
-    uint8_t mac[6];
+    uint8_t mac[6] = {};
 
     esp_wifi_get_mac(WIFI_IF_STA, mac);
 
@@ -304,7 +309,7 @@ const std::string &Net::macAddress() {
 void Net::setName(const std::string name) {
 
   instance()->_name = name;
-  ESP_LOGI(tagEngine(), "network name=%s", instance()->_name.c_str());
+  ESP_LOGI(tagEngine(), "mcp assigned name=%s", instance()->_name.c_str());
 
   xEventGroupSetBits(instance()->eventGroup(), nameBit());
 }
@@ -315,6 +320,10 @@ bool Net::start() {
 
   rc = ::esp_wifi_set_mode(WIFI_MODE_STA);
   checkError(__PRETTY_FUNCTION__, rc);
+
+  rc = ::esp_wifi_set_ps(WIFI_PS_NONE);
+  checkError(__PRETTY_FUNCTION__, rc);
+  ESP_LOGI(tagEngine(), "[%s] wifi powersave set to none", esp_err_to_name(rc));
 
   rc = ::esp_wifi_set_protocol(
       WIFI_IF_STA, WIFI_PROTOCOL_11B | WIFI_PROTOCOL_11G | WIFI_PROTOCOL_11N);
@@ -331,6 +340,9 @@ bool Net::start() {
 
   rc = ::esp_wifi_set_config(WIFI_IF_STA, &cfg);
   if (rc == ESP_OK) {
+    // wifi is initialized so signal to processes waiting they can continue
+    xEventGroupSetBits(evg_, initializedBit());
+
     rc = ::esp_wifi_start();
 
     if (rc == ESP_OK) {
@@ -339,6 +351,7 @@ bool Net::start() {
   }
   checkError(__PRETTY_FUNCTION__, rc);
 
+  ESP_LOGI(tagEngine(), "waiting for IP address...");
   if (waitForIP()) {
     wifi_ap_record_t ap;
     sntp_setoperatingmode(SNTP_OPMODE_POLL);
@@ -390,47 +403,102 @@ void Net::suspendNormalOps() {
   xEventGroupClearBits(instance()->eventGroup(), Net::normalOpsBit());
 }
 
-bool Net::waitForConnection(int wait_ms) {
-  xEventGroupWaitBits(instance()->eventGroup(), connectedBit(), false, true,
-                      wait_ms);
-  return true;
+// wait_ms defaults to UINT32_MAX
+bool Net::waitForConnection(uint32_t wait_ms) {
+  EventBits_t wait_bit = connectedBit();
+  EventGroupHandle_t eg = instance()->eventGroup();
+  uint32_t wait_ticks =
+      (wait_ms == UINT32_MAX) ? portMAX_DELAY : pdMS_TO_TICKS(wait_ms);
+  EventBits_t bits_set;
+
+  bits_set = xEventGroupWaitBits(eg, wait_bit, false, true, wait_ticks);
+
+  return (bits_set & wait_bit) ? true : false;
 }
 
-bool Net::waitForIP(int wait_ms) {
-  esp_err_t res = ESP_OK;
+// wait_ms defaults to UINT32_MAX
+bool Net::waitForInitialization(uint32_t wait_ms) {
+  EventBits_t wait_bit = initializedBit();
+  EventGroupHandle_t eg = instance()->eventGroup();
+  uint32_t wait_ticks =
+      (wait_ms == UINT32_MAX) ? portMAX_DELAY : pdMS_TO_TICKS(wait_ms);
+  EventBits_t bits_set;
 
-  res = xEventGroupWaitBits(eventGroup(), ipBit(), false, true,
-                            pdMS_TO_TICKS(wait_ms));
+  bits_set = xEventGroupWaitBits(eg, wait_bit, false, true, wait_ticks);
 
-  return (res == ESP_OK) ? true : false;
+  return (bits_set & wait_bit) ? true : false;
 }
 
-bool Net::waitForName(int wait_ms) {
-  esp_err_t res = xEventGroupWaitBits(eventGroup(), nameBit(), false, true,
-                                      pdMS_TO_TICKS(wait_ms));
+// wait_ms defaults to 10 seconds
+bool Net::waitForIP(uint32_t wait_ms) {
+  EventBits_t wait_bit = connectedBit();
+  EventGroupHandle_t eg = instance()->eventGroup();
+  uint32_t wait_ticks =
+      (wait_ms == UINT32_MAX) ? portMAX_DELAY : pdMS_TO_TICKS(wait_ms);
+  EventBits_t bits_set;
 
-  return (res == ESP_OK) ? true : false;
+  bits_set = xEventGroupWaitBits(eg, wait_bit, false, true, wait_ticks);
+
+  return (bits_set & wait_bit) ? true : false;
 }
 
-bool Net::waitForNormalOps() {
-  esp_err_t res = xEventGroupWaitBits(eventGroup(), normalOpsBit(), false, true,
-                                      portMAX_DELAY);
+// wait_ms defaults to zero
+bool Net::waitForName(uint32_t wait_ms) {
+  EventBits_t wait_bit = nameBit();
+  EventGroupHandle_t eg = instance()->eventGroup();
+  uint32_t wait_ticks =
+      (wait_ms == UINT32_MAX) ? portMAX_DELAY : pdMS_TO_TICKS(wait_ms);
+  EventBits_t bits_set;
 
-  return (res == ESP_OK) ? true : false;
+  bits_set = xEventGroupWaitBits(eg, wait_bit, false, true, wait_ticks);
+
+  return (bits_set & wait_bit) ? true : false;
+}
+
+// wait_ms defaults to portMAX_DELAY when not passed
+bool Net::waitForNormalOps(uint32_t wait_ms) {
+  EventBits_t wait_bit = normalOpsBit() | transportBit();
+  EventGroupHandle_t eg = instance()->eventGroup();
+  uint32_t wait_ticks =
+      (wait_ms == UINT32_MAX) ? portMAX_DELAY : pdMS_TO_TICKS(wait_ms);
+  EventBits_t bits_set;
+
+  bits_set = xEventGroupWaitBits(eg, wait_bit, false, true, wait_ticks);
+
+  return (bits_set & wait_bit) ? true : false;
 }
 
 bool Net::isTimeSet() {
-  // do not wait for the timeset bit, only query it
-  EventBits_t bits =
-      xEventGroupWaitBits(eventGroup(), timesetBit(), false, true, 0);
+  EventBits_t wait_bit = timeSetBit();
+  EventGroupHandle_t eg = instance()->eventGroup();
+  uint32_t wait_ticks = 0;
+  EventBits_t bits_set;
 
   // xEventGroupWaitBits returns the bits set in the event group even if
   // the wait times out (which we want in this case if it's not set)
-  return (bits & timesetBit()) ? true : false;
+  bits_set = xEventGroupWaitBits(eg, wait_bit, false, true, wait_ticks);
+
+  return (bits_set & wait_bit) ? true : false;
 }
 
-bool Net::waitForTimeset() {
-  xEventGroupWaitBits(eventGroup(), timesetBit(), false, true, portMAX_DELAY);
-  return true;
+// wait_ms defaults to portMAX_DELAY
+bool Net::waitForTimeset(uint32_t wait_ms) {
+  EventBits_t wait_bit = timeSetBit();
+  EventGroupHandle_t eg = instance()->eventGroup();
+  uint32_t wait_ticks =
+      (wait_ms == UINT32_MAX) ? portMAX_DELAY : pdMS_TO_TICKS(wait_ms);
+  EventBits_t bits_set;
+
+  bits_set = xEventGroupWaitBits(eg, wait_bit, false, true, wait_ticks);
+
+  return (bits_set & wait_bit) ? true : false;
+}
+
+void Net::setTransportReady(bool val) {
+  if (val) {
+    xEventGroupSetBits(instance()->eventGroup(), transportBit());
+  } else {
+    xEventGroupClearBits(instance()->eventGroup(), transportBit());
+  }
 }
 } // namespace mcr
