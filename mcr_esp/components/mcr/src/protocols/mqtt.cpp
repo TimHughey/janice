@@ -244,7 +244,7 @@ void mcrMQTT::outboundMsg() {
     vRingbufferReturnItem(_rb_out, entry);
 
     int64_t publish_us = esp_timer_get_time() - start_us;
-    if (publish_us > 1500) {
+    if (publish_us > 3000) {
       ESP_LOGW(tagOutbound(), "publish msg took %0.2fms",
                ((float)publish_us / 1000.0));
     } else {
