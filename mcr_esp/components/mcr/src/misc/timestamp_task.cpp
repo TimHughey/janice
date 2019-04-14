@@ -87,6 +87,15 @@ void mcrTimestampTask::run(void *data) {
                (_maxHeap / 1024), delta, (max_alloc / 1024), batt_mv);
       // ESP_LOGI(name, "%s", dateTimeString());
       last_timestamp = time(nullptr);
+
+      if (_watch_task_name && _watch_task_handle) {
+        UBaseType_t stack_high_water;
+
+        stack_high_water = uxTaskGetStackHighWaterMark(_watch_task_handle);
+
+        ESP_LOGI(_watch_task_name, "task stack high water: %d",
+                 stack_high_water);
+      }
     }
 
     if (_task_report) {

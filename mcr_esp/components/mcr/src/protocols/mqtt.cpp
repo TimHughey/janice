@@ -101,8 +101,8 @@ void mcrMQTT::connect(int wait_ms) {
   _connection = mg_connect(&_mgr, _endpoint.c_str(), _ev_handler);
 
   if (_connection) {
-    ESP_LOGI(tagEngine(), "mongoose connection created to endpoint %s (%p)",
-             _endpoint.c_str(), (void *)_connection);
+    ESP_LOGI(tagEngine(), "created pending mongoose connection(%p) for %s",
+             _connection, _endpoint.c_str());
   }
 }
 
@@ -306,8 +306,9 @@ void mcrMQTT::run(void *data) {
       startup_announced = true;
     }
 
-    // we wait here AND we wait in outboundMsg -- this alternates between
-    // prioritizing inbound and outbound messages
+    // to alternate between prioritizing send and recv:
+    //  1. wait here (recv)
+    //  2. wait in outboundMsg (send)
     mg_mgr_poll(&_mgr, _inbound_msg_ms);
 
     if (isReady()) {

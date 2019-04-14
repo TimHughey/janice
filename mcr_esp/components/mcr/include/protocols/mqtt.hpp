@@ -50,6 +50,7 @@ public:
 
   void handshake(struct mg_connection *nc);
   void incomingMsg(struct mg_str *topic, struct mg_str *payload);
+  bool isReady() { return _mqtt_ready; };
   static void otaFinish() { instance()->__otaFinish(); };
   static void otaPrep() { instance()->__otaPrep(); };
   void publish(Reading_t *reading);
@@ -57,7 +58,6 @@ public:
   void setSubscribedOTA() { _ota_subscribed = true; };
   void subACK(struct mg_mqtt_message *msg);
   void subscribeCommandFeed(struct mg_connection *nc);
-  bool isReady() { return _mqtt_ready; };
 
   void start(void *task_data = nullptr) {
     if (_task.handle != nullptr) {
@@ -83,6 +83,7 @@ public:
 
   static const char *tagEngine() { return "mcrMQTT"; };
   static const char *tagOutbound() { return "mcrMQTT outboundMsg"; };
+  TaskHandle_t taskHandle() { return _task.handle; };
 
 private:
   mcrMQTT(); // singleton, constructor is private

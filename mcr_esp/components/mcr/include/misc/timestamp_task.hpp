@@ -29,6 +29,10 @@ public:
     ::xTaskCreate(&runEngine, _engine_task_name.c_str(), _engine_stack_size,
                   this, _engine_priority, &_engine_task);
   }
+  void watchStack(const char *task_name, TaskHandle_t handle) {
+    _watch_task_name = task_name;
+    _watch_task_handle = handle;
+  }
 
 private:
   uint32_t vref_voltage();
@@ -50,6 +54,9 @@ private:
   const TickType_t _loop_frequency = pdMS_TO_TICKS(13 * 1000); // 13 seconds
   bool _task_report = false;
   time_t _timestamp_freq_secs = (15 * 60);
+
+  const char *_watch_task_name = nullptr;
+  TaskHandle_t _watch_task_handle = nullptr;
 
   // Task implementation
   void delay(int ms) { ::vTaskDelay(pdMS_TO_TICKS(ms)); }

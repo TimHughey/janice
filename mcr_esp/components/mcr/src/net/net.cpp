@@ -119,12 +119,12 @@ void Net::acquiredIP(system_event_t *event) {
   snprintf(dns_str_, sizeof(dns_str_), IPSTR, dns_ip[0], dns_ip[1], dns_ip[2],
            dns_ip[3]);
 
+  esp_err_t ap_rc = esp_wifi_sta_get_ap_info(&ap);
+  ESP_LOGI(tagEngine(), "[%s] AP channel(%d,%d) rssi(%ddB)",
+           esp_err_to_name(ap_rc), ap.primary, ap.second, ap.rssi);
+
   ESP_LOGI(tagEngine(), "ready [ip=" IPSTR " dns=%s]", IP2STR(&ip_info_.ip),
            dns_str_);
-
-  esp_err_t ap_rc = esp_wifi_sta_get_ap_info(&ap);
-  ESP_LOGI(tagEngine(), "[%s] AP channel(%d,%d) rssi(%d)",
-           esp_err_to_name(ap_rc), ap.primary, ap.second, ap.rssi);
 
   xEventGroupSetBits(evg_, ipBit());
 }
