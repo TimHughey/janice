@@ -289,8 +289,8 @@ void Net::ensureTimeIsSet() {
     strftime(buf, buf_len, "%Y-%m-%d %T", &timeinfo);
 
     xEventGroupSetBits(evg_, timeSetBit());
-    ESP_LOGI(tagEngine(), "SNTP complete: %s (%lu.%lu)", buf, curr_time.tv_sec,
-             curr_time.tv_usec);
+    ESP_LOGI(tagEngine(), "SNTP complete: %s (%lus %lums)", buf,
+             curr_time.tv_sec, curr_time.tv_usec);
   }
 }
 
