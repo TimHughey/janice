@@ -224,7 +224,7 @@ CREATE TABLE public.remote (
     host character varying(20) NOT NULL,
     name character varying(35) NOT NULL,
     hw character varying(10) NOT NULL,
-    firmware_vsn character varying(7) DEFAULT '0000000'::character varying NOT NULL,
+    firmware_vsn character varying(32) DEFAULT '0000000'::character varying NOT NULL,
     last_start_at timestamp without time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
     last_seen_at timestamp without time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
     inserted_at timestamp without time zone NOT NULL,
@@ -237,7 +237,14 @@ CREATE TABLE public.remote (
     ap_sec_chan integer DEFAULT 0,
     heap_free integer DEFAULT 0,
     heap_min integer DEFAULT 0,
-    uptime_us bigint DEFAULT 0
+    uptime_us bigint DEFAULT 0,
+    project_name character varying(32),
+    idf_vsn character varying(32),
+    app_elf_sha256 character varying(32),
+    build_date character varying(16),
+    build_time character varying(16),
+    magic_word integer,
+    secure_vsn integer
 );
 
 
@@ -1147,5 +1154,5 @@ ALTER TABLE ONLY public.thermostat_profile
 -- PostgreSQL database dump complete
 --
 
-INSERT INTO public."schema_migrations" (version) VALUES (20171217150128), (20171224164529), (20171224225113), (20171228191703), (20171229001359), (20171231182344), (20180101153253), (20180102171624), (20180102175335), (20180217212153), (20180218021213), (20180222165118), (20180222184042), (20180305193804), (20180307143400), (20180517201719), (20180708221600), (20180709181021), (20190308124055), (20190316032007), (20190317155502), (20190320124824);
+INSERT INTO public."schema_migrations" (version) VALUES (20171217150128), (20171224164529), (20171224225113), (20171228191703), (20171229001359), (20171231182344), (20180101153253), (20180102171624), (20180102175335), (20180217212153), (20180218021213), (20180222165118), (20180222184042), (20180305193804), (20180307143400), (20180517201719), (20180708221600), (20180709181021), (20190308124055), (20190316032007), (20190317155502), (20190320124824), (20190416130912);
 
