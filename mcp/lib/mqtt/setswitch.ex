@@ -22,7 +22,6 @@ defmodule Mqtt.SetSwitch do
     ack = Keyword.get(opts, :ack, true)
 
     cmd = %{
-      vsn: 1,
       cmd: @setswitch_cmd,
       mtime: TimeSupport.unix_now(:seconds),
       switch: device,

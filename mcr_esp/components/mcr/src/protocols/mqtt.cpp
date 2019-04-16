@@ -33,7 +33,6 @@
 // MCR specific includes
 #include "external/mongoose.h"
 #include "misc/mcr_types.hpp"
-#include "misc/version.hpp"
 #include "net/mcr_net.hpp"
 #include "protocols/mqtt.hpp"
 #include "protocols/mqtt_in.hpp"

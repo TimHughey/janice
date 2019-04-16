@@ -17,6 +17,13 @@ defmodule RemoteTest do
       type: "remote_runtime",
       hw: "esp32",
       vsn: "1234567",
+      proj: "mcr",
+      idf: "idf-3.3",
+      sha: "aaaaabbbbccccc",
+      bdate: "04-15-2019",
+      btime: "12:01:01",
+      mword: 33903,
+      svsn: 813,
       mtime: TimeSupport.unix_now(:seconds),
       log: false,
       reset_reason: "software reset",
@@ -210,8 +217,8 @@ defmodule RemoteTest do
     fun = fn -> Map.put(ext(4), :log, true) |> boot() |> Remote.external_update() end
     msg = capture_log(fun)
 
-    assert msg =~ host(4)
-    assert msg =~ "boot"
+    assert msg =~ name(4)
+    assert msg =~ "BOOT"
   end
 
   test "all Remotes" do

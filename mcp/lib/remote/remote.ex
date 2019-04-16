@@ -53,13 +53,20 @@ defmodule Remote do
 
   def add(%Remote{} = r), do: add([r])
 
-  def add(%{host: host, hw: hw, vsn: vsn, mtime: mtime}) do
+  def add(%{host: host, hw: hw, vsn: vsn, mtime: mtime} = r) do
     [
       %Remote{
         host: host,
-        name: host,
+        name: Map.get(r, :name, host),
         hw: hw,
         firmware_vsn: vsn,
+        project_name: Map.get(r, :proj, "not available"),
+        idf_vsn: Map.get(r, :idf, "not available"),
+        app_elf_sha256: Map.get(r, :sha, "not available"),
+        build_date: Map.get(r, :bdate, "not available"),
+        build_time: Map.get(r, :btime, "not available"),
+        magic_word: Map.get(r, :mword, 0),
+        secure_vsn: Map.get(r, :svsn, 0),
         last_seen_at: TimeSupport.from_unix(mtime),
         last_start_at: TimeSupport.from_unix(mtime)
       }
@@ -125,10 +132,17 @@ defmodule Remote do
     |> cast(params, [
       :name,
       :hw,
+      :firmware_vsn,
       :preferred_vsn,
+      :project_name,
+      :idf_vsn,
+      :app_elf_sha256,
+      :build_date,
+      :build_time,
+      :magic_word,
+      :secure_vsn,
       :batt_mv,
       :reset_reason,
-      :firmware_vsn,
       :last_start_at,
       :last_seen_at,
       :ap_rssi,
@@ -215,7 +229,7 @@ defmodule Remote do
     IO.puts("\tRemote.deprecate(id)")
   end
 
-  def external_update(%{host: host, vsn: _vsn, mtime: _mtime, hw: _hw} = eu) do
+  def external_update(%{host: host, mtime: _mtime, hw: _hw} = eu) do
     result =
       :timer.tc(fn ->
         Logger.debug(fn -> "external_update() handling:" end)
@@ -235,7 +249,6 @@ defmodule Remote do
 
         :ok
 
-      # TODO: extract the actual error from update
       {_t, {err, details}} ->
         Logger.warn(fn ->
           "external update failed for [#{host}]\n" <>
@@ -422,6 +435,13 @@ defmodule Remote do
       last_seen_at: Map.get(eu, :last_seen_at, rem.last_seen_at),
       firmware_vsn: Map.get(eu, :vsn, rem.firmware_vsn),
       hw: Map.get(eu, :hw, rem.hw),
+      project_name: Map.get(eu, :proj, rem.project_name),
+      idf_vsn: Map.get(eu, :idf, rem.idf_vsn),
+      app_elf_sha256: Map.get(eu, :sha, rem.app_elf_sha256),
+      build_date: Map.get(eu, :bdate, rem.build_date),
+      build_time: Map.get(eu, :btime, rem.build_time),
+      magic_word: Map.get(eu, :mword, rem.magic_word),
+      secure_vsn: Map.get(eu, :svsn, rem.secure_vsn),
       # reset the following metrics when not present
       ap_rssi: Map.get(eu, :ap_rssi, 0),
       ap_pri_chan: Map.get(eu, :ap_pri_chan, 0),

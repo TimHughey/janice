@@ -34,7 +34,6 @@
 
 #include "cmds/cmd_base.hpp"
 #include "misc/mcr_types.hpp"
-#include "misc/version.hpp"
 
 typedef std::bitset<8> cmd_bitset_t;
 

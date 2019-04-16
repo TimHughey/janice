@@ -1,14 +1,13 @@
 
-#include "cmds/cmd_queues.hpp"
 #include "cmds/cmd_switch.hpp"
+#include "cmds/cmd_queues.hpp"
 
 const static char *TAG = "mcrCmdSwitch";
 
 mcrCmdSwitch::mcrCmdSwitch(JsonObject &root)
     : mcrCmd(mcrCmdType::setswitch, root) {
   // json format of states command:
-  // {"vsn":1,
-  //   "switch":"ds/29463408000000",
+  // {"switch":"ds/29463408000000",
   //   "states":[{"state":false,"pio":3}],
   //   "refid":"0fc4417c-f1bb-11e7-86bd-6cf049e7139f",
   //   "mtime":1515117138,

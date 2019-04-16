@@ -33,7 +33,6 @@
 // MCR specific includes
 #include "cmds/cmd_factory.hpp"
 #include "misc/mcr_types.hpp"
-#include "misc/version.hpp"
 #include "net/mcr_net.hpp"
 #include "protocols/mqtt_in.hpp"
 #include "readings/readings.hpp"

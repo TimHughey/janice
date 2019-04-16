@@ -33,7 +33,7 @@ defmodule Mqtt.Reading do
 
    ##Examples:
     iex> json =
-    ...>   ~s({"vsn": 1, "host": "mcr-macaddr", "device": "ds/29.00000ffff",
+    ...>   ~s({"host": "mcr-macaddr", "device": "ds/29.00000ffff",
     ...>       "mtime": 1506867918, "type": "temp", "tc": 20.0, "tf": 80.0})
     ...> Jason.decode!(json, keys: :atoms) |> Mqtt.Reading.metadata?()
     true
@@ -45,7 +45,6 @@ defmodule Mqtt.Reading do
         r =
           Map.put(r, :json, json)
           |> Map.put(:msg_recv_dt, TimeSupport.utc_now())
-          |> Map.put_new(:vsn, Map.get(r, :version, "novsn"))
           |> check_metadata()
 
         {:ok, r}
@@ -64,10 +63,11 @@ defmodule Mqtt.Reading do
         2. We also check the mtime to confirm it is greater than epoch + 1 year.
            This is a safety check for situations where a host is reporting
            readings without the time set
+        3. As of 2019-04-16 vsn is only sent as part of a startup mesg
 
    ##Examples:
     iex> json =
-    ...>   ~s({"vsn": 1, "host":"mcr-macaddr", "device":"ds/28.00000ffff",
+    ...>   ~s({"host":"mcr-macaddr", "device":"ds/28.00000ffff",
     ...>       "mtime": 1506867918, "type": "temp", "tc": 20.0, "tf": 80.0})
     ...> Jason.decode!(json, keys: :atoms) |> Mqtt.Reading.metadata?()
     true
@@ -77,9 +77,7 @@ defmodule Mqtt.Reading do
     mtime = Map.get(r, :mtime, nil)
     type = Map.get(r, :type, nil)
 
-    proper =
-      is_integer(mtime) and String.starts_with?(r.host, "mcr") and is_binary(type) and
-        (Map.has_key?(r, :vsn) or Map.has_key?(r, :version))
+    proper = is_integer(mtime) and String.starts_with?(r.host, "mcr") and is_binary(type)
 
     not proper && Logger.warn(fn -> "bad metadata #{inspect(r)}" end)
     proper
@@ -94,13 +92,13 @@ defmodule Mqtt.Reading do
 
    ##Examples:
     iex> json =
-    ...>   ~s({"vsn": 1, "host":"mcr-macaddr", "device":"ds/28.0000",
+    ...>   ~s({"host":"mcr-macaddr", "device":"ds/28.0000",
     ...>       "mtime": 1506867918, "type": "temp", "tc": 20.0, "tf": 80.0})
     ...> Jason.decode!(json, keys: :atoms) |> Mqtt.Reading.mtime_good?()
     true
 
     iex> json =
-    ...>   ~s({"vsn": 0, "host": "other-macaddr",
+    ...>   ~s({"host": "other-macaddr",
     ...>       "mtime": 2106, "type": "startup"})
     ...> Jason.decode!(json, keys: :atoms) |> Mqtt.Reading.mtime_good?()
     false
@@ -121,13 +119,13 @@ defmodule Mqtt.Reading do
 
    ##Examples:
     iex> json =
-    ...>   ~s({"vsn": 1, "host": "mcr-macaddr",
+    ...>   ~s({"host": "mcr-macaddr",
     ...>       "mtime": 2106, "type": "startup"})
     ...> Jason.decode!(json, keys: :atoms) |> Mqtt.Reading.startup?()
     true
 
     iex> json =
-    ...>   ~s({"vsn": 1, "host":"mcr-macaddr", "device":"ds/28.0000",
+    ...>   ~s({"host":"mcr-macaddr", "device":"ds/28.0000",
     ...>       "mtime": 1506867918, "type": "temp", "tc": 20.0, "tf": 80.0})
     ...> Jason.decode!(json, keys: :atoms) |> Mqtt.Reading.startup?()
     false
@@ -141,7 +139,7 @@ defmodule Mqtt.Reading do
 
    ##Examples:
     iex> json =
-    ...>   ~s({"vsn": 1, "host": "mcr-macaddr", "device": "ds/28.0000",
+    ...>   ~s({"host": "mcr-macaddr", "device": "ds/28.0000",
     ...>       "mtime": 1506867918, "type": "temp", "tc": 20.0, "tf": 80.0})
     ...> Jason.decode!(json, keys: :atoms) |> Mqtt.Reading.temperature?()
     true
@@ -165,7 +163,7 @@ defmodule Mqtt.Reading do
 
    ##Examples:
    iex> json =
-   ...>   ~s({"vsn": 1, "host": "mcr-macaddr",
+   ...>   ~s({"host": "mcr-macaddr",
    ...>       "device": "ds/29.0000", "mtime": 1506867918,
    ...>       "type": "relhum",
    ...>       "rh": 56.0})
@@ -190,7 +188,7 @@ defmodule Mqtt.Reading do
 
    ##Examples:
     iex> json =
-    ...>   ~s({"vsn": 1, "host": "mcr-macaddr",
+    ...>   ~s({"host": "mcr-macaddr",
     ...>       "device": "ds/29.0000", "mtime": 1506867918,
     ...>        "type": "switch",
     ...>        "states": [{"pio": 0, "state": true},
@@ -222,7 +220,7 @@ defmodule Mqtt.Reading do
 
    ##Examples:
     iex> json =
-    ...>   ~s({"vsn": 1, "host": "mcr-macaddr",
+    ...>   ~s({ "host": "mcr-macaddr",
     ...>       "device": "ds/29.0000", "mtime": 1506867918,
     ...>        "type": "switch",
     ...>        "states": [{"pio": 0, "state": true},

@@ -35,7 +35,6 @@
 #include "cmds/cmd_base.hpp"
 #include "cmds/cmd_types.hpp"
 #include "misc/mcr_types.hpp"
-#include "misc/version.hpp"
 
 typedef class mcrCmdNetwork mcrCmdNetwork_t;
 class mcrCmdNetwork : public mcrCmd {

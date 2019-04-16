@@ -23,6 +23,7 @@
 
 #include <string>
 
+#include <esp_ota_ops.h>
 #include <esp_system.h>
 #include <external/ArduinoJson.h>
 #include <freertos/FreeRTOS.h>
@@ -36,12 +37,12 @@ typedef class startupReading startupReading_t;
 
 class startupReading : public remoteReading {
 private:
+  const esp_app_desc_t *app_desc_;
   std::string reset_reason_;
-
-  const std::string &decodeResetReason(esp_reset_reason_t reason);
 
 public:
   startupReading(uint32_t batt_mv);
+  static const std::string &decodeResetReason(esp_reset_reason_t reason);
 
 protected:
   virtual void populateJSON(JsonObject &root);

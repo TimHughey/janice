@@ -12,7 +12,6 @@
 #include "engines/ds_engine.hpp"
 #include "engines/i2c_engine.hpp"
 #include "misc/timestamp_task.hpp"
-#include "misc/version.hpp"
 #include "net/mcr_net.hpp"
 #include "protocols/mqtt.hpp"
 
@@ -23,7 +22,6 @@ void app_main(void);
 extern const uint8_t ca_start[] asm("_binary_ca_pem_start");
 extern const uint8_t ca_end[] asm("_binary_ca_pem_end");
 
-static const char *embed_vsn_sha = mcrVersion::embed_vsn_sha();
 static const char *TAG = "mcr_esp";
 
 static mcr::Net *network = nullptr;
@@ -36,7 +34,6 @@ void app_main() {
   ESP_LOGI(TAG, "%s entered", __PRETTY_FUNCTION__);
   ESP_LOGI(TAG, "portTICK_PERIOD_MS=%u and 10ms=%u ticks", portTICK_PERIOD_MS,
            pdMS_TO_TICKS(10));
-  ESP_LOGI(TAG, "%s", embed_vsn_sha);
 
   // ensure all peripherals have been completely reset
   // important after OTA and if an internal error occured that forced a restart
@@ -80,9 +77,6 @@ void app_main() {
                esp_err_to_name(nvs_rc));
     }
   }
-
-  esp_reset_reason_t last_reset = esp_reset_reason();
-  ESP_LOGW(TAG, "last reset reason [%d]", last_reset);
 
   // must create network first!
   network = mcr::Net::instance(); // singleton

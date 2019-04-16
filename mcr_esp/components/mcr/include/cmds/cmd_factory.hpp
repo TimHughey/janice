@@ -38,7 +38,6 @@
 #include "cmds/cmd_switch.hpp"
 #include "cmds/cmd_types.hpp"
 #include "misc/mcr_types.hpp"
-#include "misc/version.hpp"
 
 typedef class mcrCmdFactory mcrCmdFactory_t;
 class mcrCmdFactory {

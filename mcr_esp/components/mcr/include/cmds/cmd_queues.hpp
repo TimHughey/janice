@@ -33,8 +33,6 @@
 #include <time.h>
 
 #include "misc/mcr_types.hpp"
-#include "misc/mcr_types.hpp"
-#include "misc/version.hpp"
 
 typedef class mcrCmdQueues mcrCmdQueues_t;
 class mcrCmdQueues {

@@ -15,7 +15,6 @@ defmodule OTA do
 
   def boot_factory_next(host) when is_binary(host) do
     %{}
-    |> Map.put(:vsn, Application.get_env(:mcp, :git_sha))
     |> Map.put(:cmd, @boot_factory_next)
     |> Map.put(:mtime, TimeSupport.unix_now(:seconds))
     |> Map.put(:host, host)
@@ -53,7 +52,6 @@ defmodule OTA do
     delay_ms = Keyword.get(opts, :delay_ms, 3_000)
 
     %{}
-    |> Map.put(:vsn, Application.get_env(:mcp, :git_sha))
     |> Map.put(:cmd, @restart_cmd)
     |> Map.put(:mtime, TimeSupport.unix_now(:seconds))
     |> Map.put(:host, host)
@@ -73,7 +71,6 @@ defmodule OTA do
         log && Logger.info(fn -> "sending begin for #{host}" end)
 
         fw_file_version()
-        |> Map.put(:vsn, Application.get_env(:mcp, :git_sha))
         |> Map.put(:cmd, @ota_begin_cmd)
         |> Map.put(:mtime, TimeSupport.unix_now(:seconds))
         |> Map.put(:host, host)
@@ -94,7 +91,6 @@ defmodule OTA do
     log && Logger.info(fn -> "sending end" end)
 
     %{}
-    |> Map.put(:vsn, Application.get_env(:mcp, :git_sha))
     |> Map.put(:cmd, @ota_end_cmd)
     |> Map.put(:mtime, TimeSupport.unix_now(:seconds))
     |> Map.put(:reboot_delay_ms, delay_ms)

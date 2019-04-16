@@ -34,13 +34,11 @@
 
 #include "cmds/cmd_types.hpp"
 #include "misc/mcr_types.hpp"
-#include "misc/version.hpp"
 
 typedef class mcrCmd mcrCmd_t;
 class mcrCmd {
 private:
   mcrCmdType_t _type;
-  std::string _vsn;
   time_t _mtime = time(nullptr);
 
   void populate(JsonObject &root);

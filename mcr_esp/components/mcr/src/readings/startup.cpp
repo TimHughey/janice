@@ -22,21 +22,32 @@
 #include <ctime>
 
 #include <esp_log.h>
+#include <esp_ota_ops.h>
 #include <external/ArduinoJson.h>
 
 #include "readings/startup.hpp"
 
 startupReading::startupReading(uint32_t batt_mv) : remoteReading(batt_mv) {
+  app_desc_ = esp_ota_get_app_description();
+
   type_ = std::string("boot");
   reset_reason_ = decodeResetReason(esp_reset_reason());
 
-  ESP_LOGI("mcrStartup", "reason: %s", reset_reason_.c_str());
+  ESP_LOGI("mcrStartup", "reason [%s]", reset_reason_.c_str());
 };
 
 void startupReading::populateJSON(JsonObject &root) {
   remoteReading::populateJSON(root);
-  // root["type"] = "boot"; // override the reading type
+
   root["reset_reason"] = reset_reason_.c_str();
+  root["mword"] = app_desc_->magic_word;
+  root["svsn"] = app_desc_->secure_version;
+  root["vsn"] = app_desc_->version;
+  root["proj"] = app_desc_->project_name;
+  root["btime"] = app_desc_->time;
+  root["bdate"] = app_desc_->date;
+  root["idf"] = app_desc_->idf_ver;
+  root["sha"] = app_desc_->app_elf_sha256;
 };
 
 const std::string &

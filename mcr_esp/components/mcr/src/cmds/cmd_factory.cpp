@@ -1,6 +1,6 @@
 #include "cmds/cmd_factory.hpp"
 
-// {"vsn":1,"switch":"ds/12328621000000",
+// {"switch":"ds/12328621000000",
 // "states":[{"state":false,"pio":1}],
 // "refid":"0eb82430-0320-11e8-94b6-6cf049e7139f",
 // "mtime":1517029685,"cmd":"set.switch"}

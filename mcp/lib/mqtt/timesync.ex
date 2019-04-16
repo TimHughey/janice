@@ -59,7 +59,6 @@ defmodule Mqtt.Timesync do
 
   def new_cmd do
     %{}
-    |> Map.put(:vsn, 1)
     |> Map.put(:mtime, TimeSupport.unix_now(:seconds))
     |> Map.put(:cmd, @timesync_cmd)
   end
