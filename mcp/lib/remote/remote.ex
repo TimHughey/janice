@@ -53,7 +53,7 @@ defmodule Remote do
 
   def add(%Remote{} = r), do: add([r])
 
-  def add(%{host: host, hw: hw, vsn: vsn, mtime: mtime} = r) do
+  def add(%{host: host, hw: hw, mtime: mtime} = r) do
     [
       %Remote{
         host: host,
@@ -419,7 +419,7 @@ defmodule Remote do
     update_from_external(rem, eu)
   end
 
-  defp send_remote_config([_rem], %{} = eu) do
+  defp send_remote_config(_anything, %{} = eu) do
     Logger.warn(fn ->
       "attempt to process unknown message type: #{Map.get(eu, :type, "unknown")}"
     end)
