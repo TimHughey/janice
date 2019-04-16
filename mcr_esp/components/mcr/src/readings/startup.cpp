@@ -40,7 +40,7 @@ void startupReading::populateJSON(JsonObject &root) {
   remoteReading::populateJSON(root);
 
   root["reset_reason"] = reset_reason_.c_str();
-  root["mword"] = app_desc_->magic_word;
+  // root["mword"] = app_desc_->magic_word;
   root["svsn"] = app_desc_->secure_version;
   root["vsn"] = app_desc_->version;
   root["proj"] = app_desc_->project_name;
