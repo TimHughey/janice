@@ -59,7 +59,7 @@ defmodule Remote do
         host: host,
         name: Map.get(r, :name, host),
         hw: hw,
-        firmware_vsn: vsn,
+        firmware_vsn: Map.get(:vsn, "not available"),
         project_name: Map.get(r, :proj, "not available"),
         idf_vsn: Map.get(r, :idf, "not available"),
         app_elf_sha256: Map.get(r, :sha, "not available"),
