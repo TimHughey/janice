@@ -150,23 +150,38 @@ uint32_t Net::batt_mv() {
 
 // STATIC!!
 void Net::checkError(const char *func, esp_err_t err) {
-  if (err != ESP_OK) {
-    vTaskDelay(pdMS_TO_TICKS(1000)); // let things settle
+
+  switch (err) {
+  case ESP_OK:
+    return;
+
+  case 0x1100FF:
+    ESP_LOGE(tagEngine(), "failed to acquire IP address");
+    break;
+
+  case 0x1100FE:
+    ESP_LOGE(tagEngine(), "SNTP failed");
+    break;
+  default:
     ESP_LOGE(tagEngine(), "[%s] %s", esp_err_to_name(err), func);
-    ESP_LOGE(tagEngine(), "spooling ftl...");
-
-    // prevent the compiler from optimzing out this code
-    // volatile uint32_t *ptr = (uint32_t *)0x0000000;
-
-    // write to a nullptr to trigger core dump
-    // ptr[0] = 0;
-
-    // should never get here
-    // ESP_LOGE(tagEngine(), "core dump failed");
-    vTaskDelay(pdMS_TO_TICKS(5000)); // let things settle
-    ESP_LOGE(tagEngine(), "JUMP!");
-    esp_restart();
+    break;
   }
+
+  vTaskDelay(pdMS_TO_TICKS(1000)); // let things settle
+
+  ESP_LOGE(tagEngine(), "spooling ftl...");
+
+  // prevent the compiler from optimzing out this code
+  // volatile uint32_t *ptr = (uint32_t *)0x0000000;
+
+  // write to a nullptr to trigger core dump
+  // ptr[0] = 0;
+
+  // should never get here
+  // ESP_LOGE(tagEngine(), "core dump failed");
+  vTaskDelay(pdMS_TO_TICKS(5000)); // let things settle
+  ESP_LOGE(tagEngine(), "JUMP!");
+  esp_restart();
 }
 
 void Net::connected(system_event_t *event) {
@@ -275,7 +290,7 @@ void Net::ensureTimeIsSet() {
 
   if (retry == retry_count) {
     ESP_LOGE(tagEngine(), "timeout waiting for SNTP");
-    checkError(__PRETTY_FUNCTION__, 0xFE);
+    checkError(__PRETTY_FUNCTION__, 0x1100FE);
   } else {
     char buf[20] = {};
     const auto buf_len = sizeof(buf);
@@ -289,8 +304,7 @@ void Net::ensureTimeIsSet() {
     strftime(buf, buf_len, "%Y-%m-%d %T", &timeinfo);
 
     xEventGroupSetBits(evg_, timeSetBit());
-    ESP_LOGI(tagEngine(), "SNTP complete: %s (%lus %lums)", buf,
-             curr_time.tv_sec, curr_time.tv_usec);
+    ESP_LOGI(tagEngine(), "SNTP complete: %s", buf);
   }
 }
 
@@ -398,7 +412,7 @@ bool Net::start() {
     xEventGroupSetBits(evg_, (readyBit() | normalOpsBit()));
   } else {
     // reuse checkError for IP address failure
-    checkError(__PRETTY_FUNCTION__, 0xFF);
+    checkError(__PRETTY_FUNCTION__, 0x1100FF);
   }
 
   return true;

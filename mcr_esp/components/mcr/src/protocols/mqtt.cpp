@@ -318,18 +318,19 @@ void mcrMQTT::run(void *data) {
 }
 
 void mcrMQTT::subACK(struct mg_mqtt_message *msg) {
-  ESP_LOGI(tagEngine(), "suback msg_id=%d", msg->message_id);
+  ESP_LOGD(tagEngine(), "suback msg_id=%d", msg->message_id);
 
   if (msg->message_id == _cmd_feed_msg_id) {
     ESP_LOGI(tagEngine(), "subscribed to CMD feed");
     _mqtt_ready = true;
     mcr::Net::setTransportReady();
-    // announcing startup here creates a race conditino the results
-    // in occasionally using epach as the startup time
-    // announceStartup();
+    // NOTE: do not announce startup here.  doing so creates a race condition
+    // that results in occasionally using epoch as the startup time
+
   } else if (msg->message_id == _ota_feed_msg_id) {
     ESP_LOGI(tagEngine(), "subscribed to OTA feed");
     _ota_subscribed = true;
+
   } else {
     ESP_LOGW(tagEngine(), "suback did not match known subscription requests");
   }

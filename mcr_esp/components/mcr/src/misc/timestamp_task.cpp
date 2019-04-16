@@ -81,10 +81,17 @@ void mcrTimestampTask::run(void *data) {
 
     if ((time(nullptr) - last_timestamp) >= _timestamp_freq_secs) {
       const char *name = mcr::Net::getName().c_str();
+      char delta_str[12] = {};
 
-      ESP_LOGI(name, "%s hc=%uk hf=%uk hl=%uk d=%+05d ma=%uk batt=%dv",
+      if (delta < 0) {
+        snprintf(delta_str, sizeof(delta_str), "(%05d)", delta * -1);
+      } else {
+        snprintf(delta_str, sizeof(delta_str), "%05d", delta);
+      }
+
+      ESP_LOGI(name, "%s hc=%uk hf=%uk hl=%uk d=%s ma=%uk batt=%dv",
                dateTimeString(), (curr_heap / 1024), (_firstHeap / 1024),
-               (_maxHeap / 1024), delta, (max_alloc / 1024), batt_mv);
+               (_maxHeap / 1024), delta_str, (max_alloc / 1024), batt_mv);
       // ESP_LOGI(name, "%s", dateTimeString());
       last_timestamp = time(nullptr);
 

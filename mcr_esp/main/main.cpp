@@ -20,6 +20,9 @@ extern "C" {
 void app_main(void);
 }
 
+extern const uint8_t ca_start[] asm("_binary_ca_pem_start");
+extern const uint8_t ca_end[] asm("_binary_ca_pem_end");
+
 static const char *embed_vsn_sha = mcrVersion::embed_vsn_sha();
 static const char *TAG = "mcr_esp";
 
@@ -119,12 +122,16 @@ void app_main() {
     }
   }
 
+  UBaseType_t stack_high_water = uxTaskGetStackHighWaterMark(nullptr);
+  UBaseType_t num_tasks = uxTaskGetNumberOfTasks();
+
+  ESP_LOGI(TAG, "boot complete [stack high water: %d, num of tasks: %d]",
+           stack_high_water, num_tasks);
+
+  ESP_LOGI(TAG, "ca pem binary size=%d", ca_end - ca_start);
+
   for (;;) {
-    UBaseType_t stack_high_water;
-
-    stack_high_water = uxTaskGetStackHighWaterMark(nullptr);
-
-    ESP_LOGI(TAG, "task high water mark: %d", stack_high_water);
+    // the main task does nothing after boot
     vTaskDelay(pdMS_TO_TICKS(10 * 60 * 1000));
   }
 }
