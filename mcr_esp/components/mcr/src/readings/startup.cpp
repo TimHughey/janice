@@ -47,7 +47,8 @@ void startupReading::populateJSON(JsonObject &root) {
   root["btime"] = app_desc_->time;
   root["bdate"] = app_desc_->date;
   root["idf"] = app_desc_->idf_ver;
-  root["sha"] = app_desc_->app_elf_sha256;
+  // TODO: determine how to store an array of uint8_t
+  // root["sha"] = app_desc_->app_elf_sha256;
 };
 
 const std::string &
