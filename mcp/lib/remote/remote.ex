@@ -32,12 +32,13 @@ defmodule Remote do
     field(:app_elf_sha256, :string)
     field(:build_date, :string)
     field(:build_time, :string)
-    field(:magic_word, :integer)
+    field(:magic_word, :string)
     field(:secure_vsn, :integer)
     field(:last_start_at, :utc_datetime_usec)
     field(:last_seen_at, :utc_datetime_usec)
     field(:batt_mv, :integer)
     field(:reset_reason, :string)
+    field(:bssid, :string)
     field(:ap_rssi, :integer)
     field(:ap_pri_chan, :integer)
     field(:ap_sec_chan, :integer)
@@ -53,19 +54,19 @@ defmodule Remote do
 
   def add(%Remote{} = r), do: add([r])
 
-  def add(%{host: host, hw: hw, mtime: mtime} = r) do
+  def add(%{host: host, mtime: mtime} = r) do
     [
       %Remote{
         host: host,
+        hw: Map.get(r, :hw, "unknown hw"),
         name: Map.get(r, :name, host),
-        hw: hw,
         firmware_vsn: Map.get(r, :vsn, "not available"),
         project_name: Map.get(r, :proj, "not available"),
         idf_vsn: Map.get(r, :idf, "not available"),
         app_elf_sha256: Map.get(r, :sha, "not available"),
         build_date: Map.get(r, :bdate, "not available"),
         build_time: Map.get(r, :btime, "not available"),
-        magic_word: Map.get(r, :mword, 0),
+        magic_word: Map.get(r, :mword, "0x000000"),
         secure_vsn: Map.get(r, :svsn, 0),
         last_seen_at: TimeSupport.from_unix(mtime),
         last_start_at: TimeSupport.from_unix(mtime)
@@ -229,7 +230,7 @@ defmodule Remote do
     IO.puts("\tRemote.deprecate(id)")
   end
 
-  def external_update(%{host: host, mtime: _mtime, hw: _hw} = eu) do
+  def external_update(%{host: host, mtime: _mtime} = eu) do
     result =
       :timer.tc(fn ->
         Logger.debug(fn -> "external_update() handling:" end)

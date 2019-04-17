@@ -45,9 +45,13 @@ remoteReading::remoteReading(uint32_t batt_mv)
 };
 
 void remoteReading::populateJSON(JsonObject &root) {
+  char bssid_str[] = "xx:xx:xx:xx:xx:xx";
+  snprintf(bssid_str, sizeof(bssid_str), "%02x:%02x:%02x:%02x:%02x:%02x",
+           ap_.bssid[5], ap_.bssid[4], ap_.bssid[3], ap_.bssid[2], ap_.bssid[1],
+           ap_.bssid[0]);
+
   root["type"] = type_.c_str();
-  root["hw"] = "esp32";
-  // root["bssid"] = ap_.bssid;
+  root["bssid"] = bssid_str;
   root["ap_rssi"] = ap_.rssi;
   root["ap_pri_chan"] = ap_.primary;
   root["batt_mv"] = batt_mv_;

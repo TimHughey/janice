@@ -37,18 +37,24 @@ startupReading::startupReading(uint32_t batt_mv) : remoteReading(batt_mv) {
 };
 
 void startupReading::populateJSON(JsonObject &root) {
+  char magic_word[] = "0x00000000";
+  char sha256[12] = {};
+
   remoteReading::populateJSON(root);
 
+  snprintf(magic_word, sizeof(magic_word), "0x%ux", app_desc_->magic_word);
+  esp_ota_get_app_elf_sha256(sha256, sizeof(sha256));
+
   root["reset_reason"] = reset_reason_.c_str();
-  // root["mword"] = app_desc_->magic_word;
+  root["hw"] = "esp32";
+  root["mword"] = magic_word;
   root["svsn"] = app_desc_->secure_version;
   root["vsn"] = app_desc_->version;
   root["proj"] = app_desc_->project_name;
   root["btime"] = app_desc_->time;
   root["bdate"] = app_desc_->date;
   root["idf"] = app_desc_->idf_ver;
-  // TODO: determine how to store an array of uint8_t
-  // root["sha"] = app_desc_->app_elf_sha256;
+  root["sha"] = sha256;
 };
 
 const std::string &

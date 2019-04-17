@@ -15,29 +15,41 @@ defmodule RemoteTest do
     do: %{
       host: host(num),
       type: "remote_runtime",
-      hw: "esp32",
-      vsn: "1234567",
-      proj: "mcr",
-      idf: "idf-3.3",
-      sha: "aaaaabbbbccccc",
-      bdate: "04-15-2019",
-      btime: "12:01:01",
-      mword: 33903,
-      svsn: 813,
-      mtime: TimeSupport.unix_now(:seconds),
-      log: false,
-      reset_reason: "software reset",
-      batt_mv: 3800,
-      ap_rssi: -45,
-      ap_pri_chan: 6,
-      # ap_sec_chan: 1,
-      heap_min: 100 * 1024,
-      heap_free: 101 * 1024,
-      uptime_us: 15000
+      mtime: TimeSupport.unix_now(:seconds)
     }
 
-  def runtime(m), do: Map.put(m, :type, "remote_runtime")
-  def boot(m), do: Map.put(m, :type, "boot")
+  def runtime(m) do
+    runtime_map = %{
+      type: "remote_runtime",
+      batt_mv: 3800,
+      bssid: "11:22:33:44:55:66",
+      ap_rssi: -45,
+      ap_pri_chan: 6,
+      heap_min: 100 * 1024,
+      heap_free: 101 * 1024,
+      uptime_ms: 15000
+    }
+
+    Map.merge(m, runtime_map)
+  end
+
+  def boot(m) do
+    boot_map = %{
+      type: "boot",
+      hw: "esp32",
+      vsn: "12345678",
+      proj: "mcr",
+      idf: "idf-3.3",
+      sha: "0123456789abcdef",
+      bdate: "04-16-2019",
+      btime: "14:01:02",
+      mword: "0x123456",
+      svsn: 813,
+      reset_reason: "software reset"
+    }
+
+    Map.merge(m, boot_map)
+  end
 
   setup_all do
     ext(99) |> boot() |> Remote.external_update()
