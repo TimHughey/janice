@@ -146,6 +146,7 @@ defmodule Remote do
       :reset_reason,
       :last_start_at,
       :last_seen_at,
+      :bssid,
       :ap_rssi,
       :ap_pri_chan,
       :heap_free,
@@ -446,6 +447,7 @@ defmodule Remote do
       # reset the following metrics when not present
       ap_rssi: Map.get(eu, :ap_rssi, 0),
       ap_pri_chan: Map.get(eu, :ap_pri_chan, 0),
+      bssid: Map.get(eu, :bssid, "xx:xx:xx:xx:xx:xx"),
       # ap_sec_chan: Map.get(eu, :ap_sec_chan, 0),
       batt_mv: Map.get(eu, :batt_mv, 0),
       heap_free: Map.get(eu, :heap_free, 0),
