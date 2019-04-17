@@ -22,7 +22,7 @@ void app_main(void);
 extern const uint8_t ca_start[] asm("_binary_ca_pem_start");
 extern const uint8_t ca_end[] asm("_binary_ca_pem_end");
 
-static const char *TAG = "mcr_esp";
+static const char *TAG = "mcrESP";
 
 static mcr::Net *network = nullptr;
 static mcrTimestampTask *timestampTask = nullptr;
@@ -32,8 +32,8 @@ static mcrI2c *i2cEngineTask = nullptr;
 
 void app_main() {
   ESP_LOGI(TAG, "%s entered", __PRETTY_FUNCTION__);
-  ESP_LOGI(TAG, "portTICK_PERIOD_MS=%u and 10ms=%u ticks", portTICK_PERIOD_MS,
-           pdMS_TO_TICKS(10));
+  ESP_LOGI(TAG, "portTICK_PERIOD_MS=%u and 10ms=%u tick%s", portTICK_PERIOD_MS,
+           pdMS_TO_TICKS(10), (pdMS_TO_TICKS(10) > 1) ? "s" : "");
 
   // ensure all peripherals have been completely reset
   // important after OTA and if an internal error occured that forced a restart
@@ -86,7 +86,7 @@ void app_main() {
   i2cEngineTask = mcrI2c::instance(); // singleton
 
   // create and start our tasks
-  // NOTE: each task implementation handles syncronization
+  // NOTE: tasks handle necessary coordination
 
   timestampTask->start();
   mqttTask->start();
@@ -122,10 +122,11 @@ void app_main() {
   ESP_LOGI(TAG, "boot complete [stack high water: %d, num of tasks: %d]",
            stack_high_water, num_tasks);
 
-  ESP_LOGI(TAG, "ca pem binary size=%d", ca_end - ca_start);
+  ESP_LOGI(TAG, "certificate authority pem available [%d bytes]",
+           ca_end - ca_start);
 
   for (;;) {
     // the main task does nothing after boot
-    vTaskDelay(pdMS_TO_TICKS(10 * 60 * 1000));
+    vTaskDelay(pdMS_TO_TICKS(30 * 60 * 1000));
   }
 }

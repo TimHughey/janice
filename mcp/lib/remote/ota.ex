@@ -22,27 +22,27 @@ defmodule OTA do
     |> Client.publish()
   end
 
-  def fw_file_version do
-    fw_file = "priv/mcr_esp.bin"
-    fw = Application.app_dir(:mcp, fw_file)
-
-    with {:ok, file} <- File.open(fw, [:read]),
-         block <- IO.binread(file, 24 * 1024) do
-      rx = ~r/mcr_sha_head=(?<head>\w+).mcr_sha_stable=(?<stable>\w+)/x
-
-      vsn = Regex.named_captures(rx, block)
-
-      Logger.debug(fn -> "mcr_esp.bin versions: #{inspect(vsn)}" end)
-      File.close(file)
-
-      %{head: Map.get(vsn, "head", "0000000"), stable: Map.get(vsn, "stable", "0000000")}
-    else
-      err ->
-        Logger.warn(fn -> "File.open(#{fw_file}, [:read]) returned #{inspect(err)}" end)
-        %{head: "0000000", stable: "0000000"}
-    end
-  end
-
+  # def fw_file_version do
+  #   fw_file = "priv/mcr_esp.bin"
+  #   fw = Application.app_dir(:mcp, fw_file)
+  #
+  #   with {:ok, file} <- File.open(fw, [:read]),
+  #        block <- IO.binread(file, 24 * 1024) do
+  #     rx = ~r/mcr_sha_head=(?<head>\w+).mcr_sha_stable=(?<stable>\w+)/x
+  #
+  #     vsn = Regex.named_captures(rx, block)
+  #
+  #     Logger.debug(fn -> "mcr_esp.bin versions: #{inspect(vsn)}" end)
+  #     File.close(file)
+  #
+  #     %{head: Map.get(vsn, "head", "0000000"), stable: Map.get(vsn, "stable", "0000000")}
+  #   else
+  #     err ->
+  #       Logger.warn(fn -> "File.open(#{fw_file}, [:read]) returned #{inspect(err)}" end)
+  #       %{head: "0000000", stable: "0000000"}
+  #   end
+  # end
+  #
   def header_bytes, do: for(t <- [:start, :stream, :last], do: header(t))
   defp header(:start), do: 0xD1
   defp header(:stream), do: 0xD2
@@ -70,7 +70,10 @@ defmodule OTA do
       for host <- update_hosts, is_binary(host) do
         log && Logger.info(fn -> "sending begin for #{host}" end)
 
-        fw_file_version()
+        # TODO: design and implement new firmware version handling
+        # fw_file_version()
+
+        %{}
         |> Map.put(:cmd, @ota_begin_cmd)
         |> Map.put(:mtime, TimeSupport.unix_now(:seconds))
         |> Map.put(:host, host)

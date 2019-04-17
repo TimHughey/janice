@@ -205,7 +205,7 @@ void mcrDS::convert(void *task_data) {
     uint8_t data = 0x00;
     owb_status owb_s;
 
-    // wait here for the signal there are devices available
+    // wait here for devices available bit
     xEventGroupWaitBits(
         _ds_evg,
         (_event_bits.devices_available | _event_bits.temp_sensors_available),

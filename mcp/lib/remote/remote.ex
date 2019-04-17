@@ -101,27 +101,27 @@ defmodule Remote do
     |> Repo.all()
   end
 
-  def at_preferred_vsn?(%Remote{firmware_vsn: current} = r) do
-    fw_file_vsn = OTA.fw_file_version()
-
-    preferred =
-      case r.preferred_vsn do
-        "head" ->
-          Map.get(fw_file_vsn, :head)
-
-        "stable" ->
-          Map.get(fw_file_vsn, :stable)
-
-        _ ->
-          Logger.warn(fn -> "#{r.name} has a bad preferred vsn #{r.preferred_vsn}" end)
-          "0000000"
-      end
-
-    case current do
-      ^preferred -> true
-      _ -> false
-    end
-  end
+  # def at_preferred_vsn?(%Remote{firmware_vsn: current} = r) do
+  #   fw_file_vsn = OTA.fw_file_version()
+  #
+  #   preferred =
+  #     case r.preferred_vsn do
+  #       "head" ->
+  #         Map.get(fw_file_vsn, :head)
+  #
+  #       "stable" ->
+  #         Map.get(fw_file_vsn, :stable)
+  #
+  #       _ ->
+  #         Logger.warn(fn -> "#{r.name} has a bad preferred vsn #{r.preferred_vsn}" end)
+  #         "0000000"
+  #     end
+  #
+  #   case current do
+  #     ^preferred -> true
+  #     _ -> false
+  #   end
+  # end
 
   def browse do
     sorted = all() |> Enum.sort(fn a, b -> a.name <= b.name end)
@@ -327,7 +327,12 @@ defmodule Remote do
 
     update_hosts =
       for %Remote{host: host, name: name} = r <- list do
-        at_vsn = at_preferred_vsn?(r)
+        # TODO: design and implement new firmware version handling
+        # at_vsn = at_preferred_vsn?(r)
+
+        # HACK: until the TODO is complete Remotes will never be seen
+        # as at_vsn
+        at_vsn = false
 
         if at_vsn == false or force == true do
           log && Logger.warn(fn -> "#{name} needs update" end)
