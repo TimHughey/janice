@@ -87,27 +87,3 @@ config :mcp, Mcp.SoakTest,
   flash_led_ms: 3 * 1000
 
 config :mcp, Switch, logCmdAck: false
-
-config :mcp, Web.Endpoint,
-  http: [port: 4000],
-  # url: [scheme: "https", url: "www.wisslanding.com", port: 443],
-  static_url: [path: "/janice"],
-  debug_errors: true,
-  code_reloader: true,
-  check_origin: false,
-  watchers: [
-    node: [
-      "node_modules/brunch/bin/brunch",
-      "watch",
-      "--stdin",
-      cd: Path.expand("../assets", __DIR__)
-    ]
-  ],
-  live_reload: [
-    patterns: [
-      ~r{priv/static/.*(js|css|png|jpeg|jpg|gif|svg)$},
-      ~r{priv/gettext/.*(po)$},
-      ~r{lib/web/views/.*(ex)$},
-      ~r{lib/web/templates/.*(eex)$}
-    ]
-  ]

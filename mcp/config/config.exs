@@ -36,7 +36,12 @@ config :mcp,
     ota: {"prod/mcr/f/ota", :qos0}
   ]
 
-config :mcp, OTA, firmware_files: [current: "mcr_esp.bin", previous: "mcr_esp.bin.prev"]
+config :mcp, OTA,
+  firmware_files: [
+    current: "mcr_esp.bin",
+    previous: "mcr_esp.bin.prev",
+    special: "mcr_esp.bin.special"
+  ]
 
 config :mcp, Janice.Scheduler,
   run_strategy: Quantum.RunStrategy.Local,

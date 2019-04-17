@@ -96,7 +96,7 @@ public:
                   this, _engine_priority, &_engine_task);
   }
 
-  void stop() {
+  virtual void stop() {
     if (_engine_task == nullptr) {
       return;
     }

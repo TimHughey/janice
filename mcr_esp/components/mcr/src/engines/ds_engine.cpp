@@ -99,8 +99,12 @@ void mcrDS::command(void *task_data) {
     queue_rc = xQueueReceive(_cmd_q, &cmd, portMAX_DELAY);
     int64_t start = esp_timer_get_time();
 
-    if (queue_rc != pdTRUE) {
-      ESP_LOGW(tagCommand(), "queue receive failed rc=%d", queue_rc);
+    if (queue_rc == pdFALSE) {
+      ESP_LOGW(tagCommand(), "[rc=%d] queue receive failed", queue_rc);
+
+      // HACK: pause if the queue receive fails
+      // the intent here is to give time for vTaskDelete to complete
+      vTaskDelay(pdMS_TO_TICKS(20000));
       continue;
     }
 
@@ -1241,6 +1245,28 @@ bool mcrDS::setDS2413(mcrCmdSwitch_t &cmd, dsDev_t *dev) {
   }
 
   return rc;
+}
+
+void mcrDS::stop() {
+  struct tasks {
+    const char *name;
+    mcrTask_t *task;
+  };
+
+  struct tasks kill[] = {{.name = tagConvert(), .task = &_cmdTask},
+                         {.name = tagDiscover(), .task = &_discoverTask},
+                         {.name = tagReport(), .task = &_reportTask},
+                         {.name = tagCommand(), .task = &_cmdTask}};
+
+  uint8_t num_kill = sizeof(kill) / sizeof(tasks);
+
+  for (uint8_t i = 0; i < num_kill; i++) {
+    ESP_LOGW(tagEngine(), "killing %s(%p)", kill[i].name, kill[i].task->handle);
+    ::vTaskDelete(kill[i].task->handle);
+    delay(100); // allow time for the task to die and idle to clean it up
+  }
+
+  mcrEngine::stop();
 }
 
 bool mcrDS::check_crc16(const uint8_t *input, uint16_t len,

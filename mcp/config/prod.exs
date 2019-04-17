@@ -102,15 +102,4 @@ config :mcp, Mcp.SoakTest,
 
 config :mcp, Switch, logCmdAck: false
 
-config :mcp, Web.Endpoint,
-  # http: [port: {:system, "PORT"}],
-  http: [port: 4009],
-  load_from_system_env: true,
-  url: [scheme: "https:", host: "www.wisslanding.com", port: 443],
-  cache_static_manifest: "priv/static/cache_manifest.json",
-  static_url: [path: "/janice"],
-  server: true,
-  # root: ".",
-  version: Application.spec(:mcp, :vsn)
-
 import_config "prod.secret.exs"
