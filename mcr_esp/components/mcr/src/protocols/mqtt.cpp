@@ -61,8 +61,8 @@ mcrMQTT::mcrMQTT() {
   // create the endpoint URI
   _endpoint = endpoint_ss.str();
 
-  _rb_in_lowwater = _rb_in_size * .1;
-  _rb_in_highwater = _rb_in_size * .9;
+  _rb_in_lowwater = _rb_in_size * .02;
+  _rb_in_highwater = _rb_in_size * .98;
 
   _rb_out = xRingbufferCreate(_rb_out_size, RINGBUF_TYPE_NOSPLIT);
   _rb_in = xRingbufferCreate(_rb_in_size, RINGBUF_TYPE_NOSPLIT);
@@ -146,20 +146,18 @@ void mcrMQTT::incomingMsg(struct mg_str *in_topic, struct mg_str *in_payload) {
 
   size_t avail_bytes = xRingbufferGetCurFreeSize(_rb_in);
 
-  if ((!_prefer_outbound_ticks) && (avail_bytes < _rb_in_lowwater)) {
+  if ((_ota_overload == false) && (avail_bytes < _rb_in_lowwater)) {
+    _ota_overload = true;
     ESP_LOGW(tagEngine(),
-             "--> ringbuff overload %04u,%04u,%u (avail,low,total)",
+             "--> ota buffer overload avail(%04u) low(%04u) total(%u)",
              avail_bytes, _rb_in_lowwater, _rb_in_size);
-
-    _prefer_outbound_ticks = pdMS_TO_TICKS(200);
   }
 
-  if (_prefer_outbound_ticks && (avail_bytes > _rb_in_highwater)) {
+  if (_ota_overload && (avail_bytes > _rb_in_highwater)) {
+    _ota_overload = false;
     ESP_LOGI(tagEngine(),
-             "--> ringbuff drained  %04u,%04u,%u (avail,high,total)",
+             "--> ota buffer drained  avail(%04u) low(%04u) total(%u)",
              avail_bytes, _rb_in_highwater, _rb_in_size);
-    vTaskPrioritySet(_task.handle, _task.priority);
-    _prefer_outbound_ticks = 0;
   }
 
   if (rb_rc) {
@@ -206,6 +204,9 @@ void mcrMQTT::__otaPrep() {
 
   ESP_LOGI(tagEngine(), "increasing mcrMQTTin task priority");
   _mqtt_in->changePriority(_task.priority);
+
+  // ESP_LOGI(tagEngine(), "deprioritizing inbound messages to prevent
+  // overload"); _prefer_outbound_ticks = pdMS_TO_TICKS(100);
 }
 
 void mcrMQTT::publish(Reading_t *reading) {

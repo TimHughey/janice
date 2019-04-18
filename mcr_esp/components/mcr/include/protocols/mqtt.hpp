@@ -115,6 +115,7 @@ private:
       (sizeof(mqttInMsg_t) * CONFIG_MCR_MQTT_RINGBUFFER_PENDING_MSGS);
   size_t _rb_in_lowwater = 0;
   size_t _rb_in_highwater = 0;
+  bool _ota_overload = false;
   RingbufHandle_t _rb_out = nullptr;
   RingbufHandle_t _rb_in = nullptr;
 
