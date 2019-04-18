@@ -60,6 +60,7 @@ private:
 public:
   static mcrDS_t *instance();
   void run(void *data);
+  void suspend();
   void stop();
 
 private:

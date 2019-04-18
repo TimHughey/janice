@@ -1247,26 +1247,25 @@ bool mcrDS::setDS2413(mcrCmdSwitch_t &cmd, dsDev_t *dev) {
   return rc;
 }
 
-void mcrDS::stop() {
+void mcrDS::suspend() {
   struct tasks {
     const char *name;
     mcrTask_t *task;
   };
 
-  struct tasks kill[] = {{.name = tagConvert(), .task = &_cmdTask},
-                         {.name = tagDiscover(), .task = &_discoverTask},
-                         {.name = tagReport(), .task = &_reportTask},
-                         {.name = tagCommand(), .task = &_cmdTask}};
+  struct tasks suspend[] = {{.name = tagConvert(), .task = &_cmdTask},
+                            {.name = tagDiscover(), .task = &_discoverTask},
+                            {.name = tagReport(), .task = &_reportTask},
+                            {.name = tagCommand(), .task = &_cmdTask}};
 
-  uint8_t num_kill = sizeof(kill) / sizeof(tasks);
-
-  for (uint8_t i = 0; i < num_kill; i++) {
-    ESP_LOGW(tagEngine(), "killing %s(%p)", kill[i].name, kill[i].task->handle);
-    ::vTaskDelete(kill[i].task->handle);
-    delay(100); // allow time for the task to die and idle to clean it up
+  uint8_t num_suspend = sizeof(suspend) / sizeof(tasks);
+  for (uint8_t i = 0; i < num_suspend; i++) {
+    ESP_LOGW(tagEngine(), "suspending %s(%p)", suspend[i].name,
+             suspend[i].task->handle);
+    ::vTaskSuspend(suspend[i].task->handle);
   }
 
-  mcrEngine::stop();
+  this->mcrEngine::suspend();
 }
 
 bool mcrDS::check_crc16(const uint8_t *input, uint16_t len,

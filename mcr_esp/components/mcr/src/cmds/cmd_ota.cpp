@@ -54,8 +54,8 @@ void mcrCmdOTA::begin() {
   ESP_LOGI(TAG, "ota begin received, anticipate data blocks in %dms",
            _start_delay_ms);
 
-  mcrI2c::instance()->stop();
-  mcrDS::instance()->stop();
+  mcrI2c::instance()->suspend();
+  mcrDS::instance()->suspend();
   mcr::Net::suspendNormalOps();
 
   mcrMQTT::otaPrep();

@@ -83,6 +83,10 @@ public:
   void delay(int ms) { ::vTaskDelay(pdMS_TO_TICKS(ms)); }
 
   virtual void run(void *data) = 0;
+  virtual void suspend() {
+    ESP_LOGW(tagEngine(), "suspending self(%p)", this->_engine_task);
+    vTaskSuspend(this->_engine_task);
+  };
 
   void start(void *task_data = nullptr) {
     if (_engine_task != nullptr) {
@@ -96,7 +100,7 @@ public:
                   this, _engine_priority, &_engine_task);
   }
 
-  virtual void stop() {
+  void stop() {
     if (_engine_task == nullptr) {
       return;
     }
