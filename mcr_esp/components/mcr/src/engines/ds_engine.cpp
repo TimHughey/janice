@@ -1253,7 +1253,7 @@ void mcrDS::suspend() {
     mcrTask_t *task;
   };
 
-  struct tasks suspend[] = {{.name = tagConvert(), .task = &_cmdTask},
+  struct tasks suspend[] = {{.name = tagConvert(), .task = &_convertTask},
                             {.name = tagDiscover(), .task = &_discoverTask},
                             {.name = tagReport(), .task = &_reportTask},
                             {.name = tagCommand(), .task = &_cmdTask}};

@@ -86,9 +86,7 @@ menu "Engines"
 				bus this value introduces a task delay between checks.
 
 
-		config MCR_DS_TASKS
-			depends on MCR_DS_ENABLE
-			bool "1-Wire Tasks"
+
 
 		config MCR_DS_TASK_INIT_PRIORITY
 			depends on MCR_DS_TASKS
@@ -106,95 +104,6 @@ menu "Engines"
 			 	This configuration value defines the task priority of the Core during
 			 	initialization which includes starting the other tasks.
 
-	 	config MCR_DS_TASK_HOUSEKEEPING_PRIORITY
-			depends on MCR_DS_TASKS
- 			int "Core Task Housekeeping Priority"
- 			default 1
- 			range 0 19
- 			help
- 				The 1-Wire Engine is divided in multiple tasks:
- 				  1. Core (housekeeping)
- 					2. Discover
- 					3. Convert
- 					4. Report
-					5. Command
-
-	 			 This configuration value defines the task priority of the Core after
-				 initialization is complete and it has entered the housekeeping phase.
-
-				 It is advisable to set this priority to a very low value since the housekeeping
-				 activities are generally minimal (e.g. reporting runtime metrics).
-
-	 	config MCR_DS_DISCOVER_TASK_PRIORITY
-			depends on MCR_DS_TASKS
-		 	int "Discover Task Priority"
-		 	default 12
-		 	range 1 19
-		 	help
-		 		The 1-Wire Engine is divided in multiple tasks:
-		 			1. Core
-		 			2. Discover (this configuration value)
-		 			3. Convert
-		 			4. Report
-					5. Command
-
-			 	 This configuration value defines the task priority of the Discover task.
-
-				 It is advisable to set this priority lower than all other tasks except the
-				 Core housekeeping task.
-
-	 	config MCR_DS_CONVERT_TASK_PRIORITY
-			depends on MCR_DS_TASKS
- 		 int "Convert Task Priority"
- 		 default 13
- 		 range 1 19
- 		 help
- 			 The 1-Wire Engine is divided in multiple tasks:
- 				 1. Core
- 				 2. Discover
- 				 3. Convert (this configuration value)
- 				 4. Report
- 				 5. Command
-
-	 			This configuration value defines the task priority of the Convert task.
-
-	 			It is advisable to set this priority to match the Report priority and
-				higher than other tasks but lower than the Command task.
-
-		config MCR_DS_REPORT_TASK_PRIORITY
-			depends on MCR_DS_TASKS
-			int "Report Task Priority"
-			default 13
-			range 1 19
-			help
-			 The 1-Wire Engine is divided in multiple tasks:
-				 1. Core
-				 2. Discover
-				 3. Convert
-				 4. Report (this configuration value)
-				 5. Command
-
-				This configuration value defines the task priority of the Report task.
-
-				It is advisable to match this priority to the Convert task.
-
-		config MCR_DS_COMMAND_TASK_PRIORITY
-			depends on MCR_DS_TASKS
-			int "Command Task Priority"
-			default 14
-			range 1 19
-			help
-			 The 1-Wire Engine is divided in multiple tasks:
-				 1. Core
-				 2. Discover
-				 3. Convert
-				 4. Report
-				 5. Command (this configuration value)
-
-				This configuration value defines the task priority of the Command task.
-
-				It is advisable to set this priority the highest of all 1-Wire Engine tasks
-				to ensure handling commands (e.g. changing a switch position) swiftly.
 
 		config MCR_I2C_ENABLE
 			bool "Enable the I2C Engine"
@@ -217,21 +126,7 @@ menu "Engines"
 						As of now this value controls how often all actions are performed
 						by the I2C engine.
 
-				config MCR_I2C_TASKS
-					depends on MCR_I2C_ENABLE
-					bool "I2C Tasks"
 
-					config MCR_I2C_TASK_CORE_PRIORITY
-						depends on MCR_I2C_TASKS
-						int "Core Task Initialization Priority"
-						default 13
-						range 1 19
-						help
-						 	This configuration value defines the task priority of the only task
-							for the I2C engine (Core).
-
-							NOTE:  For an unknown reason the i2c bus appears most stable when
-							       this task priority == mcrDS convert
 	endmenu
 
 menu "IoT"
@@ -298,41 +193,7 @@ menu "IoT"
 				MCR devices can receive firmware upgrades OTA.  This is the feed (topic)
 				that will be used exclusively for the firmware binary.
 
-		config MCR_IOT_TASKS
-			depends on MCR_IOT_ENDPOINT
-			bool "IoT Tasks for Inbound and Outbound Messages"
-			default y
 
-			config MCR_MQTT_TASK_PRIORITY
-				depends on MCR_IOT_TASKS
-				int "Send/Receive Task Priority"
-				default 14
-				range 1 19
-				help
-					MQTT processing is divided into two tasks:
-					  1. Sending and receiving all MQTT messages (this configuration value)
-						2. Processing messages (e.g. parsing JSON) to hand-off to Engine tasks for action
-
-					This value configures the priority of the sending and receiving task.
-
-					It is advisable for this task to be a higher priority than the inbound processing
-					task to ensure that messages are overall sent and received with minimal delay.
-
-			config MCR_MQTT_INBOUND_TASK_PRIORITY
-				depends on MCR_IOT_TASKS
-				int "Inbound Processing Task Priority"
-				default 10
-				range 1 19
-				help
-					MQTT processing is divided into two tasks:
-						1. Sending and receiving all MQTT messages
-						2. Processing messages (e.g. parsing JSON) to hand-off to Engine tasks for action
-						   (this configuration value)
-
-					This value configures the priority processing task.
-
-					It is advisable for this task to be a lower priority than the sending and receiving
-					task to avoid delays in sending and receiving.
 
 
 			config MCR_MQTT_RINGBUFFER_PENDING_MSGS
@@ -400,5 +261,175 @@ menu "IoT"
 	config MG_ENABLE_SYNC_RESOLVER
 		bool "Use Mongoose synchronous DNS resolver"
 		default true
+
+
+menu "Task Priorities"
+	config MCR_TASK_PRIORITIES
+		bool "Configure MCR Task Priorities"
+		default y
+
+		config MCR_DS_TASKS
+			depends on MCR_DS_ENABLE
+			bool "1-Wire"
+
+		config MCR_DS_TASK_INIT_PRIORITY
+			depends on MCR_DS_TASKS && MCR_TASK_PRIORITIES
+			int "DS Core Task Initialization Priority"
+			default 14
+			range 1 19
+			help
+				The 1-Wire Engine is divided in multiple tasks:
+					1. Core (initialization)
+					2. Discover
+					3. Convert
+					4. Report
+					5. Command
+
+				This configuration value defines the task priority of the Core during
+				initialization which includes starting the other tasks.
+
+		config MCR_DS_TASK_HOUSEKEEPING_PRIORITY
+			depends on MCR_DS_TASKS && MCR_TASK_PRIORITIES
+ 			int "Core Task Housekeeping Priority"
+ 			default 1
+ 			range 0 19
+ 			help
+ 				The 1-Wire Engine is divided in multiple tasks:
+ 				  1. Core (housekeeping)
+ 					2. Discover
+ 					3. Convert
+ 					4. Report
+					5. Command
+
+	 			 This configuration value defines the task priority of the Core after
+				 initialization is complete and it has entered the housekeeping phase.
+
+				 It is advisable to set this priority to a very low value since the housekeeping
+				 activities are generally minimal (e.g. reporting runtime metrics).
+
+	 	config MCR_DS_DISCOVER_TASK_PRIORITY
+			depends on MCR_DS_TASKS && MCR_TASK_PRIORITIES
+		 	int "Discover Task Priority"
+		 	default 12
+		 	range 1 19
+		 	help
+		 		The 1-Wire Engine is divided in multiple tasks:
+		 			1. Core
+		 			2. Discover (this configuration value)
+		 			3. Convert
+		 			4. Report
+					5. Command
+
+			 	 This configuration value defines the task priority of the Discover task.
+
+				 It is advisable to set this priority lower than all other tasks except the
+				 Core housekeeping task.
+
+	 	config MCR_DS_CONVERT_TASK_PRIORITY
+			depends on MCR_DS_TASKS && MCR_TASK_PRIORITIES
+ 		 int "Convert Task Priority"
+ 		 default 13
+ 		 range 1 19
+ 		 help
+ 			 The 1-Wire Engine is divided in multiple tasks:
+ 				 1. Core
+ 				 2. Discover
+ 				 3. Convert (this configuration value)
+ 				 4. Report
+ 				 5. Command
+
+	 			This configuration value defines the task priority of the Convert task.
+
+	 			It is advisable to set this priority to match the Report priority and
+				higher than other tasks but lower than the Command task.
+
+		config MCR_DS_REPORT_TASK_PRIORITY
+			depends on MCR_DS_TASKS && MCR_TASK_PRIORITIES
+			int "Report Task Priority"
+			default 13
+			range 1 19
+			help
+			 The 1-Wire Engine is divided in multiple tasks:
+				 1. Core
+				 2. Discover
+				 3. Convert
+				 4. Report (this configuration value)
+				 5. Command
+
+				This configuration value defines the task priority of the Report task.
+
+				It is advisable to match this priority to the Convert task.
+
+		config MCR_DS_COMMAND_TASK_PRIORITY
+			depends on MCR_DS_TASKS && MCR_TASK_PRIORITIES
+			int "Command Task Priority"
+			default 14
+			range 1 19
+			help
+			 The 1-Wire Engine is divided in multiple tasks:
+				 1. Core
+				 2. Discover
+				 3. Convert
+				 4. Report
+				 5. Command (this configuration value)
+
+				This configuration value defines the task priority of the Command task.
+
+				It is advisable to set this priority the highest of all 1-Wire Engine tasks
+				to ensure handling commands (e.g. changing a switch position) swiftly.
+
+		config MCR_I2C_TASKS
+			depends on MCR_TASK_PRIORITIES
+			bool "I2C"
+
+			config MCR_I2C_TASK_CORE_PRIORITY
+				depends on MCR_I2C_TASKS && MCR_TASK_PRIORITIES
+				int "Core Task Initialization Priority"
+				default 13
+				range 1 19
+				help
+					This configuration value defines the task priority of the only task
+					for the I2C engine (Core).
+
+					NOTE:  For an unknown reason the i2c bus appears most stable when
+								 this task priority == mcrDS convert
+
+			 config MCR_IOT_TASKS
+		 		depends on MCR_IOT_ENDPOINT
+		 		bool "IoT"
+		 		default y
+
+		 		config MCR_MQTT_TASK_PRIORITY
+		 			depends on MCR_TASK_PRIORITIES && MCR_IOT_TASKS
+		 			int "Send/Receive Task Priority"
+		 			default 14
+		 			range 1 19
+		 			help
+		 				MQTT processing is divided into two tasks:
+		 					1. Sending and receiving all MQTT messages (this configuration value)
+		 					2. Processing messages (e.g. parsing JSON) to hand-off to Engine tasks for action
+
+		 				This value configures the priority of the sending and receiving task.
+
+		 				It is advisable for this task to be a higher priority than the inbound processing
+		 				task to ensure that messages are overall sent and received with minimal delay.
+
+		 		config MCR_MQTT_INBOUND_TASK_PRIORITY
+		 			depends on MCR_TASK_PRIORITIES && MCR_IOT_TASKS
+		 			int "Inbound Processing Task Priority"
+		 			default 10
+		 			range 1 19
+		 			help
+		 				MQTT processing is divided into two tasks:
+		 					1. Sending and receiving all MQTT messages
+		 					2. Processing messages (e.g. parsing JSON) to hand-off to Engine tasks for action
+		 						 (this configuration value)
+
+		 				This value configures the priority processing task.
+
+		 				It is advisable for this task to be a lower priority than the sending and receiving
+		 				task to avoid delays in sending and receiving.
+
+ endmenu
 
 endmenu
