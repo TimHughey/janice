@@ -10,23 +10,21 @@ defmodule Reef do
   end
 
   def mix(:help) do
-    _discard = fn ->
-      IO.puts(":standby        -> all subsystems on standby\n")
+    IO.puts(":standby        -> all subsystems on standby\n")
 
-      IO.puts(":fill_initial   -> pump=standby, replenish=fast, fill=fast, heat=standby\n")
+    IO.puts(":fill_initial   -> pump=standby, replenish=fast, fill=fast, heat=standby\n")
 
-      IO.puts(":fill_final     -> pump=easy stir, replenish=slow, fill=fast, heat=standby\n")
+    IO.puts(":fill_final     -> pump=easy stir, replenish=slow, fill=fast, heat=standby\n")
 
-      IO.puts(":mix            -> pump=constant, replenish=fast, fill=standby, heat=standby\n")
+    IO.puts(":mix            -> pump=constant, replenish=fast, fill=standby, heat=standby\n")
 
-      IO.puts(":change_prep    -> pump=easy stir, replenish=fast, fill=standby, heat=match\n")
+    IO.puts(":change_prep    -> pump=easy stir, replenish=fast, fill=standby, heat=match\n")
 
-      IO.puts(":change         -> pump=on, replenish=standby, fill=standby, heat=standby\n")
+    IO.puts(":change         -> pump=on, replenish=standby, fill=standby, heat=standby\n")
 
-      IO.puts(":stir           -> pump=low stir, replenish=fast, fill=standby, heat=standby\n")
+    IO.puts(":stir           -> pump=low stir, replenish=fast, fill=standby, heat=standby\n")
 
-      IO.puts(":eco            -> pump=low, replenish=fast, fill=standby, heat=low\n")
-    end
+    :ok = IO.puts(":eco            -> pump=low, replenish=fast, fill=standby, heat=low\n")
   end
 
   def mix(:standby) do

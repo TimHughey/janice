@@ -105,7 +105,7 @@ Net::Net() {
 
   hw_conf_ = (mcrHardwareConfig_t)hw_conf;
 
-  ESP_LOGI(tagEngine(), "hardware jumper config = 0x%02x", hw_conf_);
+  ESP_LOGI(tagEngine(), "hardware jumper config [0x%02x]", hw_conf_);
 } // namespace mcr
 
 void Net::acquiredIP(system_event_t *event) {

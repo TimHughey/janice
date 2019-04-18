@@ -44,6 +44,7 @@ private:
   std::string _head;
   std::string _stable;
   std::string _partition;
+  std::string _uri;
   int _delay_ms = 0;
   int _start_delay_ms = 0;
   int _reboot_delay_ms = 0;

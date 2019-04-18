@@ -61,7 +61,7 @@ public:
   static const char *tagEngine() { return (const char *)"mcrNet"; };
 
   uint32_t batt_mv();
-  static uint32_t vref() { return 1058; };
+  static uint32_t vref() { return 1100; };
 
 private: // member functions
   Net(); // SINGLETON!  constructor is private
