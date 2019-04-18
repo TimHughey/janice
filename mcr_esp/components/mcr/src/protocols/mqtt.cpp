@@ -205,8 +205,8 @@ void mcrMQTT::__otaPrep() {
   ESP_LOGI(tagEngine(), "increasing mcrMQTTin task priority");
   _mqtt_in->changePriority(_task.priority);
 
-  // ESP_LOGI(tagEngine(), "deprioritizing inbound messages to prevent
-  // overload"); _prefer_outbound_ticks = pdMS_TO_TICKS(100);
+  ESP_LOGI(tagEngine(), "deprioritizing inbound messages to prevent overload");
+  _prefer_outbound_ticks = pdMS_TO_TICKS(100);
 }
 
 void mcrMQTT::publish(Reading_t *reading) {
