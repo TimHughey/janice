@@ -15,7 +15,8 @@ static const std::map<std::string, mcrCmdType> _cmd_map = {
     {std::string("ota.end"), mcrCmdType::otaend},
     {std::string("boot.part.next"), mcrCmdType::bootPartitionNext},
     {std::string("restart"), mcrCmdType::restart},
-    {std::string("stopEngines"), mcrCmdType::stopEngines}};
+    {std::string("stopEngines"), mcrCmdType::stopEngines},
+    {std::string("ota.https"), mcrCmdType::otaHTTPS}};
 
 static mcrCmdTypeMap_t *__singleton;
 
@@ -57,7 +58,7 @@ mcrCmdType_t mcrCmdTypeMap::find(const std::string &cmd) {
     return search->second;
   }
 
-  ESP_LOGW(TAG, "unknown cmd=%s", cmd.c_str());
+  ESP_LOGD(TAG, "unknown cmd=%s", cmd.c_str());
 
   return mcrCmdType::unknown;
 }

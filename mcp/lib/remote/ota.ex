@@ -8,6 +8,7 @@ defmodule OTA do
   alias Mqtt.Client
 
   @boot_factory_next "boot.factory.next"
+  @ota_https "ota.https"
   @ota_begin_cmd "ota.begin"
   @ota_end_cmd "ota.end"
   @restart_cmd "restart"

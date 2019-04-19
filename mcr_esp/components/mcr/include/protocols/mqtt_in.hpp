@@ -34,6 +34,7 @@
 #include <freertos/ringbuf.h>
 #include <freertos/task.h>
 
+#include "cmds/cmd_factory.hpp"
 #include "misc/mcr_types.hpp"
 #include "readings/readings.hpp"
 
@@ -55,6 +56,8 @@ private:
 
   time_t _lastLoop;
   uint16_t _msg_id = 0;
+
+  void process(mcrCmd_t *cmd);
 
   // Task implementation
   static void runEngine(void *task_instance) {

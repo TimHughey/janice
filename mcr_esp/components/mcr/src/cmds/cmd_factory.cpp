@@ -50,6 +50,10 @@ mcrCmd_t *mcrCmdFactory::fromJSON(mcrRawMsg_t *raw) {
 
   switch (cmd_type) {
   case mcrCmdType::unknown:
+    ESP_LOGW(TAG, "unknown command [%s]", cmd_str.c_str());
+    cmd = new mcrCmd(root);
+    break;
+
   case mcrCmdType::none:
   case mcrCmdType::heartbeat:
   case mcrCmdType::timesync:
@@ -69,6 +73,7 @@ mcrCmd_t *mcrCmdFactory::fromJSON(mcrRawMsg_t *raw) {
   case mcrCmdType::otaend:
   case mcrCmdType::restart:
   case mcrCmdType::bootPartitionNext:
+  case mcrCmdType::otaHTTPS:
     cmd = new mcrCmdOTA(cmd_type, root);
     break;
 

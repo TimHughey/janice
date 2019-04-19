@@ -57,6 +57,15 @@ UBaseType_t mcrMQTTin::changePriority(UBaseType_t priority) {
   return _task.priority;
 }
 
+void mcrMQTTin::process(mcrCmd_t *cmd) {
+  if (cmd == nullptr) {
+    ESP_LOGW(tTAG, "command factory returned a nullptr");
+    return;
+  }
+
+  cmd->process();
+}
+
 void mcrMQTTin::restorePriority() {
   vTaskPrioritySet(_task.handle, _task.priority);
 }
@@ -89,10 +98,9 @@ void mcrMQTTin::run(void *data) {
     vRingbufferReturnItem(_rb, msg);
     mcrCmd_t *cmd = factory.fromRaw(entry.data);
 
-    if (entry.topic->find("command") != std::string::npos) {
-      cmd && cmd->process();
-    } else if (entry.topic->find("ota") != std::string::npos) {
-      cmd && cmd->process();
+    if ((entry.topic->find("command") != std::string::npos) ||
+        (entry.topic->find("ota") != std::string::npos)) {
+      process(cmd);
     } else {
       ESP_LOGW(tTAG, "unhandled topic=%s", entry.topic->c_str());
     }

@@ -17,7 +17,7 @@ static const char *k_delay_ms = "delay_ms";
 static const char *k_part = "partition";
 static const char *k_start_delay_ms = "start_delay_ms";
 static const char *k_reboot_delay_ms = "reboot_delay_ms";
-static const char *k_uri = "uri";
+static const char *k_fw_url = "fw_url";
 
 static esp_ota_handle_t _ota_update = 0;
 static const esp_partition_t *_update_part = nullptr;
@@ -35,7 +35,7 @@ mcrCmdOTA::mcrCmdOTA(mcrCmdType_t type, JsonObject &root) : mcrCmd(type, root) {
     _head = root[k_head] | "0000000";
     _stable = root[k_stable] | "0000000";
     _partition = root[k_part] | "ota";
-    _uri = root[k_uri] | "none";
+    _fw_url = root[k_fw_url] | "none";
     _delay_ms = root[k_delay_ms] | 0;
     _start_delay_ms = root[k_start_delay_ms] | 0;
     _reboot_delay_ms = root[k_reboot_delay_ms] | 0;
