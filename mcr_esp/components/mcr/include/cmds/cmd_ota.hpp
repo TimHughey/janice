@@ -25,6 +25,9 @@
 #include <sstream>
 #include <string>
 
+#include <esp_http_client.h>
+#include <esp_https_ota.h>
+#include <esp_ota_ops.h>
 #include <esp_timer.h>
 #include <external/ArduinoJson.h>
 #include <freertos/FreeRTOS.h>
@@ -50,9 +53,9 @@ private:
   int _reboot_delay_ms = 0;
 
   void begin();
-  void bootPartitionNext();
   void end();
-  void processBlock();
+
+  static esp_err_t httpEventHandler(esp_http_client_event_t *evt);
 
 public:
   mcrCmdOTA(mcrCmdType_t type, JsonObject &root);

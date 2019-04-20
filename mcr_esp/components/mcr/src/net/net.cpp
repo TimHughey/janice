@@ -162,6 +162,7 @@ void Net::checkError(const char *func, esp_err_t err) {
   case 0x1100FE:
     ESP_LOGE(tagEngine(), "SNTP failed");
     break;
+
   default:
     ESP_LOGE(tagEngine(), "[%s] %s", esp_err_to_name(err), func);
     break;

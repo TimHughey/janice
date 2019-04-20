@@ -135,11 +135,11 @@ void mcrMQTT::incomingMsg(struct mg_str *in_topic, struct mg_str *in_payload) {
   entry.topic = topic;
   entry.data = data;
 
-  if ((_ota_start_time) && ((time(nullptr) - _ota_start_time) > 60)) {
-    ESP_LOGW(tagEngine(), "detected stalled ota, spooling ftl");
-    ESP_LOGW(tagEngine(), "JUMP!");
-    esp_restart();
-  }
+  // if ((_ota_start_time) && ((time(nullptr) - _ota_start_time) > 60)) {
+  //   ESP_LOGW(tagEngine(), "detected stalled ota, spooling ftl");
+  //   ESP_LOGW(tagEngine(), "JUMP!");
+  //   esp_restart();
+  // }
 
   rb_rc = xRingbufferSend(_rb_in, &entry, sizeof(mqttInMsg_t),
                           _inbound_rb_wait_ticks);
@@ -174,39 +174,46 @@ void mcrMQTT::incomingMsg(struct mg_str *in_topic, struct mg_str *in_payload) {
 }
 
 void mcrMQTT::__otaFinish() {
-  char **unsub = (char **)&_ota_feed; // override const to align with mongoose
+  // nothing rquirement for ESP-IDF https ota
 
-  _ota_feed_msg_id = _msg_id++;
-  ESP_LOGI(tagEngine(), "finish ota, unsubscribe feed=%s msg_id=%d", _ota_feed,
-           _ota_feed_msg_id);
-  if (_connection) {
-    mg_mqtt_unsubscribe(_connection, unsub, 1, _ota_feed_msg_id);
-  } else {
-    ESP_LOGW(tagEngine(), "can not unsubcribe ota feed, no connection");
-  }
-
-  _mqtt_in->restorePriority();
+  // char **unsub = (char **)&_ota_feed; // override const to align with
+  // mongoose
+  //
+  // _ota_feed_msg_id = _msg_id++;
+  // ESP_LOGI(tagEngine(), "finish ota, unsubscribe feed=%s msg_id=%d",
+  // _ota_feed,
+  //          _ota_feed_msg_id);
+  // if (_connection) {
+  //   mg_mqtt_unsubscribe(_connection, unsub, 1, _ota_feed_msg_id);
+  // } else {
+  //   ESP_LOGW(tagEngine(), "can not unsubcribe ota feed, no connection");
+  // }
+  //
+  // _mqtt_in->restorePriority();
 }
 
 void mcrMQTT::__otaPrep() {
-  struct mg_mqtt_topic_expression sub = {.topic = _ota_feed, .qos = 0};
+  // nothing rquirement for ESP-IDF https ota
 
-  _ota_start_time = time(nullptr);
-
-  _ota_feed_msg_id = _msg_id++;
-  ESP_LOGI(tagEngine(), "prep for ota, subscribe feed=%s msg_id=%d", sub.topic,
-           _ota_feed_msg_id);
-  if (_connection) {
-    mg_mqtt_subscribe(_connection, &sub, 1, _ota_feed_msg_id);
-  } else {
-    ESP_LOGW(tagEngine(), "can not prep for ota, no connection");
-  }
-
+  // struct mg_mqtt_topic_expression sub = {.topic = _ota_feed, .qos = 0};
+  //
+  // _ota_start_time = time(nullptr);
+  //
+  // _ota_feed_msg_id = _msg_id++;
+  // ESP_LOGI(tagEngine(), "prep for ota, subscribe feed=%s msg_id=%d",
+  // sub.topic,
+  //          _ota_feed_msg_id);
+  // if (_connection) {
+  //   mg_mqtt_subscribe(_connection, &sub, 1, _ota_feed_msg_id);
+  // } else {
+  //   ESP_LOGW(tagEngine(), "can not prep for ota, no connection");
+  // }
+  //
   ESP_LOGI(tagEngine(), "increasing mcrMQTTin task priority");
-  _mqtt_in->changePriority(_task.priority);
-
-  ESP_LOGI(tagEngine(), "deprioritizing inbound messages to prevent overload");
-  _prefer_outbound_ticks = pdMS_TO_TICKS(100);
+  _mqtt_in->changePriority(_task.priority + 1);
+  //
+  // ESP_LOGI(tagEngine(), "deprioritizing inbound messages to prevent
+  // overload"); _prefer_outbound_ticks = pdMS_TO_TICKS(100);
 }
 
 void mcrMQTT::publish(Reading_t *reading) {

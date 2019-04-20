@@ -1,4 +1,6 @@
 
+#include <esp_http_client.h>
+#include <esp_https_ota.h>
 #include <esp_ota_ops.h>
 #include <esp_partition.h>
 #include <esp_spi_flash.h>
@@ -19,15 +21,13 @@ static const char *k_start_delay_ms = "start_delay_ms";
 static const char *k_reboot_delay_ms = "reboot_delay_ms";
 static const char *k_fw_url = "fw_url";
 
-static esp_ota_handle_t _ota_update = 0;
-static const esp_partition_t *_update_part = nullptr;
+static bool _ota_in_progress = false;
 static esp_err_t _ota_err = ESP_OK;
 static size_t _ota_size = 0;
-static uint64_t _ota_first_block = 0;
-static uint64_t _ota_last_block = 0;
 static uint64_t _ota_total_us = 0;
-static bool _got_final_block = false;
-static bool _got_end_cmd = false;
+
+extern const uint8_t ca_start[] asm("_binary_ca_pem_start");
+extern const uint8_t ca_end[] asm("_binary_ca_pem_end");
 
 mcrCmdOTA::mcrCmdOTA(mcrCmdType_t type, JsonObject &root) : mcrCmd(type, root) {
   if (root.success()) {
@@ -43,223 +43,137 @@ mcrCmdOTA::mcrCmdOTA(mcrCmdType_t type, JsonObject &root) : mcrCmd(type, root) {
 }
 
 void mcrCmdOTA::begin() {
-  const esp_partition_t *boot_part = esp_ota_get_boot_partition();
   const esp_partition_t *run_part = esp_ota_get_running_partition();
+  esp_http_client_config_t config = {};
+  config.url = _fw_url.c_str();
+  config.cert_pem = (char *)ca_start;
+  config.event_handler = mcrCmdOTA::httpEventHandler;
+  config.timeout_ms = 1000;
 
-  if (_ota_update != 0) {
+  if (_ota_in_progress) {
     ESP_LOGI(TAG, "ota in-progress, ignoring spurious begin");
     return;
   }
 
-  _got_final_block = false;
-
-  ESP_LOGI(TAG, "ota begin received, anticipate data blocks in %dms",
-           _start_delay_ms);
-
+  _ota_in_progress = true;
   mcrI2c::instance()->suspend();
   mcrDS::instance()->suspend();
   mcr::Net::suspendNormalOps();
 
   mcrMQTT::otaPrep();
 
-  if (_partition.compare("ota") == 0) {
-    _update_part = esp_ota_get_next_update_partition(nullptr);
-  } else {
-    const esp_partition_t *part = nullptr;
-    part = esp_partition_find_first(ESP_PARTITION_TYPE_APP,
-                                    ESP_PARTITION_SUBTYPE_APP_FACTORY,
-                                    _partition.c_str());
+  uint64_t ota_start_us = esp_timer_get_time();
 
-    if (part == nullptr) {
-      ESP_LOGW(TAG, "part %s not found, won't begin ota", _partition.c_str());
-    } else {
-      _update_part = part;
-    }
-  }
-
-  ESP_LOGI(TAG, "( boot ) part: name=%-8s addr=0x%x", boot_part->label,
-           boot_part->address);
-  ESP_LOGI(TAG, "( run  ) part: name=%-8s addr=0x%x", run_part->label,
+  ESP_LOGI(TAG, "part(run) name(%-8s) addr(0x%x)", run_part->label,
            run_part->address);
-  ESP_LOGI(TAG, "(update) part: name=%-8s addr=0x%x", _update_part->label,
-           _update_part->address);
 
-  _ota_err = esp_ota_begin(_update_part, OTA_SIZE_UNKNOWN, &_ota_update);
-  if (_ota_err != ESP_OK) {
-    ESP_LOGE(TAG, "ota begin esp_ota_begin() error=0x%02x", _ota_err);
-    _ota_update = 0;
-  }
-}
+  esp_err_t ret = esp_https_ota(&config);
+  if (ret == ESP_OK) {
+    _ota_total_us = esp_timer_get_time() - ota_start_us;
+    ESP_LOGI(TAG, "OTA elapsed time: %0.2fs",
+             (float)(_ota_total_us / 1000000.0));
+    ESP_LOGI(TAG, "spooling ftl...");
+    vTaskDelay(pdMS_TO_TICKS(5000));
 
-void mcrCmdOTA::bootPartitionNext() {
-  esp_err_t err = ESP_OK;
-  const esp_partition_t *part = nullptr;
-
-  part = esp_partition_find_first(ESP_PARTITION_TYPE_APP,
-                                  ESP_PARTITION_SUBTYPE_APP_FACTORY, nullptr);
-
-  if (part && ((err = esp_ota_set_boot_partition(part)) == ESP_OK)) {
-    ESP_LOGI(TAG, "next boot part label=%-8s addr=0x%x", part->label,
-             part->address);
+    esp_restart();
   } else {
-    ESP_LOGE(TAG, "unable to set factory boot err=0x%02x", err);
+    ESP_LOGE(TAG, "[%s] Firmware upgrade failed", esp_err_to_name(ret));
+    vTaskDelay(pdMS_TO_TICKS(5000));
+    esp_restart();
   }
 }
 
 void mcrCmdOTA::end() {
-
-  if (_ota_update == 0) {
-    ESP_LOGD(TAG, "ota not in-progress, ignoring end");
-    return;
-  }
-
-  // handle the situation where the ota end cmd is received before the
-  // final data block is processed
-  if (_got_final_block) {
-    ESP_LOGD(TAG, "ota final block was received");
-  } else {
-    _got_end_cmd = true;
-    ESP_LOGI(TAG, "ota final block not received, holding finalize");
+  if (_ota_in_progress == false) {
+    ESP_LOGI(TAG, "ota not in-progress, ignoring end");
     return;
   }
 
   mcrMQTT::otaFinish();
 
-  if (_ota_err != ESP_OK) {
-    ESP_LOGE(TAG, "error 0x%02x during OTA update", _ota_err);
-    _ota_update = 0;
-    return;
-  }
-
-  ESP_LOGI(TAG, "finalize ota (size=%uk,elapsed_ms=%llums)", (_ota_size / 1024),
-           (_ota_total_us / 1000));
-
   if (_ota_err == ESP_OK) {
-    ESP_LOGI(TAG, "next boot part label=%-8s addr=0x%x", _update_part->label,
-             _update_part->address);
     ESP_LOGI(TAG, "spooling ftl for jump in %dms", _reboot_delay_ms);
     vTaskDelay(pdMS_TO_TICKS(_reboot_delay_ms));
     ESP_LOGI(TAG, "JUMP!");
     esp_restart();
   }
 
-  if (_ota_err != ESP_OK) {
-    ESP_LOGE(TAG, "ota error 0x%02x while setting boot part", _ota_err);
-  }
-
-  _ota_update = 0; // flag that the ota_update is not in-progress
+  _ota_in_progress = false;
 }
 
 bool mcrCmdOTA::process() {
   bool this_host = (_host.compare(mcr::Net::hostID()) == 0) ? true : false;
 
+  if (this_host == false) {
+    ESP_LOGI(TAG, "OTA command not for us, ignoring.");
+    return true;
+  }
+
   // 1. if _raw is nullptr then this is a cmd (not a data block)
   // 2. check this command is addressed to this host
-  if (_raw == nullptr) {
-    switch (type()) {
+  switch (type()) {
 
-    case mcrCmdType::bootPartitionNext:
-      if (this_host) {
-        bootPartitionNext();
-      }
-      break;
+  case mcrCmdType::otaHTTPS:
+    ESP_LOGI(TAG, "ota via HTTPS requested");
+    begin();
+    break;
 
-    case mcrCmdType::otabegin:
-      if (this_host) {
-        ESP_LOGI(TAG, "preparing for ota in %dms", _delay_ms);
-        begin();
-      }
-      break;
+  case mcrCmdType::bootPartitionNext:
+    ESP_LOGW(TAG, "boot.next not available");
+    break;
 
-    case mcrCmdType::otaend:
-      end();
-      break;
+  case mcrCmdType::otabegin:
+    ESP_LOGW(TAG, "ota.begin not needed for https ota");
+    break;
 
-    case mcrCmdType::restart:
-      if (this_host) {
-        ESP_LOGI(TAG, "restart requested, delaying %dms", _delay_ms);
-        vTaskDelay(pdMS_TO_TICKS(_delay_ms));
-        ESP_LOGI(TAG, "JUMP!");
-        esp_restart();
-      }
-      break;
+  case mcrCmdType::otaend:
+    ESP_LOGW(TAG, "ota.end not needed for https ota");
+    break;
 
-    default:
-      break;
-    };
-  } else { // raw data block
-    processBlock();
-  }
+  case mcrCmdType::restart:
+    ESP_LOGI(TAG, "restart requested, delaying %dms", _delay_ms);
+    vTaskDelay(pdMS_TO_TICKS(_delay_ms));
+    ESP_LOGI(TAG, "JUMP!");
+    esp_restart();
+
+    break;
+
+  default:
+    break;
+  };
 
   return true;
 }
 
-void mcrCmdOTA::processBlock() {
-  char flags = _raw->at(0);
-  size_t len = _raw->size();
-  size_t block_size = len - 1;
-  const void *ota_data = (_raw->data() + 1); // skip flag byte
-
-  // safety check, if _ota_update isn't set then something is wrong
-  if (_ota_update == 0)
-    return;
-
-  switch (type()) {
-  case mcrCmdType::otabegin:
-    ESP_LOGI(TAG, "ota first block received");
-    _ota_size = block_size;
-    _ota_first_block = esp_timer_get_time();
-
-    _ota_err = esp_ota_write(_ota_update, ota_data, len - 1);
-    break;
-
-  case mcrCmdType::otacontinue:
-    _ota_size += block_size;
-    _ota_err = esp_ota_write(_ota_update, ota_data, len - 1);
-    break;
-
-  case mcrCmdType::otaend:
-    // handle the case when the firmware size is perfectly divided into
-    // data blocks.  the final block will be of zero size.
-    if (block_size > 0) {
-      _ota_size += block_size;
-
-      _ota_err = esp_ota_write(_ota_update, ota_data, len - 1);
-    } else {
-      _ota_err = ESP_OK;
-    }
-
-    // wrap-up ota, we've received the final block
-    _ota_last_block = esp_timer_get_time();
-    _ota_total_us = _ota_last_block - _ota_first_block;
-
-    if (_ota_err == ESP_OK) {
-      _ota_err = esp_ota_end(_ota_update);
-
-      if (_ota_err == ESP_OK) {
-        _ota_err = esp_ota_set_boot_partition(_update_part);
-      }
-    }
-
-    _got_final_block = true;
-    ESP_LOGI(TAG, "ota final block processed");
-
-    // handle the situation where the ota end cmd is received before the
-    // final data block is processed
-    if ((_ota_err == ESP_OK) && (_got_end_cmd)) {
-      end();
-    }
-    break;
-
-  default:
-    ESP_LOGW(TAG, "unknown flag (0x%02x) on ota block", flags);
-    _ota_update = 0;
-  }
-
-  if (_ota_err != ESP_OK) {
-    ESP_LOGW(TAG, "canceling ota, processBlock() error=0x%x", _ota_err);
-    _ota_update = 0;
-  }
-}
-
 const std::string mcrCmdOTA::debug() { return std::string(TAG); };
+
+//
+// STATIC!
+//
+esp_err_t mcrCmdOTA::httpEventHandler(esp_http_client_event_t *evt) {
+  switch (evt->event_id) {
+  case HTTP_EVENT_ERROR:
+    ESP_LOGI(TAG, "HTTP_EVENT_ERROR");
+    break;
+  case HTTP_EVENT_ON_CONNECTED:
+    ESP_LOGI(TAG, "HTTP_EVENT_ON_CONNECTED");
+    break;
+  case HTTP_EVENT_HEADER_SENT:
+    ESP_LOGI(TAG, "HTTP_EVENT_HEADER_SENT");
+    break;
+  case HTTP_EVENT_ON_HEADER:
+    ESP_LOGI(TAG, "HTTP_EVENT_ON_HEADER, key=%s, value=%s", evt->header_key,
+             evt->header_value);
+    break;
+  case HTTP_EVENT_ON_DATA:
+    ESP_LOGD(TAG, "HTTP_EVENT_ON_DATA, len=%d", evt->data_len);
+    break;
+  case HTTP_EVENT_ON_FINISH:
+    ESP_LOGI(TAG, "HTTP_EVENT_ON_FINISH");
+    break;
+  case HTTP_EVENT_DISCONNECTED:
+    ESP_LOGI(TAG, "HTTP_EVENT_DISCONNECTED");
+    break;
+  }
+  return ESP_OK;
+}
