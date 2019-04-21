@@ -71,7 +71,7 @@ defmodule MessageSave do
     {:reply, :ok, s}
   end
 
-  def handle_cast({@save_msg, direction, payload, dropped}, %{opts: opts} = s) do
+  def handle_cast({@save_msg, direction, payload, dropped}, %{opts: _opts} = s) do
     %MessageSave{direction: Atom.to_string(direction), payload: payload, dropped: dropped}
     |> insert!()
 

@@ -326,7 +326,7 @@ defmodule Remote do
     log = Keyword.get(opts, :log, false)
 
     update_hosts =
-      for %Remote{host: host, name: name} = r <- list do
+      for %Remote{host: host, name: name} = _r <- list do
         # TODO: design and implement new firmware version handling
         # at_vsn = at_preferred_vsn?(r)
 
