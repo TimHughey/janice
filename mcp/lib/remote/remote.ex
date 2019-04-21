@@ -347,7 +347,7 @@ defmodule Remote do
     else
       opts = opts ++ [update_hosts: update_hosts]
 
-      OTA.transmit(opts)
+      OTA.send(opts)
       :ok
     end
   end

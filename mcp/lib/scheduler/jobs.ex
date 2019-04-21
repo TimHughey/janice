@@ -1,7 +1,6 @@
 defmodule Janice.Jobs do
   @moduledoc false
   require Logger
-  import IO.ANSI
 
   def flush do
     thermo = "grow heat"

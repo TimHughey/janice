@@ -13,8 +13,6 @@ defmodule OTATest do
   def ext(num),
     do: %{
       host: host(num),
-      hw: "esp32",
-      vsn: "1234567",
       mtime: TimeSupport.unix_now(:seconds),
       log: false
     }
@@ -24,25 +22,12 @@ defmodule OTATest do
   end
 
   @tag :ota
-  test "transmit OTA", context do
-    log = Kernel.get_in(context, [:opts])
-
+  test "send OTA" do
     ext(0) |> Remote.external_update()
     hosts = [host(0)]
 
-    {_rc, pid} =
-      OTA.transmit(update_hosts: hosts, log: log, start_delay_ms: 100, return_task: true)
+    rc = OTA.send(update_hosts: hosts, log: true, start_delay_ms: 100)
 
-    checks =
-      for _i <- 0..990 do
-        :timer.sleep(1)
-        Process.alive?(pid)
-      end
-
-    started = true in checks
-    ended = false in checks
-
-    assert started
-    assert ended
+    assert rc == :ok
   end
 end

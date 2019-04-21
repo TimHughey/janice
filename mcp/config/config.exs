@@ -37,10 +37,10 @@ config :mcp,
   ]
 
 config :mcp, OTA,
-  firmware_files: [
-    current: "mcr_esp.bin",
-    previous: "mcr_esp.bin.prev",
-    special: "mcr_esp.bin.special"
+  url: [
+    host: "www.wisslanding.com",
+    uri: "janice/mcr_esp/firmware",
+    fw_file: "mcr_esp.bin"
   ]
 
 config :mcp, Janice.Scheduler,
