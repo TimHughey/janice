@@ -16,6 +16,7 @@ defmodule Mqtt.Reading do
   @relhum_t "relhum"
   @remote_run_t "remote_runtime"
   @mcr_stat_t "stats"
+  @simple_text_t "text"
 
   def boot?(%{type: @boot_t, host: host} = r) do
     Logger.debug(fn -> "detected boot message for #{host}" end)
@@ -113,6 +114,22 @@ defmodule Mqtt.Reading do
 
   def remote_runtime?(%{type: @remote_run_t} = r), do: metadata?(r)
   def remote_runtime?(%{}), do: false
+
+  @doc ~S"""
+  Is the Reading a simple text?
+
+   ##Examples:
+    iex> json =
+    ...>   ~s({"host": "mcr-macaddr",
+    ...>       "mtime": 2106, "type": "text", "text": "simple message"})
+    ...> Jason.decode!(json, keys: :atoms) |> Mqtt.Reading.simple_text?()
+    true
+  """
+  def simple_text?(%{text: _text} = r) do
+    metadata?(r) and r.type === @simple_text_t
+  end
+
+  def simple_text?(%{} = _r), do: false
 
   @doc ~S"""
   Is the Reading a startup announcement?

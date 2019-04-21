@@ -1,6 +1,6 @@
 /*
-    readings/all.hpp - Readings used within Master Control Remote
-    Copyright (C) 2017  Tim Hughey
+    simple_text.hpp -- Simple Text (aka Log) Reading
+    Copyright (C) 2019  Tim Hughey
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -18,12 +18,34 @@
     https://www.wisslanding.com
 */
 
-#include "readings/celsius.hpp"
-#include "readings/engine.hpp"
-#include "readings/humidity.hpp"
-#include "readings/positions.hpp"
-#include "readings/ramutil.hpp"
-#include "readings/remote.hpp"
-#include "readings/simple_text.hpp"
-#include "readings/soil.hpp"
-#include "readings/startup.hpp"
+#ifndef text_reading_hpp
+#define text_reading_hpp
+
+#include <string>
+
+#include <external/ArduinoJson.h>
+#include <sys/time.h>
+#include <time.h>
+
+#include "readings/reading.hpp"
+
+typedef class textReading textReading_t;
+#define MAX_LEN 40
+
+class textReading : public Reading {
+private:
+  char *_text = nullptr;
+
+public:
+  textReading(const char *text = nullptr);
+  ~textReading();
+
+  const char *text() { return _text; };
+
+  static uint8_t maxLength() { return MAX_LEN; };
+
+protected:
+  virtual void populateJSON(JsonObject &root);
+};
+
+#endif // text_reading_hpp

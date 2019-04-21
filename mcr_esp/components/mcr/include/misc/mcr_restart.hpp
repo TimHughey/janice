@@ -1,6 +1,6 @@
 /*
-    readings/all.hpp - Readings used within Master Control Remote
-    Copyright (C) 2017  Tim Hughey
+    mcr_restart.hpp -- MCR abstraction for esp_restart()
+    Copyright (C) 2019  Tim Hughey
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -18,12 +18,33 @@
     https://www.wisslanding.com
 */
 
-#include "readings/celsius.hpp"
-#include "readings/engine.hpp"
-#include "readings/humidity.hpp"
-#include "readings/positions.hpp"
-#include "readings/ramutil.hpp"
-#include "readings/remote.hpp"
-#include "readings/simple_text.hpp"
-#include "readings/soil.hpp"
-#include "readings/startup.hpp"
+#ifndef mcr_restart_hpp
+#define mcr_restart_hpp
+
+#include <string>
+
+#include <external/ArduinoJson.h>
+#include <sys/time.h>
+#include <time.h>
+
+#include <esp_system.h>
+
+#include "readings/readings.hpp"
+
+typedef class mcrRestart mcrRestart_t;
+#define DEFAULT_WAIT_TICKS pdMS_TO_TICKS(4000)
+
+class mcrRestart {
+private:
+  TickType_t _delay_ticks;
+
+public:
+  mcrRestart(TickType_t delay_ticks = 0);
+  static mcrRestart_t *instance();
+
+  ~mcrRestart();
+
+  void restart(const char *text = nullptr, const char *func = nullptr);
+};
+
+#endif // mcr_restart_hpp

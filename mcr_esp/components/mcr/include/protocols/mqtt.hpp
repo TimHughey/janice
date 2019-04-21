@@ -54,6 +54,7 @@ public:
   static void otaFinish() { instance()->__otaFinish(); };
   static void otaPrep() { instance()->__otaPrep(); };
   void publish(Reading_t *reading);
+  void publish(Reading_t &reading);
   void run(void *data);
   void setSubscribedOTA() { _ota_subscribed = true; };
   void subACK(struct mg_mqtt_message *msg);

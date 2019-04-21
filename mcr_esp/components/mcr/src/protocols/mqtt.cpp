@@ -222,6 +222,12 @@ void mcrMQTT::publish(Reading_t *reading) {
   publish(json);
 }
 
+void mcrMQTT::publish(Reading_t &reading) {
+  std::string *json = reading.json();
+
+  publish(json);
+}
+
 void mcrMQTT::outboundMsg() {
   size_t len = 0;
   mqttOutMsg_t *entry = nullptr;

@@ -145,8 +145,12 @@ defmodule Mqtt.InboundMessage do
           EngineMetric.record(r)
           {nil, nil}
 
+        Reading.simple_text?(r) ->
+          Logger.warn(fn -> "#{r.name} [#{r.text}]" end)
+          {nil, nil}
+
         true ->
-          Logger.warn(fn -> "unhandled message [#{Map.get(r, :type, "unknown")}]" end)
+          Logger.warn(fn -> "#{r.name} unhandled message [#{Map.get(r, :type, "unknown")}]" end)
           {nil, nil}
       end
 

@@ -8,6 +8,7 @@
 #include "cmds/cmd_ota.hpp"
 #include "engines/ds_engine.hpp"
 #include "engines/i2c_engine.hpp"
+#include "misc/mcr_restart.hpp"
 #include "net/mcr_net.hpp"
 #include "protocols/mqtt.hpp"
 
@@ -72,14 +73,12 @@ void mcrCmdOTA::begin() {
     _ota_total_us = esp_timer_get_time() - ota_start_us;
     ESP_LOGI(TAG, "OTA elapsed time: %0.2fs",
              (float)(_ota_total_us / 1000000.0));
-    ESP_LOGI(TAG, "spooling ftl...");
-    vTaskDelay(pdMS_TO_TICKS(5000));
 
-    esp_restart();
+    mcrRestart::instance()->restart("ota success", __PRETTY_FUNCTION__);
   } else {
     ESP_LOGE(TAG, "[%s] Firmware upgrade failed", esp_err_to_name(ret));
-    vTaskDelay(pdMS_TO_TICKS(5000));
-    esp_restart();
+
+    mcrRestart::instance()->restart("ota failed", __PRETTY_FUNCTION__);
   }
 }
 
@@ -92,10 +91,7 @@ void mcrCmdOTA::end() {
   mcrMQTT::otaFinish();
 
   if (_ota_err == ESP_OK) {
-    ESP_LOGI(TAG, "spooling ftl for jump in %dms", _reboot_delay_ms);
-    vTaskDelay(pdMS_TO_TICKS(_reboot_delay_ms));
-    ESP_LOGI(TAG, "JUMP!");
-    esp_restart();
+    mcrRestart::instance()->restart("ota success", __PRETTY_FUNCTION__);
   }
 
   _ota_in_progress = false;
@@ -131,11 +127,8 @@ bool mcrCmdOTA::process() {
     break;
 
   case mcrCmdType::restart:
-    ESP_LOGI(TAG, "restart requested, delaying %dms", _delay_ms);
-    vTaskDelay(pdMS_TO_TICKS(_delay_ms));
-    ESP_LOGI(TAG, "JUMP!");
-    esp_restart();
-
+    mcrRestart::instance()->restart("mcp requested restart",
+                                    __PRETTY_FUNCTION__);
     break;
 
   default:

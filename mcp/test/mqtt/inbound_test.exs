@@ -21,8 +21,8 @@ defmodule MqttInboundMessageTest do
     do: %{
       host: host(num),
       name: name(num),
-      hw: "esp32",
-      vsn: preferred_vsn(),
+      # hw: "esp32",
+      # vsn: preferred_vsn(),
       mtime: TimeSupport.unix_now(:seconds),
       log: false
     }
@@ -60,6 +60,21 @@ defmodule MqttInboundMessageTest do
 
   def rh_ext_msg(n \\ 0) do
     rh_ext(n) |> Jason.encode!() |> Mqtt.InboundMessage.process()
+  end
+
+  def simple_text_ext(num) do
+    base = base_ext(num)
+
+    sw = %{
+      type: "text",
+      text: "simple text message"
+    }
+
+    Map.merge(base, sw)
+  end
+
+  def simple_text_ext_msg(n \\ 0) do
+    simple_text_ext(n) |> Jason.encode!() |> Mqtt.InboundMessage.process()
   end
 
   def switch_ext(num, num_pios, pos) do
@@ -100,6 +115,11 @@ defmodule MqttInboundMessageTest do
 
   setup_all do
     :ok
+  end
+
+  test "inbound Simple Text message" do
+    res = simple_text_ext_msg(0)
+    assert res == :ok
   end
 
   test "inbound Switch message" do
