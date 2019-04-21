@@ -59,7 +59,7 @@ defmodule OTA do
         |> Map.put(:cmd, @ota_https)
         |> Map.put(:mtime, TimeSupport.unix_now(:seconds))
         |> Map.put(:host, host)
-        |> Map.put(:url, url)
+        |> Map.put(:fw_url, url)
         |> Map.put(:start_delay_ms, start_delay_ms)
         |> Map.put(:reboot_delay_ms, reboot_delay_ms)
         |> json()

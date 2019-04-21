@@ -24,7 +24,6 @@ static const char *k_fw_url = "fw_url";
 
 static bool _ota_in_progress = false;
 static esp_err_t _ota_err = ESP_OK;
-static size_t _ota_size = 0;
 static uint64_t _ota_total_us = 0;
 
 extern const uint8_t ca_start[] asm("_binary_ca_pem_start");
