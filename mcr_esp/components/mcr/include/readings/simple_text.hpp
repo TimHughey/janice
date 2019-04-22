@@ -30,7 +30,7 @@
 #include "readings/reading.hpp"
 
 typedef class textReading textReading_t;
-#define MAX_LEN 40
+#define MAX_LEN 128
 
 class textReading : public Reading {
 private:

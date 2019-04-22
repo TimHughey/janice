@@ -26,7 +26,7 @@ static bool _ota_in_progress = false;
 static esp_err_t _ota_err = ESP_OK;
 static float _ota_elapsed_sec = 0.0;
 
-static char _shared_msg[100];
+static char _shared_msg[128];
 
 extern const uint8_t ca_start[] asm("_binary_ca_pem_start");
 extern const uint8_t ca_end[] asm("_binary_ca_pem_end");
