@@ -40,7 +40,7 @@ config :mcp, OTA,
   url: [
     host: "www.wisslanding.com",
     uri: "janice/mcr_esp/firmware",
-    fw_file: "mcr_esp.bin"
+    fw_file: "latest-mcr_esp.bin"
   ]
 
 config :mcp, Janice.Scheduler,
