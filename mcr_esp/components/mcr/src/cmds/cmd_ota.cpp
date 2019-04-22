@@ -24,7 +24,9 @@ static const char *k_fw_url = "fw_url";
 
 static bool _ota_in_progress = false;
 static esp_err_t _ota_err = ESP_OK;
-static uint64_t _ota_total_us = 0;
+static float _ota_elapsed_sec = 0.0;
+
+static char _shared_msg[25];
 
 extern const uint8_t ca_start[] asm("_binary_ca_pem_start");
 extern const uint8_t ca_end[] asm("_binary_ca_pem_end");
@@ -67,17 +69,22 @@ void mcrCmdOTA::begin() {
   ESP_LOGI(TAG, "part(run) name(%-8s) addr(0x%x)", run_part->label,
            run_part->address);
 
-  esp_err_t ret = esp_https_ota(&config);
-  if (ret == ESP_OK) {
-    _ota_total_us = esp_timer_get_time() - ota_start_us;
-    ESP_LOGI(TAG, "OTA elapsed time: %0.2fs",
-             (float)(_ota_total_us / 1000000.0));
+  esp_err_t esp_rc = esp_https_ota(&config);
+  _ota_elapsed_sec = (float)((esp_timer_get_time() - ota_start_us) / 1000000.0);
 
-    mcrRestart::instance()->restart("ota success", __PRETTY_FUNCTION__);
+  if (esp_rc == ESP_OK) {
+    snprintf(_shared_msg, sizeof(_shared_msg), "[%s] OTA elapsed(%0.2fs)",
+             esp_err_to_name(esp_rc), _ota_elapsed_sec);
+
+    ESP_LOGI(TAG, "%s", _shared_msg);
+
+    mcrRestart::instance()->restart(_shared_msg, __PRETTY_FUNCTION__);
   } else {
-    ESP_LOGE(TAG, "[%s] Firmware upgrade failed", esp_err_to_name(ret));
+    snprintf(_shared_msg, sizeof(_shared_msg), "[%s] OTA elapsed(%0.2fs)",
+             esp_err_to_name(esp_rc), _ota_elapsed_sec);
+    ESP_LOGE(TAG, "%s", _shared_msg);
 
-    mcrRestart::instance()->restart("ota failed", __PRETTY_FUNCTION__);
+    mcrRestart::instance()->restart(_shared_msg, __PRETTY_FUNCTION__);
   }
 }
 
@@ -109,20 +116,20 @@ bool mcrCmdOTA::process() {
   switch (type()) {
 
   case mcrCmdType::otaHTTPS:
-    ESP_LOGI(TAG, "ota via HTTPS requested");
+    ESP_LOGI(TAG, "OTA via HTTPS requested");
     begin();
     break;
 
   case mcrCmdType::bootPartitionNext:
-    ESP_LOGW(TAG, "boot.next not available");
+    ESP_LOGW(TAG, "boot.next no longer supported");
     break;
 
   case mcrCmdType::otabegin:
-    ESP_LOGW(TAG, "ota.begin not needed for https ota");
+    ESP_LOGW(TAG, "ota.begin no longer supported");
     break;
 
   case mcrCmdType::otaend:
-    ESP_LOGW(TAG, "ota.end not needed for https ota");
+    ESP_LOGW(TAG, "ota.end no longer supported");
     break;
 
   case mcrCmdType::restart:
