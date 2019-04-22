@@ -22,10 +22,21 @@
 
 	# configuration variables
 	mcp_base=${HOME}/devel/janice/mcp
+	mcr_esp_base=${HOME}/devel/janice/mcr_esp
+	mcr_esp_bin_src=${mcr_esp_base}/build/mcr_esp.bin
+	mcr_esp_elf_src=${mcr_esp_base}/build/mcr_esp.elf
+	mcr_esp_prefix=$(git describe)
 	jan_base=/usr/local/janice
 	jan_base_new=${jan_base}.new
 	jan_base_old=${jan_base}.old
 	jan_bin=$jan_base/bin
+	www_root=/dar/www/wisslanding/htdocs
+	mcr_esp_fw_loc=${www_root}/janice/mcr_esp/firmware
+	mcr_esp_bin=${mcr_esp_prefix}-mcr_esp.bin
+	mcr_esp_bin_deploy=${mcr_esp_fw_loc}/${mcr_esp_bin}
+	mcr_esp_elf=${mcr_esp_prefix}-mcr_esp.elf
+	mcr_esp_elf_deploy=${mcr_esp_fw_loc}/${mcr_esp_elf}
+
 	release=/run/janice/mcp.tar.gz
 
 	if [[ ! -f $release ]]; then
@@ -40,13 +51,26 @@
 	run_cmd sudo chown janice:janice $jan_base_new
 	run_cmd sudo -u janice tar -C $jan_base_new -xf $release && print " done."
 
+	print -n "copying mcr_esp.{bin,elf} to htdocs..."
+	run_cmd sudo -u janice cp ${mcr_esp_bin_src} ${mcr_esp_bin_deploy}
+	run_cmd sudo -u janice cp ${mcr_esp_elf_src} ${mcr_esp_elf_deploy}
+	print " done."
+
 	$jan_bin/mcp ping 1> /dev/null 2>&1
 	if [[ $? -eq 0 ]]; then
-		print -n "stopping janice before swapping old and new..."
+		print -n "stopping janice... "
 		# HACK - to solve issue with /run permissions
 		# sudo chmod go+w /run ; sleep 5
-		run_cmd $jan_base/bin/mcp stop 1> /dev/null 2>&1 && print " done."
-		# sudo chmod go-w /run
+		run_cmd $jan_base/bin/mcp stop 1> /dev/null 2>&1
+
+		# check mcp really shutdown
+		$jan_bin/mcp ping 1> /dev/null 2>&1
+		if [[$? -eq 0 ]]; then
+		  print "FAILED, aborting install."
+		  return 1
+		else
+			print "done."
+		fi
 	fi
 
 	print "executing mix ecto.migrate:"
@@ -65,6 +89,19 @@
 	sudo -u janice --set-home --preserve-env env PORT=4009 $jan_bin/mcp start && print " done."
 	# sudo -u janice env PORT=4009 $jan_bin/mcp start && print " done."
 	# sleep 5 ; sudo chmod go+w /run
+
+	print -n "creating links to latest mcr_esp.{bin,elf}..."
+
+	cd $mcr_esp_fw_loc
+	run_cmd sudo -u janice rm -rf \
+				${mcr_esp_fw_loc}/latest-mcr_esp.bin \
+				${mcr_esp_fw_loc}/latest-mcr_esp.elf
+
+	run_cmd sudo -u janice ln -s $mcr_esp_bin ./latest-mcr_esp.bin
+	run_cmd sudo -u janice ln -s $mcr_esp_elf ./latest-mcr_esp.elf
+	cd $save_cwd
+
+	print "done."
 
 	print -n "removing deploy tar..." && rm -f $release && print " done."
 
