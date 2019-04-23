@@ -11,6 +11,7 @@
 
 #include "engines/ds_engine.hpp"
 #include "engines/i2c_engine.hpp"
+#include "misc/mcr_nvs.hpp"
 #include "misc/timestamp_task.hpp"
 #include "net/mcr_net.hpp"
 #include "protocols/mqtt.hpp"
@@ -37,46 +38,16 @@ void app_main() {
 
   // ensure all peripherals have been completely reset
   // important after OTA and if an internal error occured that forced a restart
-  periph_module_disable(PERIPH_WIFI_MODULE);
-  periph_module_disable(PERIPH_I2C0_MODULE);
-  periph_module_disable(PERIPH_RMT_MODULE);
+  // periph_module_disable(PERIPH_WIFI_MODULE);
+  // periph_module_disable(PERIPH_I2C0_MODULE);
+  // periph_module_disable(PERIPH_RMT_MODULE);
+  //
+  // periph_module_enable(PERIPH_WIFI_MODULE);
+  // periph_module_enable(PERIPH_I2C0_MODULE);
+  // periph_module_enable(PERIPH_RMT_MODULE);
 
-  periph_module_enable(PERIPH_WIFI_MODULE);
-  periph_module_enable(PERIPH_I2C0_MODULE);
-  periph_module_enable(PERIPH_RMT_MODULE);
-
-  spi_flash_init();
-
-  esp_err_t nvs_rc = ESP_OK;
-  nvs_rc = nvs_flash_init();
-
-  ESP_LOGI(TAG, "[%s] nvs_flash_init()", esp_err_to_name(nvs_rc));
-
-  switch (nvs_rc) {
-  case ESP_ERR_NVS_NO_FREE_PAGES:
-    ESP_LOGW(TAG, "nvs no free pages, will erase");
-    break;
-  case ESP_ERR_NVS_NEW_VERSION_FOUND:
-    ESP_LOGW(TAG, "nvs new data version, must erase");
-    break;
-  default:
-    break;
-  }
-
-  if ((nvs_rc == ESP_ERR_NVS_NO_FREE_PAGES) ||
-      (nvs_rc == ESP_ERR_NVS_NEW_VERSION_FOUND)) {
-
-    // erase and attempt initialization again
-    nvs_rc = nvs_flash_erase();
-    ESP_LOGW(TAG, "[%s] nvs_flash_erase()", esp_err_to_name(nvs_rc));
-
-    if (nvs_rc == ESP_OK) {
-      nvs_rc = nvs_flash_init();
-
-      ESP_LOGW(TAG, "[%s] nvs_init() (second attempt)",
-               esp_err_to_name(nvs_rc));
-    }
-  }
+  mcrNVS_t *nvs_instance = mcrNVS::instance();
+  nvs_instance->processCommittedMsgs();
 
   // must create network first!
   network = mcr::Net::instance(); // singleton
@@ -86,7 +57,7 @@ void app_main() {
   i2cEngineTask = mcrI2c::instance(); // singleton
 
   // create and start our tasks
-  // NOTE: tasks handle necessary coordination
+  // NOTE: each task is responsible for required coordination
 
   timestampTask->start();
   mqttTask->start();
@@ -125,8 +96,10 @@ void app_main() {
   ESP_LOGI(TAG, "certificate authority pem available [%d bytes]",
            ca_end - ca_start);
 
+  mcrNVS::commitMsg("BOOT", "SUCCESS");
+
   for (;;) {
-    // the main task does nothing after boot
-    vTaskDelay(pdMS_TO_TICKS(30 * 60 * 1000));
+    // just sleep
+    vTaskDelay(pdMS_TO_TICKS(15 * 60 * 1000));
   }
 }
