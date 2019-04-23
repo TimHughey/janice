@@ -23,11 +23,6 @@
 #include "protocols/mqtt.hpp"
 #include "readings/readings.hpp"
 
-extern "C" {
-int setenv(const char *envname, const char *envval, int overwrite);
-void tzset(void);
-}
-
 static char tTAG[] = "mcrTimestamp";
 
 mcrTimestampTask::mcrTimestampTask() {
@@ -46,9 +41,6 @@ const char *mcrTimestampTask::dateTimeString(time_t t) {
   time_t now = time(nullptr);
   struct tm timeinfo = {};
 
-  // Set timezone to Eastern Standard Time and print local time
-  setenv("TZ", "EST5EDT,M3.2.0/2,M11.1.0", 1);
-  tzset();
   localtime_r(&now, &timeinfo);
 
   // strftime(buf, buf_size, "%c", &timeinfo);

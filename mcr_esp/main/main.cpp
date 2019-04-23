@@ -18,6 +18,8 @@
 
 extern "C" {
 void app_main(void);
+int setenv(const char *envname, const char *envval, int overwrite);
+void tzset(void);
 }
 
 extern const uint8_t ca_start[] asm("_binary_ca_pem_start");
@@ -36,6 +38,12 @@ void app_main() {
   ESP_LOGI(TAG, "portTICK_PERIOD_MS=%u and 10ms=%u tick%s", portTICK_PERIOD_MS,
            pdMS_TO_TICKS(10), (pdMS_TO_TICKS(10) > 1) ? "s" : "");
 
+  // set timezone to Eastern Standard Time
+  // this is done very early to ensure the timezone is available for any
+  // functions that need it.
+  setenv("TZ", "EST5EDT,M3.2.0/2,M11.1.0", 1);
+  tzset();
+
   // ensure all peripherals have been completely reset
   // important after OTA and if an internal error occured that forced a restart
   // periph_module_disable(PERIPH_WIFI_MODULE);
@@ -46,8 +54,7 @@ void app_main() {
   // periph_module_enable(PERIPH_I2C0_MODULE);
   // periph_module_enable(PERIPH_RMT_MODULE);
 
-  mcrNVS_t *nvs_instance = mcrNVS::instance();
-  nvs_instance->processCommittedMsgs();
+  mcrNVS::init();
 
   // must create network first!
   network = mcr::Net::instance(); // singleton
@@ -96,7 +103,8 @@ void app_main() {
   ESP_LOGI(TAG, "certificate authority pem available [%d bytes]",
            ca_end - ca_start);
 
-  mcrNVS::commitMsg("BOOT", "SUCCESS");
+  mcrNVS::processCommittedMsgs();
+  mcrNVS::commitMsg("BOOT", "COMPLETE");
 
   for (;;) {
     // just sleep
