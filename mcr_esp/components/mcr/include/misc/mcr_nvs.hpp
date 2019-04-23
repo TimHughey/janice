@@ -66,13 +66,14 @@ private:
   // we use the double underscore prefix that implement publicly
   // available static functions
   esp_err_t __commitMsg(const char *key, const char *msg);
+  esp_err_t __processCommittedMsgs();
 
 public:
   static mcrNVS_t *init();
   static mcrNVS *instance();
 
   static esp_err_t commitMsg(const char *key, const char *msg);
-  esp_err_t processCommittedMsgs();
+  static esp_err_t processCommittedMsgs();
   // static esp_err_t processCommittedMsgs();
 };
 

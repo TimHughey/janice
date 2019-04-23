@@ -19,7 +19,6 @@
 */
 
 #include "misc/mcr_nvs.hpp"
-#include "misc/timestamp_task.hpp"
 #include "protocols/mqtt.hpp"
 
 static mcrNVS_t *__singleton__ = nullptr;
@@ -137,12 +136,12 @@ esp_err_t mcrNVS::__commitMsg(const char *key, const char *msg) {
   return _esp_rc;
 }
 
-// // STATIC
-// esp_err_t mcrNVS::processCommittedMsgs() {
-//   return instance()->__processComittedMsgs();
-// }
-
+// STATIC
 esp_err_t mcrNVS::processCommittedMsgs() {
+  return instance()->__processCommittedMsgs();
+}
+
+esp_err_t mcrNVS::__processCommittedMsgs() {
   bool need_commit = false;
 
   zeroBuffers();
