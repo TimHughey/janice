@@ -19,7 +19,6 @@
 */
 #include <string>
 
-#include <external/ArduinoJson.h>
 #include <sys/time.h>
 #include <time.h>
 

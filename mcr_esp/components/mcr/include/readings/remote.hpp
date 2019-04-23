@@ -25,7 +25,6 @@
 
 #include <esp_system.h>
 #include <esp_wifi.h>
-#include <external/ArduinoJson.h>
 #include <freertos/FreeRTOS.h>
 #include <sys/time.h>
 #include <time.h>

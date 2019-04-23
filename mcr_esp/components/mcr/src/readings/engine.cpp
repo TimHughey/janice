@@ -21,8 +21,6 @@
 #include <cstdlib>
 #include <ctime>
 
-#include <external/ArduinoJson.h>
-
 #include "readings/engine.hpp"
 
 namespace mcr {

@@ -23,7 +23,6 @@
 #include <sys/time.h>
 #include <time.h>
 
-#include "external/ArduinoJson.h"
 #include "misc/mcr_restart.hpp"
 #include "protocols/mqtt.hpp"
 

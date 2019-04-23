@@ -29,7 +29,6 @@
 #include <esp_https_ota.h>
 #include <esp_ota_ops.h>
 #include <esp_timer.h>
-#include <external/ArduinoJson.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
 #include <sys/time.h>

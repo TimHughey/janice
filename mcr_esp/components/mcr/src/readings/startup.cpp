@@ -23,7 +23,6 @@
 
 #include <esp_log.h>
 #include <esp_ota_ops.h>
-#include <external/ArduinoJson.h>
 
 #include "readings/startup.hpp"
 

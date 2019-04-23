@@ -25,7 +25,6 @@
 
 #include <esp_ota_ops.h>
 #include <esp_system.h>
-#include <external/ArduinoJson.h>
 #include <freertos/FreeRTOS.h>
 #include <sys/time.h>
 #include <time.h>
