@@ -21,6 +21,7 @@
 #ifndef reading_h
 #define reading_h
 
+// #include <memory>
 #include <string>
 
 #include <external/ArduinoJson.h>
@@ -30,6 +31,9 @@
 
 #include "devs/id.hpp"
 #include "misc/mcr_types.hpp"
+
+// Possible future improvement
+// typedef std::unique_ptr<std::string> myString;
 
 typedef class Reading Reading_t;
 class Reading {
@@ -67,6 +71,7 @@ public:
   virtual ~Reading();
 
   std::string *json(char *buffer = nullptr, size_t len = 0);
+  // myString json(char *buffer = nullptr, size_t len = 0);
   void setCmdAck(time_t latency, mcrRefID_t &refid);
 
   void setCRCMismatches(int crc_mismatches) {

@@ -82,6 +82,9 @@ void Reading::commonJSON(JsonDocument &doc) {
 }
 
 std::string *Reading::json(char *buffer, size_t len) {
+  // FUTURE IMPROVEMENT
+  // std::unique_ptr<std::string> json_S(new std::string());
+  // json_S.get()->reserve(1024);
   std::string *json_string = new std::string;
   json_string->reserve(1024);
 
