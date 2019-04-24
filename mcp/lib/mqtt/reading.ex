@@ -39,8 +39,7 @@ defmodule Mqtt.Reading do
     ...> Jason.decode!(json, keys: :atoms) |> Mqtt.Reading.metadata?()
     true
   """
-  def decode(json)
-      when is_binary(json) do
+  def decode(json) do
     case Jason.decode(json, keys: :atoms) do
       {:ok, r} ->
         r =
