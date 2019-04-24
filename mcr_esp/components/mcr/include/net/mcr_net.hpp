@@ -40,7 +40,7 @@ public:
   static void suspendNormalOps();
   static bool waitForConnection(uint32_t wait_ms = UINT32_MAX);
   static bool waitForInitialization(uint32_t wait_ms = UINT32_MAX);
-  static bool waitForIP(uint32_t wait_ms = 30000);
+  static bool waitForIP(uint32_t wait_ms = 60000);
   static bool waitForName(uint32_t wait_ms = 0);
   static bool waitForNormalOps(uint32_t wait_ms = UINT32_MAX);
   static bool isTimeSet();
@@ -65,17 +65,22 @@ public:
 
 private: // member functions
   Net(); // SINGLETON!  constructor is private
-  void acquiredIP(system_event_t *event);
+  void acquiredIP(void *event_data);
 
   static void checkError(const char *func, esp_err_t err);
-  void connected(system_event_t *event);
-  void disconnected(system_event_t *event);
+  void connected(void *event_data);
+  void disconnected(void *event_data);
   void init();
-  static esp_err_t evHandler(void *ctx, system_event_t *event);
+
+  // Event Handlers
+  static void ip_events(void *ctx, esp_event_base_t base, int32_t id,
+                        void *data);
+  static void wifi_events(void *ctx, esp_event_base_t base, int32_t id,
+                          void *data);
 
 private:
   EventGroupHandle_t evg_;
-  bool init_done_ = false;
+  esp_err_t init_rc_ = ESP_FAIL;
   tcpip_adapter_ip_info_t ip_info_;
   tcpip_adapter_dns_info_t primary_dns_;
   char dns_str_[16] = {};

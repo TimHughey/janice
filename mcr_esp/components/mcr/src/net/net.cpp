@@ -18,6 +18,7 @@
 
 #include "lwip/apps/sntp.h"
 #include "lwip/err.h"
+#include "lwip/sys.h"
 
 #include "misc/mcr_nvs.hpp"
 #include "net/mcr_net.hpp"
@@ -109,7 +110,7 @@ Net::Net() {
   ESP_LOGI(tagEngine(), "hardware jumper config [0x%02x]", hw_conf_);
 } // namespace mcr
 
-void Net::acquiredIP(system_event_t *event) {
+void Net::acquiredIP(void *event_data) {
   wifi_ap_record_t ap;
 
   tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip_info_);
@@ -196,59 +197,70 @@ void Net::checkError(const char *func, esp_err_t err) {
   esp_restart();
 }
 
-void Net::connected(system_event_t *event) {
+void Net::connected(void *event_data) {
   xEventGroupSetBits(evg_, connectedBit());
 }
 
-void Net::disconnected(system_event_t *event) {
-  esp_err_t rc = ESP_OK;
-  EventBits_t clear_bits =
-      connectedBit() | ipBit() | normalOpsBit() | readyBit();
+void Net::disconnected(void *event_data) {
+  EventBits_t clear_bits = connectedBit() | ipBit();
 
   xEventGroupClearBits(evg_, clear_bits);
-  sntp_stop();
-  rc = ::esp_wifi_stop();
-  checkError(__PRETTY_FUNCTION__, rc);
+  // sntp_stop();
 
-  start();
+  ::esp_wifi_start();
 }
 
 const char *Net::dnsIP() { return dns_str_; }
 
 // STATIC!!
-esp_err_t Net::evHandler(void *ctx, system_event_t *event) {
-  esp_err_t rc = ESP_OK;
+void Net::ip_events(void *ctx, esp_event_base_t base, int32_t id, void *data) {
+
   Net_t *net = (Net_t *)ctx;
 
   if (ctx == nullptr) {
     ESP_LOGE(tagEngine(), "%s ctx==nullptr", __PRETTY_FUNCTION__);
-    return rc;
   }
 
-  switch (event->event_id) {
-  case SYSTEM_EVENT_STA_CONNECTED:
-    net->connected(event);
-    break;
-
-  case SYSTEM_EVENT_STA_GOT_IP:
-    net->acquiredIP(event);
-    break;
-
-  case SYSTEM_EVENT_STA_LOST_IP:
-  case SYSTEM_EVENT_STA_DISCONNECTED:
-    net->disconnected(event);
-    break;
-
-  case SYSTEM_EVENT_STA_START:
+  switch (id) {
+  case IP_EVENT_STA_GOT_IP:
+    net->acquiredIP(data);
     break;
 
   default:
-    ESP_LOGW(tagEngine(), "%s unhandled event 0x%02x", __PRETTY_FUNCTION__,
-             event->event_id);
+    ESP_LOGW(tagEngine(), "%s unhandled event id(0x%02x)", __PRETTY_FUNCTION__,
+             id);
     break;
   }
+}
 
-  return rc;
+// STATIC!!
+void Net::wifi_events(void *ctx, esp_event_base_t base, int32_t id,
+                      void *data) {
+
+  Net_t *net = (Net_t *)ctx;
+
+  if (ctx == nullptr) {
+    ESP_LOGE(tagEngine(), "%s ctx==nullptr", __PRETTY_FUNCTION__);
+  }
+
+  switch (id) {
+  case WIFI_EVENT_STA_START:
+    ::esp_wifi_connect();
+    break;
+
+  case WIFI_EVENT_STA_CONNECTED:
+    net->connected(data);
+    break;
+
+  case WIFI_EVENT_STA_DISCONNECTED:
+    net->disconnected(data);
+    break;
+
+  default:
+    ESP_LOGW(tagEngine(), "%s unhandled event id(0x%02x)", __PRETTY_FUNCTION__,
+             id);
+    break;
+  }
 }
 
 EventGroupHandle_t Net::eventGroup() { return instance()->evg_; }
@@ -264,39 +276,55 @@ Net_t *Net::instance() {
 void Net::init() {
   esp_err_t rc = ESP_OK;
 
-  if (init_done_)
+  if (init_rc_ == ESP_OK)
     return;
 
-  rc = ::esp_event_loop_init(evHandler, instance());
+  ::tcpip_adapter_init();
 
-  if (rc == ESP_OK) {
-    ::tcpip_adapter_init();
-    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+  rc = ::esp_event_loop_create_default();
+  checkError(__PRETTY_FUNCTION__, rc); // never returns if rc != ESP_OK
 
-    rc = ::esp_wifi_init(&cfg);
-    if (rc == ESP_OK) {
-      rc = esp_wifi_set_storage(WIFI_STORAGE_RAM);
-    }
-  }
+  wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
 
+  rc = ::esp_wifi_init(&cfg);
   checkError(__PRETTY_FUNCTION__, rc);
+
+  rc = ::esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_events,
+                                    instance());
+  checkError(__PRETTY_FUNCTION__, rc);
+
+  rc = ::esp_event_handler_register(IP_EVENT, ESP_EVENT_ANY_ID, &ip_events,
+                                    instance());
+  checkError(__PRETTY_FUNCTION__, rc);
+
+  rc = ::esp_wifi_set_storage(WIFI_STORAGE_RAM);
+  checkError(__PRETTY_FUNCTION__, rc);
+
+  // finally, check the rc.  if any of the API calls above failed
+  // the rc represents the error of the specific API.
+  checkError(__PRETTY_FUNCTION__, rc);
+
+  init_rc_ = rc;
 }
 
 void Net::ensureTimeIsSet() {
   // wait for time to be set
   struct timeval curr_time = {};
   int retry = 0;
-  const int retry_count = 500;
+  const int total_wait_ms = 30000;
+  const int check_wait_ms = 100;
+  const int retry_count = total_wait_ms / check_wait_ms;
 
-  ESP_LOGI(tagEngine(), "waiting for SNTP...");
+  ESP_LOGI(tagEngine(), "waiting up to %dms (checking every %dms) for SNTP...",
+           total_wait_ms, check_wait_ms);
 
   // continue to query the system time until seconds since epoch are
   // sufficiently greater than a known recent time
   while ((curr_time.tv_sec < 1554830134) && (++retry < retry_count)) {
-    if (retry > 495) {
+    if ((retry > (retry_count - 5)) || ((retry % 50) == 0)) {
       ESP_LOGW(tagEngine(), "waiting for SNTP... (%d/%d)", retry, retry_count);
     }
-    vTaskDelay(pdMS_TO_TICKS(100));
+    vTaskDelay(pdMS_TO_TICKS(check_wait_ms));
     gettimeofday(&curr_time, nullptr);
   }
 
@@ -309,9 +337,6 @@ void Net::ensureTimeIsSet() {
     struct tm timeinfo = {};
     time_t now = time(nullptr);
 
-    // Set timezone to Eastern Standard Time and print local time
-    setenv("TZ", "EST5EDT,M3.2.0/2,M11.1.0", 1);
-    tzset();
     localtime_r(&now, &timeinfo);
     strftime(buf, buf_len, "%Y-%m-%d %T", &timeinfo);
 
@@ -388,7 +413,7 @@ bool Net::start() {
   checkError(__PRETTY_FUNCTION__, rc);
 
   wifi_config_t cfg;
-  ::memset(&cfg, 0, sizeof(cfg));
+  ::bzero(&cfg, sizeof(cfg));
   cfg.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;
   cfg.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
   cfg.sta.bssid_set = 0;
@@ -397,17 +422,12 @@ bool Net::start() {
             sizeof(cfg.sta.password));
 
   rc = ::esp_wifi_set_config(WIFI_IF_STA, &cfg);
-  if (rc == ESP_OK) {
-    // wifi is initialized so signal to processes waiting they can continue
-    xEventGroupSetBits(evg_, initializedBit());
-
-    rc = ::esp_wifi_start();
-
-    if (rc == ESP_OK) {
-      rc = ::esp_wifi_connect();
-    }
-  }
   checkError(__PRETTY_FUNCTION__, rc);
+
+  // wifi is initialized so signal to processes waiting they can continue
+  xEventGroupSetBits(evg_, initializedBit());
+
+  ::esp_wifi_start();
 
   ESP_LOGI(tagEngine(), "waiting for IP address...");
   if (waitForIP()) {
@@ -474,7 +494,7 @@ bool Net::waitForInitialization(uint32_t wait_ms) {
 
 // wait_ms defaults to 10 seconds
 bool Net::waitForIP(uint32_t wait_ms) {
-  EventBits_t wait_bit = connectedBit();
+  EventBits_t wait_bit = ipBit();
   EventGroupHandle_t eg = instance()->eventGroup();
   uint32_t wait_ticks =
       (wait_ms == UINT32_MAX) ? portMAX_DELAY : pdMS_TO_TICKS(wait_ms);
@@ -500,7 +520,8 @@ bool Net::waitForName(uint32_t wait_ms) {
 
 // wait_ms defaults to portMAX_DELAY when not passed
 bool Net::waitForNormalOps(uint32_t wait_ms) {
-  EventBits_t wait_bit = normalOpsBit() | transportBit();
+  EventBits_t wait_bit =
+      connectedBit() | ipBit() | normalOpsBit() | transportBit();
   EventGroupHandle_t eg = instance()->eventGroup();
   uint32_t wait_ticks =
       (wait_ms == UINT32_MAX) ? portMAX_DELAY : pdMS_TO_TICKS(wait_ms);
@@ -524,9 +545,11 @@ bool Net::isTimeSet() {
   return (bits_set & wait_bit) ? true : false;
 }
 
+// intended use is to signal to tasks that require WiFi but not
+// normalOps
 // wait_ms defaults to portMAX_DELAY
 bool Net::waitForReady(uint32_t wait_ms) {
-  EventBits_t wait_bit = readyBit();
+  EventBits_t wait_bit = connectedBit() | ipBit() | readyBit();
   EventGroupHandle_t eg = instance()->eventGroup();
   uint32_t wait_ticks =
       (wait_ms == UINT32_MAX) ? portMAX_DELAY : pdMS_TO_TICKS(wait_ms);
