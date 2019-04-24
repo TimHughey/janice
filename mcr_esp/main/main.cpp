@@ -104,7 +104,7 @@ void app_main() {
            ca_end - ca_start);
 
   mcrNVS::processCommittedMsgs();
-  mcrNVS::commitMsg("BOOT", "COMPLETE");
+  mcrNVS::commitMsg("BOOT", "LAST SUCCESSUL BOOT");
 
   for (;;) {
     // just sleep

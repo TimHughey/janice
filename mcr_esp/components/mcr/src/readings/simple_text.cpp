@@ -35,7 +35,7 @@ textReading::textReading(const char *text) {
 
 textReading::~textReading() {
   if (_text)
-    delete _text;
+    free(_text);
 }
 
 void textReading::populateJSON(JsonDocument &doc) {

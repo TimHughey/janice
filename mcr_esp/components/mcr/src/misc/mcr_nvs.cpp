@@ -160,11 +160,7 @@ esp_err_t mcrNVS::__processCommittedMsgs() {
 
     switch (_esp_rc) {
     case ESP_OK:
-      localtime_r(&(_blob->time), &_timeinfo);
-      strftime(_time_str, _time_str_max_len, "%F %T", &_timeinfo);
-
-      ESP_LOGI(TAG, "found key(%s) time(%s) msg(%s)", _possible_keys[i],
-               _time_str, _blob->msg);
+      publishMsg(_possible_keys[i], _blob);
       nvs_erase_key(_handle, _possible_keys[i]);
       need_commit = true;
       break;
@@ -193,6 +189,25 @@ bool mcrNVS::notOpen() {
     ESP_LOGW(TAG, "[%s] nvs not open", esp_err_to_name(_nvs_open_rc));
     return true;
   }
+}
+
+void mcrNVS::publishMsg(const char *key, mcrNVSMessage_t *blob) {
+  char *time_str = new char[_time_str_max_len];
+  char *text = new char[MCR_NVS_MSG_MAX_LEN];
+  struct tm *timeinfo = new struct tm;
+
+  localtime_r(&(blob->time), timeinfo);
+  strftime(time_str, _time_str_max_len, "%F %T", timeinfo);
+  snprintf(text, MCR_NVS_MSG_MAX_LEN, "key(%s) time(%s) msg(%s)", key, time_str,
+           blob->msg);
+
+  delete timeinfo;
+  delete time_str;
+
+  textReading reading(text);
+  mcrMQTT::instance()->publish(reading);
+
+  delete text;
 }
 
 void mcrNVS::zeroBuffers() {

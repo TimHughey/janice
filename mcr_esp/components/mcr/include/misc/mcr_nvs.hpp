@@ -62,6 +62,7 @@ private:
   ~mcrNVS();
 
   bool notOpen();
+  void publishMsg(const char *key, mcrNVSMessage_t *msg);
   void zeroBuffers();
 
   // we use the double underscore prefix that implement publicly
