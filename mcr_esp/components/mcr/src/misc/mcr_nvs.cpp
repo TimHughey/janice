@@ -160,8 +160,11 @@ esp_err_t mcrNVS::__processCommittedMsgs() {
 
     switch (_esp_rc) {
     case ESP_OK:
-      ESP_LOGI(TAG, "found key(%s) time(%lld) msg(%s)", _possible_keys[i],
-               (long long)_blob->time, _blob->msg);
+      localtime_r(&(_blob->time), &_timeinfo);
+      strftime(_time_str, _time_str_max_len, "%F %T", &_timeinfo);
+
+      ESP_LOGI(TAG, "found key(%s) time(%s) msg(%s)", _possible_keys[i],
+               _time_str, _blob->msg);
       nvs_erase_key(_handle, _possible_keys[i]);
       need_commit = true;
       break;

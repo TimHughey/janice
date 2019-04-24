@@ -19,6 +19,7 @@
 #include "lwip/apps/sntp.h"
 #include "lwip/err.h"
 
+#include "misc/mcr_nvs.hpp"
 #include "net/mcr_net.hpp"
 
 extern "C" {
@@ -150,6 +151,10 @@ uint32_t Net::batt_mv() {
 
 // STATIC!!
 void Net::checkError(const char *func, esp_err_t err) {
+  const size_t max_msg_len = 256;
+  char *msg = new char[max_msg_len];
+
+  vTaskDelay(pdMS_TO_TICKS(1000)); // let things settle
 
   switch (err) {
   case ESP_OK:
@@ -157,18 +162,24 @@ void Net::checkError(const char *func, esp_err_t err) {
 
   case 0x1100FF:
     ESP_LOGE(tagEngine(), "failed to acquire IP address");
+    mcrNVS::commitMsg(tagEngine(), "IP address aquisition failure");
     break;
 
   case 0x1100FE:
     ESP_LOGE(tagEngine(), "SNTP failed");
+    mcrNVS::commitMsg(tagEngine(), "SNTP failure");
     break;
 
   default:
-    ESP_LOGE(tagEngine(), "[%s] %s", esp_err_to_name(err), func);
+    snprintf(msg, max_msg_len, "[%s] %s", esp_err_to_name(err), func);
+    ESP_LOGE(tagEngine(), "%s", msg);
+    mcrNVS::commitMsg(tagEngine(), msg);
     break;
   }
 
-  vTaskDelay(pdMS_TO_TICKS(1000)); // let things settle
+  // yes, yes -- this isn't really needed since we're restarting
+  // but follow good coding practice
+  delete[] msg;
 
   ESP_LOGE(tagEngine(), "spooling ftl...");
 
@@ -180,7 +191,7 @@ void Net::checkError(const char *func, esp_err_t err) {
 
   // should never get here
   // ESP_LOGE(tagEngine(), "core dump failed");
-  vTaskDelay(pdMS_TO_TICKS(5000)); // let things settle
+  vTaskDelay(pdMS_TO_TICKS(5000)); // delay to limit quick continous restarts
   ESP_LOGE(tagEngine(), "JUMP!");
   esp_restart();
 }

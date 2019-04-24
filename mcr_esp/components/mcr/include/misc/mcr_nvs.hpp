@@ -51,6 +51,7 @@ private:
   esp_err_t _nvs_open_rc = ESP_FAIL;
 
   mcrNVSMessage_t *_blob = nullptr;
+  struct tm _timeinfo = {};
   char *_time_str = nullptr;
   size_t _time_str_max_len = 25;
   size_t _msg_len = 0;
