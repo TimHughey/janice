@@ -42,7 +42,7 @@ private:
   std::string _name;
 
 public:
-  mcrCmdNetwork(JsonObject &root);
+  mcrCmdNetwork(JsonDocument &doc);
   ~mcrCmdNetwork(){};
 
   bool process();

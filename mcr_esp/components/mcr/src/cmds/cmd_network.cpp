@@ -5,12 +5,12 @@ static const char *TAG = "mcrCmdNetwork";
 static const char *k_host = "host";
 static const char *k_name = "name";
 
-mcrCmdNetwork::mcrCmdNetwork(JsonObject &root)
-    : mcrCmd(mcrCmdType::setname, root) {
+mcrCmdNetwork::mcrCmdNetwork(JsonDocument &doc)
+    : mcrCmd(mcrCmdType::setname, doc) {
 
-  if (root.success()) {
-    _host = root[k_host] | "no_host";
-    _name = root[k_name] | "no_name";
+  if (doc.isNull() == false) {
+    _host = doc[k_host] | "no_host";
+    _name = doc[k_name] | "no_name";
   }
 }
 

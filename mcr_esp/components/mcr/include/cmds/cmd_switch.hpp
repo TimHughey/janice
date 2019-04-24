@@ -49,7 +49,7 @@ public:
   mcrCmdSwitch(const mcrCmdSwitch_t *cmd)
       : mcrCmd(mcrCmdType::setswitch), _dev_id(cmd->_dev_id), _mask(cmd->_mask),
         _state(cmd->_state), _refid(cmd->_refid), _ack(cmd->_ack){};
-  mcrCmdSwitch(JsonObject &root);
+  mcrCmdSwitch(JsonDocument &doc);
   mcrCmdSwitch(const mcrDevID_t &id, cmd_bitset_t mask, cmd_bitset_t state)
       : mcrCmd(mcrCmdType::setswitch), _dev_id(id), _mask(mask),
         _state(state){};

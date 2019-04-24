@@ -4,8 +4,8 @@
 
 const static char *TAG = "mcrCmdSwitch";
 
-mcrCmdSwitch::mcrCmdSwitch(JsonObject &root)
-    : mcrCmd(mcrCmdType::setswitch, root) {
+mcrCmdSwitch::mcrCmdSwitch(JsonDocument &doc)
+    : mcrCmd(mcrCmdType::setswitch, doc) {
   // json format of states command:
   // {"switch":"ds/29463408000000",
   //   "states":[{"state":false,"pio":3}],
@@ -13,11 +13,10 @@ mcrCmdSwitch::mcrCmdSwitch(JsonObject &root)
   //   "mtime":1515117138,
   //   "cmd":"set.switch"}
   int64_t create_start = esp_timer_get_time();
-  _dev_id = root["switch"].as<std::string>();
-  _refid = root["refid"].as<std::string>();
-  const JsonVariant &variant = root.get<JsonVariant>("states");
-  const JsonArray &states = variant.as<JsonArray>();
-  const JsonVariant &ack_flag = root["ack"];
+  _dev_id = doc["switch"].as<std::string>();
+  _refid = doc["refid"].as<std::string>();
+  const JsonArray states = doc["states"].as<JsonArray>();
+  const JsonVariant ack_flag = doc["ack"];
   uint32_t mask = 0x00;
   uint32_t tobe_state = 0x00;
 
@@ -40,7 +39,7 @@ mcrCmdSwitch::mcrCmdSwitch(JsonObject &root)
     }
 
     // set the ack flag if it's in the json
-    if (ack_flag.success()) {
+    if (ack_flag.isNull() == false) {
       _ack = ack_flag.as<bool>();
     }
   }

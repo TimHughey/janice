@@ -41,7 +41,7 @@ private:
   mcrCmdType_t _type;
   time_t _mtime = time(nullptr);
 
-  void populate(JsonObject &root);
+  void populate(JsonDocument &doc);
 
 protected:
   uint64_t _parse_us = 0LL;
@@ -50,8 +50,8 @@ protected:
 
 public:
   mcrCmd(mcrCmdType_t type);
-  mcrCmd(JsonObject &root);
-  mcrCmd(mcrCmdType_t type, JsonObject &root);
+  mcrCmd(JsonDocument &doc);
+  mcrCmd(mcrCmdType_t type, JsonDocument &doc);
   virtual ~mcrCmd(){};
 
   virtual time_t latency();

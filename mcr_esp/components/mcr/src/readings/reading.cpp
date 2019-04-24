@@ -45,53 +45,52 @@ Reading::~Reading() {
   }
 }
 
-void Reading::commonJSON(JsonObject &root) {
-  root["host"] = mcr::Net::hostID();
-  root["name"] = mcr::Net::getName();
-  root["mtime"] = _mtime;
+void Reading::commonJSON(JsonDocument &doc) {
+  doc["host"] = mcr::Net::hostID();
+  doc["name"] = mcr::Net::getName();
+  doc["mtime"] = _mtime;
 
   if (_id.valid()) {
-    root["device"] = _id.asString();
+    doc["device"] = _id.asString();
   }
 
   if (_cmd_ack) {
-    root["cmdack"] = _cmd_ack;
-    root["latency"] = _latency;
-    root["refid"] = _refid;
+    doc["cmdack"] = _cmd_ack;
+    doc["latency"] = _latency;
+    doc["refid"] = _refid;
   }
 
   if (_crc_mismatches > 0) {
-    root["crc_mismatches"] = _crc_mismatches;
+    doc["crc_mismatches"] = _crc_mismatches;
   }
 
   if (_read_errors > 0) {
-    root["read_errors"] = _read_errors;
+    doc["read_errors"] = _read_errors;
   }
 
   if (_write_errors > 0) {
-    root["write_errors"] = _write_errors;
+    doc["write_errors"] = _write_errors;
   }
 
   if (_read_us > 0) {
-    root["read_us"] = _read_us;
+    doc["read_us"] = _read_us;
   }
 
   if (_write_us > 0) {
-    root["write_us"] = _write_us;
+    doc["write_us"] = _write_us;
   }
 }
 
 std::string *Reading::json(char *buffer, size_t len) {
   std::string *json_string = new std::string;
-  json_string->reserve(800);
+  json_string->reserve(1024);
 
-  DynamicJsonBuffer json_buffer(800);
-  JsonObject &root = json_buffer.createObject();
+  DynamicJsonDocument doc(1024);
 
-  commonJSON(root);
-  populateJSON(root);
+  commonJSON(doc);
+  populateJSON(doc);
 
-  root.printTo(*json_string);
+  serializeJson(doc, *json_string);
 
   return json_string;
 }

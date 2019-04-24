@@ -57,7 +57,7 @@ private:
   static esp_err_t httpEventHandler(esp_http_client_event_t *evt);
 
 public:
-  mcrCmdOTA(mcrCmdType_t type, JsonObject &root);
+  mcrCmdOTA(mcrCmdType_t type, JsonDocument &doc);
   mcrCmdOTA(mcrCmdType_t type, mcrRawMsg_t *raw) : mcrCmd(type), _raw(raw){};
   ~mcrCmdOTA(){};
 

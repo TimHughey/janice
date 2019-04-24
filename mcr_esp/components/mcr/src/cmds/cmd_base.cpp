@@ -5,15 +5,15 @@
 static const char *k_mtime = "mtime";
 static const char *k_cmd = "cmd";
 
-mcrCmd::mcrCmd(JsonObject &root) { populate(root); }
+mcrCmd::mcrCmd(JsonDocument &doc) { populate(doc); }
 
 mcrCmd::mcrCmd(mcrCmdType_t type) {
   _mtime = time(nullptr);
   _type = type;
 }
 
-mcrCmd::mcrCmd(mcrCmdType_t type, JsonObject &root) : _type(type) {
-  populate(root);
+mcrCmd::mcrCmd(mcrCmdType_t type, JsonDocument &doc) : _type(type) {
+  populate(doc);
 }
 
 time_t mcrCmd::latency() {
@@ -21,10 +21,13 @@ time_t mcrCmd::latency() {
   return latency;
 }
 
-void mcrCmd::populate(JsonObject &root) {
-  if (root.success()) {
-    _mtime = root[k_mtime] | time(nullptr);
-    _type = mcrCmdTypeMap::fromString(root[k_cmd] | "unknown");
+void mcrCmd::populate(JsonDocument &doc) {
+  if (doc.isNull()) {
+    // there should be some warning here OR determine this check isn't
+    // required and remove it!
+  } else {
+    _mtime = doc[k_mtime] | time(nullptr);
+    _type = mcrCmdTypeMap::fromString(doc[k_cmd] | "unknown");
   }
 }
 

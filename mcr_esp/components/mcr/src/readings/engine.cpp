@@ -35,13 +35,13 @@ bool EngineReading::hasNonZeroValues() {
   return (discover_us_ > 0) || (convert_us_ > 0) || (report_us_ > 0);
 }
 
-void EngineReading::populateJSON(JsonObject &root) {
-  root["type"] = "mcr_stat";
-  root["metric"] = "engine_phase";
-  root["engine"] = engine_;
-  root["discover_us"] = discover_us_;
-  root["convert_us"] = convert_us_;
-  root["report_us"] = report_us_;
-  root["switch_cmd_us"] = switch_cmd_us_;
+void EngineReading::populateJSON(JsonDocument &doc) {
+  doc["type"] = "mcr_stat";
+  doc["metric"] = "engine_phase";
+  doc["engine"] = engine_;
+  doc["discover_us"] = discover_us_;
+  doc["convert_us"] = convert_us_;
+  doc["report_us"] = report_us_;
+  doc["switch_cmd_us"] = switch_cmd_us_;
 };
 } // namespace mcr

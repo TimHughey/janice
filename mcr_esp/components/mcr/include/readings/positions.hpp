@@ -46,7 +46,7 @@ public:
   uint32_t state() { return _states; }
 
 protected:
-  virtual void populateJSON(JsonObject &root);
+  virtual void populateJSON(JsonDocument &doc);
 };
 
 #endif // positions_reading_h

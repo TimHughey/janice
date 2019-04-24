@@ -43,7 +43,7 @@ public:
   celsiusReading(const mcrDevID_t &id, time_t mtime, float celsius);
 
 protected:
-  virtual void populateJSON(JsonObject &root);
+  virtual void populateJSON(JsonDocument &doc);
 };
 
 #endif // __cplusplus

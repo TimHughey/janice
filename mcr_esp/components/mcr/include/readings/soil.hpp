@@ -44,7 +44,7 @@ public:
               int soil_moisture);
 
 protected:
-  virtual void populateJSON(JsonObject &root);
+  virtual void populateJSON(JsonDocument &doc);
 };
 
 #endif // __cplusplus

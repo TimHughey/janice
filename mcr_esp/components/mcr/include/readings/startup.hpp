@@ -44,7 +44,7 @@ public:
   static const std::string &decodeResetReason(esp_reset_reason_t reason);
 
 protected:
-  virtual void populateJSON(JsonObject &root);
+  virtual void populateJSON(JsonDocument &doc);
 };
 
 #endif // startup_reading_hpp

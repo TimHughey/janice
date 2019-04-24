@@ -56,8 +56,8 @@ private:
   char *_json = nullptr;
 
 protected:
-  void commonJSON(JsonObject &root);
-  virtual void populateJSON(JsonObject &root){};
+  void commonJSON(JsonDocument &doc);
+  virtual void populateJSON(JsonDocument &doc){};
 
 public:
   // default constructor, Reading type undefined

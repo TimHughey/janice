@@ -50,7 +50,7 @@ public:
   remoteReading(uint32_t batt_mv);
 
 protected:
-  virtual void populateJSON(JsonObject &root);
+  virtual void populateJSON(JsonDocument &doc);
 };
 
 #endif

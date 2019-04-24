@@ -47,7 +47,7 @@ public:
   bool hasNonZeroValues();
 
 protected:
-  virtual void populateJSON(JsonObject &root);
+  virtual void populateJSON(JsonDocument &doc);
 };
 } // namespace mcr
 

@@ -29,7 +29,7 @@ mcrCmd_t *mcrCmdFactory::fromRaw(mcrRawMsg_t *raw) {
 }
 
 mcrCmd_t *mcrCmdFactory::fromJSON(mcrRawMsg_t *raw) {
-  StaticJsonBuffer<_jsonBufferCapacity> jsonBuffer;
+  StaticJsonDocument<_jsonBufferCapacity> doc;
   mcrCmd_t *cmd = nullptr;
   mcrCmdType_t cmd_type = mcrCmdType::unknown;
 
@@ -37,35 +37,35 @@ mcrCmd_t *mcrCmdFactory::fromJSON(mcrRawMsg_t *raw) {
   raw->push_back(0x00);
 
   int64_t start = esp_timer_get_time();
-  JsonObject &root = jsonBuffer.parseObject((const char *)raw->data());
+  auto err = deserializeJson(doc, (const char *)raw->data());
   int64_t parse_us = esp_timer_get_time() - start;
 
-  if (!root.success()) { // bail if json parse failed
-    ESP_LOGW(TAG, "parse of JSON failed");
+  if (err) { // bail if json parse failed
+    ESP_LOGW(TAG, "parse of JSON failed (%s)", err.c_str());
     return cmd;
   }
 
-  auto cmd_str = root["cmd"].as<std::string>();
+  auto cmd_str = doc["cmd"].as<std::string>();
   cmd_type = mcrCmdTypeMap::fromString(cmd_str);
 
   switch (cmd_type) {
   case mcrCmdType::unknown:
     ESP_LOGW(TAG, "unknown command [%s]", cmd_str.c_str());
-    cmd = new mcrCmd(root);
+    cmd = new mcrCmd(doc);
     break;
 
   case mcrCmdType::none:
   case mcrCmdType::heartbeat:
   case mcrCmdType::timesync:
-    cmd = new mcrCmd(root);
+    cmd = new mcrCmd(doc);
     break;
 
   case mcrCmdType::setswitch:
-    cmd = new mcrCmdSwitch(root);
+    cmd = new mcrCmdSwitch(doc);
     break;
 
   case mcrCmdType::setname:
-    cmd = new mcrCmdNetwork(root);
+    cmd = new mcrCmdNetwork(doc);
     break;
 
   case mcrCmdType::otabegin:
@@ -74,7 +74,7 @@ mcrCmd_t *mcrCmdFactory::fromJSON(mcrRawMsg_t *raw) {
   case mcrCmdType::restart:
   case mcrCmdType::bootPartitionNext:
   case mcrCmdType::otaHTTPS:
-    cmd = new mcrCmdOTA(cmd_type, root);
+    cmd = new mcrCmdOTA(cmd_type, doc);
     break;
 
   case mcrCmdType::stopEngines:

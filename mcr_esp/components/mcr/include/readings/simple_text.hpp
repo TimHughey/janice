@@ -44,7 +44,7 @@ public:
   static uint8_t maxLength() { return MAX_LEN; };
 
 protected:
-  virtual void populateJSON(JsonObject &root);
+  virtual void populateJSON(JsonDocument &doc);
 };
 
 #endif // text_reading_hpp

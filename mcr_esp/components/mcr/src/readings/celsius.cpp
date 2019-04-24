@@ -32,10 +32,10 @@ celsiusReading::celsiusReading(const mcrDevID_t &id, time_t mtime,
   _celsius = celsius;
 };
 
-void celsiusReading::populateJSON(JsonObject &root) {
-  if (!root.containsKey("type")) { // since this could be subclassed we
-    root["type"] = "temp";         // need to check that the
-  }                                // type hasn't been set
-  root["tc"] = _celsius;
-  root["tf"] = _celsius * 1.8 + 32.0;
+void celsiusReading::populateJSON(JsonDocument &doc) {
+  if (!doc.containsKey("type")) { // since this could be subclassed we
+    doc["type"] = "temp";         // need to check that the
+  }                               // type hasn't been set
+  doc["tc"] = _celsius;
+  doc["tf"] = _celsius * 1.8 + 32.0;
 };

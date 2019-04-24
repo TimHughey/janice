@@ -43,18 +43,18 @@ remoteReading::remoteReading(uint32_t batt_mv)
   uptime_us_ = esp_timer_get_time();
 };
 
-void remoteReading::populateJSON(JsonObject &root) {
+void remoteReading::populateJSON(JsonDocument &doc) {
   char bssid_str[] = "xx:xx:xx:xx:xx:xx";
   snprintf(bssid_str, sizeof(bssid_str), "%02x:%02x:%02x:%02x:%02x:%02x",
            ap_.bssid[0], ap_.bssid[1], ap_.bssid[2], ap_.bssid[3], ap_.bssid[4],
            ap_.bssid[5]);
 
-  root["type"] = type_.c_str();
-  root["bssid"] = bssid_str;
-  root["ap_rssi"] = ap_.rssi;
-  root["ap_pri_chan"] = ap_.primary;
-  root["batt_mv"] = batt_mv_;
-  root["heap_free"] = heap_free_;
-  root["heap_min"] = heap_min_;
-  root["uptime_us"] = uptime_us_;
+  doc["type"] = type_.c_str();
+  doc["bssid"] = bssid_str;
+  doc["ap_rssi"] = ap_.rssi;
+  doc["ap_pri_chan"] = ap_.primary;
+  doc["batt_mv"] = batt_mv_;
+  doc["heap_free"] = heap_free_;
+  doc["heap_min"] = heap_min_;
+  doc["uptime_us"] = uptime_us_;
 };

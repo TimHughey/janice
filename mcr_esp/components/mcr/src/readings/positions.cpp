@@ -35,15 +35,15 @@ positionsReading::positionsReading(const mcrDevID_t &id, time_t mtime,
   }
 }
 
-void positionsReading::populateJSON(JsonObject &root) {
-  root["type"] = "switch";
-  root["pio_count"] = _pios;
+void positionsReading::populateJSON(JsonDocument &doc) {
+  doc["type"] = "switch";
+  doc["pio_count"] = _pios;
 
-  JsonArray &pio = root.createNestedArray("states");
+  JsonArray states = doc.createNestedArray("states");
 
   for (uint32_t i = 0; i < _pios; i++) {
     bool pio_state = (_states & (0x01 << i));
-    JsonObject &item = pio.createNestedObject();
+    JsonObject item = states.createNestedObject();
 
     item["pio"] = i;
     item["state"] = pio_state;

@@ -38,7 +38,7 @@ textReading::~textReading() {
     delete _text;
 }
 
-void textReading::populateJSON(JsonObject &root) {
-  root["type"] = "text";
-  root["text"] = _text;
+void textReading::populateJSON(JsonDocument &doc) {
+  doc["type"] = "text";
+  doc["text"] = _text;
 }

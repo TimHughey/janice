@@ -43,7 +43,7 @@ public:
                   float relhum);
 
 protected:
-  void populateJSON(JsonObject &root);
+  void populateJSON(JsonDocument &doc);
 };
 
 #endif // temp_reading_h

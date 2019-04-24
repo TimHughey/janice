@@ -31,16 +31,16 @@ static char _shared_msg[128];
 extern const uint8_t ca_start[] asm("_binary_ca_pem_start");
 extern const uint8_t ca_end[] asm("_binary_ca_pem_end");
 
-mcrCmdOTA::mcrCmdOTA(mcrCmdType_t type, JsonObject &root) : mcrCmd(type, root) {
-  if (root.success()) {
-    _host = root[k_host] | "no_host";
-    _head = root[k_head] | "0000000";
-    _stable = root[k_stable] | "0000000";
-    _partition = root[k_part] | "ota";
-    _fw_url = root[k_fw_url] | "none";
-    _delay_ms = root[k_delay_ms] | 0;
-    _start_delay_ms = root[k_start_delay_ms] | 0;
-    _reboot_delay_ms = root[k_reboot_delay_ms] | 0;
+mcrCmdOTA::mcrCmdOTA(mcrCmdType_t type, JsonDocument &doc) : mcrCmd(type, doc) {
+  if (doc.isNull() == false) {
+    _host = doc[k_host] | "no_host";
+    _head = doc[k_head] | "0000000";
+    _stable = doc[k_stable] | "0000000";
+    _partition = doc[k_part] | "ota";
+    _fw_url = doc[k_fw_url] | "none";
+    _delay_ms = doc[k_delay_ms] | 0;
+    _start_delay_ms = doc[k_start_delay_ms] | 0;
+    _reboot_delay_ms = doc[k_reboot_delay_ms] | 0;
   }
 }
 

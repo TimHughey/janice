@@ -42,7 +42,7 @@ public:
   uint32_t freeRAM() { return _free_ram; }
 
 protected:
-  virtual void populateJSON(JsonObject &root);
+  virtual void populateJSON(JsonDocument &doc);
 };
 
 #endif // ram_util_reading_h

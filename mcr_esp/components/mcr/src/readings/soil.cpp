@@ -32,14 +32,14 @@ soilReading::soilReading(const mcrDevID_t &id, time_t mtime, float celsius,
   _soil_moisture = soil_moisture;
 };
 
-void soilReading::populateJSON(JsonObject &root) {
+void soilReading::populateJSON(JsonDocument &doc) {
   // the reading is:
   //  1. capacitive reading of soil moisture
   //  2. celsius temperature of the probe
 
-  celsiusReading::populateJSON(root);
+  celsiusReading::populateJSON(doc);
 
   // override the reading type from the base class
-  root["type"] = "soil";
-  root["cap"] = _soil_moisture;
+  doc["type"] = "soil";
+  doc["cap"] = _soil_moisture;
 };
