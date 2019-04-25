@@ -71,7 +71,7 @@ defmodule MessageSave do
     {:reply, :ok, s}
   end
 
-  def handle_cast({@save_msg, direction, payload, dropped}, %{opts: _opts} = s) do
+  def handle_cast({@save_msg, direction, payload, dropped}, %{opts: [:save]} = s) do
     %MessageSave{direction: Atom.to_string(direction), payload: payload, dropped: dropped}
     |> insert!()
 
@@ -82,6 +82,10 @@ defmodule MessageSave do
     from(ms in MessageSave, where: ms.inserted_at < ^older_dt)
     |> Repo.delete_all()
 
+    {:noreply, s}
+  end
+
+  def handle_cast({@save_msg, _direction, _payload, _dropped}, %{opts: _opts} = s) do
     {:noreply, s}
   end
 
