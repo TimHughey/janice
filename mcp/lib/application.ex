@@ -10,12 +10,8 @@ defmodule Mcp.Application do
     Logger.info(fn -> "start() args: #{inspect(args)}" end)
 
     build_env = Keyword.get(args, :build_env, "dev")
-    sha_head = Keyword.get(args, :sha_head, "0000000")
-    sha_mcr_stable = Keyword.get(args, :sha_mcr_stable, "0000000")
 
     put_env(:mcp, :build_env, build_env)
-    put_env(:mcp, :sha_head, sha_head)
-    put_env(:mcp, :sha_mcr_stable, sha_mcr_stable)
 
     # List all child processes to be supervised
     children = children_by_env(build_env)

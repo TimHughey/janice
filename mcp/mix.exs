@@ -25,7 +25,7 @@ defmodule Mcp.Mixfile do
   def project do
     [
       app: :mcp,
-      version: "0.1.4-#{sha_head()}",
+      version: "0.1.4-#{git_describe()}",
       elixir: "~> 1.7",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
@@ -37,8 +37,6 @@ defmodule Mcp.Mixfile do
       package: package(),
       description: description(),
       escript: escript_config(),
-      sha_head: "#{sha_head()}",
-      sha_mcr_stable: "#{sha_mcr_stable()}",
       test_coverage: test_coverage()
     ]
   end
@@ -112,8 +110,7 @@ defmodule Mcp.Mixfile do
   defp args do
     [
       build_env: "#{Mix.env()}",
-      sha_head: sha_head(),
-      sha_mcr_stable: sha_mcr_stable()
+      git_vsn: "#{git_describe()}"
     ]
   end
 
@@ -131,13 +128,8 @@ defmodule Mcp.Mixfile do
 
   defp escript_config, do: [main_module: Mcp]
 
-  defp sha_head do
-    {result, _rc} = System.cmd("git", ["rev-parse", "--short", "HEAD"])
-    String.trim(result)
-  end
-
-  defp sha_mcr_stable do
-    {result, _rc} = System.cmd("git", ["rev-parse", "--short", "mcr-stable"])
+  defp git_describe do
+    {result, _rc} = System.cmd("git", ["describe"])
     String.trim(result)
   end
 
