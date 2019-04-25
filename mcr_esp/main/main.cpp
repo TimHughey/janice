@@ -77,6 +77,7 @@ void app_main() {
   timestampTask->watchStack(mqttTask->tagEngine(), mqttTask->taskHandle());
 
   network->waitForNormalOps();
+  mcr::Net::waitForName(30000);
 
   const esp_partition_t *run_part = esp_ota_get_running_partition();
   esp_ota_img_states_t ota_state;

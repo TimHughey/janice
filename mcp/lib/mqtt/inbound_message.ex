@@ -146,7 +146,7 @@ defmodule Mqtt.InboundMessage do
           {nil, nil}
 
         Reading.simple_text?(r) ->
-          Logger.warn(fn -> "NVS message from #{r.name}: #{r.text}" end)
+          Logger.warn(fn -> "#{r.name} --> #{r.text}" end)
           {nil, nil}
 
         true ->
