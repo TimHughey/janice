@@ -114,7 +114,6 @@ defmodule Remote do
       :name,
       :hw,
       :firmware_vsn,
-      :preferred_vsn,
       :project_name,
       :idf_vsn,
       :app_elf_sha256,
@@ -134,7 +133,6 @@ defmodule Remote do
       :uptime_us
     ])
     |> validate_required([:name])
-    |> validate_inclusion(:preferred_vsn, ["head", "stable"])
     |> validate_format(:name, name_regex())
     |> unique_constraint(:name)
   end
