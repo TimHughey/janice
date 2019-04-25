@@ -67,7 +67,8 @@ defmodule MqttInboundMessageTest do
 
     sw = %{
       type: "text",
-      text: "simple text message"
+      text: "simple text message",
+      log: false
     }
 
     Map.merge(base, sw)

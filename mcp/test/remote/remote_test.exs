@@ -7,7 +7,6 @@ defmodule RemoteTest do
 
   alias Janice.TimeSupport
 
-  def preferred_vsn, do: "b4edefc"
   def host(num), do: "mcr.remote" <> String.pad_leading(Integer.to_string(num), 3, "0")
   def name(num), do: "remote" <> String.pad_leading(Integer.to_string(num), 3, "0")
 
@@ -15,7 +14,8 @@ defmodule RemoteTest do
     do: %{
       host: host(num),
       type: "remote_runtime",
-      mtime: TimeSupport.unix_now(:seconds)
+      mtime: TimeSupport.unix_now(:seconds),
+      async: false
     }
 
   def runtime(m) do
@@ -52,7 +52,7 @@ defmodule RemoteTest do
   end
 
   setup_all do
-    ext(99) |> boot() |> Remote.external_update()
+    ext(99) |> Map.put(:log, false) |> boot() |> Remote.external_update()
     :ok
   end
 
@@ -71,7 +71,7 @@ defmodule RemoteTest do
     res =
       eu
       |> boot()
-      |> Map.put(:mtime, later_mtime)
+      |> Map.merge(%{mtime: later_mtime, log: false})
       |> Remote.external_update()
 
     rem = Remote.get_by(host: host(16))
@@ -81,8 +81,8 @@ defmodule RemoteTest do
   end
 
   test "can create a changeset from an external update" do
-    rem = Remote.get_by(host: host(1))
     eu = ext(1) |> boot() |> Map.put(:reset_reason, "test")
+    rem = Remote.get_by(host: host(1))
 
     cs = Remote.changeset(rem, eu)
 
@@ -101,6 +101,14 @@ defmodule RemoteTest do
 
     # assert msg =~ host(1)
     assert msg =~ "unknown" or msg =~ "bad map"
+  end
+
+  test "external update logs remote startup message" do
+    fun = fn -> Map.put(ext(4), :log, true) |> boot() |> Remote.external_update() end
+    msg = capture_log(fun)
+
+    assert msg =~ name(4)
+    assert msg =~ "BOOT"
   end
 
   test "mark as seen (default threshold)" do
@@ -152,22 +160,6 @@ defmodule RemoteTest do
     assert res === name(n)
   end
 
-  test "change vsn preference to head" do
-    ext(9) |> Remote.external_update()
-    r = Remote.get_by(host: host(9))
-    res = Remote.change_vsn_preference(r.id, "head")
-
-    assert res === "head"
-  end
-
-  test "change vsn preference to bad preference" do
-    ext(9) |> Remote.external_update()
-    r = Remote.get_by(host: host(9))
-    res = Remote.change_vsn_preference(r.id, "bad")
-
-    assert res === :error
-  end
-
   test "get_by(name: name)" do
     ext(3) |> Remote.external_update()
 
@@ -213,26 +205,6 @@ defmodule RemoteTest do
     assert(msg =~ "bad arg")
   end
 
-  test "get vsn preference" do
-    ext(4) |> Remote.external_update()
-    Remote.change_name(host(4), name(4))
-    pref = Remote.vsn_preference(name: name(4))
-
-    assert(pref === "stable")
-  end
-
-  test "get vsn preference non-existent host" do
-    assert Remote.vsn_preference(name: "foobar") === "not_found"
-  end
-
-  test "external update started log message" do
-    fun = fn -> Map.put(ext(4), :log, true) |> boot() |> Remote.external_update() end
-    msg = capture_log(fun)
-
-    assert msg =~ name(4)
-    assert msg =~ "BOOT"
-  end
-
   test "all Remotes" do
     ext(1) |> Remote.external_update()
     remotes = Remote.all()
@@ -242,42 +214,93 @@ defmodule RemoteTest do
     assert is_list(remotes) and is_remote
   end
 
-  @tag :ota
-  test "OTA update all" do
-    msg =
-      capture_log(fn ->
-        Remote.ota_update(:all, start_delay_ms: 10, reboot_delay_ms: 1000, log: true)
-      end)
+  test "ota_update_list(:all)" do
+    ota_list = Remote.ota_update_list(:all)
+    first = [ota_list] |> List.flatten() |> hd
 
-    assert msg =~ "needs update"
+    assert is_list(ota_list)
+    assert %{name: _, host: _} = first
+  end
+
+  test "ota_update_list(integer)" do
+    num = 14
+    host = host(num)
+    ext(num) |> Remote.external_update()
+
+    rem1 = Remote.get_by(host: host)
+
+    ota_list = Remote.ota_update_list(rem1.id)
+    first = [ota_list] |> List.flatten() |> hd()
+
+    assert is_list(ota_list)
+    assert %{name: _, host: _} = first
+  end
+
+  test "ota_update_list(name)" do
+    num = 14
+    host = host(num)
+    ext(num) |> Remote.external_update()
+
+    rem1 = Remote.get_by(host: host)
+
+    ota_list = Remote.ota_update_list(rem1.name)
+    first = [ota_list] |> List.flatten() |> hd()
+
+    assert is_list(ota_list)
+    assert %{name: _, host: _} = first
+  end
+
+  test "ota_update_list(host)" do
+    num = 14
+    host = host(num)
+    ext(num) |> Remote.external_update()
+
+    ota_list = Remote.ota_update_list(host)
+    first = [ota_list] |> List.flatten() |> hd()
+
+    assert is_list(ota_list)
+    assert %{name: _, host: _} = first
+  end
+
+  test "ota_update_list(list_of_hosts)" do
+    host_ids = [14, 15, 16, 17]
+
+    hosts =
+      for id <- host_ids do
+        ext(id) |> Remote.external_update()
+        host(id)
+      end
+
+    ota_list = Remote.ota_update_list(hosts)
+    first = [ota_list] |> List.flatten() |> hd()
+
+    assert is_list(ota_list)
+    assert %{name: _, host: _} = first
+    assert 4 == length(ota_list)
   end
 
   @tag :ota
-  test "OTA update by name" do
+  test "OTA update (unsupported)" do
+    msg =
+      capture_log(fn ->
+        Remote.ota_update(:bad, log: true)
+      end)
+
+    assert msg =~ "unsupported"
+  end
+
+  @tag :ota
+  test "OTA update (main)" do
     n = 10
     ext(n) |> Remote.external_update()
     rem = Remote.get_by(host: host(n))
 
     msg =
       capture_log(fn ->
-        Remote.ota_update(rem.id, start_delay_ms: 100, reboot_delay_ms: 1000, log: true)
+        Remote.ota_update(rem.name, reboot_delay_ms: 1000, log: true)
       end)
 
-    assert msg =~ "needs update"
-  end
-
-  @tag :ota
-  test "OTA single (by name, force)" do
-    n = 11
-    ext(n) |> Remote.external_update()
-    rem = Remote.get_by(host: host(n))
-
-    msg =
-      capture_log(fn ->
-        Remote.ota_update_single(rem.name, force: true, start_delay_ms: 1, log: true)
-      end)
-
-    assert msg =~ "needs update"
+    assert msg =~ "ota url"
   end
 
   test "remote restart" do
@@ -285,7 +308,7 @@ defmodule RemoteTest do
     ext(n) |> Remote.external_update()
     rem = Remote.get_by(host: host(n))
 
-    res = Remote.restart(rem.id, delay_ms: 0, log: false)
+    res = Remote.restart(rem.id, reboot_delay_ms: 0, log: false)
 
     assert res == :ok
   end

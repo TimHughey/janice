@@ -101,34 +101,14 @@ defmodule Remote do
     |> Repo.all()
   end
 
-  # def at_preferred_vsn?(%Remote{firmware_vsn: current} = r) do
-  #   fw_file_vsn = OTA.fw_file_version()
-  #
-  #   preferred =
-  #     case r.preferred_vsn do
-  #       "head" ->
-  #         Map.get(fw_file_vsn, :head)
-  #
-  #       "stable" ->
-  #         Map.get(fw_file_vsn, :stable)
-  #
-  #       _ ->
-  #         Logger.warn(fn -> "#{r.name} has a bad preferred vsn #{r.preferred_vsn}" end)
-  #         "0000000"
-  #     end
-  #
-  #   case current do
-  #     ^preferred -> true
-  #     _ -> false
-  #   end
-  # end
-
   def browse do
     sorted = all() |> Enum.sort(fn a, b -> a.name <= b.name end)
     Scribe.console(sorted, data: [:id, :name, :host, :hw, :inserted_at])
   end
 
-  def changeset(rem, params \\ %{}) do
+  def changeset(rem, params \\ %{})
+
+  def changeset(%Remote{} = rem, params) do
     rem
     |> cast(params, [
       :name,
@@ -158,6 +138,8 @@ defmodule Remote do
     |> validate_format(:name, name_regex())
     |> unique_constraint(:name)
   end
+
+  def changeset(nil, _params), do: %Ecto.Changeset{}
 
   def change_name(id, new_name) when is_integer(id) and is_binary(new_name) do
     remote = Repo.get(Remote, id)
@@ -195,11 +177,6 @@ defmodule Remote do
   end
 
   def change_name(_, _), do: {:error, :bad_args}
-
-  def change_vsn_preference(id, preference) when is_integer(id) and is_binary(preference) do
-    {res, rem} = Repo.get(Remote, id) |> changeset(%{preferred_vsn: preference}) |> update()
-    if res == :ok, do: rem.preferred_vsn, else: res
-  end
 
   def delete(id) when is_integer(id),
     do: from(s in Remote, where: s.id == ^id) |> Repo.delete_all(timeout: @delete_timeout_ms)
@@ -283,7 +260,7 @@ defmodule Remote do
   end
 
   # header to define default parameter for multiple functions
-  def mark_as_seen(host, time, threshold_secs \\ 10)
+  def mark_as_seen(host, time, threshold_secs \\ 3)
 
   def mark_as_seen(host, mtime, threshold_secs)
       when is_binary(host) and is_integer(mtime) do
@@ -310,59 +287,60 @@ defmodule Remote do
 
   def mark_as_seen(nil, _, _), do: nil
 
-  # ota_update() header
-  def ota_update(id, opts \\ [])
+  def ota_update(what, opts \\ []) do
+    update_list = ota_update_list(what)
 
-  def ota_update(:all, opts) when is_list(opts), do: all() |> ota_update(opts)
-
-  def ota_update(id, opts)
-      when is_integer(id) do
-    rem = Repo.get(Remote, id)
-    ota_update([rem], opts)
-  end
-
-  def ota_update(list, opts) when is_list(list) and is_list(opts) do
-    force = Keyword.get(opts, :force, false)
-    log = Keyword.get(opts, :log, false)
-
-    update_hosts =
-      for %Remote{host: host, name: name} = _r <- list do
-        # TODO: design and implement new firmware version handling
-        # at_vsn = at_preferred_vsn?(r)
-
-        # HACK: until the TODO is complete Remotes will never be seen
-        # as at_vsn
-        at_vsn = false
-
-        if at_vsn == false or force == true do
-          log && Logger.warn(fn -> "#{name} needs update" end)
-          host
-        else
-          false
-        end
-      end
-
-    if Enum.empty?(update_hosts) do
-      :none_needed
+    if length(update_list) == 1 and hd(update_list) == :unsupported do
+      :unsupported
     else
-      opts = opts ++ [update_hosts: update_hosts]
-
+      opts = opts ++ [update_list: update_list]
       OTA.send(opts)
-      :ok
     end
   end
 
-  def ota_update_single(name, opts \\ []) when is_binary(name) do
-    log = Keyword.get(opts, :log, true)
-    r = get_by(name: name)
+  # create a list of ota updates for all Remotes
+  def ota_update_list(:all) do
+    remotes = all()
 
-    if is_nil(r) do
-      log && Logger.warn(fn -> "#{name} not found, can't trigger ota" end)
-      :not_found
+    for r <- remotes, do: ota_update_map(r)
+  end
+
+  # create a list
+  def ota_update_list(id) when is_integer(id) do
+    with %Remote{} = r <- get_by(id: id),
+         map <- ota_update_map(r) do
+      [map]
     else
-      ota_update([r], opts)
+      nil ->
+        Logger.warn(fn -> "id(#{id}) not found" end)
+        [:not_found]
     end
   end
+
+  def ota_update_list(name) when is_binary(name) do
+    q = from(remote in Remote, where: [name: ^name], or_where: [host: ^name])
+    rem = one(q)
+
+    case rem do
+      %Remote{} = r ->
+        [ota_update_map(r)]
+
+      nil ->
+        Logger.warn(fn -> "name(#{name}) not found" end)
+        [:not_found]
+    end
+  end
+
+  def ota_update_list(list) when is_list(list) do
+    for l <- list, do: ota_update_list(l) |> List.flatten()
+  end
+
+  def ota_update_list(anything_else) do
+    Logger.warn(fn -> "unsupported: #{inspect(anything_else)}" end)
+    [:unsupported]
+  end
+
+  defp ota_update_map(%Remote{} = r), do: %{name: r.name, host: r.host}
 
   def restart(id, opts \\ []) when is_integer(id) do
     log = Keyword.get(opts, :log, true)
@@ -374,13 +352,6 @@ defmodule Remote do
     else
       OTA.restart(r.host, opts)
       :ok
-    end
-  end
-
-  def vsn_preference(opts) do
-    case get_by(opts) do
-      %Remote{preferred_vsn: vsn} -> vsn
-      _notfound -> "not_found"
     end
   end
 

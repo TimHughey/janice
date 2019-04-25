@@ -31,19 +31,18 @@
 #include "readings/readings.hpp"
 
 typedef class mcrRestart mcrRestart_t;
-#define DEFAULT_WAIT_TICKS pdMS_TO_TICKS(4000)
+#define DEFAULT_WAIT_MS 4000
 
 class mcrRestart {
 private:
-  TickType_t _delay_ticks;
-
 public:
-  mcrRestart(TickType_t delay_ticks = 0);
+  mcrRestart();
   static mcrRestart_t *instance();
 
   ~mcrRestart();
 
-  void restart(const char *text = nullptr, const char *func = nullptr);
+  void restart(const char *text = nullptr, const char *func = nullptr,
+               uint32_t reboot_delay_ms = DEFAULT_WAIT_MS);
 };
 
 #endif // mcr_restart_hpp

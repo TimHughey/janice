@@ -52,7 +52,6 @@ private:
   int _reboot_delay_ms = 0;
 
   void begin();
-  void end();
 
   static esp_err_t httpEventHandler(esp_http_client_event_t *evt);
 
@@ -62,6 +61,7 @@ public:
   ~mcrCmdOTA(){};
 
   bool process();
+  uint32_t reboot_delay_ms() { return _reboot_delay_ms; };
 
   const std::string debug();
 };

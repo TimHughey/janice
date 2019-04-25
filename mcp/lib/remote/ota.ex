@@ -34,22 +34,23 @@ defmodule OTA do
     |> Map.put(:cmd, @restart_cmd)
     |> Map.put(:mtime, TimeSupport.unix_now(:seconds))
     |> Map.put(:host, host)
-    |> Map.put(:delay_ms, delay_ms)
+    |> Map.put(:reboot_delay_ms, delay_ms)
     |> json()
     |> Client.publish()
   end
 
   def send(opts) when is_list(opts) do
     log = Keyword.get(opts, :log, true)
-    update_hosts = Keyword.get(opts, :update_hosts, [])
+    # wrap in a list then flatten to handle when a single host is sent
+    update_hosts = [Keyword.get(opts, :update_hosts, [])] |> List.flatten()
     url = Keyword.get(opts, :url, config_url())
-    start_delay_ms = Keyword.get(opts, :start_delay_ms, 3_000)
-    reboot_delay_ms = Keyword.get(opts, :reboot_delay_ms, 3_000)
+    reboot_delay_ms = Keyword.get(opts, :reboot_delay_ms, 0)
 
     if is_binary(url) do
       log && Logger.info(fn -> "ota url [#{url}]" end)
 
-      for host <- update_hosts, is_binary(host) do
+      # be sure to filter out any :not_found
+      for host <- update_hosts, is_binary(host) and host != :not_found do
         log && Logger.info(fn -> "send ota https [#{host}]" end)
 
         # TODO: design and implement new firmware version handling
@@ -60,7 +61,6 @@ defmodule OTA do
         |> Map.put(:mtime, TimeSupport.unix_now(:seconds))
         |> Map.put(:host, host)
         |> Map.put(:fw_url, url)
-        |> Map.put(:start_delay_ms, start_delay_ms)
         |> Map.put(:reboot_delay_ms, reboot_delay_ms)
         |> json()
         |> Client.publish()

@@ -146,7 +146,8 @@ defmodule Mqtt.InboundMessage do
           {nil, nil}
 
         Reading.simple_text?(r) ->
-          Logger.warn(fn -> "#{r.name} --> #{r.text}" end)
+          log = Map.get(r, :log_reading, true)
+          log && Logger.warn(fn -> "#{r.name} --> #{r.text}" end)
           {nil, nil}
 
         true ->

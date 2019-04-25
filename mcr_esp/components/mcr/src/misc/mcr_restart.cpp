@@ -28,7 +28,7 @@
 
 static mcrRestart_t *__singleton__ = nullptr;
 
-mcrRestart::mcrRestart(TickType_t delay_ticks) : _delay_ticks(delay_ticks) {}
+mcrRestart::mcrRestart() {}
 
 // STATIC
 mcrRestart_t *mcrRestart::instance() {
@@ -49,21 +49,26 @@ mcrRestart::~mcrRestart() {
   }
 }
 
-void mcrRestart::restart(const char *text, const char *func) {
+void mcrRestart::restart(const char *text, const char *func,
+                         uint32_t reboot_delay_ms) {
+
+  ESP_LOGW("mcrRestart", "%s requested restart [%s]",
+           (func == nullptr) ? "<UNKNOWN FUNCTION>" : func,
+           (text == nullptr) ? "UNSPECIFIED REASON" : text);
+
   if (text) {
     textReading_t reading(text);
 
     mcrMQTT::instance()->publish(reading);
 
-    // override the delay specified if publishing a text reading
-    _delay_ticks = std::max(_delay_ticks, DEFAULT_WAIT_TICKS);
+    // pause to ensure reading has been published
+    // FUTURE:  query mcrMQTT to ensure all messages have been sent
+    //          rather than wait a hardcoded duration
+    vTaskDelay(pdMS_TO_TICKS(1500));
   }
-  ESP_LOGW("mcrRestart", "%s requested restart [%s]",
-           (func == nullptr) ? "<UNKNOWN FUNCTION>" : func,
-           (text == nullptr) ? "UNSPECIFIED REASON" : text);
 
-  ESP_LOGW("mcrRestart", "spooling ftl for jump in %d ticks...", _delay_ticks);
-  vTaskDelay(_delay_ticks);
+  ESP_LOGW("mcrRestart", "spooling ftl for jump in %dms...", reboot_delay_ms);
+  vTaskDelay(pdMS_TO_TICKS(reboot_delay_ms));
   ESP_LOGW("mcrRestart", "JUMP!");
 
   esp_restart();

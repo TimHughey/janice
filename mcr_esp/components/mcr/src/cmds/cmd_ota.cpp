@@ -14,16 +14,10 @@
 
 static const char *TAG = "mcrCmdOTA";
 static const char *k_host = "host";
-static const char *k_head = "head";
-static const char *k_stable = "stable";
-static const char *k_delay_ms = "delay_ms";
-static const char *k_part = "partition";
-static const char *k_start_delay_ms = "start_delay_ms";
 static const char *k_reboot_delay_ms = "reboot_delay_ms";
 static const char *k_fw_url = "fw_url";
 
 static bool _ota_in_progress = false;
-static esp_err_t _ota_err = ESP_OK;
 static float _ota_elapsed_sec = 0.0;
 
 static char _shared_msg[128];
@@ -34,12 +28,7 @@ extern const uint8_t ca_end[] asm("_binary_ca_pem_end");
 mcrCmdOTA::mcrCmdOTA(mcrCmdType_t type, JsonDocument &doc) : mcrCmd(type, doc) {
   if (doc.isNull() == false) {
     _host = doc[k_host] | "no_host";
-    _head = doc[k_head] | "0000000";
-    _stable = doc[k_stable] | "0000000";
-    _partition = doc[k_part] | "ota";
     _fw_url = doc[k_fw_url] | "none";
-    _delay_ms = doc[k_delay_ms] | 0;
-    _start_delay_ms = doc[k_start_delay_ms] | 0;
     _reboot_delay_ms = doc[k_reboot_delay_ms] | 0;
   }
 }
@@ -78,7 +67,8 @@ void mcrCmdOTA::begin() {
 
     ESP_LOGI(TAG, "%s", _shared_msg);
 
-    mcrRestart::instance()->restart(_shared_msg, __PRETTY_FUNCTION__);
+    mcrRestart::instance()->restart(_shared_msg, __PRETTY_FUNCTION__,
+                                    reboot_delay_ms());
   } else {
     snprintf(_shared_msg, sizeof(_shared_msg), "[%s] OTA elapsed(%0.2fs)",
              esp_err_to_name(esp_rc), _ota_elapsed_sec);
@@ -86,21 +76,6 @@ void mcrCmdOTA::begin() {
 
     mcrRestart::instance()->restart(_shared_msg, __PRETTY_FUNCTION__);
   }
-}
-
-void mcrCmdOTA::end() {
-  if (_ota_in_progress == false) {
-    ESP_LOGI(TAG, "ota not in-progress, ignoring end");
-    return;
-  }
-
-  mcrMQTT::otaFinish();
-
-  if (_ota_err == ESP_OK) {
-    mcrRestart::instance()->restart("ota success", __PRETTY_FUNCTION__);
-  }
-
-  _ota_in_progress = false;
 }
 
 bool mcrCmdOTA::process() {
@@ -134,7 +109,7 @@ bool mcrCmdOTA::process() {
 
   case mcrCmdType::restart:
     mcrRestart::instance()->restart("mcp requested restart",
-                                    __PRETTY_FUNCTION__);
+                                    __PRETTY_FUNCTION__, reboot_delay_ms());
     break;
 
   default:
