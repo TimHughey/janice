@@ -10,12 +10,8 @@ static const std::map<std::string, mcrCmdType> _cmd_map = {
     {std::string("set.switch"), mcrCmdType::setswitch},
     {std::string("set.name"), mcrCmdType::setname},
     {std::string("heartbeat"), mcrCmdType::heartbeat},
-    {std::string("ota.begin"), mcrCmdType::otabegin},
-    {std::string("ota.continue"), mcrCmdType::otacontinue},
-    {std::string("ota.end"), mcrCmdType::otaend},
-    {std::string("boot.part.next"), mcrCmdType::bootPartitionNext},
     {std::string("restart"), mcrCmdType::restart},
-    {std::string("stopEngines"), mcrCmdType::stopEngines},
+    {std::string("engines.suspend"), mcrCmdType::enginesSuspend},
     {std::string("ota.https"), mcrCmdType::otaHTTPS}};
 
 static mcrCmdTypeMap_t *__singleton;
@@ -31,24 +27,6 @@ mcrCmdTypeMap_t *mcrCmdTypeMap::instance() {
   }
 
   return __singleton;
-}
-
-mcrCmdType_t mcrCmdTypeMap::decodeByte(char byte) {
-  switch (byte) {
-  case 0xd1:
-    return mcrCmdType::otabegin;
-    break;
-
-  case 0xd2:
-    return mcrCmdType::otacontinue;
-    break;
-
-  case 0xd4:
-    return mcrCmdType::otaend;
-    break;
-  }
-
-  return mcrCmdType::unknown;
 }
 
 mcrCmdType_t mcrCmdTypeMap::find(const std::string &cmd) {

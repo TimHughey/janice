@@ -9,20 +9,17 @@ static const char *TAG = "mcrCmdFactory";
 static const int _jsonBufferCapacity =
     JSON_OBJECT_SIZE(10) + JSON_ARRAY_SIZE(8) + JSON_OBJECT_SIZE(2) * 8;
 
-// static const int _jsonBufferCapacity = 1024;
+mcrCmdFactory::mcrCmdFactory() {
+  ESP_LOGI(TAG, "JSON static buffer capacity: %d", _jsonBufferCapacity);
+}
 
 mcrCmd_t *mcrCmdFactory::fromRaw(mcrRawMsg_t *raw) {
   mcrCmd_t *cmd = nullptr;
 
-  if (raw->size() == 0) {
-    ESP_LOGW(TAG, "zero length msg");
-    return cmd;
-  }
-
-  if (raw->at(0) == '{') {
+  if ((raw->size() > 0) && (raw->at(0) == '{')) {
     cmd = fromJSON(raw);
   } else {
-    cmd = fromOTA(raw);
+    ESP_LOGW(TAG, "ignoring json (zero length or malformed)");
   }
 
   return cmd;
@@ -41,7 +38,7 @@ mcrCmd_t *mcrCmdFactory::fromJSON(mcrRawMsg_t *raw) {
   int64_t parse_us = esp_timer_get_time() - start;
 
   if (err) { // bail if json parse failed
-    ESP_LOGW(TAG, "parse of JSON failed (%s)", err.c_str());
+    ESP_LOGW(TAG, "[%s] JSON parse failure", err.c_str());
     return cmd;
   }
 
@@ -68,39 +65,17 @@ mcrCmd_t *mcrCmdFactory::fromJSON(mcrRawMsg_t *raw) {
     cmd = new mcrCmdNetwork(doc);
     break;
 
-  case mcrCmdType::otabegin:
-  case mcrCmdType::otacontinue:
-  case mcrCmdType::otaend:
-  case mcrCmdType::restart:
-  case mcrCmdType::bootPartitionNext:
   case mcrCmdType::otaHTTPS:
+  case mcrCmdType::restart:
     cmd = new mcrCmdOTA(cmd_type, doc);
     break;
 
-  case mcrCmdType::stopEngines:
+  case mcrCmdType::enginesSuspend:
     break;
   }
 
   if (cmd) {
     cmd->recordParseMetric(parse_us);
-  }
-  return cmd;
-}
-
-mcrCmd_t *mcrCmdFactory::fromOTA(mcrRawMsg_t *raw) {
-  mcrCmd_t *cmd = nullptr;
-  mcrCmdType_t cmd_type = mcrCmdType::unknown;
-
-  cmd_type = mcrCmdTypeMap::fromByte(raw->at(0));
-
-  switch (cmd_type) {
-  case mcrCmdType::otabegin:
-  case mcrCmdType::otacontinue:
-  case mcrCmdType::otaend:
-    cmd = new mcrCmdOTA(cmd_type, raw);
-
-  default:
-    break;
   }
 
   return cmd;

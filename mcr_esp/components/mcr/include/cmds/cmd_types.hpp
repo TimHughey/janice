@@ -41,12 +41,8 @@ typedef enum class mcrCmdType {
   setswitch,
   heartbeat,
   setname,
-  otabegin,
-  otacontinue,
-  otaend,
-  bootPartitionNext,
   restart,
-  stopEngines,
+  enginesSuspend,
   otaHTTPS
 } mcrCmdType_t;
 

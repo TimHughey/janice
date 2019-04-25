@@ -21,6 +21,8 @@ static bool _ota_in_progress = false;
 static float _ota_elapsed_sec = 0.0;
 
 static char _shared_msg[128];
+// prevent dup strings
+static const char *_shared_msg_fmt = "[%s] OTA elapsed(%0.2fs)";
 
 extern const uint8_t ca_start[] asm("_binary_ca_pem_start");
 extern const uint8_t ca_end[] asm("_binary_ca_pem_end");
@@ -33,7 +35,7 @@ mcrCmdOTA::mcrCmdOTA(mcrCmdType_t type, JsonDocument &doc) : mcrCmd(type, doc) {
   }
 }
 
-void mcrCmdOTA::begin() {
+void mcrCmdOTA::doUpdate() {
   const esp_partition_t *run_part = esp_ota_get_running_partition();
   esp_http_client_config_t config = {};
   config.url = _fw_url.c_str();
@@ -62,7 +64,7 @@ void mcrCmdOTA::begin() {
   _ota_elapsed_sec = (float)((esp_timer_get_time() - ota_start_us) / 1000000.0);
 
   if (esp_rc == ESP_OK) {
-    snprintf(_shared_msg, sizeof(_shared_msg), "[%s] OTA elapsed(%0.2fs)",
+    snprintf(_shared_msg, sizeof(_shared_msg), _shared_msg_fmt,
              esp_err_to_name(esp_rc), _ota_elapsed_sec);
 
     ESP_LOGI(TAG, "%s", _shared_msg);
@@ -70,7 +72,7 @@ void mcrCmdOTA::begin() {
     mcrRestart::instance()->restart(_shared_msg, __PRETTY_FUNCTION__,
                                     reboot_delay_ms());
   } else {
-    snprintf(_shared_msg, sizeof(_shared_msg), "[%s] OTA elapsed(%0.2fs)",
+    snprintf(_shared_msg, sizeof(_shared_msg), _shared_msg_fmt,
              esp_err_to_name(esp_rc), _ota_elapsed_sec);
     ESP_LOGE(TAG, "%s", _shared_msg);
 
@@ -79,7 +81,9 @@ void mcrCmdOTA::begin() {
 }
 
 bool mcrCmdOTA::process() {
-  bool this_host = (_host.compare(mcr::Net::hostID()) == 0) ? true : false;
+  using mcr::Net;
+
+  bool this_host = (_host.compare(Net::hostID()) == 0) ? true : false;
 
   if (this_host == false) {
     ESP_LOGI(TAG, "OTA command not for us, ignoring.");
@@ -92,27 +96,16 @@ bool mcrCmdOTA::process() {
 
   case mcrCmdType::otaHTTPS:
     ESP_LOGI(TAG, "OTA via HTTPS requested");
-    begin();
-    break;
-
-  case mcrCmdType::bootPartitionNext:
-    ESP_LOGW(TAG, "boot.next no longer supported");
-    break;
-
-  case mcrCmdType::otabegin:
-    ESP_LOGW(TAG, "ota.begin no longer supported");
-    break;
-
-  case mcrCmdType::otaend:
-    ESP_LOGW(TAG, "ota.end no longer supported");
+    doUpdate();
     break;
 
   case mcrCmdType::restart:
-    mcrRestart::instance()->restart("mcp requested restart",
-                                    __PRETTY_FUNCTION__, reboot_delay_ms());
+    mcrRestart::instance()->restart("restart requested", __PRETTY_FUNCTION__,
+                                    reboot_delay_ms());
     break;
 
   default:
+    ESP_LOGW(TAG, "unknown ota command, ignoring");
     break;
   };
 
@@ -127,26 +120,26 @@ const std::string mcrCmdOTA::debug() { return std::string(TAG); };
 esp_err_t mcrCmdOTA::httpEventHandler(esp_http_client_event_t *evt) {
   switch (evt->event_id) {
   case HTTP_EVENT_ERROR:
-    ESP_LOGI(TAG, "HTTP_EVENT_ERROR");
+    // ESP_LOGD(TAG, "HTTP_EVENT_ERROR");
     break;
   case HTTP_EVENT_ON_CONNECTED:
-    ESP_LOGI(TAG, "HTTP_EVENT_ON_CONNECTED");
+    // ESP_LOGD(TAG, "HTTP_EVENT_ON_CONNECTED");
     break;
   case HTTP_EVENT_HEADER_SENT:
-    ESP_LOGI(TAG, "HTTP_EVENT_HEADER_SENT");
+    // ESP_LOGD(TAG, "HTTP_EVENT_HEADER_SENT");
     break;
   case HTTP_EVENT_ON_HEADER:
-    ESP_LOGI(TAG, "HTTP_EVENT_ON_HEADER, key=%s, value=%s", evt->header_key,
+    ESP_LOGI(TAG, "OTA HTTPS HEADER: key(%s), value(%s)", evt->header_key,
              evt->header_value);
     break;
   case HTTP_EVENT_ON_DATA:
-    ESP_LOGD(TAG, "HTTP_EVENT_ON_DATA, len=%d", evt->data_len);
+    // ESP_LOGD(TAG, "HTTP_EVENT_ON_DATA, len=%d", evt->data_len);
     break;
   case HTTP_EVENT_ON_FINISH:
-    ESP_LOGI(TAG, "HTTP_EVENT_ON_FINISH");
+    // ESP_LOGD(TAG, "HTTP_EVENT_ON_FINISH");
     break;
   case HTTP_EVENT_DISCONNECTED:
-    ESP_LOGI(TAG, "HTTP_EVENT_DISCONNECTED");
+    // ESP_LOGD(TAG, "HTTP_EVENT_DISCONNECTED");
     break;
   }
   return ESP_OK;
