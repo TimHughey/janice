@@ -41,4 +41,5 @@ textReading::~textReading() {
 void textReading::populateJSON(JsonDocument &doc) {
   doc["type"] = "text";
   doc["text"] = _text;
+  doc["log"] = true;
 }
