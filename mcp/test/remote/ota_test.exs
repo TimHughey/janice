@@ -22,12 +22,26 @@ defmodule OTATest do
   end
 
   @tag :ota
-  test "send OTA" do
+  test "send OTA with correct list format" do
+    ext(0) |> Remote.external_update()
+    hosts = [%{host: host(0), name: name(0)}]
+
+    list = OTA.send_cmd(update_list: hosts, log: false)
+
+    assert is_list(list)
+    refute Enum.empty?(list)
+    assert {_name, _host, :ok} = hd(list)
+  end
+
+  @tag :ota
+  test "send OTA with incorrect list format" do
     ext(0) |> Remote.external_update()
     hosts = [host(0)]
 
-    rc = OTA.send(update_hosts: hosts, log: true, start_delay_ms: 100)
+    {rc, list} = OTA.send_cmd(update_hosts: hosts, log: false)
 
-    assert rc == :ok
+    assert is_list(list)
+    refute Enum.empty?(list)
+    assert rc == :send_bad_opts
   end
 end

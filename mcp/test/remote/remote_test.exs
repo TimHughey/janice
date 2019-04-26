@@ -45,7 +45,8 @@ defmodule RemoteTest do
       btime: "14:01:02",
       mword: "0x123456",
       svsn: 813,
-      reset_reason: "software reset"
+      reset_reason: "software reset",
+      async: false
     }
 
     Map.merge(m, boot_map)
@@ -81,10 +82,12 @@ defmodule RemoteTest do
   end
 
   test "can create a changeset from an external update" do
-    eu = ext(1) |> boot() |> Map.put(:reset_reason, "test")
-    rem = Remote.get_by(host: host(1))
+    eu = ext(19) |> boot() |> Map.merge(%{log: false})
+    Remote.external_update(eu)
+    rem = Remote.get_by(name: host(19))
+    changes = %{reset_reason: "esp_restart()", name: rem.name}
 
-    cs = Remote.changeset(rem, eu)
+    cs = Remote.changeset(rem, changes)
 
     assert cs.valid? === true
   end
@@ -251,7 +254,7 @@ defmodule RemoteTest do
   end
 
   test "ota_update_list(host)" do
-    num = 14
+    num = 18
     host = host(num)
     ext(num) |> Remote.external_update()
 
@@ -286,21 +289,35 @@ defmodule RemoteTest do
         Remote.ota_update(:bad, log: true)
       end)
 
-    assert msg =~ "unsupported"
+    assert msg =~ "can't do ota for"
   end
 
   @tag :ota
   test "OTA update (main)" do
-    n = 10
-    ext(n) |> Remote.external_update()
+    n = 16
+    ext(n) |> boot() |> Map.put(:log, false) |> Remote.external_update()
+    rem = Remote.get_by(host: host(n))
+
+    list = Remote.ota_update(rem.host, reboot_delay_ms: 1000, log: false)
+
+    assert is_list(list)
+    refute Enum.empty?(list)
+    assert {_name, _host, :ok} = hd(list)
+  end
+
+  @tag :ota
+  test "OTA update (log message)" do
+    n = 17
+    ext(n) |> boot() |> Map.put(:log, false) |> Remote.external_update()
     rem = Remote.get_by(host: host(n))
 
     msg =
       capture_log(fn ->
-        Remote.ota_update(rem.name, reboot_delay_ms: 1000, log: true)
+        Remote.ota_update(rem.host, reboot_delay_ms: 1000, log: true)
       end)
 
-    assert msg =~ "ota url"
+    assert msg =~ "sent ota https to"
+    assert msg =~ "17"
   end
 
   test "remote restart" do

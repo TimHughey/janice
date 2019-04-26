@@ -207,6 +207,8 @@ defmodule Remote do
   end
 
   def external_update(%{host: host, mtime: _mtime} = eu) do
+    log = Map.get(eu, :log, true)
+
     result =
       :timer.tc(fn ->
         Logger.debug(fn -> "external_update() handling:" end)
@@ -227,11 +229,12 @@ defmodule Remote do
         :ok
 
       {_t, {err, details}} ->
-        Logger.warn(fn ->
-          "external update failed for [#{host}]\n" <>
-            "#{inspect(err, pretty: true)}\n" <>
-            "#{inspect(details, pretty: true)}"
-        end)
+        log &&
+          Logger.warn(fn ->
+            "external update failed host(#{host}) " <>
+              "err(#{inspect(err, pretty: true)}) " <>
+              "details(#{inspect(details, pretty: true)})"
+          end)
 
         :error
     end
@@ -286,13 +289,13 @@ defmodule Remote do
   def mark_as_seen(nil, _, _), do: nil
 
   def ota_update(what, opts \\ []) do
-    update_list = ota_update_list(what)
+    update_list = ota_update_list(what) |> Enum.filter(fn x -> is_map(x) end)
 
-    if length(update_list) == 1 and hd(update_list) == :unsupported do
-      :unsupported
+    if Enum.empty?(update_list) do
+      Logger.warn(fn -> "can't do ota for: #{inspect(update_list)}" end)
     else
       opts = opts ++ [update_list: update_list]
-      OTA.send(opts)
+      OTA.send_cmd(opts)
     end
   end
 
@@ -319,9 +322,12 @@ defmodule Remote do
     q = from(remote in Remote, where: [name: ^name], or_where: [host: ^name])
     rem = one(q)
 
+    # Logger.warn(fn -> "ota_update_list(name) rem=#{inspect(rem)}" end)
+
     case rem do
       %Remote{} = r ->
-        [ota_update_map(r)]
+        map = ota_update_map(r)
+        [map]
 
       nil ->
         Logger.warn(fn -> "name(#{name}) not found" end)
@@ -396,9 +402,12 @@ defmodule Remote do
   end
 
   defp send_remote_config(_anything, %{} = eu) do
-    Logger.warn(fn ->
-      "attempt to process unknown message type: #{Map.get(eu, :type, "unknown")}"
-    end)
+    log = Map.get(eu, :log, true)
+
+    log &&
+      Logger.warn(fn ->
+        "attempt to process unknown message type: #{Map.get(eu, :type, "unknown")}"
+      end)
 
     {:error, "unknown message type"}
   end

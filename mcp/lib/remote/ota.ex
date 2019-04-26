@@ -27,6 +27,10 @@ defmodule OTA do
     "https://" <> host <> "/" <> uri <> "/" <> fw_file
   end
 
+  def ota_url(opts) when is_list(opts) do
+    if Keyword.has_key?(opts, :url), do: opts, else: opts ++ [url: config_url()]
+  end
+
   def restart(host, opts \\ []) when is_binary(host) do
     delay_ms = Keyword.get(opts, :delay_ms, 3_000)
 
@@ -39,36 +43,55 @@ defmodule OTA do
     |> Client.publish()
   end
 
-  def send(opts) when is_list(opts) do
+  def send_cmd(false, opts) when is_list(opts), do: {:send_bad_opts, opts}
+
+  def send_cmd(true, opts) when is_list(opts) do
     log = Keyword.get(opts, :log, true)
-    # wrap in a list then flatten to handle when a single host is sent
-    update_hosts = [Keyword.get(opts, :update_hosts, [])] |> List.flatten()
-    url = Keyword.get(opts, :url, config_url())
-    reboot_delay_ms = Keyword.get(opts, :reboot_delay_ms, 0)
 
-    if is_binary(url) do
-      log && Logger.info(fn -> "ota url [#{url}]" end)
-
-      # be sure to filter out any :not_found
-      for host <- update_hosts, is_binary(host) and host != :not_found do
+    # be sure to filter out any :not_found
+    results =
+      for %{host: host, name: name} <- Keyword.get(opts, :update_list) do
         log && Logger.info(fn -> "send ota https [#{host}]" end)
 
         # TODO: design and implement new firmware version handling
         # fw_file_version()
 
-        %{}
-        |> Map.put(:cmd, @ota_https)
-        |> Map.put(:mtime, TimeSupport.unix_now(:seconds))
-        |> Map.put(:host, host)
-        |> Map.put(:fw_url, url)
-        |> Map.put(:reboot_delay_ms, reboot_delay_ms)
-        |> json()
-        |> Client.publish()
+        rc =
+          %{
+            cmd: @ota_https,
+            mtime: TimeSupport.unix_now(:seconds),
+            host: host,
+            name: name,
+            fw_url: Keyword.get(opts, :url),
+            reboot_delay_ms: Keyword.get(opts, :reboot_delay_ms, 0)
+          }
+          |> json()
+          |> Client.publish()
+
+        {name, host, rc}
       end
 
-      :ok
-    else
-      :bad_opts
+    log && Logger.info(fn -> "sent ota https to: #{inspect(results)}" end)
+    results
+  end
+
+  def send_cmd(opts) when is_list(opts) do
+    opts = ota_url(opts)
+    send_cmd(send_opts_valid?(opts), opts)
+  end
+
+  def send_cmd(anything) do
+    Logger.warn(fn -> "send invoked with: #{inspect(anything)}" end)
+    {:bad_opts, anything}
+  end
+
+  def send_opts_valid?(opts) do
+    update_list = Keyword.get(opts, :update_list, [])
+
+    cond do
+      Enum.empty?(update_list) -> false
+      not is_map(hd(update_list)) -> false
+      true -> true
     end
   end
 
