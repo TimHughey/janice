@@ -135,12 +135,6 @@ void mcrMQTT::incomingMsg(struct mg_str *in_topic, struct mg_str *in_payload) {
   entry.topic = topic;
   entry.data = data;
 
-  // if ((_ota_start_time) && ((time(nullptr) - _ota_start_time) > 60)) {
-  //   ESP_LOGW(tagEngine(), "detected stalled ota, spooling ftl");
-  //   ESP_LOGW(tagEngine(), "JUMP!");
-  //   esp_restart();
-  // }
-
   rb_rc = xRingbufferSend(_rb_in, &entry, sizeof(mqttInMsg_t),
                           _inbound_rb_wait_ticks);
 

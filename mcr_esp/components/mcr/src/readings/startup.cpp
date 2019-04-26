@@ -73,7 +73,7 @@ startupReading::decodeResetReason(esp_reset_reason_t reason) {
     _reason = "external pin";
     break;
   case ESP_RST_SW:
-    _reason = "esp_restart()";
+    _reason = "esp_restart";
     break;
 
   case ESP_RST_PANIC:

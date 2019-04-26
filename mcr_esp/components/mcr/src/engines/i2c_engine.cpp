@@ -41,6 +41,8 @@
 #include "devs/id.hpp"
 #include "engines/engine.hpp"
 #include "engines/i2c_engine.hpp"
+#include "misc/mcr_nvs.hpp"
+#include "misc/mcr_restart.hpp"
 #include "misc/mcr_types.hpp"
 #include "net/mcr_net.hpp"
 #include "protocols/mqtt.hpp"
@@ -761,9 +763,10 @@ bool mcrI2c::selectBus(uint32_t bus) {
     }
 
     if (_bus_select_errors > 50) {
+      const char *msg = "BUS SELECT ERRORS EXCEEDED";
       ESP_LOGE(tagEngine(), "bus select errors exceeded, JUMP!");
-      delay(5000);
-      esp_restart();
+      mcrNVS::commitMsg(tagEngine(), msg);
+      mcrRestart::instance()->restart(msg, __PRETTY_FUNCTION__, 3000);
     }
   }
 

@@ -21,8 +21,6 @@
 #ifndef mcr_restart_hpp
 #define mcr_restart_hpp
 
-#include <string>
-
 #include <sys/time.h>
 #include <time.h>
 

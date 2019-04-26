@@ -21,8 +21,6 @@
 #ifndef celsius_h
 #define celsius_h
 
-#include <string>
-
 #include <freertos/FreeRTOS.h>
 #include <sys/time.h>
 #include <time.h>

@@ -21,6 +21,7 @@
 #include "lwip/sys.h"
 
 #include "misc/mcr_nvs.hpp"
+#include "misc/mcr_restart.hpp"
 #include "net/mcr_net.hpp"
 
 extern "C" {
@@ -178,23 +179,15 @@ void Net::checkError(const char *func, esp_err_t err) {
     break;
   }
 
-  // yes, yes -- this isn't really needed since we're restarting
-  // but follow good coding practice
-  delete[] msg;
-
-  ESP_LOGE(tagEngine(), "spooling ftl...");
-
+  // UNCOMMENT FOR CORE DUMP INSTEAD OF RESTART
   // prevent the compiler from optimzing out this code
   // volatile uint32_t *ptr = (uint32_t *)0x0000000;
 
   // write to a nullptr to trigger core dump
   // ptr[0] = 0;
 
-  // should never get here
-  // ESP_LOGE(tagEngine(), "core dump failed");
-  vTaskDelay(pdMS_TO_TICKS(5000)); // delay to limit quick continous restarts
-  ESP_LOGE(tagEngine(), "JUMP!");
-  esp_restart();
+  mcrNVS::commitMsg(tagEngine(), msg);
+  mcrRestart::instance()->restart(msg, __PRETTY_FUNCTION__, 3000);
 }
 
 void Net::connected(void *event_data) {
