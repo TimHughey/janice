@@ -70,13 +70,37 @@ config :mcp, Repo,
   pool_size: 20
 
 config :mcp, Janice.Scheduler,
+  global: true,
   jobs: [
     # Every minute
-    {"* * * * *", {Janice.Jobs, :touch_file, []}},
+    {:touch,
+     [
+       schedule: {:cron, "* * * * *"},
+       task: {Janice.Jobs, :touch_file, ["/tmp/janice-file"]},
+       run_strategy: Quantum.RunStrategy.Local
+     ]},
+    {:germination_on,
+     [
+       schedule: {:cron, "*/2 8-19 * * *"},
+       task: {Janice.Jobs, :switch_control, ["germination_light", true]},
+       run_strategy: Quantum.RunStrategy.Local
+     ]},
+    {:germination_off,
+     [
+       schedule: {:cron, "*/2 20-7 * * *"},
+       task: {Janice.Jobs, :switch_control, ["germination_light", false]},
+       run_strategy: Quantum.RunStrategy.Local
+     ]},
+    {:germination_heat,
+     [
+       schedule: {:cron, "*/2 * * * *"},
+       task: {Janice.Jobs, :switch_control, ["germination_heat", true]},
+       run_strategy: Quantum.RunStrategy.Local
+     ]}
     # control germination light and heat
-    {"*/2 8-19 * * *", {Janice.Jobs, :switch_control, ["germination_light", true]}},
-    {"*/2 20-7 * * *", {Janice.Jobs, :switch_control, ["germination_light", false]}},
-    {"*/2 * * * *", {Janice.Jobs, :switch_control, ["germination_heat", true]}}
+    # {"*/2 8-19 * * *", {Janice.Jobs, :switch_control, ["germination_light", true]}},
+    # {"*/2 20-7 * * *", {Janice.Jobs, :switch_control, ["germination_light", false]}},
+    # {"*/2 * * * *", {Janice.Jobs, :switch_control, ["germination_heat", true]}}
     # {"*/2 21-7 * * *", {Janice.Jobs, :flush, []}},
     # {"*/2 8-20 * * *", {Janice.Jobs, :grow, []}}
     # SUN = 0, MON = 1, TUE = 2, WED = 3, THU = 4, FRI = 5, SAT = 6

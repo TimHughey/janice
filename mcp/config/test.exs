@@ -65,9 +65,16 @@ config :mcp, Repo,
   pool_size: 10
 
 config :mcp, Janice.Scheduler,
+  global: true,
   jobs: [
     # Every minute
-    {"* * * * *", {Janice.Jobs, :touch_file, ["/tmp/janice-file"]}}
+    {:touch,
+     [
+       schedule: {:cron, "* * * * *"},
+       task: {Janice.Jobs, :touch_file, ["/tmp/janice-file"]},
+       run_strategy: Quantum.RunStrategy.Local
+     ]}
+    # {"* * * * *", {Janice.Jobs, :touch_file, ["/tmp/janice-file"]}, Quantum.RunStrategy.Local}
     # Every 15 minutes
     # {"*/15 * * * *",   fn -> System.cmd("rm", ["/tmp/tmp_"]) end},
     # Runs on 18, 20, 22, 0, 2, 4, 6:

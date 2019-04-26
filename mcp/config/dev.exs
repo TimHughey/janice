@@ -66,17 +66,33 @@ config :mcp, Repo,
   pool_size: 10
 
 config :mcp, Janice.Scheduler,
+  global: true,
   jobs: [
     # Every minute
-    {"* * * * *", {Janice.Jobs, :touch_file, ["/tmp/janice-file"]}},
-    {"*/2 7-19 * * *", {Janice.Jobs, :germination, [true]}},
-    {"*/2 20-6 * * *", {Janice.Jobs, :germination, [false]}}
-    # Every 15 minutes
-    # {"*/15 * * * *",   fn -> System.cmd("rm", ["/tmp/tmp_"]) end},
-    # Runs on 18, 20, 22, 0, 2, 4, 6:
-    # {"0 18-6/2 * * *", fn -> :mnesia.backup('/var/backup/mnesia') end},
-    # Runs every midnight:
-    # {"@daily",         {Backup, :backup, []}}
+    {:touch,
+     [
+       schedule: {:cron, "* * * * *"},
+       task: {Janice.Jobs, :touch_file, ["/tmp/janice-file"]},
+       run_strategy: Quantum.RunStrategy.Local
+     ]},
+    {:germination_on,
+     [
+       schedule: {:cron, "*/2 8-19 * * *"},
+       task: {Janice.Jobs, :switch_control, ["germination_light", true]},
+       run_strategy: Quantum.RunStrategy.Local
+     ]},
+    {:germination_off,
+     [
+       schedule: {:cron, "*/2 20-7 * * *"},
+       task: {Janice.Jobs, :switch_control, ["germination_light", false]},
+       run_strategy: Quantum.RunStrategy.Local
+     ]},
+    {:germination_heat,
+     [
+       schedule: {:cron, "*/2 * * * *"},
+       task: {Janice.Jobs, :switch_control, ["germination_heat", true]},
+       run_strategy: Quantum.RunStrategy.Local
+     ]}
   ]
 
 config :mcp, Mcp.SoakTest,
