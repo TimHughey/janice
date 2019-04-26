@@ -60,7 +60,7 @@
 
 		# check mcp really shutdown
 		$jan_bin/mcp ping 1> /dev/null 2>&1
-		if [[ $? -eq 0 ]]; then
+		if [[ $? -ne 0 ]]; then
 		  print "FAILED, aborting install."
 		  return 1
 		else
