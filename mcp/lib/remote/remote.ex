@@ -336,11 +336,11 @@ defmodule Remote do
   end
 
   def ota_update_list(list) when is_list(list) do
-    fn make_list(list) -> for l <- list, do: ota_update_list(l) end
+    make_list = fn list ->
+      for l <- list, do: ota_update_list(l)
+    end
 
-    list
-    |> make_list.()
-    |> List.flatten(to_update)
+    make_list.(list) |> List.flatten()
   end
 
   def ota_update_list(anything_else) do
