@@ -23,6 +23,7 @@ rm -f $BASE/erl_crash.dump
 
 cd $MCP
 [[ ! -f $MCP/mix.exs ]] && exit 1
+run_cmd mix local.hex --if-missing --force
 run_cmd mix clean --only=prod
 run_cmd env MIX_ENV=prod mix deps.get
 run_cmd env MIX_ENV=prod mix deps.clean --unused
