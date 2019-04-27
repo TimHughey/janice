@@ -56,7 +56,7 @@
 		print -n "stopping janice... "
 		# HACK - to solve issue with /run permissions
 		# sudo chmod go+w /run ; sleep 5
-		run_cmd $jan_base/bin/mcp stop 1> /dev/null 2>&1
+		run_cmd sudo -u janice $jan_bin/mcp stop 1> /dev/null 2>&1
 
 		# check mcp really shutdown
 		$jan_bin/mcp ping 1> /dev/null 2>&1
@@ -81,7 +81,7 @@
 	print -n "starting janice..."
 
 	# sudo chmod go+w /run
-	sudo -u janice --set-home --preserve-env env PORT=4009 $jan_bin/mcp start && print " done."
+	run_cmd sudo -u janice $jan_bin/mcp start && print " done."
 	# sudo -u janice env PORT=4009 $jan_bin/mcp start && print " done."
 	# sleep 5 ; sudo chmod go+w /run
 
