@@ -2,12 +2,6 @@
 # and its dependencies with the aid of the Mix.Config module.
 use Mix.Config
 
-# helpful functions
-# NOTE: functions must be assigned to variables because configuration
-#       is NOT a module
-seconds = fn x -> x * 1000 end
-minutes = fn x -> x * 60 * 1000 end
-
 # external app configuration
 config :distillery, no_warn_missing: [:distillery]
 

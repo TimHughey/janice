@@ -2,12 +2,6 @@
 # and its dependencies with the aid of the Mix.Config module.
 use Mix.Config
 
-# helpful functions
-# NOTE: functions must be assigned to variables because configuration
-#       is NOT a module
-seconds = fn x -> x * 1000 end
-minutes = fn x -> x * 60 * 1000 end
-
 config :logger,
   # level: :debug
   # level: :warn
@@ -20,7 +14,7 @@ config :mcp,
     ota: {"prod/mcr/f/ota", :qos0}
   ]
 
-config :mcp, Dutycycle, routine_check_ms: seconds.(1)
+config :mcp, Dutycycle, routine_check_ms: 1000
 
 config :mcp, Janitor,
   switch_cmds: [purge: true, interval_mins: 30, older_than_hrs: 24 * 90, log: false],
@@ -43,10 +37,10 @@ config :mcp, Mqtt.Client,
     auto_resub: true,
     reconnect: 2
   ],
-  timesync: [frequency: minutes.(60), loops: 0, forever: true, log: false]
+  timesync: [frequency: 60 * 60 * 1000, loops: 0, forever: true, log: false]
 
 config :mcp, Mqtt.InboundMessage,
-  periodic_log: [enable: false, first_ms: minutes.(5), repeat_ms: minutes.(60)]
+  periodic_log: [enable: false, first_ms: 5 * 60 * 1000, repeat_ms: 60 * 60 * 1000]
 
 config :mcp, Fact.Influx,
   database: "merc_repo",
