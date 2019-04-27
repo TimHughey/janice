@@ -22,6 +22,8 @@ defmodule Mqtt.InboundMessage do
       when is_map(s) do
     Logger.debug("init()")
 
+    periodic_log_default = [enable: true, first_ms: 1000, repeat_ms: 15 * 60 * 1000]
+
     s =
       Map.put_new(s, :log_reading, config(:log_reading))
       |> Map.put_new(:messages_dispatched, 0)
@@ -29,9 +31,12 @@ defmodule Mqtt.InboundMessage do
       |> Map.put_new(:temperature_msgs, config(:temperature_msgs))
       |> Map.put_new(:switch_msgs, config(:switch_msgs))
       |> Map.put_new(:remote_msgs, config(:remote_msgs))
+      |> Map.put_new(:periodic_log, config(:periodic_log, periodic_log_default))
 
-    if Map.get(s, :autostart, false),
-      do: send_after(self(), {:periodic_log}, config(:periodic_log_first_ms))
+    if Map.get(s, :autostart, false) do
+      first_ms = s.periodic_log |> Keyword.get(:first_ms)
+      send_after(Mqtt.InboundMessage, {:periodic, :first}, first_ms)
+    end
 
     {:ok, s}
   end
@@ -87,23 +92,48 @@ defmodule Mqtt.InboundMessage do
     {:reply, json_log, s}
   end
 
+  def handle_call(catch_all, _from, s) do
+    Logger.warn(fn -> "unknown handle_call(#{inspect(catch_all)})" end)
+    {:reply, {:bad_msg}, s}
+  end
+
   def handle_cast({:incoming_message, msg, opts}, s)
       when is_binary(msg) and is_map(s) do
     {:noreply, incoming_msg(msg, s, opts)}
   end
 
-  def handle_info({:periodic_log}, s)
-      when is_map(s) do
-    Logger.info(fn -> "messages dispatched: #{s.messages_dispatched}" end)
+  def handle_cast(catch_all, s) do
+    Logger.warn(fn -> "unknown handle_cast(#{inspect(catch_all)})" end)
+    {:noreply, s}
+  end
 
-    send_after(self(), {:periodic_log}, config(:periodic_log_ms))
+  def handle_info({:periodic, flag}, s)
+      when is_map(s) do
+    log = Kernel.get_in(s, [:periodic_log, :enable])
+    repeat_ms = Kernel.get_in(s, [:periodic_log, :repeat_ms])
+
+    msg_text = fn flag, x, repeat ->
+      a = if x == 0, do: "no ", else: "#{x} "
+      b = if flag == :first, do: " (future reports every #{repeat}ms)", else: ""
+
+      "#{a}messages dispatched#{b}"
+    end
+
+    log && Logger.info(msg_text.(flag, s.messages_dispatched, repeat_ms))
+
+    send_after(self(), {:periodic, :none}, repeat_ms)
 
     {:noreply, s}
   end
 
-  defp config(key)
+  def handle_info(catch_all, s) do
+    Logger.warn(fn -> "unknown handle_info(#{inspect(catch_all)})" end)
+    {:noreply, s}
+  end
+
+  defp config(key, default \\ [])
        when is_atom(key) do
-    get_env(:mcp, Mqtt.InboundMessage) |> Keyword.get(key)
+    get_env(:mcp, Mqtt.InboundMessage) |> Keyword.get(key, default)
   end
 
   defp decoded_msg({:ok, %{metadata: :fail}}, _s, _opts), do: nil

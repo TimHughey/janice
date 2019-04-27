@@ -2,7 +2,7 @@ defmodule MqttInboundMessageTest do
   @moduledoc false
 
   use ExUnit.Case, async: true
-  # import ExUnit.CaptureLog
+  import ExUnit.CaptureLog
 
   alias Janice.TimeSupport
 
@@ -145,6 +145,33 @@ defmodule MqttInboundMessageTest do
     res = freeram_ext_msg(4)
 
     assert res === :ok
+  end
+
+  test "GenServer can handle unknown handle_call() msg" do
+    fun = fn -> Mqtt.InboundMessage.handle_call({:bad_msg}, :from, %{}) end
+    msg = capture_log(fun)
+
+    # assert msg =~ host(1)
+    assert msg =~ "unknown handle_call"
+    assert msg =~ "bad_msg"
+  end
+
+  test "GenServer can handle unknown handle_cast() msg" do
+    fun = fn -> Mqtt.InboundMessage.handle_cast({:bad_msg}, %{}) end
+    msg = capture_log(fun)
+
+    # assert msg =~ host(1)
+    assert msg =~ "unknown handle_cast"
+    assert msg =~ "bad_msg"
+  end
+
+  test "GenServer can handle unknown handle_info() msg" do
+    fun = fn -> Mqtt.InboundMessage.handle_info({:bad_msg}, %{}) end
+    msg = capture_log(fun)
+
+    # assert msg =~ host(1)
+    assert msg =~ "unknown handle_info"
+    assert msg =~ "bad_msg"
   end
 
   # test "inbound message logging" do

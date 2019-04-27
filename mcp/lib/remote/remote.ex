@@ -289,6 +289,7 @@ defmodule Remote do
   def mark_as_seen(nil, _, _), do: nil
 
   def ota_update(what, opts \\ []) do
+    opts = Keyword.put_new(opts, :log, false)
     update_list = ota_update_list(what) |> Enum.filter(fn x -> is_map(x) end)
 
     if Enum.empty?(update_list) do

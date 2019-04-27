@@ -14,7 +14,7 @@ config :mcp,
     ota: {"prod/mcr/f/ota", :qos0}
   ]
 
-config :mcp, Dutycycle, routine_check_ms: 1000
+config :mcp, Dutycycle, routine_check_ms: seconds.(1)
 
 config :mcp, Janitor,
   switch_cmds: [purge: true, interval_mins: 30, older_than_hrs: 24 * 90, log: false],
@@ -37,11 +37,10 @@ config :mcp, Mqtt.Client,
     auto_resub: true,
     reconnect: 2
   ],
-  timesync: [frequency: 60 * 1000, loops: 0, forever: true, log: false]
+  timesync: [frequency: minutes.(60), loops: 0, forever: true, log: false]
 
 config :mcp, Mqtt.InboundMessage,
-  periodic_log_first_ms: 60 * 60 * 1000,
-  periodic_log_ms: 120 * 60 * 1000
+  periodic_log: [enable: false, first_ms: minutes.(5), repeat_ms: minutes.(60)]
 
 config :mcp, Fact.Influx,
   database: "merc_repo",
