@@ -2,6 +2,11 @@
 # and its dependencies with the aid of the Mix.Config module.
 use Mix.Config
 
+# useful functions
+# must be set to variables since this is not a module
+seconds = fn x -> x * 1000 end
+minutes = fn x -> seconds.(60 * x) end
+
 config :logger,
   # level: :debug
   # level: :warn
@@ -17,7 +22,7 @@ config :mcp,
 config :mcp, Dutycycle, routine_check_ms: 1000
 
 config :mcp, Janitor,
-  switch_cmds: [purge: true, interval_mins: 30, older_than_hrs: 24 * 90, log: false],
+  switch_cmds: [purge: true, interval_mins: minutes.(90), older_than_hrs: 24 * 90, log: false],
   orphan_acks: [interval_mins: 1, older_than_mins: 3, log: true]
 
 config :mcp, MessageSave,
@@ -76,18 +81,18 @@ config :mcp, Janice.Scheduler,
     {:touch,
      [
        schedule: {:cron, "* * * * *"},
-       task: {Janice.Jobs, :touch_file, ["/tmp/janice-file"]},
+       task: {Janice.Jobs, :touch_file, ["/tmp/janice-every-minute"]},
        run_strategy: Quantum.RunStrategy.Local
      ]},
     {:germination_on,
      [
-       schedule: {:cron, "*/2 8-19 * * *"},
+       schedule: {:cron, "*/2 8-21 * * *"},
        task: {Janice.Jobs, :switch_control, ["germination_light", true]},
        run_strategy: Quantum.RunStrategy.Local
      ]},
     {:germination_off,
      [
-       schedule: {:cron, "*/2 20-7 * * *"},
+       schedule: {:cron, "*/2 22-7 * * *"},
        task: {Janice.Jobs, :switch_control, ["germination_light", false]},
        run_strategy: Quantum.RunStrategy.Local
      ]},

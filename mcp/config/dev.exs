@@ -2,6 +2,11 @@
 # and its dependencies with the aid of the Mix.Config module.
 use Mix.Config
 
+# useful functions
+# must be set to variables since this is not a module
+seconds = fn x -> x * 1000 end
+minutes = fn x -> seconds.(60 * x) end
+
 config :logger,
   # level: :debug
   # level: :warn
@@ -39,8 +44,7 @@ config :mcp, Mqtt.Client,
   timesync: [frequency: 1 * 1000, loops: 5, forever: true, log: false]
 
 config :mcp, Mqtt.InboundMessage,
-  periodic_log_first_ms: 60 * 60 * 1000,
-  periodic_log_ms: 120 * 60 * 1000
+  periodic_log: [enable: false, first_ms: 5 * 60 * 1000, repeat_ms: 60 * 60 * 1000]
 
 config :mcp, Fact.Influx,
   database: "jan_dev",
@@ -53,8 +57,6 @@ config :mcp, Fact.Influx,
   writer: Instream.Writer.Line,
   periodic_log_first_ms: 1 * 60 * 1000,
   periodic_log_ms: 15 * 60 * 1000
-
-config :mcp, Mixtank.Control, control_temp_secs: 600
 
 config :mcp, Repo,
   migration_timestamps: [:utc_datetime_usec],
@@ -72,7 +74,7 @@ config :mcp, Janice.Scheduler,
     {:touch,
      [
        schedule: {:cron, "* * * * *"},
-       task: {Janice.Jobs, :touch_file, ["/tmp/janice-file"]},
+       task: {Janice.Jobs, :touch_file, ["/tmp/janice-dev-file"]},
        run_strategy: Quantum.RunStrategy.Local
      ]},
     {:germination_on,
