@@ -27,7 +27,7 @@ defmodule RemoteTest do
       ap_pri_chan: 6,
       heap_min: 100 * 1024,
       heap_free: 101 * 1024,
-      uptime_ms: 15000
+      uptime_ms: 15_000
     }
 
     Map.merge(m, runtime_map)
@@ -217,55 +217,55 @@ defmodule RemoteTest do
     assert is_list(remotes) and is_remote
   end
 
-  test "ota_update_list(:all)" do
-    ota_list = Remote.ota_update_list(:all)
+  test "remote_list(:all)" do
+    ota_list = Remote.remote_list(:all)
     first = [ota_list] |> List.flatten() |> hd
 
     assert is_list(ota_list)
     assert %{name: _, host: _} = first
   end
 
-  test "ota_update_list(integer)" do
+  test "remote_list(integer)" do
     num = 14
     host = host(num)
     ext(num) |> Remote.external_update()
 
     rem1 = Remote.get_by(host: host)
 
-    ota_list = Remote.ota_update_list(rem1.id)
+    ota_list = Remote.remote_list(rem1.id)
     first = [ota_list] |> List.flatten() |> hd()
 
     assert is_list(ota_list)
     assert %{name: _, host: _} = first
   end
 
-  test "ota_update_list(name)" do
+  test "remote_list(name)" do
     num = 14
     host = host(num)
     ext(num) |> Remote.external_update()
 
     rem1 = Remote.get_by(host: host)
 
-    ota_list = Remote.ota_update_list(rem1.name)
+    ota_list = Remote.remote_list(rem1.name)
     first = [ota_list] |> List.flatten() |> hd()
 
     assert is_list(ota_list)
     assert %{name: _, host: _} = first
   end
 
-  test "ota_update_list(host)" do
+  test "remote_list(host)" do
     num = 18
     host = host(num)
     ext(num) |> Remote.external_update()
 
-    ota_list = Remote.ota_update_list(host)
+    ota_list = Remote.remote_list(host)
     first = [ota_list] |> List.flatten() |> hd()
 
     assert is_list(ota_list)
     assert %{name: _, host: _} = first
   end
 
-  test "ota_update_list(list_of_hosts)" do
+  test "remote_list(list_of_hosts)" do
     host_ids = [14, 15, 16, 17]
 
     hosts =
@@ -274,7 +274,7 @@ defmodule RemoteTest do
         host(id)
       end
 
-    ota_list = Remote.ota_update_list(hosts)
+    ota_list = Remote.remote_list(hosts)
     first = [ota_list] |> List.flatten() |> hd()
 
     assert is_list(ota_list)
@@ -322,12 +322,14 @@ defmodule RemoteTest do
 
   test "remote restart" do
     n = 12
-    ext(n) |> Remote.external_update()
+    ext(n) |> boot() |> Map.put(:log, false) |> Remote.external_update()
     rem = Remote.get_by(host: host(n))
 
-    res = Remote.restart(rem.id, reboot_delay_ms: 0, log: false)
+    list = Remote.restart(rem.host, reboot_delay_ms: 0, log: false)
 
-    assert res == :ok
+    assert is_list(list)
+    refute Enum.empty?(list)
+    assert {_name, _host, :ok} = hd(list)
   end
 
   test "can deprecate a Remote" do

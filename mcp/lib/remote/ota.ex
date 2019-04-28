@@ -31,16 +31,51 @@ defmodule OTA do
     if Keyword.has_key?(opts, :url), do: opts, else: opts ++ [url: config_url()]
   end
 
-  def restart(host, opts \\ []) when is_binary(host) do
-    delay_ms = Keyword.get(opts, :delay_ms, 3_000)
+  def restart(false, opts) when is_list(opts), do: {:restart_bad_opts, opts}
 
-    %{}
-    |> Map.put(:cmd, @restart_cmd)
-    |> Map.put(:mtime, TimeSupport.unix_now(:seconds))
-    |> Map.put(:host, host)
-    |> Map.put(:reboot_delay_ms, delay_ms)
-    |> json()
-    |> Client.publish()
+  def restart(true, opts) when is_list(opts) do
+    log = Keyword.get(opts, :log, true)
+
+    # be sure to filter out any :not_found
+    results =
+      for %{host: host, name: name} <- Keyword.get(opts, :restart_list) do
+        log && Logger.info(fn -> "send restart[#{host}]" end)
+
+        rc =
+          %{
+            cmd: @restart_cmd,
+            mtime: TimeSupport.unix_now(:seconds),
+            host: host,
+            name: name,
+            reboot_delay_ms: Keyword.get(opts, :reboot_delay_ms, 0)
+          }
+          |> json()
+          |> Client.publish()
+
+        {name, host, rc}
+      end
+
+    log && Logger.info(fn -> "sent ota https to: #{inspect(results)}" end)
+    results
+  end
+
+  def restart(opts) when is_list(opts) do
+    restart(restart_opts_valid?(opts), opts)
+  end
+
+  def restart(anything) do
+    Logger.warn(fn -> "restart invoked with: #{inspect(anything)}" end)
+    {:bad_opts, anything}
+  end
+
+  def restart_opts_valid?(opts) do
+    restart_list = Keyword.get(opts, :restart_list, [])
+
+    cond do
+      Enum.empty?(restart_list) -> false
+      not is_map(hd(restart_list)) -> false
+      true -> true
+    end
   end
 
   def send_cmd(false, opts) when is_list(opts), do: {:send_bad_opts, opts}

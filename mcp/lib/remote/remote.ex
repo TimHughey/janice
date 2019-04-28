@@ -290,7 +290,7 @@ defmodule Remote do
 
   def ota_update(what, opts \\ []) do
     opts = Keyword.put_new(opts, :log, false)
-    update_list = ota_update_list(what) |> Enum.filter(fn x -> is_map(x) end)
+    update_list = remote_list(what) |> Enum.filter(fn x -> is_map(x) end)
 
     if Enum.empty?(update_list) do
       Logger.warn(fn -> "can't do ota for: #{inspect(update_list)}" end)
@@ -301,14 +301,14 @@ defmodule Remote do
   end
 
   # create a list of ota updates for all Remotes
-  def ota_update_list(:all) do
+  def remote_list(:all) do
     remotes = all()
 
     for r <- remotes, do: ota_update_map(r)
   end
 
   # create a list
-  def ota_update_list(id) when is_integer(id) do
+  def remote_list(id) when is_integer(id) do
     with %Remote{} = r <- get_by(id: id),
          map <- ota_update_map(r) do
       [map]
@@ -319,11 +319,11 @@ defmodule Remote do
     end
   end
 
-  def ota_update_list(name) when is_binary(name) do
+  def remote_list(name) when is_binary(name) do
     q = from(remote in Remote, where: [name: ^name], or_where: [host: ^name])
     rem = one(q)
 
-    # Logger.warn(fn -> "ota_update_list(name) rem=#{inspect(rem)}" end)
+    # Logger.warn(fn -> "remote_list(name) rem=#{inspect(rem)}" end)
 
     case rem do
       %Remote{} = r ->
@@ -336,31 +336,30 @@ defmodule Remote do
     end
   end
 
-  def ota_update_list(list) when is_list(list) do
+  def remote_list(list) when is_list(list) do
     make_list = fn list ->
-      for l <- list, do: ota_update_list(l)
+      for l <- list, do: remote_list(l)
     end
 
     make_list.(list) |> List.flatten()
   end
 
-  def ota_update_list(anything_else) do
+  def remote_list(anything_else) do
     Logger.warn(fn -> "unsupported: #{inspect(anything_else)}" end)
     [:unsupported]
   end
 
   defp ota_update_map(%Remote{} = r), do: %{name: r.name, host: r.host}
 
-  def restart(id, opts \\ []) when is_integer(id) do
-    log = Keyword.get(opts, :log, true)
-    r = get_by(id: id)
+  def restart(what, opts \\ []) do
+    opts = Keyword.put_new(opts, :log, false)
+    restart_list = remote_list(what) |> Enum.filter(fn x -> is_map(x) end)
 
-    if is_nil(r) do
-      log && Logger.warn(fn -> "remote id #{id} not found, can't trigger restart" end)
-      :not_found
+    if Enum.empty?(restart_list) do
+      Logger.warn(fn -> "can't do restart for: #{inspect(restart_list)}" end)
     else
-      OTA.restart(r.host, opts)
-      :ok
+      opts = opts ++ [restart_list: restart_list]
+      OTA.restart(opts)
     end
   end
 
