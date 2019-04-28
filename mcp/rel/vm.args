@@ -1,5 +1,5 @@
 ## Name of the node
--name <%= release_name %>@${JANICE_NODE}
+-name <%= release_name %>@${JANICE_PROD_NODE}
 
 ## Cookie for distributed erlang
 -setcookie <%= release.profile.cookie %>
