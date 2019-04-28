@@ -35,6 +35,7 @@ config :mcp, Mqtt.Client,
     username: "** set in prod.secret.exs",
     password: "** set in prod.secret.exs",
     auto_resub: true,
+    keepalive: 15 * 60,
     reconnect: 2
   ],
   timesync: [frequency: 60 * 60 * 1000, loops: 0, forever: true, log: false]

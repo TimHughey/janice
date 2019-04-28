@@ -51,21 +51,23 @@
 	run_cmd sudo chown janice:janice $jan_base_new
 	run_cmd sudo -u janice tar -C $jan_base_new -xf $release && print " done."
 
-	$jan_bin/mcp ping 1> /dev/null 2>&1
+	# run_cmd sudo -i janice --login $jan_bin/mcp ping 1> /dev/null 2>&1
+	run_cmd sudo -u janice --login $jan_bin/mcp ping 
 	if [[ $? -eq 0 ]]; then
 		print -n "stopping janice... "
 		# HACK - to solve issue with /run permissions
 		# sudo chmod go+w /run ; sleep 5
-		run_cmd sudo -u janice $jan_bin/mcp stop 1> /dev/null 2>&1
+		#run_cmd sudo -u janice --login  $jan_bin/mcp stop 1> /dev/null 2>&1
+		run_cmd sudo -u janice --login $jan_bin/mcp stop 
 
 		# check mcp really shutdown
-		$jan_bin/mcp ping 1> /dev/null 2>&1
-		if [[ $? -ne 0 ]]; then
-		  print "FAILED, aborting install."
-		  return 1
-		else
-			print "done."
-		fi
+		# $jan_bin/mcp ping 1> /dev/null 2>&1
+		# if [[ $? -ne 0 ]]; then
+		#  print "FAILED, aborting install."
+		#  return 1
+		# else
+		#	 print "done."
+		#	fi
 	fi
 
 	print "executing mix ecto.migrate:"
@@ -81,7 +83,8 @@
 	print -n "starting janice..."
 
 	# sudo chmod go+w /run
-	run_cmd sudo -u janice $jan_bin/mcp start && print " done."
+	# run_cmd sudo -u janice --login $jan_bin/mcp start && print " done."
+	run_cmd sudo -u janice --login $jan_bin/mcp start 
 	# sudo -u janice env PORT=4009 $jan_bin/mcp start && print " done."
 	# sleep 5 ; sudo chmod go+w /run
 
