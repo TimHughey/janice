@@ -18,7 +18,12 @@ defmodule Mcp.Application do
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
-    opts = [strategy: :rest_for_one, name: Mcp.Supervisor, max_restarts: 100, max_seconds: 5]
+    opts = [
+      strategy: :rest_for_one,
+      name: Mcp.Supervisor,
+      max_restarts: 100,
+      max_seconds: 5
+    ]
 
     # only start the Supervisor if the database password is set
     if get_env(:mcp, Repo, []) |> has_key?(:password) do
@@ -32,35 +37,60 @@ defmodule Mcp.Application do
   defp children_by_env(build_env) when is_binary(build_env) do
     initial = initial_args(build_env)
 
-    first = [{Repo, []}, {Fact.Supervisor, initial}, {Mqtt.Supervisor, initial}]
+    base = [{Repo, []}]
 
-    specific =
+    protocols =
+      case build_env do
+        "standby" ->
+          []
+
+        _othets ->
+          [{Fact.Supervisor, initial}, {Mqtt.Supervisor, initial}]
+      end
+
+    apps =
       case build_env do
         "dev" ->
-          [{Janitor, initial}, {Dutycycle.Supervisor, initial}, {Thermostat.Supervisor, initial}]
+          [{Janitor, initial}, {Thermostat.Supervisor, initial}]
 
         "test" ->
           [{Janitor, initial}, {Dutycycle.Supervisor, initial}, {Thermostat.Supervisor, initial}]
 
         "prod" ->
           [{Janitor, initial}, {Dutycycle.Supervisor, initial}, {Thermostat.Supervisor, initial}]
+
+        "standby" ->
+          []
+
+        _others ->
+          []
       end
 
-    last = [{Janice.Scheduler, []}]
+    additional =
+      case build_env do
+        "standby" -> []
+        _others -> [{Janice.Scheduler, []}]
+      end
 
-    first ++ specific ++ last
+    base ++ protocols ++ apps ++ additional
   end
 
   defp initial_args(build_env) when is_binary(build_env) do
     case build_env do
       "dev" ->
-        %{autostart: true}
+        %{autostart: false}
 
       "test" ->
         %{autostart: true}
 
       "prod" ->
         %{autostart: true}
+
+      "standby" ->
+        %{autostart: false}
+
+      _unmatched ->
+        %{autostart: false}
     end
   end
 end

@@ -170,7 +170,7 @@ defmodule Dutycycle.Server do
   end
 
   def handle_call(%{:msg => :reload, :opts => _opts}, _from, s) do
-    s = Map.put(s, :need_reload, true)
+    s = Map.put(s, :need_reload, true) |> Map.put_new(:log_reload, false)
 
     {:reply, :reload_queued, s}
   end
@@ -396,12 +396,13 @@ defmodule Dutycycle.Server do
 
   defp reload_dutycycle(%{dutycycle_id: id, need_reload: true} = s) do
     d = Dutycycle.get_by(id: id)
+    log = Map.get(s, :log_reload, false)
 
     if is_nil(d) do
       Logger.warn(fn -> "failed reload of dutycycle id=#{inspect(id)}" end)
       s
     else
-      Logger.info(fn -> "#{inspect(d.name)} reloaded" end)
+      log && Logger.info(fn -> "#{inspect(d.name)} reloaded" end)
       Map.merge(s, %{need_reload: false, dutycycle: d})
     end
   end

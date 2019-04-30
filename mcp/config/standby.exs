@@ -74,36 +74,34 @@ config :mcp, Repo,
   hostname: "** set in prod.secret.exs",
   pool_size: 20
 
-run_strategy = {Quantum.RunStrategy.All, [:"mcp-prod@jophiel.wisslanding.com"]}
-
 config :mcp, Janice.Scheduler,
-  global: false,
+  global: true,
   jobs: [
     # Every minute
     {:touch,
      [
        schedule: {:cron, "* * * * *"},
-       task: {Janice.Jobs, :touch_file, ["/tmp/janice-every-minute"]},
-       run_strategy: run_strategy
-     ]},
-    {:germination_on,
-     [
-       schedule: {:cron, "*/2 8-21 * * *"},
-       task: {Janice.Jobs, :switch_control, ["germination_light", true]},
-       run_strategy: run_strategy
-     ]},
-    {:germination_off,
-     [
-       schedule: {:cron, "*/2 22-7 * * *"},
-       task: {Janice.Jobs, :switch_control, ["germination_light", false]},
-       run_strategy: run_strategy
-     ]},
-    {:germination_heat,
-     [
-       schedule: {:cron, "*/2 * * * *"},
-       task: {Janice.Jobs, :switch_control, ["germination_heat", true]},
-       run_strategy: run_strategy
+       task: {Janice.Jobs, :touch_file, ["/tmp/janice-standby-every-minute"]},
+       run_strategy: Quantum.RunStrategy.Local
      ]}
+    # {:germination_on,
+    #  [
+    #    schedule: {:cron, "*/2 8-21 * * *"},
+    #    task: {Janice.Jobs, :switch_control, ["germination_light", true]},
+    #    run_strategy: Quantum.RunStrategy.Local
+    #  ]},
+    # {:germination_off,
+    #  [
+    #    schedule: {:cron, "*/2 22-7 * * *"},
+    #    task: {Janice.Jobs, :switch_control, ["germination_light", false]},
+    #    run_strategy: Quantum.RunStrategy.Local
+    #  ]},
+    # {:germination_heat,
+    #  [
+    #    schedule: {:cron, "*/2 * * * *"},
+    #    task: {Janice.Jobs, :switch_control, ["germination_heat", true]},
+    #    run_strategy: Quantum.RunStrategy.Local
+    #  ]}
     # control germination light and heat
     # {"*/2 8-19 * * *", {Janice.Jobs, :switch_control, ["germination_light", true]}},
     # {"*/2 20-7 * * *", {Janice.Jobs, :switch_control, ["germination_light", false]}},

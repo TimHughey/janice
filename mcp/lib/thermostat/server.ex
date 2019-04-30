@@ -221,9 +221,13 @@ defmodule Thermostat.Server do
 
   def handle_call(%{:msg => :update_profile, :profile => profile, :opts => opts}, _from, s) do
     reload = Keyword.get(opts, :reload, false)
+    log_reload = Keyword.get(opts, :log_reload, false)
     {res, t} = handle_update_profile(s.thermostat, profile, opts)
 
-    s = Map.merge(s, %{thermostat: t, need_reload: reload}) |> reload_thermostat()
+    s =
+      Map.merge(s, %{thermostat: t, need_reload: reload, log_reload: log_reload})
+      |> reload_thermostat()
+
     {:reply, res, s}
   end
 
@@ -307,7 +311,11 @@ defmodule Thermostat.Server do
 
   def terminate(reason, s) do
     {rc, t} = Thermostat.state(s.thermostat, "stopped")
-    Logger.info(fn -> "#{inspect(t.name)} terminate(#{inspect(reason)}) #{inspect(rc)}" end)
+    log = Map.get(s, :log_terminate, false)
+
+    log &&
+      Logger.info(fn -> "#{inspect(t.name)} terminate(#{inspect(reason)}) #{inspect(rc)}" end)
+
     Switch.state(t.switch, position: false, lazy: true, ack: false)
     :ok
   end
@@ -428,12 +436,13 @@ defmodule Thermostat.Server do
 
   defp reload_thermostat(%{thermostat_id: id, need_reload: true} = s) do
     t = Thermostat.get_by(id: id)
+    log = Map.get(s, :log_reload, false)
 
     if is_nil(t) do
       Logger.warn(fn -> "failed reload of thermostat id=#{id}" end)
       s
     else
-      Logger.info(fn -> "#{inspect(t.name)} reloaded" end)
+      log && Logger.info(fn -> "#{inspect(t.name)} reloaded" end)
       Map.merge(s, %{need_reload: false, thermostat: t})
     end
   end

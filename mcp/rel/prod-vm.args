@@ -1,0 +1,8 @@
+## Name of the node
+-name <%= release_name %>-prod@jophiel.wisslanding.com
+
+## Cookie for distributed erlang
+-setcookie <%= release.profile.cookie %>
+
+# Enable SMP automatically based on availability
+-smp auto

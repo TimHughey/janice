@@ -1,7 +1,7 @@
 defmodule DutycycleTest do
   @moduledoc false
 
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   # import ExUnit.CaptureLog
 
   alias Dutycycle.Profile
@@ -96,7 +96,7 @@ defmodule DutycycleTest do
 
   # NEW!
   @tag num: 1000
-  test "can ping detects not found dutycycle", context do
+  test "ping detects not found dutycycle", context do
     rc = Server.ping(name_str(context[:num]))
 
     assert rc === :not_found

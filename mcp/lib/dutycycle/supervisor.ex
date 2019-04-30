@@ -15,16 +15,10 @@ defmodule Dutycycle.Supervisor do
       end
 
     # List all child processes to be supervised
-    # children = dc_children ++ [{Mixtank.Control, args}]
-    children = dc_children
+    c = if Map.get(args, :start_servers, false) == true, do: dc_children, else: []
 
-    # Starts a worker by calling: Mqtt.Worker.start_link(arg)
-    # {Mqtt.Worker, arg},
-
-    # See https://hexdocs.pm/elixir/Supervisor.html
-    # for other strategies and supported options
     opts = [strategy: :rest_for_one, name: Dutycycle.Supervisor]
-    Supervisor.init(children, opts)
+    Supervisor.init(c, opts)
   end
 
   def is_match?(a, name) when is_atom(a) do
@@ -38,9 +32,6 @@ defmodule Dutycycle.Supervisor do
 
     for {server_name, _pid, _type, _modules} <- children, is_match?(server_name, match_name) do
       server_name
-      # rx = ~r/Duty_ID(?<id>\d+)/x
-      #
-      # Regex.named_captures(rx, server_name) |> Map.get(:id) |> String.to_integer()
     end
   end
 

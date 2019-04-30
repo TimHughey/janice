@@ -31,13 +31,23 @@ environment :dev do
   set(dev_mode: true)
   set(include_erts: false)
   set(cookie: :janice)
+  set(vm_args: "rel/dev-vm.args")
 end
 
 environment :prod do
   set(include_erts: true)
   set(include_src: false)
   set(cookie: :"augury-kinship-swain-circus")
-  set(vm_args: "rel/vm.args")
+  set(vm_args: "rel/prod-vm.args")
+  set(run_erl_env: "RUN_ERL_LOG_MAXSIZE=10000000 RUN_ERL_LOG_GENERATIONS=10")
+end
+
+environment :standby do
+  set(include_erts: true)
+  set(include_src: false)
+  set(cookie: :"augury-kinship-swain-circus")
+  set(vm_args: "rel/standby-vm.args")
+  set(run_erl_env: "RUN_ERL_LOG_MAXSIZE=10000000 RUN_ERL_LOG_GENERATIONS=10")
 end
 
 # You may define one or more releases in this file.

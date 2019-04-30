@@ -42,6 +42,9 @@ defmodule Dutycycle do
     timestamps(usec: true)
   end
 
+  # 15 minutes (as millesconds)
+  @delete_timeout_ms 15 * 60 * 1000
+
   def activate(opts) when is_list(opts) do
     name = Keyword.get(opts, :name)
     profile = Keyword.get(opts, :profile)
@@ -112,7 +115,7 @@ defmodule Dutycycle do
   end
 
   def delete_all(:dangerous) do
-    names = from(d in Dutycycle, select: d.name) |> Repo.all()
+    names = from(d in Dutycycle, select: d.name) |> Repo.all(timeout: @delete_timeout_ms)
 
     for name <- names do
       rc = Dutycycle.Server.shutdown(name)

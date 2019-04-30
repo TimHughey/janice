@@ -47,6 +47,9 @@ defmodule Thermostat do
     timestamps()
   end
 
+  # 15 minutes (as millesconds)
+  @delete_timeout_ms 15 * 60 * 1000
+
   # quietly handle requests to activate a profile that is already active
   def activate_profile(%Thermostat{active_profile: active} = t, profile)
       when is_binary(profile) and active === profile,
@@ -89,7 +92,7 @@ defmodule Thermostat do
   end
 
   def delete_all(:dangerous) do
-    names = from(t in Thermostat, select: t.name) |> Repo.all()
+    names = from(t in Thermostat, select: t.name) |> Repo.all(timeout: @delete_timeout_ms)
 
     for name <- names do
       rc = Thermostat.Server.shutdown(name)

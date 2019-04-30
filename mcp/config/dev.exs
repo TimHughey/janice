@@ -15,8 +15,7 @@ config :logger,
 config :mcp,
   feeds: [
     cmd: {"dev/mcr/f/command", :qos0},
-    rpt: {"dev/mcr/f/report", :qos0},
-    ota: {"dev/mcr/f/ota", :qos0}
+    rpt: {"dev/mcr/f/report", :qos0}
   ]
 
 config :mcp, Dutycycle, routine_check_ms: 1000
@@ -67,35 +66,44 @@ config :mcp, Repo,
   hostname: "jophiel.wisslanding.com",
   pool_size: 10
 
+# run_strategy = {Quantum.RunStrategy.All, [:"mcp-dev@jophiel.wisslanding.com"]}
+run_strategy = Quantum.RunStrategy.Local
+
+base_jobs = [
+  {:touch,
+   [
+     schedule: {:cron, "* * * * *"},
+     task: {Janice.Jobs, :touch_file, ["/tmp/janice-dev-file"]},
+     run_strategy: run_strategy
+   ]}
+]
+
+additional_jobs = []
+
+# additional_jobs = [{:germination_on,
+#  [
+#    schedule: {:cron, "*/2 8-19 * * *"},
+#    task: {Janice.Jobs, :switch_control, ["germination_light", true]},
+#    run_strategy: Quantum.RunStrategy.Local
+#  ]},
+# {:germination_off,
+#  [
+#    schedule: {:cron, "*/2 20-7 * * *"},
+#    task: {Janice.Jobs, :switch_control, ["germination_light", false]},
+#    run_strategy: Quantum.RunStrategy.Local
+#  ]},
+# {:germination_heat,
+#  [
+#    schedule: {:cron, "*/2 * * * *"},
+#    task: {Janice.Jobs, :switch_control, ["germination_heat", true]},
+#    run_strategy: Quantum.RunStrategy.Local
+#  ]}]
+
+jobs = base_jobs ++ additional_jobs
+
 config :mcp, Janice.Scheduler,
   global: true,
-  jobs: [
-    # Every minute
-    {:touch,
-     [
-       schedule: {:cron, "* * * * *"},
-       task: {Janice.Jobs, :touch_file, ["/tmp/janice-dev-file"]},
-       run_strategy: Quantum.RunStrategy.Local
-     ]},
-    {:germination_on,
-     [
-       schedule: {:cron, "*/2 8-19 * * *"},
-       task: {Janice.Jobs, :switch_control, ["germination_light", true]},
-       run_strategy: Quantum.RunStrategy.Local
-     ]},
-    {:germination_off,
-     [
-       schedule: {:cron, "*/2 20-7 * * *"},
-       task: {Janice.Jobs, :switch_control, ["germination_light", false]},
-       run_strategy: Quantum.RunStrategy.Local
-     ]},
-    {:germination_heat,
-     [
-       schedule: {:cron, "*/2 * * * *"},
-       task: {Janice.Jobs, :switch_control, ["germination_heat", true]},
-       run_strategy: Quantum.RunStrategy.Local
-     ]}
-  ]
+  jobs: jobs
 
 config :mcp, Mcp.SoakTest,
   # don't start

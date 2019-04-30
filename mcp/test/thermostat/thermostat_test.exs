@@ -1,7 +1,7 @@
 defmodule ThermostatTest do
   @moduledoc false
 
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   # import ExUnit.CaptureLog
 
   import JanTest, only: [create_switch: 5, create_temp_sensor: 4, device: 2]
@@ -17,6 +17,7 @@ defmodule ThermostatTest do
   setup_all do
     new_ths = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 99]
     for n <- new_ths, do: new_thermostat(n) |> Thermostat.add()
+
     :ok
   end
 

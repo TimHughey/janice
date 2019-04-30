@@ -14,10 +14,15 @@ defmodule Thermostat.Supervisor do
         {Thermostat.Server, Map.put(args, :id, id)}
       end
 
+    c =
+      if Map.get(args, :start_servers, false) == true,
+        do: th_children,
+        else: []
+
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :rest_for_one, name: Thermostat.Supervisor]
-    Supervisor.init(th_children, opts)
+    Supervisor.init(c, opts)
   end
 
   def is_match?(a, name) when is_atom(a) do
