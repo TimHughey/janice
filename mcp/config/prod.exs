@@ -43,7 +43,9 @@ config :mcp, Mqtt.Client,
     keepalive: 15 * 60,
     reconnect: 2
   ],
-  timesync: [frequency: 60 * 60 * 1000, loops: 0, forever: true, log: false]
+  # timesync also keeps the MQTT client connection alive
+  # the MQTT spec requires both sending and receiving to prevent disconnects
+  timesync: [frequency: 60 * 1000, loops: 0, forever: true, log: false]
 
 config :mcp, Mqtt.InboundMessage,
   periodic_log: [enable: false, first_ms: 5 * 60 * 1000, repeat_ms: 60 * 60 * 1000]
