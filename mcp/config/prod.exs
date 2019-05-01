@@ -19,6 +19,7 @@ config :mcp, Janitor,
     purge: true,
     interval: {:mins, 1},
     older_than: {:months, 3},
+    purge_timeout: {:ms, 300},
     log: false
   ],
   orphan_acks: [interval: {:secs, 30}, older_than: {:mins, 1}, log: true]

@@ -109,7 +109,7 @@ defmodule Janitor do
       when is_map(s) do
     opts = Map.get(s, :opts)
 
-    Logger.info(fn -> "startup(), opts: #{inspect(opts)}" end)
+    Logger.debug(fn -> "startup(), opts: #{inspect(opts)}" end)
 
     Process.flag(:trap_exit, true)
 

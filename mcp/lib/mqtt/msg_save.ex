@@ -10,7 +10,7 @@ defmodule MessageSave do
   import Ecto.Query, only: [from: 2]
   import Repo, only: [one!: 1, insert!: 1]
 
-  import Janice.TimeSupport, only: [utc_now: 0, ms: 1]
+  import Janice.TimeSupport, only: [before_time: 2]
 
   schema "message" do
     field(:direction, :string)
@@ -79,8 +79,9 @@ defmodule MessageSave do
 
   def handle_cast(
         {@save_msg, direction, payload, dropped},
-        %{opts: [:save]} = s
-      ) do
+        %{opts: [save: save]} = s
+      )
+      when save == true do
     %MessageSave{
       direction: Atom.to_string(direction),
       payload: payload,
@@ -88,11 +89,11 @@ defmodule MessageSave do
     }
     |> insert!()
 
-    older_than = get_in(s.opts, [:delete, :older_than]) |> ms()
+    older_than = get_in(s.opts, [:delete, :older_than])
 
-    older_dt = utc_now() |> Timex.shift(milliseconds: older_than * -1)
+    before = before_time(:utc_now, older_than)
 
-    from(ms in MessageSave, where: ms.inserted_at < ^older_dt)
+    from(ms in MessageSave, where: ms.inserted_at < ^before)
     |> Repo.delete_all()
 
     {:noreply, s}
@@ -105,9 +106,12 @@ defmodule MessageSave do
     {:noreply, s}
   end
 
-  def handle_info(@startup_msg, s) do
-    opts = Map.get(s, :opts)
-    Logger.info(fn -> "startup(), opts: #{inspect(opts)}" end)
+  def handle_info(@startup_msg, %{opts: opts} = s) do
+    # only log startup opts if messages will be saved
+    saving_msgs = Keyword.get(opts, :save, false)
+
+    saving_msgs &&
+      Logger.info(fn -> "startup(), opts: #{inspect(opts)}" end)
 
     {:noreply, s}
   end

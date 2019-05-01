@@ -15,14 +15,14 @@ defmodule SwitchCmd do
     only: [
       all: 1,
       all: 2,
+      delete_all: 2,
       one: 1,
-      query: 1,
       preload: 2,
       update: 1,
       update_all: 2
     ]
 
-  import Janice.TimeSupport, only: [utc_now: 0, ms: 1]
+  import Janice.TimeSupport, only: [before_time: 2, ms: 1, utc_now: 0]
   import Mqtt.Client, only: [publish_switch_cmd: 1]
 
   alias Fact.RunMetric
@@ -109,10 +109,10 @@ defmodule SwitchCmd do
 
   def ack_orphans(opts) do
     # don't ack cmds before providing enough time for the round trip
-    before = utc_now() |> Timex.shift(milliseconds: ms(opts.older_than) * -1)
+    earliest = utc_now() |> Timex.shift(milliseconds: ms(opts.older_than) * -1)
 
     # set the lower limit on the check
-    lower = utc_now() |> Timex.shift(milliseconds: ms(opts.interval) * -1)
+    latest = utc_now() |> Timex.shift(milliseconds: ms(opts.interval) * -1)
 
     ack_at = utc_now()
 
@@ -120,8 +120,8 @@ defmodule SwitchCmd do
       sc in SwitchCmd,
       update: [set: [acked: true, ack_at: ^ack_at, orphan: true]],
       where: sc.acked == false,
-      where: sc.sent_at > ^lower,
-      where: sc.sent_at < ^before
+      where: sc.sent_at > ^earliest,
+      where: sc.sent_at < ^latest
     )
     |> update_all([])
   end
@@ -194,15 +194,27 @@ defmodule SwitchCmd do
     |> one()
   end
 
-  def purge_acked_cmds(opts)
-      when is_map(opts) do
-    ms_ago = ms(opts.older_than)
+  def purge_acked_cmds(%{older_than: older_than} = opts) do
+    # use purge_timeout configuration if available
+    # otherwise, default to reasonable default
+    timeout = Map.get(opts, :purge_timeout, {:ms, 100}) |> ms()
 
-    sql = ~s/delete from switch_cmd
-              where acked = true and ack_at <
-              now() at time zone 'utc' - interval '#{ms_ago} milliseconds'/
+    before = before_time(:utc_now, older_than)
 
-    query(sql) |> check_purge_acked_cmds()
+    q =
+      from(
+        cmd in SwitchCmd,
+        where: cmd.acked == true,
+        where: cmd.ack_at < ^before
+      )
+
+    delete_all(q, timeout: timeout) |> check_purge_acked_cmds()
+  end
+
+  # older_than configuration value is missing
+  def purge_acked_cmds(_opts) do
+    {:unconfigured, "commands not purged because :older_than is unavailable"}
+    |> check_purge_acked_cmds()
   end
 
   # header for function with optional args
@@ -269,13 +281,28 @@ defmodule SwitchCmd do
   # Private functions
   #
 
-  defp check_purge_acked_cmds({:error, e}) do
-    Logger.warn(fn ->
-      ~s/failed to purge acked cmds msg='#{inspect(e)}'/
-    end)
+  defp check_purge_acked_cmds({:ok, %{command: :delete, num_rows: nr}}), do: nr
 
+  defp check_purge_acked_cmds({flag, e} = x) when is_atom(flag) do
+    case flag do
+      :unconfigured ->
+        Logger.debug(fn -> e end)
+
+      :error ->
+        Logger.warn(fn ->
+          ~s/command purge failed: #{inspect(e, pretty: true)} /
+        end)
+
+      _default ->
+        Logger.warn(fn ->
+          ~s/unhandled command purge result: #{inspect(x, pretty: true)}/
+        end)
+    end
+
+    # return zero messages purged
     0
   end
 
-  defp check_purge_acked_cmds({:ok, %{command: :delete, num_rows: nr}}), do: nr
+  defp check_purge_acked_cmds({records, nil}) when is_number(records),
+    do: records
 end
