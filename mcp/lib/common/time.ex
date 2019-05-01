@@ -1,5 +1,6 @@
 defmodule Janice.TimeSupport do
   @moduledoc false
+  require Logger
   use Timex
 
   def from_unix(mtime) do
@@ -15,10 +16,21 @@ defmodule Janice.TimeSupport do
     DateTime.utc_now() |> DateTime.to_unix(:second)
   end
 
-  # TODO: fix upstream use of :seconds atom  
   def unix_now(:seconds), do: unix_now(:second)
 
   def utc_now do
     DateTime.utc_now()
+  end
+
+  def ms({:secs, x}) when is_number(x), do: x * 1000
+  def ms({:mins, x}) when is_number(x), do: ms({:secs, x * 60})
+  def ms({:hrs, x}) when is_number(x), do: ms({:mins, x * 60})
+  def ms({:days, x}) when is_number(x), do: ms({:hrs, x * 24})
+  def ms({:weeks, x}) when is_number(x), do: ms({:days, x * 7})
+  def ms({:months, x}) when is_number(x), do: ms({:weeks, x * 4})
+
+  def ms(unsupported) do
+    Logger.warn(fn -> "ms(#{inspect(unsupported)}) is not supported" end)
+    nil
   end
 end
