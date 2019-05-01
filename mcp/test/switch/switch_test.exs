@@ -124,7 +124,11 @@ defmodule SwitchStateTest do
   test "get all SwitchState (names and everything)" do
     names = SwitchState.all(:names)
     everything = SwitchState.all(:everything)
-    is_struct = if not Enum.empty?(everything), do: %SwitchState{} = hd(everything), else: false
+
+    is_struct =
+      if Enum.empty?(everything),
+        do: false,
+        else: %SwitchState{} = hd(everything)
 
     refute Enum.empty?(names)
     refute Enum.empty?(everything)
@@ -168,7 +172,8 @@ defmodule SwitchStateTest do
 
   @tag num: 7
   @tag pio: 3
-  test "get a SwitchState state (position) by name and handle not found", context do
+  test "get a SwitchState state (position) by name and handle not found",
+       context do
     ss = SwitchState.state(context[:device_pio])
     _msg = capture_log(fn -> SwitchState.state("foobar") end)
 
@@ -179,7 +184,10 @@ defmodule SwitchStateTest do
   test "change a SwitchState name and test not found" do
     ss1 = SwitchState.get_by(name: device_pio(0, 4))
     ss2 = SwitchState.get_by(name: device_pio(0, 5))
-    {rc1, new_ss} = SwitchState.change_name(ss1.id, name("switch", 4), "changed by test")
+
+    {rc1, new_ss} =
+      SwitchState.change_name(ss1.id, name("switch", 4), "changed by test")
+
     is_ss = %SwitchState{} = new_ss
 
     {rc2, _} = SwitchState.change_name(ss2.name, name("switch", 5))

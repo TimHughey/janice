@@ -5,6 +5,7 @@ defmodule Janitor do
   use GenServer
   import Application, only: [get_env: 3]
   import Process, only: [send_after: 3]
+  import Janice.TimeSupport, only: [ms: 1]
 
   alias Fact.RunMetric
 
@@ -13,8 +14,13 @@ defmodule Janitor do
 
   def start_link(s) do
     defs = [
-      switch_cmds: [purge: true, interval_mins: 1, older_than_hrs: 12, log: false],
-      orphan_acks: [interval_mins: 1, older_than_mins: 5, log: true]
+      switch_cmds: [
+        purge: true,
+        interval: {:mins, 5},
+        older_than: {:days, 7},
+        log: false
+      ],
+      orphan_acks: [interval: {:mins, 1}, older_than: {:mins, 5}, log: true]
     ]
 
     opts = get_env(:mcp, Janitor, defs) |> Enum.into(%{})
@@ -101,7 +107,10 @@ defmodule Janitor do
 
   def handle_info({:startup}, s)
       when is_map(s) do
-    Logger.info("startup()")
+    opts = Map.get(s, :opts)
+
+    Logger.info(fn -> "startup(), opts: #{inspect(opts)}" end)
+
     Process.flag(:trap_exit, true)
 
     s = schedule_orphan(s, 0)
@@ -128,7 +137,9 @@ defmodule Janitor do
   end
 
   def handle_info({:EXIT, pid, reason}, state) do
-    Logger.debug(fn -> ":EXIT message " <> "pid: #{inspect(pid)} reason: #{inspect(reason)}" end)
+    Logger.debug(fn ->
+      ":EXIT message " <> "pid: #{inspect(pid)} reason: #{inspect(reason)}"
+    end)
 
     {:noreply, state}
   end
@@ -141,7 +152,11 @@ defmodule Janitor do
     opts = s.opts.orphan_acks
     {orphans, nil} = SwitchCmd.ack_orphans(opts)
 
-    RunMetric.record(module: "#{__MODULE__}", metric: "orphans_acked", val: orphans)
+    RunMetric.record(
+      module: "#{__MODULE__}",
+      metric: "orphans_acked",
+      val: orphans
+    )
 
     if opts.log do
       orphans > 0 && Logger.info(fn -> "orphans ack'ed: [#{orphans}]" end)
@@ -158,7 +173,11 @@ defmodule Janitor do
        when is_map(s) do
     purged = SwitchCmd.purge_acked_cmds(s.opts.switch_cmds)
 
-    RunMetric.record(module: "#{__MODULE__}", metric: "purged_sw_cmd_ack", val: purged)
+    RunMetric.record(
+      module: "#{__MODULE__}",
+      metric: "purged_sw_cmd_ack",
+      val: purged
+    )
 
     if log_purge(s) do
       purged > 0 &&
@@ -173,8 +192,8 @@ defmodule Janitor do
   # handle the situation where the interval has been changed
   defp reschedule_purge(s, new_opts)
        when is_map(s) and is_list(new_opts) do
-    asis = s.opts.switch_cmds.interval_mins
-    tobe = s.opts.switch_cmds.interval_mins
+    asis = s.opts.switch_cmds.interval
+    tobe = s.opts.switch_cmds.interval
 
     if asis != tobe do
       Logger.info(fn -> "rescheduling purge for interval #{tobe}" end)
@@ -195,8 +214,7 @@ defmodule Janitor do
   end
 
   defp schedule_orphan(s) when is_map(s) do
-    mins = s.opts.orphan_acks.interval_mins
-    after_millis = mins * 60 * 1000
+    after_millis = ms(s.opts.orphan_acks.interval)
     schedule_orphan(s, after_millis)
   end
 
@@ -207,8 +225,7 @@ defmodule Janitor do
 
   defp schedule_purge(s)
        when is_map(s) do
-    mins = s.opts.switch_cmds.interval_mins
-    after_millis = mins * 60 * 1000
+    after_millis = ms(s.opts.switch_cmds.interval)
     schedule_purge(s, after_millis)
   end
 

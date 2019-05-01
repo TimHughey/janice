@@ -6,6 +6,7 @@ use Mix.Config
 # must be set to variables since this is not a module
 seconds = fn x -> x * 1000 end
 minutes = fn x -> seconds.(60 * x) end
+days_to_hrs = fn x -> x * 24 end
 
 config :logger,
   # level: :debug
@@ -22,8 +23,13 @@ config :mcp,
 config :mcp, Dutycycle, routine_check_ms: 1000
 
 config :mcp, Janitor,
-  switch_cmds: [purge: true, interval_mins: minutes.(90), older_than_hrs: 24 * 90, log: false],
-  orphan_acks: [interval_mins: 1, older_than_mins: 3, log: true]
+  switch_cmds: [
+    purge: true,
+    interval: {:mins, 1},
+    older_than: {:months, 3},
+    log: false
+  ],
+  orphan_acks: [interval: {:secs, 30}, older_than: {:mins, 1}, log: true]
 
 config :mcp, MessageSave,
   save: false,
@@ -48,7 +54,11 @@ config :mcp, Mqtt.Client,
   timesync: [frequency: 60 * 1000, loops: 0, forever: true, log: false]
 
 config :mcp, Mqtt.InboundMessage,
-  periodic_log: [enable: false, first_ms: 5 * 60 * 1000, repeat_ms: 60 * 60 * 1000]
+  periodic_log: [
+    enable: false,
+    first_ms: 5 * 60 * 1000,
+    repeat_ms: 60 * 60 * 1000
+  ]
 
 config :mcp, Fact.Influx,
   database: "merc_repo",

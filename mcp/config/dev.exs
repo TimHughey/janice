@@ -20,9 +20,15 @@ config :mcp,
 
 config :mcp, Dutycycle, routine_check_ms: 1000
 
-config :mcp, Janitor,
-  switch_cmds: [purge: true, interval_mins: 2, older_than_hrs: 24 * 7, log: true],
-  orphan_acks: [interval_mins: 1, older_than_mins: 1, log: false]
+config(:mcp, Janitor,
+  switch_cmds: [
+    purge: true,
+    interval: {:mins, 2},
+    older_than: {:weeks, 1},
+    log: false
+  ],
+  orphan_acks: [interval: {:mins, 1}, older_than: {:mins, 1}, log: true]
+)
 
 config :mcp, MessageSave,
   save: true,
@@ -43,7 +49,11 @@ config :mcp, Mqtt.Client,
   timesync: [frequency: 1 * 1000, loops: 5, forever: true, log: false]
 
 config :mcp, Mqtt.InboundMessage,
-  periodic_log: [enable: false, first_ms: 5 * 60 * 1000, repeat_ms: 60 * 60 * 1000]
+  periodic_log: [
+    enable: false,
+    first_ms: 5 * 60 * 1000,
+    repeat_ms: 60 * 60 * 1000
+  ]
 
 config :mcp, Fact.Influx,
   database: "jan_dev",
@@ -63,7 +73,7 @@ config :mcp, Repo,
   username: "jan_dev",
   password: "jan_dev",
   # hostname: "127.0.0.1",
-  hostname: "jophiel.wisslanding.com",
+  hostname: "gabriel.wisslanding.com",
   pool_size: 10
 
 # run_strategy = {Quantum.RunStrategy.All, [:"mcp-dev@jophiel.wisslanding.com"]}
@@ -73,7 +83,7 @@ base_jobs = [
   {:touch,
    [
      schedule: {:cron, "* * * * *"},
-     task: {Janice.Jobs, :touch_file, ["/tmp/janice-dev-file"]},
+     task: {Janice.Jobs, :touch_file, ["/tmp/janice-dev.touch"]},
      run_strategy: run_strategy
    ]}
 ]

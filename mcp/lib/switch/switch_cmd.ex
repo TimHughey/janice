@@ -11,10 +11,18 @@ defmodule SwitchCmd do
   import Ecto.Changeset, only: [change: 2]
   import Ecto.Query, only: [from: 2]
 
-  import Repo, only: [all: 1, all: 2, one: 1, query: 1, preload: 2, update: 1, update_all: 2]
+  import Repo,
+    only: [
+      all: 1,
+      all: 2,
+      one: 1,
+      query: 1,
+      preload: 2,
+      update: 1,
+      update_all: 2
+    ]
 
-  alias Janice.TimeSupport
-
+  import Janice.TimeSupport, only: [utc_now: 0, ms: 1]
   import Mqtt.Client, only: [publish_switch_cmd: 1]
 
   alias Fact.RunMetric
@@ -34,7 +42,7 @@ defmodule SwitchCmd do
   end
 
   def ack_now(refid, opts \\ []) when is_binary(refid) do
-    %{cmdack: true, refid: refid, msg_recv_dt: TimeSupport.utc_now()}
+    %{cmdack: true, refid: refid, msg_recv_dt: utc_now()}
     |> Map.merge(Enum.into(opts, %{}))
     |> ack_if_needed()
   end
@@ -66,16 +74,24 @@ defmodule SwitchCmd do
 
         log &&
           Logger.debug(fn ->
-            "#{inspect(cmd.name)} acking refid #{inspect(refid)} rt_latency=#{rt_latency_ms}ms"
+            "#{inspect(cmd.name)} acking refid #{inspect(refid)} rt_latency=#{
+              rt_latency_ms
+            }ms"
           end)
 
         # log a warning for more than 150ms rt_latency, helps with tracking down prod issues
         rt_latency_ms > latency_warn_ms &&
           Logger.warn(fn ->
-            "#{inspect(cmd.name)} rt_latency=#{rt_latency_ms}ms exceeded #{latency_warn_ms}ms"
+            "#{inspect(cmd.name)} rt_latency=#{rt_latency_ms}ms exceeded #{
+              latency_warn_ms
+            }ms"
           end)
 
-        opts = %{acked: true, rt_latency: rt_latency, ack_at: TimeSupport.utc_now()}
+        opts = %{
+          acked: true,
+          rt_latency: rt_latency,
+          ack_at: utc_now()
+        }
 
         RunMetric.record(
           module: "#{__MODULE__}",
@@ -92,15 +108,13 @@ defmodule SwitchCmd do
   def ack_if_needed(%{}), do: :bad_cmd_ack
 
   def ack_orphans(opts) do
-    interval_mins = opts.interval_mins
-    minutes_ago = opts.older_than_mins
+    # don't ack cmds before providing enough time for the round trip
+    before = utc_now() |> Timex.shift(milliseconds: ms(opts.older_than) * -1)
 
-    before = TimeSupport.utc_now() |> Timex.shift(minutes: minutes_ago * -1)
+    # set the lower limit on the check
+    lower = utc_now() |> Timex.shift(milliseconds: ms(opts.interval) * -1)
 
-    # set the lower limit on the check to the interval minutes converted to hours
-    lower = TimeSupport.utc_now() |> Timex.shift(hours: interval_mins * -1)
-
-    ack_at = TimeSupport.utc_now()
+    ack_at = utc_now()
 
     from(
       sc in SwitchCmd,
@@ -151,7 +165,7 @@ defmodule SwitchCmd do
       when is_list(opts) do
     minutes_ago = Keyword.get(opts, :minutes_ago, 0)
 
-    earlier = TimeSupport.utc_now() |> Timex.shift(minutes: minutes_ago * -1)
+    earlier = utc_now() |> Timex.shift(minutes: minutes_ago * -1)
 
     from(
       c in SwitchCmd,
@@ -168,7 +182,7 @@ defmodule SwitchCmd do
     timescale = Keyword.get(opts, :milliseconds, timescale)
 
     # a reasonable default for the timescale of pending cmds appears to be 15mins
-    since = TimeSupport.utc_now() |> Timex.shift(milliseconds: timescale)
+    since = utc_now() |> Timex.shift(milliseconds: timescale)
 
     from(
       cmd in SwitchCmd,
@@ -182,11 +196,11 @@ defmodule SwitchCmd do
 
   def purge_acked_cmds(opts)
       when is_map(opts) do
-    hrs_ago = opts.older_than_hrs
+    ms_ago = ms(opts.older_than)
 
     sql = ~s/delete from switch_cmd
               where acked = true and ack_at <
-              now() at time zone 'utc' - interval '#{hrs_ago} hour'/
+              now() at time zone 'utc' - interval '#{ms_ago} milliseconds'/
 
     query(sql) |> check_purge_acked_cmds()
   end
@@ -203,14 +217,19 @@ defmodule SwitchCmd do
     {elapsed_us, refid} =
       :timer.tc(fn ->
         # create and presist a new switch comamnd (also updates last switch cmd)
-        refid = Switch.add_cmd(name, ss.switch, TimeSupport.utc_now())
+        refid = Switch.add_cmd(name, ss.switch, utc_now())
 
         # NOTE: if :ack is missing from opts then default to true
         if Keyword.get(opts, :ack, true) do
           # nothing, will be acked by remote device
         else
           # ack is false so create a simulated ack and immediately process it
-          %{cmdack: true, refid: refid, msg_recv_dt: TimeSupport.utc_now(), log: log}
+          %{
+            cmdack: true,
+            refid: refid,
+            msg_recv_dt: utc_now(),
+            log: log
+          }
           |> ack_if_needed()
         end
 
@@ -218,7 +237,10 @@ defmodule SwitchCmd do
         # if the publish option is true or does not exist
         if Keyword.get(opts, :publish, true) do
           state_map = SwitchState.as_map(ss)
-          remote_cmd = SetSwitch.new_cmd(ss.switch.device, [state_map], refid, opts)
+
+          remote_cmd =
+            SetSwitch.new_cmd(ss.switch.device, [state_map], refid, opts)
+
           publish_switch_cmd(SetSwitch.json(remote_cmd))
         end
 
