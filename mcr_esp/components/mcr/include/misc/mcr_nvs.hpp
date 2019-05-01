@@ -56,7 +56,8 @@ private:
   size_t _time_str_max_len = 25;
   size_t _msg_len = 0;
 
-  const char *_possible_keys[4] = {"BOOT", "mcrNet", "mcrI2c", "END_KEYS"};
+  const char *_possible_keys[5] = {"BOOT", "mcrNet", "mcrI2c", "mcrMQTT",
+                                   "END_KEYS"};
 
   mcrNVS();
   ~mcrNVS();

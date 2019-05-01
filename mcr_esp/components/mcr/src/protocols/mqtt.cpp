@@ -32,6 +32,7 @@
 
 // MCR specific includes
 #include "external/mongoose.h"
+#include "misc/mcr_nvs.hpp"
 #include "misc/mcr_types.hpp"
 #include "net/mcr_net.hpp"
 #include "protocols/mqtt.hpp"
@@ -159,10 +160,18 @@ void mcrMQTT::incomingMsg(struct mg_str *in_topic, struct mg_str *in_payload) {
              "INCOMING msg SENT to ringbuff (topic=%s,len=%u,json_len=%u)",
              topic->c_str(), sizeof(mqttInMsg_t), in_payload->len);
   } else {
-    ESP_LOGW(tagEngine(), "INCOMING msg(len=%u) FAILED send to ringbuff, JUMP!",
-             sizeof(mqttInMsg_t));
     delete data;
     delete topic;
+
+    char *msg = (char *)calloc(sizeof(char), 128);
+    sprintf(msg, "RECEIVE msg FAILED (len=%u)", in_payload->len);
+    ESP_LOGW(tagEngine(), "%s", msg);
+
+    // we only commit the failure to NVS and directly call esp_restart()
+    // since mcrMQTT is broken
+    mcrNVS::commitMsg(tagEngine(), msg);
+    free(msg);
+
     esp_restart();
   }
 }
@@ -236,11 +245,18 @@ void mcrMQTT::publish(std::string *json) {
 
   rb_rc = xRingbufferSend(_rb_out, (void *)&entry, sizeof(mqttOutMsg_t), 0);
 
-  if (!rb_rc) {
-    ESP_LOGW(tagEngine(),
-             "PUBLISH msg(len=%u) FAILED to ringbuffer, msg dropped",
-             entry.len);
+  if (rb_rc == pdFALSE) {
     delete json;
+    char *msg = (char *)calloc(sizeof(char), 128);
+
+    sprintf(msg, "PUBLISH msg FAILED (len=%u)", entry.len);
+    ESP_LOGW(tagEngine(), "%s", msg);
+
+    // we only commit the failure to NVS and directly call esp_restart()
+    // since mcrMQTT is broken
+    mcrNVS::commitMsg(tagEngine(), msg);
+    free(msg);
+
     esp_restart();
   }
 }
