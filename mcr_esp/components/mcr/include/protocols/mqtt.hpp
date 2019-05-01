@@ -51,7 +51,6 @@ public:
   void handshake(struct mg_connection *nc);
   void incomingMsg(struct mg_str *topic, struct mg_str *payload);
   bool isReady() { return _mqtt_ready; };
-  static void otaFinish() { instance()->__otaFinish(); };
   static void otaPrep() { instance()->__otaPrep(); };
   void publish(Reading_t *reading);
   void publish(Reading_t &reading);
@@ -138,7 +137,6 @@ private:
   time_t _ota_start_time = 0;
 
   void announceStartup();
-  void __otaFinish();
   void __otaPrep();
   void outboundMsg();
 
