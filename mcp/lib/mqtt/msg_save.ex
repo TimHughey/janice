@@ -10,7 +10,7 @@ defmodule MessageSave do
   import Ecto.Query, only: [from: 2]
   import Repo, only: [one!: 1, insert!: 1]
 
-  alias Janice.TimeSupport
+  import Janice.TimeSupport, only: [utc_now: 0, ms: 1]
 
   schema "message" do
     field(:direction, :string)
@@ -20,7 +20,8 @@ defmodule MessageSave do
     timestamps(usec: true)
   end
 
-  def delete_all(:dangerous), do: from(m in MessageSave, where: m.id > 0) |> Repo.delete_all()
+  def delete_all(:dangerous),
+    do: from(m in MessageSave, where: m.id > 0) |> Repo.delete_all()
 
   def message_count do
     from(ms in MessageSave, select: count(ms.id)) |> one!()
@@ -30,7 +31,8 @@ defmodule MessageSave do
   def runtime_opts, do: GenServer.call(MessageSave, {@runtime_opts_msg})
 
   @save_msg :save_msg
-  def save(direction, payload, dropped \\ false) when direction in [:in, :out] do
+  def save(direction, payload, dropped \\ false)
+      when direction in [:in, :out] do
     GenServer.cast(MessageSave, {@save_msg, direction, payload, dropped})
   end
 
@@ -48,7 +50,11 @@ defmodule MessageSave do
   end
 
   def start_link(args) do
-    defs = [save: false, delete: [all_at_startup: false, older_than_hrs: 12]]
+    defs = [
+      save: false,
+      delete: [all_at_startup: false, older_than: {:hrs, 12}]
+    ]
+
     opts = get_env(:mcp, MessageSave, defs)
 
     if get_in(opts, [:delete, :all_at_startup]), do: delete_all(:dangerous)
@@ -71,13 +77,20 @@ defmodule MessageSave do
     {:reply, :ok, s}
   end
 
-  def handle_cast({@save_msg, direction, payload, dropped}, %{opts: [:save]} = s) do
-    %MessageSave{direction: Atom.to_string(direction), payload: payload, dropped: dropped}
+  def handle_cast(
+        {@save_msg, direction, payload, dropped},
+        %{opts: [:save]} = s
+      ) do
+    %MessageSave{
+      direction: Atom.to_string(direction),
+      payload: payload,
+      dropped: dropped
+    }
     |> insert!()
 
-    older_than_hrs = get_in(s.opts, [:delete, :older_than_hrs]) * -1
+    older_than = get_in(s.opts, [:delete, :older_than]) |> ms()
 
-    older_dt = TimeSupport.utc_now() |> Timex.shift(hours: older_than_hrs)
+    older_dt = utc_now() |> Timex.shift(milliseconds: older_than * -1)
 
     from(ms in MessageSave, where: ms.inserted_at < ^older_dt)
     |> Repo.delete_all()
@@ -85,7 +98,10 @@ defmodule MessageSave do
     {:noreply, s}
   end
 
-  def handle_cast({@save_msg, _direction, _payload, _dropped}, %{opts: _opts} = s) do
+  def handle_cast(
+        {@save_msg, _direction, _payload, _dropped},
+        %{opts: _opts} = s
+      ) do
     {:noreply, s}
   end
 

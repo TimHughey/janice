@@ -2,12 +2,6 @@
 # and its dependencies with the aid of the Mix.Config module.
 use Mix.Config
 
-# useful functions
-# must be set to variables since this is not a module
-seconds = fn x -> x * 1000 end
-minutes = fn x -> seconds.(60 * x) end
-days_to_hrs = fn x -> x * 24 end
-
 config :logger,
   # level: :debug
   # level: :warn
@@ -20,8 +14,6 @@ config :mcp,
     ota: {"prod/mcr/f/ota", :qos0}
   ]
 
-config :mcp, Dutycycle, routine_check_ms: 1000
-
 config :mcp, Janitor,
   switch_cmds: [
     purge: true,
@@ -33,7 +25,7 @@ config :mcp, Janitor,
 
 config :mcp, MessageSave,
   save: false,
-  delete: [all_at_startup: true, older_than_hrs: 7 * 24]
+  delete: [all_at_startup: true, older_than: {:days, 2}]
 
 config :mcp, Mqtt.Client,
   log_dropped_msgs: true,
@@ -51,13 +43,13 @@ config :mcp, Mqtt.Client,
   ],
   # timesync also keeps the MQTT client connection alive
   # the MQTT spec requires both sending and receiving to prevent disconnects
-  timesync: [frequency: 60 * 1000, loops: 0, forever: true, log: false]
+  timesync: [frequency: {:mins, 2}, loops: 0, forever: true, log: false]
 
 config :mcp, Mqtt.InboundMessage,
   periodic_log: [
     enable: false,
-    first_ms: 5 * 60 * 1000,
-    repeat_ms: 60 * 60 * 1000
+    first: {:mins, 5},
+    repeat: {:hrs, 60}
   ]
 
 config :mcp, Fact.Influx,
@@ -72,11 +64,7 @@ config :mcp, Fact.Influx,
   pool: [max_overflow: 15, size: 10, timeout: 150_000, max_connections: 25],
   port: 8086,
   scheme: "http",
-  writer: Instream.Writer.Line,
-  periodic_log_first_ms: 1 * 60 * 1000,
-  periodic_log_ms: 15 * 60 * 1000
-
-config :mcp, Mixtank.Control, control_temp_secs: 27
+  writer: Instream.Writer.Line
 
 config :mcp, Repo,
   adapter: Ecto.Adapters.Postgres,
@@ -95,7 +83,7 @@ config :mcp, Janice.Scheduler,
     {:touch,
      [
        schedule: {:cron, "* * * * *"},
-       task: {Janice.Jobs, :touch_file, ["/tmp/janice-every-minute"]},
+       task: {Janice.Jobs, :touch_file, ["/tmp/janice-prod.touch"]},
        run_strategy: run_strategy
      ]},
     {:germination_on,
@@ -138,10 +126,10 @@ config :mcp, Janice.Scheduler,
 
 config :mcp, Mcp.SoakTest,
   # don't start
-  startup_delay_ms: 0,
-  periodic_log_first_ms: 30 * 60 * 1000,
-  periodic_log_ms: 60 * 60 * 1000,
-  flash_led_ms: 3 * 1000
+  startup_delay: {:ms, 0},
+  periodic_log_first: {:mins, 30},
+  periodic_log: {:hrs, 1},
+  flash_led: {:secs, 3}
 
 config :mcp, Switch, logCmdAck: false
 

@@ -6,6 +6,8 @@ defmodule Mcp.SoakTest do
   import Application, only: [get_env: 2]
   import Process, only: [send_after: 3]
 
+  import Janice.TimeSupport, only: [ms: 1]
+
   alias Fact.LedFlashes
 
   def start_link(s) do
@@ -21,7 +23,7 @@ defmodule Mcp.SoakTest do
     s =
       case Map.get(s, :autostart, false) do
         true ->
-          delay = config(:startup_delay_ms)
+          delay = config(:startup_delay) |> ms()
 
           if delay > 0 do
             send_after(self(), {:startup}, delay)
@@ -37,8 +39,8 @@ defmodule Mcp.SoakTest do
     s =
       s
       |> Map.put_new(:led_flashes, 0)
-      |> Map.put_new(:flash_led_ms, config(:flash_led_ms))
-      |> Map.put_new(:periodic_log_ms, config(:periodic_log_ms))
+      |> Map.put_new(:flash_led, config(:flash_led))
+      |> Map.put_new(:periodic_log, config(:periodic_log))
 
     Logger.info("init()")
 
@@ -106,11 +108,11 @@ defmodule Mcp.SoakTest do
 
   def handle_info({:startup}, s)
       when is_map(s) do
-    if config(:periodic_log_first_ms) > 0 do
-      send_after(self(), {:periodic_log}, config(:periodic_log_first_ms))
+    if config(:periodic_log_first) |> ms() > 0 do
+      send_after(self(), {:periodic_log}, config(:periodic_log_first))
     end
 
-    send_after(self(), {:flash_led}, s.flash_led_ms)
+    send_after(self(), {:flash_led}, ms(s.flash_led))
 
     Logger.info("startup()")
 
@@ -121,7 +123,7 @@ defmodule Mcp.SoakTest do
       when is_map(s) do
     Logger.debug(fn -> ~s/led flashes: #{s.led_flashes}/ end)
 
-    send_after(self(), {:periodic_log}, s.periodic_log_ms)
+    send_after(self(), {:periodic_log}, ms(s.periodic_log))
 
     {:noreply, s}
   end

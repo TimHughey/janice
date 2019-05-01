@@ -17,8 +17,6 @@ config :mcp,
     rpt: {"test/mcr/f/report", :qos0}
   ]
 
-config :mcp, Mcp.Dutycycle, routine_check_ms: 1000
-
 config(:mcp, Janitor,
   switch_cmds: [
     purge: true,
@@ -31,7 +29,7 @@ config(:mcp, Janitor,
 
 config :mcp, MessageSave,
   save: true,
-  delete: [all_at_startup: true, older_than_hrs: 12]
+  delete: [all_at_startup: true, older_than: {:hrs, 12}]
 
 config :mcp, Mqtt.Client,
   log_dropped_msg: true,
@@ -45,10 +43,10 @@ config :mcp, Mqtt.Client,
     auto_resub: true,
     reconnect: 2
   ],
-  timesync: [frequency: 5 * 1000, loops: 5, forever: false, log: false]
+  timesync: [frequency: {:secs, 5}, loops: 5, forever: false, log: false]
 
 config :mcp, Mqtt.InboundMessage,
-  periodic_log: [enable: false, first_ms: seconds.(10), repeat_ms: minutes.(5)]
+  periodic_log: [enable: false, first: {:secs, 10}, repeat: {:mins, 5}]
 
 config :mcp, Fact.Influx,
   database: "jan_test",
@@ -76,7 +74,7 @@ config :mcp, Janice.Scheduler,
     {:touch,
      [
        schedule: {:cron, "* * * * *"},
-       task: {Janice.Jobs, :touch_file, ["/tmp/janice-test"]},
+       task: {Janice.Jobs, :touch_file, ["/tmp/janice-test.touch"]},
        run_strategy: Quantum.RunStrategy.Local
      ]}
     # {"* * * * *", {Janice.Jobs, :touch_file, ["/tmp/janice-file"]}, Quantum.RunStrategy.Local}
@@ -89,9 +87,10 @@ config :mcp, Janice.Scheduler,
   ]
 
 config :mcp, Mcp.SoakTest,
-  startup_delay_ms: 0,
-  periodic_log_first_ms: 1 * 60 * 1000,
-  periodic_log_ms: 15 * 50 * 1000,
-  flash_led_ms: 1000
+  # don't start
+  startup_delay: {:ms, 0},
+  periodic_log_first: {:mins, 30},
+  periodic_log: {:mins, 15},
+  flash_led: {:secs, 1}
 
 config :mcp, Switch, logCmdAck: false

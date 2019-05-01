@@ -22,6 +22,7 @@ defmodule Janice.TimeSupport do
     DateTime.utc_now()
   end
 
+  def ms({:ms, x}) when is_number(x), do: x
   def ms({:secs, x}) when is_number(x), do: x * 1000
   def ms({:mins, x}) when is_number(x), do: ms({:secs, x * 60})
   def ms({:hrs, x}) when is_number(x), do: ms({:mins, x * 60})

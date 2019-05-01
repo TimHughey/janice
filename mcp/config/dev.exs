@@ -18,8 +18,6 @@ config :mcp,
     rpt: {"dev/mcr/f/report", :qos0}
   ]
 
-config :mcp, Dutycycle, routine_check_ms: 1000
-
 config(:mcp, Janitor,
   switch_cmds: [
     purge: true,
@@ -32,7 +30,7 @@ config(:mcp, Janitor,
 
 config :mcp, MessageSave,
   save: true,
-  delete: [all_at_startup: false, older_than_hrs: 12]
+  delete: [all_at_startup: false, older_than: {:hrs, 12}]
 
 config :mcp, Mqtt.Client,
   log_dropped_msgs: true,
@@ -46,13 +44,13 @@ config :mcp, Mqtt.Client,
     auto_resub: true,
     reconnect: 2
   ],
-  timesync: [frequency: 1 * 1000, loops: 5, forever: true, log: false]
+  timesync: [frequency: {:mins, 1}, loops: 5, forever: true, log: false]
 
 config :mcp, Mqtt.InboundMessage,
   periodic_log: [
     enable: false,
-    first_ms: 5 * 60 * 1000,
-    repeat_ms: 60 * 60 * 1000
+    first: {:mins, 5},
+    repeat: {:hrs, 1}
   ]
 
 config :mcp, Fact.Influx,
@@ -63,9 +61,7 @@ config :mcp, Fact.Influx,
   pool: [max_overflow: 10, size: 5, timeout: 150_000, max_connections: 10],
   port: 8086,
   scheme: "http",
-  writer: Instream.Writer.Line,
-  periodic_log_first_ms: 1 * 60 * 1000,
-  periodic_log_ms: 15 * 60 * 1000
+  writer: Instream.Writer.Line
 
 config :mcp, Repo,
   migration_timestamps: [:utc_datetime_usec],
@@ -117,9 +113,9 @@ config :mcp, Janice.Scheduler,
 
 config :mcp, Mcp.SoakTest,
   # don't start
-  startup_delay_ms: 0,
-  periodic_log_first_ms: 30 * 60 * 1000,
-  periodic_log_ms: 60 * 60 * 1000,
-  flash_led_ms: 3 * 1000
+  startup_delay: {:ms, 0},
+  periodic_log_first: {:mins, 30},
+  periodic_log: {:hrs, 1},
+  flash_led: {:secs, 3}
 
 config :mcp, Switch, logCmdAck: false

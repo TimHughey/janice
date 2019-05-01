@@ -7,14 +7,13 @@ defmodule Mqtt.Timesync do
   use Task
 
   import Mqtt.Client, only: [publish: 1]
-
-  alias Janice.TimeSupport
+  import Janice.TimeSupport, only: [ms: 1, unix_now: 1]
 
   @timesync_cmd "time.sync"
 
   def run(opts) do
     # reasonable defaults if configuration is not set
-    frequency = Map.get(opts, :frequency, 60 * 1000)
+    frequency = Map.get(opts, :frequency, {:mins, 1})
     loops = Map.get(opts, :loops, 0)
     forever = Map.get(opts, :forever, true)
     log = Map.get(opts, :log, false)
@@ -35,7 +34,7 @@ defmodule Mqtt.Timesync do
         :ok
 
       forever or loops - 1 > 0 ->
-        :timer.sleep(frequency)
+        :timer.sleep(ms(frequency))
         run(opts)
 
       true ->
@@ -59,7 +58,7 @@ defmodule Mqtt.Timesync do
 
   def new_cmd do
     %{}
-    |> Map.put(:mtime, TimeSupport.unix_now(:seconds))
+    |> Map.put(:mtime, unix_now(:seconds))
     |> Map.put(:cmd, @timesync_cmd)
   end
 

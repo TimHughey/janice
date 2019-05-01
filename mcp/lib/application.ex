@@ -54,10 +54,18 @@ defmodule Mcp.Application do
           [{Janitor, initial}, {Thermostat.Supervisor, initial}]
 
         "test" ->
-          [{Janitor, initial}, {Dutycycle.Supervisor, initial}, {Thermostat.Supervisor, initial}]
+          [
+            {Janitor, initial},
+            {Dutycycle.Supervisor, initial},
+            {Thermostat.Supervisor, initial}
+          ]
 
         "prod" ->
-          [{Janitor, initial}, {Dutycycle.Supervisor, initial}, {Thermostat.Supervisor, initial}]
+          [
+            {Janitor, initial},
+            {Dutycycle.Supervisor, initial},
+            {Thermostat.Supervisor, initial}
+          ]
 
         "standby" ->
           []

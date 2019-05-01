@@ -5,6 +5,7 @@ defmodule Mqtt.InboundMessage do
   use GenServer
   import Application, only: [get_env: 2]
   import Process, only: [send_after: 3]
+  import Janice.TimeSupport, only: [ms: 1]
 
   alias Fact.EngineMetric
   alias Fact.FreeRamStat
@@ -22,7 +23,11 @@ defmodule Mqtt.InboundMessage do
       when is_map(s) do
     Logger.debug("init()")
 
-    periodic_log_default = [enable: true, first_ms: 1000, repeat_ms: 15 * 60 * 1000]
+    periodic_log_default = [
+      enable: true,
+      first: {:secs, 1},
+      repeat: {:mins, 15}
+    ]
 
     s =
       Map.put_new(s, :log_reading, config(:log_reading))
@@ -34,8 +39,8 @@ defmodule Mqtt.InboundMessage do
       |> Map.put_new(:periodic_log, config(:periodic_log, periodic_log_default))
 
     if Map.get(s, :autostart, false) do
-      first_ms = s.periodic_log |> Keyword.get(:first_ms)
-      send_after(Mqtt.InboundMessage, {:periodic, :first}, first_ms)
+      first = s.periodic_log |> Keyword.get(:first)
+      send_after(Mqtt.InboundMessage, {:periodic, :first}, ms(first))
     end
 
     {:ok, s}
@@ -70,7 +75,9 @@ defmodule Mqtt.InboundMessage do
       cond do
         # log start requested, it isn't open so open it
         log and is_nil(pid) ->
-          {_, json_log} = File.open("/tmp/json.log", [:append, :utf8, :delayed_write])
+          {_, json_log} =
+            File.open("/tmp/json.log", [:append, :utf8, :delayed_write])
+
           json_log
 
         # log stop requested and it is open, close it
@@ -110,18 +117,18 @@ defmodule Mqtt.InboundMessage do
   def handle_info({:periodic, flag}, s)
       when is_map(s) do
     log = Kernel.get_in(s, [:periodic_log, :enable])
-    repeat_ms = Kernel.get_in(s, [:periodic_log, :repeat_ms])
+    repeat = Kernel.get_in(s, [:periodic_log, :repeat])
 
     msg_text = fn flag, x, repeat ->
       a = if x == 0, do: "no ", else: "#{x} "
-      b = if flag == :first, do: " (future reports every #{repeat}ms)", else: ""
+      b = if flag == :first, do: " (future reports every #{repeat})", else: ""
 
       "#{a}messages dispatched#{b}"
     end
 
-    log && Logger.info(msg_text.(flag, s.messages_dispatched, repeat_ms))
+    log && Logger.info(msg_text.(flag, s.messages_dispatched, repeat))
 
-    send_after(self(), {:periodic, :none}, repeat_ms)
+    send_after(self(), {:periodic, :none}, ms(repeat))
 
     {:noreply, s}
   end
@@ -181,7 +188,10 @@ defmodule Mqtt.InboundMessage do
           {nil, nil}
 
         true ->
-          Logger.warn(fn -> "#{r.name} unhandled message [#{Map.get(r, :type, "unknown")}]" end)
+          Logger.warn(fn ->
+            "#{r.name} unhandled message [#{Map.get(r, :type, "unknown")}]"
+          end)
+
           {nil, nil}
       end
 
@@ -193,7 +203,9 @@ defmodule Mqtt.InboundMessage do
         nil
 
       :missing == mod ->
-        Logger.warn(fn -> "missing configuration for reading type: #{r.type}" end)
+        Logger.warn(fn ->
+          "missing configuration for reading type: #{r.type}"
+        end)
 
       # reading needs to be processed, sould we do it async?
       async ->
