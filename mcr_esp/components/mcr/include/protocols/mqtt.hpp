@@ -112,7 +112,7 @@ private:
   const size_t _rb_out_size =
       (sizeof(mqttOutMsg_t) * CONFIG_MCR_MQTT_RINGBUFFER_PENDING_MSGS);
   const size_t _rb_in_size =
-      (sizeof(mqttInMsg_t) * CONFIG_MCR_MQTT_RINGBUFFER_PENDING_MSGS);
+      ((sizeof(mqttInMsg_t) * CONFIG_MCR_MQTT_RINGBUFFER_PENDING_MSGS) / 2);
   size_t _rb_in_lowwater = 0;
   size_t _rb_in_highwater = 0;
   bool _ota_overload = false;

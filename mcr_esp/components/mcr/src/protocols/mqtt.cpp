@@ -249,7 +249,7 @@ void mcrMQTT::publish(std::string *json) {
     delete json;
     char *msg = (char *)calloc(sizeof(char), 128);
 
-    sprintf(msg, "PUBLISH msg FAILED (len=%u)", entry.len);
+    sprintf(msg, "PUBLISH msg FAILED (len=%u)", sizeof(mqttOutMsg_t));
     ESP_LOGW(tagEngine(), "%s", msg);
 
     // we only commit the failure to NVS and directly call esp_restart()
