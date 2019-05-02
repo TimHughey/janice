@@ -5,10 +5,6 @@ defmodule Mcp.IExHelpers do
 
   alias Janice.TimeSupport
 
-  # def main_grow do
-  #   Mcp.Chamber.status("main grow", :print)
-  # end
-
   def server_state(mod), do: :sys.get_state(mod)
   def server_status(mod), do: :sys.get_status(mod)
 
@@ -72,21 +68,6 @@ defmodule Mcp.IExHelpers do
     |> Mqtt.InboundMessage.process()
   end
 
-  def mixtank_low_temp do
-    tsensor_test("ds/test_device2", 73.0)
-    tsensor_test("ds/test_device3", 79.0)
-  end
-
-  def mixtank_high_temp do
-    tsensor_test("ds/test_device2", 79.0)
-    tsensor_test("ds/test_device3", 73.0)
-  end
-
-  def mixtank_mid_temp do
-    tsensor_test("ds/test_device2", 75.0)
-    tsensor_test("ds/test_device3", 75.5)
-  end
-
   def rsensor_test do
     rsensor_test("i2c/relhum_device4")
   end
@@ -140,7 +121,9 @@ defmodule Mcp.IExHelpers do
   end
 
   def ack_a_cmd(%SwitchCmd{} = cmd) do
-    states = Enum.map(cmd.switch.states, fn x -> %{pio: x.pio, state: x.state} end)
+    states =
+      Enum.map(cmd.switch.states, fn x -> %{pio: x.pio, state: x.state} end)
+
     pio_count = Enum.count(states)
 
     %{
@@ -193,7 +176,7 @@ defmodule Mcp.IExHelpers do
 
   def observer do
     :observer.start()
-    Node.connect(:"mcp@jophiel.wisslanding.com")
+    Node.connect(:"prod-mcp@jophiel.wisslanding.com")
   end
 end
 

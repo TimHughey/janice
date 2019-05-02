@@ -33,9 +33,8 @@ devices flashed with [Master Control Remote](mcr/README.md)
   - Switch commands are tracked and acks from remote devices correlated
 
 ## Controlling Systems
-- Ability to control a Mixtank
-- Dutycycles  *Coming Soon*
-- Chambers *Coming Soon*
+- Dutycycles  Ability to set a run and idle duration
+- Thermostats Ability to control a switch based on temperature (or other sensor data)
 
 ## Web and API
 - Built with Elixir Phoenix
