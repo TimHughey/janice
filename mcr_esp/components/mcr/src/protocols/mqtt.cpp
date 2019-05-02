@@ -198,7 +198,7 @@ void mcrMQTT::outboundMsg() {
   mqttOutMsg_t *entry = nullptr;
 
   entry =
-      (mqttOutMsg_t *)xRingbufferReceive(_rb_out, &len, _prefer_outbound_ticks);
+      (mqttOutMsg_t *)xRingbufferReceive(_rb_out, &len, _outbound_msg_ticks);
 
   while (entry) {
     int64_t start_us = esp_timer_get_time();
@@ -229,8 +229,7 @@ void mcrMQTT::outboundMsg() {
       ESP_LOGD(tagOutbound(), "publish msg took %lluus", publish_us);
     }
 
-    entry =
-        (mqttOutMsg_t *)xRingbufferReceive(_rb_out, &len, _outbound_msg_ticks);
+    entry = (mqttOutMsg_t *)xRingbufferReceive(_rb_out, &len, 0);
   }
 }
 
@@ -243,13 +242,17 @@ void mcrMQTT::publish(std::string *json) {
   entry.len = json->length();
   entry.data = json;
 
-  rb_rc = xRingbufferSend(_rb_out, (void *)&entry, sizeof(mqttOutMsg_t), 0);
+  rb_rc = xRingbufferSend(_rb_out, (void *)&entry, sizeof(mqttOutMsg_t),
+                          pdMS_TO_TICKS(50));
 
   if (rb_rc == pdFALSE) {
     delete json;
     char *msg = (char *)calloc(sizeof(char), 128);
 
-    sprintf(msg, "PUBLISH msg FAILED (len=%u)", sizeof(mqttOutMsg_t));
+    size_t avail_bytes = xRingbufferGetCurFreeSize(_rb_out);
+
+    sprintf(msg, "PUBLISH msg FAILED (len=%u) (rb_avail=%u)",
+            sizeof(mqttOutMsg_t), avail_bytes);
     ESP_LOGW(tagEngine(), "%s", msg);
 
     // we only commit the failure to NVS and directly call esp_restart()
