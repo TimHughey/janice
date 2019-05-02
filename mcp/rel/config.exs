@@ -7,19 +7,8 @@ Path.join(["rel", "plugins", "*.exs"])
 |> Enum.map(&Code.eval_file(&1))
 
 use Mix.Releases.Config,
-  # This sets the default release built by `mix release`
   default_release: :default,
-  # This sets the default environment used by `mix release`
-  # default_environment: Mix.env()
   default_environment: :prod
-
-# For a full list of config options for both releases
-# and environments, visit https://hexdocs.pm/distillery/configuration.html
-
-# You may define one or more environments in this file,
-# an environment's settings will override those of a release
-# when building in that environment, this combination of release
-# and environment configuration is called a profile
 
 environment :dev do
   # If you are running Phoenix, you should make sure that
@@ -32,6 +21,12 @@ environment :dev do
   set(include_erts: false)
   set(cookie: :janice)
   set(vm_args: "rel/dev-vm.args")
+
+  set(
+    commands: [
+      examine_env: "rel/commands/dev/examine_env.sh"
+    ]
+  )
 end
 
 environment :prod do
@@ -40,6 +35,7 @@ environment :prod do
   set(cookie: :"augury-kinship-swain-circus")
   set(vm_args: "rel/prod-vm.args")
   set(run_erl_env: "RUN_ERL_LOG_MAXSIZE=10000000 RUN_ERL_LOG_GENERATIONS=10")
+  set(pre_configure_hooks: "rel/hooks/pre_configure")
 end
 
 environment :standby do
@@ -48,6 +44,7 @@ environment :standby do
   set(cookie: :"augury-kinship-swain-circus")
   set(vm_args: "rel/standby-vm.args")
   set(run_erl_env: "RUN_ERL_LOG_MAXSIZE=10000000 RUN_ERL_LOG_GENERATIONS=10")
+  set(pre_configure_hooks: "rel/hooks/pre_configure")
 end
 
 # You may define one or more releases in this file.

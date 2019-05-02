@@ -25,33 +25,39 @@ defmodule Mcp.Mixfile do
   def project do
     [
       app: :mcp,
-      version: "0.1.5-#{git_describe()}",
+      version: "0.1.6",
       elixir: "~> 1.7",
-      start_permanent: Mix.env() == :prod,
       deps: deps(),
+      start_permanent: Mix.env() == :prod,
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: [:gettext] ++ Mix.compilers(),
-      start_permanent: Mix.env() == :prod,
       aliases: aliases(),
-      deps: deps(),
       package: package(),
       description: description(),
       escript: escript_config(),
-      test_coverage: test_coverage()
+      test_coverage: test_coverage(),
+      deploy_paths: deploy_paths()
     ]
   end
 
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
+      mod: {Mcp.Application, args()},
       extra_applications: [
         :logger,
         :runtime_tools,
         :parse_trans
-      ],
-      mod: {Mcp.Application, args()}
+      ]
     ]
   end
+
+  def deploy_paths,
+    do: [
+      dev: "/tmp/janice/dev/releases",
+      test: "/tmp/janice/test/releases",
+      prod: "/usr/local/janice/releases"
+    ]
 
   # Specifies which paths to compile per environment.
   defp elixirc_paths(:test), do: ["lib", "test/support"]
@@ -70,23 +76,23 @@ defmodule Mcp.Mixfile do
       {:ecto_sql, "~> 3.0"},
       {:emqttc, github: "rabbitmq/emqttc", tag: "remove-logging"},
       {:uuid, "~> 1.1"},
+      {:gettext, "~> 0.11"},
+      {:distillery, github: "bitwalker/distillery"},
+      {:quantum, "~> 2.2"},
+      {:scribe, "~> 0.8.2"},
+      {:credo, "> 0.0.0", only: [:dev, :test]},
+      {:coverex, "~> 1.0", only: :test}
       # {:phoenix, "~> 1.4.0"},
       # {:phoenix_pubsub, "~> 1.0"},
       # {:phoenix_ecto, "~> 4.0"},
       # {:phoenix_html, "~> 2.10"},
       # {:phoenix_live_reload, "~> 1.2", only: :dev},
-      {:gettext, "~> 0.11"},
       # {:plug_cowboy, "~> 2.0"},
       # {:plug, "~> 1.7"},
       # {:guardian, "~> 1.0"},
       # {:ueberauth, "~> 0.4"},
       # {:ueberauth_github, "~> 0.4"},
       # {:ueberauth_identity, "~> 0.2"},
-      {:distillery, github: "bitwalker/distillery"},
-      {:quantum, "~> 2.2"},
-      {:scribe, "~> 0.8.2"},
-      {:credo, "> 0.0.0", only: [:dev, :test]},
-      {:coverex, "~> 1.0", only: :test}
     ]
   end
 

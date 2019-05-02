@@ -9,6 +9,8 @@ defmodule Janitor do
 
   alias Fact.RunMetric
 
+  @vsn :janitor001
+
   @orphan_timer :orphan_timer
   @purge_timer :purge_timer
 
