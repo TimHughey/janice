@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 11.1
--- Dumped by pg_dump version 11.1
+-- Dumped from database version 11.2
+-- Dumped by pg_dump version 11.2
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -18,59 +18,6 @@ SET row_security = off;
 SET default_tablespace = '';
 
 SET default_with_oids = false;
-
---
--- Name: chambers; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.chambers (
-    id bigint NOT NULL,
-    name character varying(25) DEFAULT 'new chamber'::character varying NOT NULL,
-    description text DEFAULT 'no description'::text,
-    enable boolean DEFAULT false NOT NULL,
-    temp_sensor_pri character varying(25) DEFAULT 'foobar'::character varying NOT NULL,
-    temp_sensor_sec character varying(25) DEFAULT 'foobar'::character varying NOT NULL,
-    temp_setpt integer DEFAULT 85 NOT NULL,
-    heat_sw character varying(25) DEFAULT 'foobar'::character varying NOT NULL,
-    heat_control_ms integer DEFAULT 15000 NOT NULL,
-    relh_sensor character varying(25) DEFAULT 'foobar'::character varying NOT NULL,
-    relh_setpt integer DEFAULT 90 NOT NULL,
-    relh_control_ms integer DEFAULT 30000 NOT NULL,
-    relh_sw character varying(25) DEFAULT 'foobar'::character varying NOT NULL,
-    relh_freq_ms integer DEFAULT 1200000 NOT NULL,
-    relh_dur_ms integer DEFAULT 120000 NOT NULL,
-    air_stir_sw character varying(25) DEFAULT 'foobar'::character varying NOT NULL,
-    air_stir_temp_diff double precision DEFAULT 0.0 NOT NULL,
-    fresh_air_sw character varying(25) DEFAULT 'foobar'::character varying NOT NULL,
-    fresh_air_freq_ms integer DEFAULT 900000 NOT NULL,
-    fresh_air_dur_ms integer DEFAULT 300000 NOT NULL,
-    warm boolean DEFAULT true NOT NULL,
-    mist boolean DEFAULT true NOT NULL,
-    fae boolean DEFAULT true NOT NULL,
-    stir boolean DEFAULT true NOT NULL,
-    inserted_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
-);
-
-
---
--- Name: chambers_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.chambers_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: chambers_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.chambers_id_seq OWNED BY public.chambers.id;
-
 
 --
 -- Name: dutycycle; Type: TABLE; Schema: public; Owner: -
@@ -637,13 +584,6 @@ ALTER SEQUENCE public.thermostat_profile_id_seq OWNED BY public.thermostat_profi
 
 
 --
--- Name: chambers id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.chambers ALTER COLUMN id SET DEFAULT nextval('public.chambers_id_seq'::regclass);
-
-
---
 -- Name: dutycycle id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -746,14 +686,6 @@ ALTER TABLE ONLY public.thermostat ALTER COLUMN id SET DEFAULT nextval('public.t
 --
 
 ALTER TABLE ONLY public.thermostat_profile ALTER COLUMN id SET DEFAULT nextval('public.thermostat_profile_id_seq'::regclass);
-
-
---
--- Name: chambers chambers_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.chambers
-    ADD CONSTRAINT chambers_pkey PRIMARY KEY (id);
 
 
 --
@@ -882,13 +814,6 @@ ALTER TABLE ONLY public.thermostat
 
 ALTER TABLE ONLY public.thermostat_profile
     ADD CONSTRAINT thermostat_profile_pkey PRIMARY KEY (id);
-
-
---
--- Name: chambers_name_index; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX chambers_name_index ON public.chambers USING btree (name);
 
 
 --
