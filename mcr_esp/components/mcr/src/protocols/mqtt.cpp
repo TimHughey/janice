@@ -127,8 +127,8 @@ void mcrMQTT::handshake(struct mg_connection *nc) {
 
 void mcrMQTT::incomingMsg(struct mg_str *in_topic, struct mg_str *in_payload) {
   // allocate a new string here and deallocate it once processed through MQTTin
-  std::string *topic = new std::string(in_topic->p, in_topic->len);
-  std::vector<char> *data =
+  auto *topic = new std::string(in_topic->p, in_topic->len);
+  auto *data =
       new std::vector<char>(in_payload->p, (in_payload->p + in_payload->len));
   mqttInMsg_t entry;
   BaseType_t rb_rc;
@@ -182,22 +182,22 @@ void mcrMQTT::__otaPrep() {
 }
 
 void mcrMQTT::publish(Reading_t *reading) {
-  std::string *json = reading->json();
+  auto *json = reading->json();
 
   publish(json);
 }
 
 void mcrMQTT::publish(Reading_t &reading) {
-  std::string *json = reading.json();
+  auto *json = reading.json();
 
   publish(json);
 }
 
 void mcrMQTT::outboundMsg() {
   size_t len = 0;
-  mqttOutMsg_t *entry = nullptr;
+  // mqttOutMsg_t *entry = nullptr;
 
-  entry =
+  auto *entry =
       (mqttOutMsg_t *)xRingbufferReceive(_rb_out, &len, _outbound_msg_ticks);
 
   while (entry) {
@@ -209,7 +209,7 @@ void mcrMQTT::outboundMsg() {
       break;
     }
 
-    const std::string *json = entry->data;
+    const auto *json = entry->data;
     size_t json_len = entry->len;
 
     ESP_LOGD(tagEngine(), "send msg(len=%u), payload(len=%u)", len, json_len);
@@ -247,7 +247,9 @@ void mcrMQTT::publish(std::string *json) {
 
   if (rb_rc == pdFALSE) {
     delete json;
-    char *msg = (char *)calloc(sizeof(char), 128);
+
+    auto *msg = (char *)calloc(sizeof(char), 128);
+    // auto *msg = new char[128]();
 
     size_t avail_bytes = xRingbufferGetCurFreeSize(_rb_out);
 
@@ -334,7 +336,7 @@ void mcrMQTT::subscribeCommandFeed(struct mg_connection *nc) {
 }
 
 static void _ev_handler(struct mg_connection *nc, int ev, void *p) {
-  struct mg_mqtt_message *msg = (struct mg_mqtt_message *)p;
+  auto *msg = (struct mg_mqtt_message *)p;
 
   switch (ev) {
   case MG_EV_CONNECT: {
