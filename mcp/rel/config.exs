@@ -17,10 +17,12 @@ environment :dev do
   # It is recommended that you build with MIX_ENV=prod and pass
   # the --env flag to Distillery explicitly if you want to use
   # dev mode.
-  set(dev_mode: true)
-  set(include_erts: false)
+  set(dev_mode: false)
+  set(include_erts: true)
   set(cookie: :janice)
   set(vm_args: "rel/dev-vm.args")
+
+  set(pre_configure_hooks: "rel/hooks/dev/pre_configure.d")
 
   set(
     commands: [

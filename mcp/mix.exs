@@ -17,7 +17,7 @@ defmodule Mcp.Mixfile do
        along with this program.  If not, see <http://www.gnu.org/licenses/>
   """
   @moduledoc """
-    Mix file defining Master Control Program Web
+    Mix file defining Master Control Program
   """
 
   use Mix.Project
@@ -25,7 +25,7 @@ defmodule Mcp.Mixfile do
   def project do
     [
       app: :mcp,
-      version: "0.1.6",
+      version: "0.1.9",
       elixir: "~> 1.7",
       deps: deps(),
       start_permanent: Mix.env() == :prod,
@@ -36,7 +36,8 @@ defmodule Mcp.Mixfile do
       description: description(),
       escript: escript_config(),
       test_coverage: test_coverage(),
-      deploy_paths: deploy_paths()
+      deploy_paths: deploy_paths(),
+      stage_paths: stage_paths()
     ]
   end
 
@@ -54,10 +55,13 @@ defmodule Mcp.Mixfile do
 
   def deploy_paths,
     do: [
-      dev: "/tmp/janice/dev/releases",
-      test: "/tmp/janice/test/releases",
-      prod: "/usr/local/janice/releases"
+      dev: "/tmp/janice/dev",
+      test: "/tmp/janice/test",
+      prod: "/usr/local/janice"
     ]
+
+  def stage_paths,
+    do: [prod: "/tmp"]
 
   # Specifies which paths to compile per environment.
   defp elixirc_paths(:test), do: ["lib", "test/support"]
@@ -80,7 +84,7 @@ defmodule Mcp.Mixfile do
       {:distillery, github: "bitwalker/distillery"},
       {:quantum, "~> 2.2"},
       {:scribe, "~> 0.8.2"},
-      {:credo, "> 0.0.0", only: [:dev, :test]},
+      {:credo, "> 0.0.0", only: [:dev, :test], runtime: false},
       {:coverex, "~> 1.0", only: :test}
       # {:phoenix, "~> 1.4.0"},
       # {:phoenix_pubsub, "~> 1.0"},
@@ -100,7 +104,22 @@ defmodule Mcp.Mixfile do
     [
       "ecto.migrate": ["ecto.migrate", "ecto.dump"],
       "ecto.setup": ["ecto.create", "ecto.load", "ecto.migrate"],
-      "ecto.reset": ["ecto.drop", "ecto.setup"]
+      "ecto.reset": ["ecto.drop", "ecto.setup"],
+      "mcp.prod.full.release": [
+        "local.hex --if-missing --force",
+        "clean --only=prod",
+        "deps.get --quiet",
+        "deps.clean --unused",
+        "compile",
+        "release --env=prod --quiet",
+        "mcp.prod.stage.release"
+      ],
+      "mcp.upgrade.release": [
+        "compile",
+        "release.gen.appup --app=mcp --env=#{Mix.env()}",
+        "release --env=#{Mix.env()} --upgrade --quiet",
+        "mcp.deploy.upgrade"
+      ]
       # test: ["ecto.create --quiet", "ecto.load", "ecto.migrate", "test"]
     ]
   end

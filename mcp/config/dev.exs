@@ -107,9 +107,7 @@ additional_jobs = []
 
 jobs = base_jobs ++ additional_jobs
 
-config :mcp, Janice.Scheduler,
-  global: true,
-  jobs: jobs
+config :mcp, Janice.Scheduler, jobs: jobs
 
 config :mcp, Mcp.SoakTest,
   # don't start

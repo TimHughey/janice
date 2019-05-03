@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!usr/bin/env zsh
 
 SAVE=`pwd`
 
@@ -28,11 +28,6 @@ run_cmd mix clean --only=prod
 run_cmd env MIX_ENV=prod mix deps.get
 run_cmd env MIX_ENV=prod mix deps.clean --unused
 run_cmd env MIX_ENV=prod mix compile
-
-cd $MCR
-print -n "building mcr_esp..."
-run_cmd make app-clean 1> /dev/null
-run_cmd make -j9 deploy-to-mcp 1> /dev/null && print " done"
 
 cd $MCP
 run_cmd env MIX_ENV=prod mix release --env=prod

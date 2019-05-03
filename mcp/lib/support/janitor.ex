@@ -1,6 +1,6 @@
 defmodule Janitor do
-  @moduledoc """
-  """
+  @moduledoc false
+
   require Logger
   use GenServer
   import Application, only: [get_env: 3]
@@ -9,7 +9,7 @@ defmodule Janitor do
 
   alias Fact.RunMetric
 
-  @vsn :janitor001
+  @vsn :janitor0003
 
   @orphan_timer :orphan_timer
   @purge_timer :purge_timer
@@ -73,6 +73,22 @@ defmodule Janitor do
   #
   ## GenServer callbacks
   #
+
+  def code_change(old_vsn, %{} = state, extra) when is_atom(old_vsn) do
+    s = do_code_change(old_vsn, state, extra)
+    {:ok, s}
+  end
+
+  def code_change(old_vsn, state, extra) do
+    Logger.warn(fn ->
+      "code_change() unrecognized params: " <>
+        "#{inspect(old_vsn)} " <>
+        "#{inspect(state)} " <>
+        "#{inspect(extra)}"
+    end)
+
+    {:error, :bad_params}
+  end
 
   # if an empty list this is a request for the current configred opts
   def handle_call({@opts_msg, []}, _from, s) do
@@ -149,6 +165,19 @@ defmodule Janitor do
   #
   ## Private functions
   #
+
+  defp do_code_change(:janitor0001, state, _extra) do
+    Map.put(state, :stats, %{})
+  end
+
+  defp do_code_change(:janitor0002, state, _extra) do
+    Map.put(state, :stats, %{last_purge: Timex.now()})
+  end
+
+  # default for code changes that don't require any action
+  defp do_code_change(_old_vsn, state, _extra) do
+    state
+  end
 
   defp clean_orphan_acks(s) when is_map(s) do
     opts = s.opts.orphan_acks

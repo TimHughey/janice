@@ -24,7 +24,7 @@ defmodule OTA do
     uri = Kernel.get_in(config, [:url, :uri])
     fw_file = Kernel.get_in(config, [:url, :fw_file])
 
-    "https://" <> host <> "/" <> uri <> "/" <> fw_file
+    Enum.join(["https:/", host, uri, fw_file], "/")
   end
 
   def ota_url(opts) when is_list(opts) do

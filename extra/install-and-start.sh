@@ -37,7 +37,7 @@
 	mcr_esp_elf=${mcr_esp_prefix}-mcr_esp.elf
 	mcr_esp_elf_deploy=${mcr_esp_fw_loc}/${mcr_esp_elf}
 
-	release=/run/janice/mcp.tar.gz
+	release=/tmp/mcp.tar.gz
 
 	if [[ ! -f $release ]]; then
 		print "deploy tar $release doesn't exist, doing nothing."
@@ -52,13 +52,13 @@
 	run_cmd sudo -u janice tar -C $jan_base_new -xf $release && print " done."
 
 	# run_cmd sudo -i janice --login $jan_bin/mcp ping 1> /dev/null 2>&1
-	run_cmd sudo -u janice --login $jan_bin/mcp ping 
+	run_cmd sudo -u janice --login $jan_bin/mcp ping
 	if [[ $? -eq 0 ]]; then
 		print -n "stopping janice... "
 		# HACK - to solve issue with /run permissions
 		# sudo chmod go+w /run ; sleep 5
 		#run_cmd sudo -u janice --login  $jan_bin/mcp stop 1> /dev/null 2>&1
-		run_cmd sudo -u janice --login $jan_bin/mcp stop 
+		run_cmd sudo -u janice --login $jan_bin/mcp stop
 
 		# check mcp really shutdown
 		# $jan_bin/mcp ping 1> /dev/null 2>&1
@@ -84,7 +84,7 @@
 
 	# sudo chmod go+w /run
 	# run_cmd sudo -u janice --login $jan_bin/mcp start && print " done."
-	run_cmd sudo -u janice --login $jan_bin/mcp start 
+	run_cmd sudo -u janice --login $jan_bin/mcp start
 	# sudo -u janice env PORT=4009 $jan_bin/mcp start && print " done."
 	# sleep 5 ; sudo chmod go+w /run
 

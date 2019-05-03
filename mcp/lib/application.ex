@@ -51,7 +51,7 @@ defmodule Mcp.Application do
     apps =
       case build_env do
         "dev" ->
-          [{Janitor, initial}, {Thermostat.Supervisor, initial}]
+          [{Janitor, %{autostart: true}}, {Thermostat.Supervisor, initial}]
 
         "test" ->
           [
