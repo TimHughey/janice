@@ -78,10 +78,11 @@ defmodule Mcp.Mixfile do
       {:httpoison, "~> 1.0"},
       {:postgrex, "~> 0.13"},
       {:ecto_sql, "~> 3.0"},
-      {:emqttc, github: "rabbitmq/emqttc", tag: "remove-logging"},
+      {:emqttc, github: "emqtt/emqttc"},
+      # {:emqttc, github: "rabbitmq/emqttc", tag: "remove-logging"},
       {:uuid, "~> 1.1"},
       {:gettext, "~> 0.11"},
-      {:distillery, github: "bitwalker/distillery"},
+      {:distillery, "~> 2.0"},
       {:quantum, "~> 2.2"},
       {:scribe, "~> 0.8.2"},
       {:credo, "> 0.0.0", only: [:dev, :test], runtime: false},
@@ -105,17 +106,12 @@ defmodule Mcp.Mixfile do
       "ecto.migrate": ["ecto.migrate", "ecto.dump"],
       "ecto.setup": ["ecto.create", "ecto.load", "ecto.migrate"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
-      "mcp.prod.full.release": [
+      "mcp.deps.update": [
         "local.hex --if-missing --force",
-        "clean --only=prod",
-        "deps.get --quiet",
-        "deps.clean --unused",
-        "compile",
-        "release --env=prod --quiet",
-        "mcp.prod.stage.release"
+        "deps.get",
+        "deps.clean --unused"
       ],
       "mcp.upgrade.release": [
-        "compile",
         "release.gen.appup --app=mcp --env=#{Mix.env()}",
         "release --env=#{Mix.env()} --upgrade --quiet",
         "mcp.deploy.upgrade"

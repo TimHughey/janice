@@ -41,6 +41,12 @@ defmodule Mcp.Application do
 
     protocols =
       case build_env do
+        "dev" ->
+          [
+            {Fact.Supervisor, initial},
+            {Mqtt.Supervisor, Map.put(initial, :autostart, true)}
+          ]
+
         "standby" ->
           []
 
