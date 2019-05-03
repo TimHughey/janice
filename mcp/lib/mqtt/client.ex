@@ -32,7 +32,7 @@ defmodule Mqtt.Client do
       # prepare the opts that will be passed to emqttc (erlang) including logger config and
       # start it up
       opts = config(:broker)
-      opts = Keyword.merge([logger: :error], opts)
+      # opts = Keyword.merge([logger: :error], opts)
       {:ok, mqtt_pid} = :emqttc.start_link(opts)
 
       # populate the state and construct init() return
@@ -73,7 +73,10 @@ defmodule Mqtt.Client do
   end
 
   def subscribe(feed) do
-    Logger.warn(fn -> "subscribe feed doesn't make sense, got #{inspect(feed)}" end)
+    Logger.warn(fn ->
+      "subscribe feed doesn't make sense, got #{inspect(feed)}"
+    end)
+
     Logger.warn(fn -> "hint: subscribe feed should be a tuple" end)
     :ok
   end
@@ -99,7 +102,9 @@ defmodule Mqtt.Client do
         "can't publish: feed=#{inspect(feed)} payload=#{inspect(payload)}"
       end)
 
-      Logger.warn(fn -> "hint: check :feeds are defined in the configuration" end)
+      Logger.warn(fn ->
+        "hint: check :feeds are defined in the configuration"
+      end)
 
       :ok
     else
@@ -137,7 +142,11 @@ defmodule Mqtt.Client do
     )
   end
 
-  def handle_call({:publish, feed, payload, pub_opts}, _from, %{autostart: true} = s)
+  def handle_call(
+        {:publish, feed, payload, pub_opts},
+        _from,
+        %{autostart: true} = s
+      )
       when is_binary(feed) and is_binary(payload) and is_list(pub_opts) do
     {elapsed_us, res} =
       :timer.tc(fn ->
@@ -154,7 +163,11 @@ defmodule Mqtt.Client do
     {:reply, res, s}
   end
 
-  def handle_call({:publish, feed, payload, pub_opts}, _from, %{autostart: false} = s)
+  def handle_call(
+        {:publish, feed, payload, pub_opts},
+        _from,
+        %{autostart: false} = s
+      )
       when is_binary(feed) and is_binary(payload) and is_list(pub_opts) do
     Logger.debug(fn -> "not started, dropping #{inspect(payload)}" end)
     {:reply, :not_started, s}
@@ -231,7 +244,10 @@ defmodule Mqtt.Client do
     {:noreply, s}
   end
 
-  def handle_info({ref, result} = msg, %{timesync: %{task: %{ref: timesync_ref}}} = s)
+  def handle_info(
+        {ref, result} = msg,
+        %{timesync: %{task: %{ref: timesync_ref}}} = s
+      )
       when is_reference(ref) and ref == timesync_ref do
     Logger.debug(fn -> "handle_info(#{inspect(msg)}, #{inspect(s)})" end)
     s = Map.put(s, :timesync, Map.put(s.timesync, :result, result))
@@ -249,7 +265,8 @@ defmodule Mqtt.Client do
     s =
       if ref == timesync_ref do
         track =
-          Map.put(s.timesync, :exit, reason) |> Map.put(:task, nil)
+          Map.put(s.timesync, :exit, reason)
+          |> Map.put(:task, nil)
           |> Map.put(:status, :finished)
 
         Map.put(s, :timesync, track)
@@ -279,6 +296,8 @@ defmodule Mqtt.Client do
   end
 
   defp timesync_opts do
-    get_env(:mcp, Mqtt.Client, []) |> Keyword.get(:timesync, []) |> Enum.into(%{})
+    get_env(:mcp, Mqtt.Client, [])
+    |> Keyword.get(:timesync, [])
+    |> Enum.into(%{})
   end
 end

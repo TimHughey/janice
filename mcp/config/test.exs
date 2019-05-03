@@ -41,7 +41,8 @@ config :mcp, Mqtt.Client,
     username: "mqtt",
     password: "mqtt",
     auto_resub: true,
-    reconnect: 2
+    logger: :warning,
+    reconnect: {3, 60, 30}
   ],
   timesync: [frequency: {:secs, 5}, loops: 5, forever: false, log: false]
 

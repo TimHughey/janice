@@ -39,8 +39,8 @@ config :mcp, Mqtt.Client,
     username: "** set in prod.secret.exs",
     password: "** set in prod.secret.exs",
     auto_resub: true,
-    keepalive: 15 * 60,
-    reconnect: 2
+    logger: :warning,
+    reconnect: {3, 60, 30}
   ],
   # timesync also keeps the MQTT client connection alive
   # the MQTT spec requires both sending and receiving to prevent disconnects
