@@ -33,7 +33,7 @@ defmodule Mqtt.Client do
       # start it up
       opts = config(:broker)
       # opts = Keyword.merge([logger: :error], opts)
-      {:ok, mqtt_pid} = :emqttc.start_link(opts)
+      {:ok, mqtt_pid} = :emqttc.start_link(:emqttc, opts)
 
       # populate the state and construct init() return
       s = Map.put_new(s, :mqtt_pid, mqtt_pid)
