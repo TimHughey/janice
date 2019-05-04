@@ -4,6 +4,16 @@ host=$(hostname)
 
 [[ $host -ne "jophiel" ]] && echo "please run jophiel" && exit 255
 
+function run_cmd {
+    "$@"
+    local rc=$?
+    if [ $rc -ne 0 ]; then
+        echo "error with $1" >&2
+				exit 1
+    fi
+    return $rc
+}
+
 function sudo_cmd {
     sudo -u janice "$@"
     local rc=$?
