@@ -31,10 +31,16 @@ fw_suffixes=(bin elf)
 vsn=$(git describe)
 htdocs=/dar/www/wisslanding/htdocs/janice/mcr_esp/firmware
 
+if ! type "portageq" > /dev/null; then
+	MAKEOPTS=$(portageq envvar MAKEOPTS)
+else
+	MAKEOPTS="-j9"
+fi
+
 pushd $mcr
 print -n "building mcr_esp..."
 run_cmd make app-clean 1> /dev/null
-run_cmd make -j 9 1> /dev/null && print " done"
+run_cmd make ${MAKEOPTS} 1> /dev/null && print " done"
 
 popd
 
