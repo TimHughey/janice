@@ -30,6 +30,9 @@ public:
                   this, _engine_priority, &_engine_task);
   }
   void watchStack(const char *task_name, TaskHandle_t handle) {
+    ESP_LOGI(_engTAG, "watch stack requested [%s] [%p]",
+             ((task_name == nullptr) ? "nullptr" : task_name), handle);
+
     _watch_task_name = task_name;
     _watch_task_handle = handle;
   }

@@ -143,7 +143,7 @@ private:
         {"readSHT31", "mcrI2c readSHT31"},
         {"selectbus", "mcrI2c selectBus"}};
 
-    ESP_LOGI(tag_map["engine"].c_str(), "tag_map sizeof=%u", sizeof(tag_map));
+    ESP_LOGD(tag_map["engine"].c_str(), "tag_map sizeof=%u", sizeof(tag_map));
     return tag_map;
   }
 

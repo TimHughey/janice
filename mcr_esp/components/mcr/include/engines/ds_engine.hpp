@@ -181,7 +181,7 @@ private:
         {"setDS2408", "mcrDS setDS2408"},
         {"setDS2413", "mcrDS setDS2413"}};
 
-    ESP_LOGI(tag_map["engine"].c_str(), "tag_map sizeof=%u", sizeof(tag_map));
+    ESP_LOGD(tag_map["engine"].c_str(), "tag_map sizeof=%u", sizeof(tag_map));
     return tag_map;
   }
 
