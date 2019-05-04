@@ -74,7 +74,8 @@ void app_main() {
   network->start();
 
   // request TimestampTask to watch the stack high water mark for a task
-  timestampTask->watchStack(mqttTask->tagEngine(), mqttTask->taskHandle());
+  timestampTask->watchStack(i2cEngineTask->tagEngine(),
+                            i2cEngineTask->taskHandle());
 
   network->waitForNormalOps();
   mcr::Net::waitForName(30000);

@@ -80,6 +80,7 @@ public:
   virtual ~mcrEngine(){};
 
   // task methods
+  xTaskHandle taskHandle() { return _engine_task; }
   void delay(int ms) { ::vTaskDelay(pdMS_TO_TICKS(ms)); }
 
   virtual void run(void *data) = 0;
@@ -307,6 +308,7 @@ protected:
     _tags["phase"] = phase_tag;
   }
 
+public:
   const char *tagCommand() {
     static const char *tag = nullptr;
     if (tag == nullptr) {
@@ -356,7 +358,7 @@ protected:
   }
 
   // misc metrics tracking
-
+protected:
   int64_t trackPhase(const char *lTAG, mcrEngineMetric_t &phase, bool start) {
     if (start) {
       phase.start_us = esp_timer_get_time();
