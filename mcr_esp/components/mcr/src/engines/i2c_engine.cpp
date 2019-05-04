@@ -580,43 +580,48 @@ void mcrI2c::report(void *task_data) {
 
   trackReport(true);
 
-  for (auto it = knownDevices(); moreDevices(it); it++) {
+  for_each(beginDevices(), endDevices(), [this](i2cDev_t *dev) {
     auto rc = false;
-    i2cDev_t *dev = (i2cDev_t *)*it;
 
-    if (selectBus(dev->bus())) {
-      switch (dev->devAddr()) {
-      case 0x5C:
-        rc = readAM2315(dev);
-        break;
+    if (dev->available()) {
+      if (selectBus(dev->bus())) {
+        switch (dev->devAddr()) {
+        case 0x5C:
+          rc = readAM2315(dev);
+          break;
 
-      case 0x44:
-        rc = readSHT31(dev);
-        break;
+        case 0x44:
+          rc = readSHT31(dev);
+          break;
 
-      case 0x20:
-        rc = readMCP23008(dev);
-        break;
+        case 0x20:
+          rc = readMCP23008(dev);
+          break;
 
-      case 0x36: // Seesaw Soil Probe
-        rc = readSeesawSoil(dev);
-        break;
+        case 0x36: // Seesaw Soil Probe
+          rc = readSeesawSoil(dev);
+          break;
 
-      default:
-        printUnhandledDev(dev);
-        rc = true;
-        break;
+        default:
+          printUnhandledDev(dev);
+          rc = true;
+          break;
+        }
+
+        if (rc) {
+          publish(dev);
+          ESP_LOGI(tagReport(), "%s success", dev->debug().c_str());
+        } else {
+          ESP_LOGE(tagReport(), "%s failed", dev->debug().c_str());
+          // hardReset();
+        }
+      }
+    } else {
+      if (dev->missing()) {
+        ESP_LOGW(tagReport(), "device missing: %s", dev->debug().c_str());
       }
     }
-
-    if (rc) {
-      publish(dev);
-      ESP_LOGI(tagReport(), "%s success", dev->debug().c_str());
-    } else {
-      ESP_LOGE(tagReport(), "%s failed", dev->debug().c_str());
-      // hardReset();
-    }
-  }
+  });
 
   trackReport(false);
 }
