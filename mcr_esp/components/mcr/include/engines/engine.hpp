@@ -58,6 +58,14 @@ typedef struct mcrEngineMetrics {
   mcrEngineMetric_t switch_cmdack;
 } mcrEngineMetrics_t;
 
+typedef struct {
+  EventBits_t need_bus;
+  EventBits_t engine_running;
+  EventBits_t devices_available;
+  EventBits_t temp_available;
+  EventBits_t temp_sensors_available;
+} engineEventBits_t;
+
 template <class DEV> class mcrEngine {
 
 private:
@@ -66,17 +74,29 @@ private:
   uint32_t _next_known_index = 0;
 
   xTaskHandle _engine_task = nullptr;
+  EventGroupHandle_t _evg;
+  SemaphoreHandle_t _bus_mutex = nullptr;
 
   mcrEngineMetrics_t metrics;
+
+  engineEventBits_t _event_bits = {.need_bus = BIT0,
+                                   .engine_running = BIT1,
+                                   .devices_available = BIT2,
+                                   .temp_available = BIT3,
+                                   .temp_sensors_available = BIT4};
 
   // Task implementation
   static void runEngine(void *task_instance) {
     mcrEngine *task = (mcrEngine *)task_instance;
+
     task->run(task->_engine_task_data);
   }
 
 public:
-  mcrEngine(){}; // nothing to see here
+  mcrEngine() {
+    _evg = xEventGroupCreate();
+    _bus_mutex = xSemaphoreCreateMutex();
+  };
   virtual ~mcrEngine(){};
 
   // task methods
@@ -90,6 +110,7 @@ public:
   };
 
   void start(void *task_data = nullptr) {
+
     if (_engine_task != nullptr) {
       ESP_LOGW(tagEngine(), "task already running %p", (void *)_engine_task);
     }
@@ -226,6 +247,67 @@ protected:
     DEV *dev = findDevice(cmd->dev_id());
     return dev;
   };
+
+  // event group bits
+  EventBits_t engineBit() { return _event_bits.engine_running; }
+  EventBits_t needBusBit() { return _event_bits.need_bus; }
+  EventBits_t devicesAvailableBit() { return _event_bits.devices_available; }
+  EventBits_t devicesOrTempSensorsBit() {
+    return (_event_bits.devices_available | _event_bits.temp_sensors_available);
+  }
+  EventBits_t tempSensorsAvailableBit() {
+    return _event_bits.temp_sensors_available;
+  }
+  EventBits_t temperatureAvailableBit() { return _event_bits.temp_available; }
+
+  // event group
+  void devicesAvailable(bool available) {
+    if (available) {
+      xEventGroupSetBits(_evg, _event_bits.devices_available);
+    } else {
+      xEventGroupClearBits(_evg, _event_bits.devices_available);
+    }
+  }
+  void devicesUnavailable() {
+    xEventGroupClearBits(_evg, _event_bits.devices_available);
+  }
+
+  void engineRunning() { xEventGroupSetBits(_evg, _event_bits.engine_running); }
+  bool isBusNeeded() {
+    EventBits_t bits = xEventGroupGetBits(_evg);
+    return (bits & needBusBit());
+  }
+  void needBus() { xEventGroupSetBits(_evg, needBusBit()); }
+  void releaseBus() { xEventGroupClearBits(_evg, needBusBit()); }
+  void tempAvailable() { xEventGroupSetBits(_evg, _event_bits.temp_available); }
+  void tempUnavailable() {
+    xEventGroupClearBits(_evg, _event_bits.temp_available);
+  }
+  void temperatureSensors(bool available) {
+    if (available) {
+      xEventGroupSetBits(_evg, _event_bits.temp_sensors_available);
+    } else {
+      xEventGroupClearBits(_evg, _event_bits.temp_sensors_available);
+    }
+  }
+
+  EventBits_t waitFor(EventBits_t bits, TickType_t wait_ticks = portMAX_DELAY,
+                      bool clear_bits = false) {
+
+    EventBits_t set_bits = xEventGroupWaitBits(
+        _evg, bits,
+        (clear_bits ? pdTRUE : pdFALSE), // clear bits (if set while waiting)
+        pdTRUE, // wait for all bits, not really needed here
+        wait_ticks);
+
+    return (set_bits);
+  }
+
+  // semaphore
+  void giveBus() { xSemaphoreGive(_bus_mutex); }
+  void takeBus(TickType_t wait_ticks = portMAX_DELAY) {
+    xSemaphoreTake(_bus_mutex, wait_ticks);
+  }
 
   bool publish(mcrCmdSwitch_t &cmd) { return publish(cmd.dev_id()); };
   bool publish(const mcrDevID_t &dev_id) {

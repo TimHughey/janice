@@ -43,14 +43,6 @@
 
 #define W1_PIN 14
 
-typedef struct {
-  EventBits_t need_bus;
-  EventBits_t engine_running;
-  EventBits_t devices_available;
-  EventBits_t temp_available;
-  EventBits_t temp_sensors_available;
-} dsEventBits_t;
-
 typedef class mcrDS mcrDS_t;
 class mcrDS : public mcrEngine<dsDev_t> {
 
@@ -65,14 +57,7 @@ public:
 
 private:
   OneWireBus *ds = nullptr;
-  EventGroupHandle_t _ds_evg;
-  dsEventBits_t _event_bits = {.need_bus = BIT0,
-                               .engine_running = BIT1,
-                               .devices_available = BIT2,
-                               .temp_available = BIT3,
-                               .temp_sensors_available = BIT4};
 
-  SemaphoreHandle_t _bus_mutex = nullptr;
   const int _max_queue_len = 30;
   QueueHandle_t _cmd_q = nullptr;
   mcrTask_t _engineTask = {.handle = nullptr,
@@ -140,7 +125,6 @@ private:
   bool commandAck(mcrCmdSwitch_t &cmd);
 
   bool devicesPowered() { return _devices_powered; }
-  EventBits_t needBusBit() { return _event_bits.need_bus; }
 
   // accept a mcrCmdSwitch_t as input to reportDevice
   // bool readDevice(mcrCmdSwitch_t &cmd);

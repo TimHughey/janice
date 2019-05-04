@@ -50,11 +50,11 @@ private:
 
   size_t _firstHeap = 0;
   size_t _availHeap = 0;
-  size_t _minHeap = 520 * 1024;
+  size_t _minHeap = UINT32_MAX;
   size_t _maxHeap = 0;
 
   TickType_t _last_wake;
-  const TickType_t _loop_frequency = pdMS_TO_TICKS(13 * 1000); // 13 seconds
+  const TickType_t _loop_frequency = pdMS_TO_TICKS(3 * 1000); // 13 seconds
   bool _task_report = false;
   time_t _timestamp_freq_secs = (15 * 60);
 

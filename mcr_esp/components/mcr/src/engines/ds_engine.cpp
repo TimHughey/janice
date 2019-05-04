@@ -95,7 +95,7 @@ void mcrDS::command(void *task_data) {
     BaseType_t queue_rc = pdFALSE;
     mcrCmdSwitch_t *cmd = nullptr;
 
-    xEventGroupClearBits(_ds_evg, needBusBit());
+    releaseBus();
     queue_rc = xQueueReceive(_cmd_q, &cmd, portMAX_DELAY);
     int64_t start = esp_timer_get_time();
 
@@ -117,11 +117,10 @@ void mcrDS::command(void *task_data) {
 
       trackSwitchCmd(true);
 
-      xEventGroupSetBits(_ds_evg, needBusBit());
-
+      needBus();
       ESP_LOGD(tagCommand(), "attempting to aquire bux mutex...");
       int64_t bus_wait_start = esp_timer_get_time();
-      xSemaphoreTake(_bus_mutex, portMAX_DELAY);
+      takeBus();
       int64_t bus_wait_us = esp_timer_get_time() - bus_wait_start;
 
       if (bus_wait_us < 500) {
@@ -150,7 +149,7 @@ void mcrDS::command(void *task_data) {
       }
 
       trackSwitchCmd(false);
-      xSemaphoreGive(_bus_mutex);
+      giveBus();
 
       ESP_LOGD(tagCommand(), "released bus mutex");
     } else {
@@ -201,7 +200,7 @@ void mcrDS::convert(void *task_data) {
   uint8_t temp_convert_cmd[] = {0xcc, 0x44};
 
   // ensure the temp available bit is cleared at task startup
-  xEventGroupClearBits(_ds_evg, _event_bits.temp_available);
+  tempUnavailable();
 
   for (;;) {
     // bool temp_convert_done = false;
@@ -210,19 +209,14 @@ void mcrDS::convert(void *task_data) {
     owb_status owb_s;
 
     // wait here for devices available bit
-    xEventGroupWaitBits(
-        _ds_evg,
-        (_event_bits.devices_available | _event_bits.temp_sensors_available),
-        pdFALSE, // don't clear the bit after waiting
-        pdTRUE,  // wait for all bits, not really needed here
-        portMAX_DELAY);
+    waitFor(devicesOrTempSensorsBit());
 
     // the last wake is actually once the event group wait is satisified
     _convertTask.lastWake = xTaskGetTickCount();
 
     // use event bits to signal when there are temperatures available
     // start by clearing the bit to signal there isn't a temperature available
-    xEventGroupClearBits(_ds_evg, _event_bits.temp_available);
+    tempUnavailable();
 
     trackConvert(true);
 
@@ -234,13 +228,13 @@ void mcrDS::convert(void *task_data) {
       continue;
     }
 
-    xSemaphoreTake(_bus_mutex, portMAX_DELAY);
+    takeBus();
 
     owb_s = owb_reset(ds, &present);
 
     if (!present) {
       ESP_LOGW(tagConvert(), "no devices present (but there should be)");
-      xSemaphoreGive(_bus_mutex);
+      giveBus();
       vTaskDelayUntil(&(_convertTask.lastWake), _convert_frequency);
       continue;
     }
@@ -263,7 +257,7 @@ void mcrDS::convert(void *task_data) {
         ESP_LOGW(tagConvert(), "appears no temperature devices on bus");
       }
 
-      xSemaphoreGive(_bus_mutex);
+      giveBus();
       vTaskDelayUntil(&(_convertTask.lastWake), _convert_frequency);
       continue;
     }
@@ -296,8 +290,8 @@ void mcrDS::convert(void *task_data) {
 
         // wait for time to pass or to be notified that another
         // task needs the bus
-        EventBits_t bits = xEventGroupWaitBits(_ds_evg, needBusBit(), pdTRUE,
-                                               pdTRUE, _temp_convert_wait);
+        // if the bit was set then clear it
+        EventBits_t bits = waitFor(needBusBit(), _temp_convert_wait, true);
         notified = (bits & needBusBit());
 
         // another task needs the bus so break out of the loop
@@ -316,12 +310,12 @@ void mcrDS::convert(void *task_data) {
       }
     }
 
-    xSemaphoreGive(_bus_mutex);
+    giveBus();
     trackConvert(false);
 
     // signal to other tasks if temperatures are available
     if (temp_available) {
-      xEventGroupSetBits(_ds_evg, _event_bits.temp_available);
+      tempAvailable();
     }
 
     vTaskDelayUntil(&(_convertTask.lastWake), _convert_frequency);
@@ -329,13 +323,9 @@ void mcrDS::convert(void *task_data) {
 }
 
 void mcrDS::discover(void *task_data) {
-  xEventGroupWaitBits(_ds_evg, _event_bits.engine_running,
-                      pdFALSE, // don't clear the bit after waiting
-                      pdTRUE,  // wait for all bits, not really needed here
-                      portMAX_DELAY);
-
-  // ensure the devices available bit is cleared on task startup
-  xEventGroupClearBits(_ds_evg, _event_bits.devices_available);
+  waitFor(engineBit());
+  devicesUnavailable(); // ensure the devices available bit is cleared on task
+                        // startup
 
   for (;;) {
     owb_status owb_s;
@@ -343,7 +333,7 @@ void mcrDS::discover(void *task_data) {
     bool found = false;
     auto device_found = false;
     auto temp_devices = false;
-    BaseType_t notified = pdFALSE;
+    bool bus_needed = false;
     OneWireBus_SearchState search_state;
 
     _discoverTask.lastWake = xTaskGetTickCount();
@@ -351,13 +341,13 @@ void mcrDS::discover(void *task_data) {
 
     trackDiscover(true);
 
-    xSemaphoreTake(_bus_mutex, portMAX_DELAY);
+    takeBus();
 
     owb_s = owb_reset(ds, &present);
 
     if (!present) {
       ESP_LOGI(tagDiscover(), "no devices present");
-      xSemaphoreGive(_bus_mutex);
+      giveBus();
       trackDiscover(false);
       vTaskDelayUntil(&(_discoverTask.lastWake), _discover_frequency);
       continue;
@@ -367,7 +357,7 @@ void mcrDS::discover(void *task_data) {
 
     if (owb_s != OWB_STATUS_OK) {
       ESP_LOGW(tagDiscover(), "search first failed owb_s=%d", owb_s);
-      xSemaphoreGive(_bus_mutex);
+      giveBus();
       trackDiscover(false);
       vTaskDelayUntil(&(_discoverTask.lastWake), _discover_frequency);
       continue;
@@ -393,11 +383,10 @@ void mcrDS::discover(void *task_data) {
         temp_devices = true;
       }
 
-      EventBits_t bits = xEventGroupGetBits(_ds_evg);
-      notified = (bits & needBusBit());
+      bus_needed = isBusNeeded();
 
       // another task needs the bus so break out of the loop
-      if (notified) {
+      if (bus_needed) {
         ESP_LOGW(tagConvert(), "another task needs the bus, discover aborted");
 
         owb_reset(ds, &present);     // abort the search
@@ -421,22 +410,15 @@ void mcrDS::discover(void *task_data) {
 
     _devices_powered = checkDevicesPowered();
 
-    xSemaphoreGive(_bus_mutex);
+    giveBus();
     trackDiscover(false);
-
-    if (temp_devices) {
-      xEventGroupSetBits(_ds_evg, _event_bits.temp_sensors_available);
-    } else {
-      xEventGroupClearBits(_ds_evg, _event_bits.temp_sensors_available);
-    }
 
     // must set before setting devices_available
     _temp_devices_present = temp_devices;
+    temperatureSensors(temp_devices);
 
-    if (device_found) {
-      // signal other tasks that there are, in fact, devices available
-      xEventGroupSetBits(_ds_evg, _event_bits.devices_available);
-    }
+    // signal to other tasks if there are devices available
+    devicesAvailable(device_found);
 
     vTaskDelayUntil(&(_discoverTask.lastWake), _discover_frequency);
   }
@@ -453,13 +435,10 @@ mcrDS_t *mcrDS::instance() {
 void mcrDS::report(void *task_data) {
 
   for (;;) {
-    // let's wait here for the engine running bit
+    // let's wait here for the signal devices are available
     // important to ensure we don't start reporting before the rest of the
     // system is fully available (e.g. wifi, mqtt)
-    xEventGroupWaitBits(_ds_evg, _event_bits.devices_available,
-                        pdFALSE, // don't clear the bit
-                        pdTRUE,  // wait for all bits, not really needed here
-                        portMAX_DELAY);
+    waitFor(devicesAvailableBit());
 
     // there are two cases of when report should run:
     //  a. wait for a temperature if there are temperature devices
@@ -471,10 +450,7 @@ void mcrDS::report(void *task_data) {
       // once we see it then clear it to ensure we don't run again until
       // it's available again
       ESP_LOGI(tagReport(), "waiting for temperature to be available");
-      xEventGroupWaitBits(_ds_evg, _event_bits.temp_available,
-                          pdTRUE, // clear the bit after waiting
-                          pdTRUE, // wait for all bits, not really needed here
-                          _report_frequency);
+      waitFor(temperatureAvailableBit(), _report_frequency, true);
     }
 
     // last wake is actually after the event group has been satisified
@@ -488,7 +464,7 @@ void mcrDS::report(void *task_data) {
       if (dev->available()) {
         ESP_LOGI(tagReport(), "reading device %s", dev->debug().c_str());
 
-        xSemaphoreTake(_bus_mutex, portMAX_DELAY);
+        takeBus();
         auto rc = readDevice(dev);
 
         if (rc) {
@@ -499,7 +475,7 @@ void mcrDS::report(void *task_data) {
         }
         // hold onto the bus mutex to ensure that the device publih
         // succeds (another task doesn't change the device just read)
-        xSemaphoreGive(_bus_mutex);
+        giveBus();
       } else {
         if (dev->missing()) {
           ESP_LOGW(tagReport(), "device missing: %s", dev->debug().c_str());
@@ -875,9 +851,7 @@ void mcrDS::run(void *data) {
   owb_rmt_driver_info *rmt_driver = new owb_rmt_driver_info;
   ds = owb_rmt_initialize(rmt_driver, W1_PIN, RMT_CHANNEL_0, RMT_CHANNEL_1);
 
-  _bus_mutex = xSemaphoreCreateMutex();
   _cmd_q = xQueueCreate(_max_queue_len, sizeof(mcrCmdSwitch_t *));
-  _ds_evg = xEventGroupCreate();
 
   // the command task will wait for the queue which is fed by MQTTin
   xTaskCreate(&runCommand, "mcrDScmd", (4 * 1024), this, _cmdTask.priority,
@@ -902,11 +876,11 @@ void mcrDS::run(void *data) {
   owb_use_crc(ds, true);
 
   ESP_LOGD(tagEngine(),
-           "created ow_rmt=%p bus_mutex=%p cmd_q=%p ds_evg=%p cmd_task=%p "
+           "created ow_rmt=%p cmd_q=%p cmd_task=%p "
            "convert_task=%p discover_task=%p report_task=%p",
-           ds, (void *)_bus_mutex, (void *)_cmd_q, (void *)_ds_evg,
-           (void *)_cmdTask.handle, (void *)_convertTask.handle,
-           (void *)_discoverTask.handle, (void *)_reportTask.handle);
+           ds, (void *)_cmd_q, (void *)_cmdTask.handle,
+           (void *)_convertTask.handle, (void *)_discoverTask.handle,
+           (void *)_reportTask.handle);
 
   cmdQueue_t cmd_q = {"mcrDS", "ds", _cmd_q};
   mcrCmdQueues::registerQ(cmd_q);
@@ -923,9 +897,9 @@ void mcrDS::run(void *data) {
   for (;;) {
     // signal to other tasks the dsEngine task is in it's run loop
     // this ensures all other set-up activities are complete before
-    xEventGroupSetBits(_ds_evg, _event_bits.engine_running);
+    engineRunning();
 
-    // do stuff here
+    // do high-level engine actions here (e.g. general housekeeping)
     vTaskDelayUntil(&(_engineTask.lastWake), _loop_frequency);
     runtimeMetricsReport();
   }
