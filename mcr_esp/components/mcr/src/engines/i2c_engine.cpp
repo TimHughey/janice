@@ -60,7 +60,7 @@ mcrI2c::mcrI2c() {
   // setLoggingLevel(tagReadSHT31(), ESP_LOG_INFO);
 
   _engine_task_name = tagEngine();
-  _engine_stack_size = 5 * 1024;
+  _engine_stack_size = 4 * 1024;
   _engine_priority = CONFIG_MCR_I2C_TASK_CORE_PRIORITY;
 
   if (mcr::Net::hardwareConfig() == I2C_MULTIPLEXER) {
