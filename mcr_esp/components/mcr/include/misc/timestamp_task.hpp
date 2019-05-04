@@ -60,6 +60,8 @@ private:
 
   const char *_watch_task_name = nullptr;
   TaskHandle_t _watch_task_handle = nullptr;
+  size_t _watch_task_stack_max = 0;
+  size_t _watch_task_stack_min = UINT32_MAX;
 
   // Task implementation
   void delay(int ms) { ::vTaskDelay(pdMS_TO_TICKS(ms)); }

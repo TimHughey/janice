@@ -91,9 +91,13 @@ void mcrTimestampTask::run(void *data) {
         UBaseType_t stack_high_water;
 
         stack_high_water = uxTaskGetStackHighWaterMark(_watch_task_handle);
+        _watch_task_stack_min =
+            std::min(_watch_task_stack_min, stack_high_water);
+        _watch_task_stack_max =
+            std::max(_watch_task_stack_max, stack_high_water);
 
-        ESP_LOGI(_watch_task_name, "task stack high water: %d",
-                 stack_high_water);
+        ESP_LOGI(_watch_task_name, "stack max(%d) min(%d)",
+                 _watch_task_stack_max, _watch_task_stack_min);
       }
     }
 
