@@ -30,6 +30,7 @@
 #include "devs/id.hpp"
 #include "readings/celsius.hpp"
 
+namespace mcr {
 typedef class humidityReading humidityReading_t;
 
 class humidityReading : public celsiusReading {
@@ -45,5 +46,5 @@ public:
 protected:
   void populateJSON(JsonDocument &doc);
 };
-
-#endif // temp_reading_h
+} // namespace mcr
+#endif

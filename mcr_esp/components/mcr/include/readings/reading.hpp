@@ -35,16 +35,27 @@
 // Possible future improvement
 // typedef std::unique_ptr<std::string> myString;
 
+namespace mcr {
+typedef enum {
+  BASE = 0,
+  ENGINE,
+  PH,
+  RAM,
+  REMOTE,
+  RELHUM,
+  SOIL,
+  STARTUP,
+  SWITCH,
+  TEMP,
+  TEXT
+} ReadingType_t;
+
 typedef class Reading Reading_t;
 class Reading {
 private:
-  // defines which values are populated
-  typedef enum { UNDEF, TEMP, RH, SWITCH, SOIL, PH } reading_t;
-
   // reading metadata (id, measured time and type)
   mcrDevID_t _id;
   time_t _mtime = time(nullptr); // time the reading was measureed
-  reading_t _type = UNDEF;
 
   // tracking info
   mcrRefID_t _refid;
@@ -60,6 +71,8 @@ private:
   char *_json = nullptr;
 
 protected:
+  ReadingType_t _type = BASE;
+
   void commonJSON(JsonDocument &doc);
   virtual void populateJSON(JsonDocument &doc){};
 
@@ -71,7 +84,6 @@ public:
   virtual ~Reading();
 
   std::string *json(char *buffer = nullptr, size_t len = 0);
-  // myString json(char *buffer = nullptr, size_t len = 0);
   void setCmdAck(time_t latency, mcrRefID_t &refid);
 
   void setCRCMismatches(int crc_mismatches) {
@@ -81,6 +93,9 @@ public:
   void setReadUS(int64_t read_us) { _read_us = read_us; }
   void setWriteErrors(int write_errors) { _write_errors = write_errors; }
   void setWriteUS(int64_t write_us) { _write_us = write_us; }
+
+  static const char *typeString(ReadingType_t index);
 };
+} // namespace mcr
 
 #endif // reading_h

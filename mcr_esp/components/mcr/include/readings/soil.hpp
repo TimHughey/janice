@@ -30,6 +30,7 @@
 #include "devs/id.hpp"
 #include "readings/celsius.hpp"
 
+namespace mcr {
 typedef class soilReading soilReading_t;
 
 class soilReading : public celsiusReading_t {
@@ -46,5 +47,6 @@ public:
 protected:
   virtual void populateJSON(JsonDocument &doc);
 };
+} // namespace mcr
 
 #endif // __cplusplus

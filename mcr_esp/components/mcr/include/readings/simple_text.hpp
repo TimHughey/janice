@@ -28,6 +28,7 @@
 
 #include "readings/reading.hpp"
 
+namespace mcr {
 typedef class textReading textReading_t;
 #define MAX_LEN 128
 
@@ -46,5 +47,6 @@ public:
 protected:
   virtual void populateJSON(JsonDocument &doc);
 };
+} // namespace mcr
 
 #endif // text_reading_hpp

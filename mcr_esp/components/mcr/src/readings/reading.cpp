@@ -18,8 +18,6 @@
     https://www.wisslanding.com
 */
 
-// #include <cstdlib>
-// #include <cstring>
 #include <sstream>
 #include <string>
 
@@ -31,6 +29,8 @@
 #include "net/mcr_net.hpp"
 #include "readings/reading.hpp"
 
+namespace mcr {
+
 Reading::Reading(time_t mtime) { _mtime = mtime; }
 
 Reading::Reading(const mcrDevID_t &id, time_t mtime) {
@@ -40,7 +40,7 @@ Reading::Reading(const mcrDevID_t &id, time_t mtime) {
 
 Reading::~Reading() {
   if (_json != nullptr) {
-    ESP_LOGD("Reading", "freeing _json (%p)", (void *)_json);
+    // ESP_LOGD("Reading", "freeing _json (%p)", (void *)_json);
     delete _json;
   }
 }
@@ -49,6 +49,7 @@ void Reading::commonJSON(JsonDocument &doc) {
   doc["host"] = mcr::Net::hostID();
   doc["name"] = mcr::Net::getName();
   doc["mtime"] = _mtime;
+  doc["type"] = typeString(_type);
 
   if (_id.valid()) {
     doc["device"] = _id.asString();
@@ -104,3 +105,12 @@ void Reading::setCmdAck(time_t latency, mcrRefID_t &refid) {
 
   _refid = refid;
 }
+
+static const char *__type_string[] = {
+    "base", "mcr_stat", "ph",   "stats", "remote_runtime", "relhum", "soil",
+    "boot", "switch",   "temp", "text"};
+
+const char *Reading::typeString(ReadingType_t index) {
+  return __type_string[index];
+}
+} // namespace mcr

@@ -28,6 +28,7 @@
 #include "devs/id.hpp"
 #include "readings/reading.hpp"
 
+namespace mcr {
 typedef class celsiusReading celsiusReading_t;
 
 class celsiusReading : public Reading {
@@ -36,12 +37,11 @@ private:
   float _celsius = 0.0;
 
 public:
-  // undefined reading
-  // celsiusReading(){};
   celsiusReading(const mcrDevID_t &id, time_t mtime, float celsius);
 
 protected:
   virtual void populateJSON(JsonDocument &doc);
 };
 
+} // namespace mcr
 #endif // __cplusplus

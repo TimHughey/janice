@@ -30,6 +30,7 @@
 #include "devs/id.hpp"
 #include "readings/reading.hpp"
 
+namespace mcr {
 typedef class positionsReading positionsReading_t;
 
 class positionsReading : public Reading {
@@ -48,5 +49,6 @@ public:
 protected:
   virtual void populateJSON(JsonDocument &doc);
 };
+} // namespace mcr
 
 #endif // positions_reading_h

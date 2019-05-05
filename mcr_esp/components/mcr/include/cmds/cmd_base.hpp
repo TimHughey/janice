@@ -35,6 +35,8 @@
 #include "cmds/cmd_types.hpp"
 #include "misc/mcr_types.hpp"
 
+using namespace mcr;
+
 typedef class mcrCmd mcrCmd_t;
 class mcrCmd {
 private:

@@ -27,14 +27,18 @@
 #include "readings/celsius.hpp"
 #include "readings/humidity.hpp"
 
+namespace mcr {
 humidityReading::humidityReading(const mcrDevID_t &id, time_t mtime,
                                  float celsius, float relhum)
     : celsiusReading(id, mtime, celsius) {
+  // NOTE: subclassing of this class is not supported so _type
+  // can be set directly without concern
+  _type = ReadingType_t::RELHUM;
   _relhum = relhum;
 }
 
 void humidityReading::populateJSON(JsonDocument &doc) {
-  celsiusReading::populateJSON(doc); // subclassing not supported so
-  doc["type"] = "relhum";            // the type is set here without any
-  doc["rh"] = _relhum;               // checks
+  celsiusReading::populateJSON(doc);
+  doc["rh"] = _relhum;
 }
+} // namespace mcr

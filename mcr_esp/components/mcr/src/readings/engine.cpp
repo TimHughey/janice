@@ -29,14 +29,15 @@ EngineReading::EngineReading(std::string engine, uint64_t discover_us,
                              uint64_t switch_cmd_us)
     : Reading(), engine_(engine), discover_us_(discover_us),
       convert_us_(convert_us), report_us_(report_us),
-      switch_cmd_us_(switch_cmd_us){};
+      switch_cmd_us_(switch_cmd_us) {
+  _type = ReadingType_t::ENGINE;
+};
 
 bool EngineReading::hasNonZeroValues() {
   return (discover_us_ > 0) || (convert_us_ > 0) || (report_us_ > 0);
 }
 
 void EngineReading::populateJSON(JsonDocument &doc) {
-  doc["type"] = "mcr_stat";
   doc["metric"] = "engine_phase";
   doc["engine"] = engine_;
   doc["discover_us"] = discover_us_;

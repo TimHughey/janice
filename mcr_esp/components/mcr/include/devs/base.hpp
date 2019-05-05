@@ -36,6 +36,8 @@
 #include "misc/mcr_types.hpp"
 #include "readings/readings.hpp"
 
+using namespace mcr;
+
 typedef class mcrDev mcrDev_t;
 class mcrDev {
 public:

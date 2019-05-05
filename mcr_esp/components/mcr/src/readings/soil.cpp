@@ -26,9 +26,12 @@
 #include "devs/id.hpp"
 #include "readings/soil.hpp"
 
+namespace mcr {
 soilReading::soilReading(const mcrDevID_t &id, time_t mtime, float celsius,
                          int soil_moisture)
     : celsiusReading(id, mtime, celsius) {
+  // override the reading type from the base class
+  _type = ReadingType_t::SOIL;
   _soil_moisture = soil_moisture;
 };
 
@@ -39,7 +42,6 @@ void soilReading::populateJSON(JsonDocument &doc) {
 
   celsiusReading::populateJSON(doc);
 
-  // override the reading type from the base class
-  doc["type"] = "soil";
   doc["cap"] = _soil_moisture;
 };
+} // namespace mcr

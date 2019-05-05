@@ -28,6 +28,7 @@
 
 #include "readings/reading.hpp"
 
+namespace mcr {
 typedef class ramUtilReading ramUtilReading_t;
 
 class ramUtilReading : public Reading {
@@ -44,5 +45,5 @@ public:
 protected:
   virtual void populateJSON(JsonDocument &doc);
 };
-
+} // namespace mcr
 #endif // ram_util_reading_h

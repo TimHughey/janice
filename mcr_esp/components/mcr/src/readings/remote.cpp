@@ -27,10 +27,11 @@
 
 #include "readings/remote.hpp"
 
+namespace mcr {
 remoteReading::remoteReading(uint32_t batt_mv)
     : Reading(time(nullptr)), batt_mv_(batt_mv) {
 
-  type_ = std::string("remote_runtime");
+  _type = ReadingType_t::REMOTE;
 
   ap_rc_ = esp_wifi_sta_get_ap_info(&ap_);
 
@@ -49,7 +50,6 @@ void remoteReading::populateJSON(JsonDocument &doc) {
            ap_.bssid[0], ap_.bssid[1], ap_.bssid[2], ap_.bssid[3], ap_.bssid[4],
            ap_.bssid[5]);
 
-  doc["type"] = type_.c_str();
   doc["bssid"] = bssid_str;
   doc["ap_rssi"] = ap_.rssi;
   doc["ap_pri_chan"] = ap_.primary;
@@ -58,3 +58,4 @@ void remoteReading::populateJSON(JsonDocument &doc) {
   doc["heap_min"] = heap_min_;
   doc["uptime_us"] = uptime_us_;
 };
+} // namespace mcr

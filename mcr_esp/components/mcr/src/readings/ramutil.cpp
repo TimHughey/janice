@@ -24,13 +24,15 @@
 
 #include "readings/ramutil.hpp"
 
+namespace mcr {
 ramUtilReading::ramUtilReading(uint32_t free_ram, time_t mtime)
     : Reading(mtime) {
+  _type = ReadingType_t::RAM;
   _free_ram = free_ram;
 }
 
 void ramUtilReading::populateJSON(JsonDocument &doc) {
-  doc["type"] = "stats";
   doc["freeram"] = _free_ram;
   doc["maxram"] = _max_ram;
 }
+} // namespace mcr

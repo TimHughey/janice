@@ -32,6 +32,7 @@
 #include "devs/id.hpp"
 #include "readings/reading.hpp"
 
+namespace mcr {
 typedef class remoteReading remoteReading_t;
 
 class remoteReading : public Reading {
@@ -43,14 +44,12 @@ private:
   uint32_t heap_min_;
   uint64_t uptime_us_;
 
-protected:
-  std::string type_;
-
 public:
   remoteReading(uint32_t batt_mv);
 
 protected:
   virtual void populateJSON(JsonDocument &doc);
 };
+} // namespace mcr
 
 #endif

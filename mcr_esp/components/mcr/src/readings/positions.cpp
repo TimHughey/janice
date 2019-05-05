@@ -26,9 +26,13 @@
 #include "devs/id.hpp"
 #include "readings/positions.hpp"
 
+namespace mcr {
 positionsReading::positionsReading(const mcrDevID_t &id, time_t mtime,
                                    uint32_t states, uint32_t pios)
     : Reading(id, mtime) {
+
+  _type = ReadingType_t::SWITCH;
+
   if (pios <= _max_pios) {
     _pios = pios;
     _states = states;
@@ -36,7 +40,6 @@ positionsReading::positionsReading(const mcrDevID_t &id, time_t mtime,
 }
 
 void positionsReading::populateJSON(JsonDocument &doc) {
-  doc["type"] = "switch";
   doc["pio_count"] = _pios;
 
   JsonArray states = doc.createNestedArray("states");
@@ -49,3 +52,4 @@ void positionsReading::populateJSON(JsonDocument &doc) {
     item["state"] = pio_state;
   }
 }
+} // namespace mcr

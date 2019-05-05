@@ -26,16 +26,20 @@
 #include "devs/id.hpp"
 #include "readings/celsius.hpp"
 
+namespace mcr {
+
 celsiusReading::celsiusReading(const mcrDevID_t &id, time_t mtime,
                                float celsius)
     : Reading(id, mtime) {
   _celsius = celsius;
+
+  // set the type of reading if it hasn't already been set
+  // since this class can be subclassed
+  _type = (_type == BASE) ? ReadingType_t::TEMP : _type;
 };
 
 void celsiusReading::populateJSON(JsonDocument &doc) {
-  if (!doc.containsKey("type")) { // since this could be subclassed we
-    doc["type"] = "temp";         // need to check that the
-  }                               // type hasn't been set
   doc["tc"] = _celsius;
   doc["tf"] = _celsius * 1.8 + 32.0;
 };
+} // namespace mcr

@@ -32,6 +32,7 @@
 #include "devs/id.hpp"
 #include "readings/remote.hpp"
 
+namespace mcr {
 typedef class startupReading startupReading_t;
 
 class startupReading : public remoteReading {
@@ -46,5 +47,6 @@ public:
 protected:
   virtual void populateJSON(JsonDocument &doc);
 };
+} // namespace mcr
 
 #endif // startup_reading_hpp

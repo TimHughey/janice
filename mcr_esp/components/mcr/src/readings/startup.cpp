@@ -26,10 +26,12 @@
 
 #include "readings/startup.hpp"
 
+namespace mcr {
 startupReading::startupReading(uint32_t batt_mv) : remoteReading(batt_mv) {
+  _type = ReadingType_t::STARTUP;
+
   app_desc_ = esp_ota_get_app_description();
 
-  type_ = std::string("boot");
   reset_reason_ = decodeResetReason(esp_reset_reason());
 
   ESP_LOGI("mcrStartup", "reason [%s]", reset_reason_.c_str());
@@ -109,3 +111,4 @@ startupReading::decodeResetReason(esp_reset_reason_t reason) {
 
   return _reason;
 }
+} // namespace mcr

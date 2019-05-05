@@ -24,7 +24,10 @@
 
 #include "readings/simple_text.hpp"
 
+namespace mcr {
 textReading::textReading(const char *text) {
+
+  _type = ReadingType_t::TEXT;
 
   if (text == nullptr) {
     _text = nullptr;
@@ -39,7 +42,7 @@ textReading::~textReading() {
 }
 
 void textReading::populateJSON(JsonDocument &doc) {
-  doc["type"] = "text";
   doc["text"] = _text;
   doc["log"] = true;
 }
+} // namespace mcr

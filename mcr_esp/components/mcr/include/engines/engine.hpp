@@ -41,6 +41,8 @@
 #include "protocols/mqtt.hpp"
 #include "readings/readings.hpp"
 
+using namespace mcr;
+
 typedef std::map<std::string, std::string> mcrEngineTagMap_t;
 typedef std::pair<std::string, std::string> mcrEngineTagItem_t;
 
