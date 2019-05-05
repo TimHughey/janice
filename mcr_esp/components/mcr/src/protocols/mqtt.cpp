@@ -229,7 +229,8 @@ void mcrMQTT::outboundMsg() {
       ESP_LOGD(tagOutbound(), "publish msg took %lluus", publish_us);
     }
 
-    entry = (mqttOutMsg_t *)xRingbufferReceive(_rb_out, &len, 0);
+    entry =
+        (mqttOutMsg_t *)xRingbufferReceive(_rb_out, &len, pdMS_TO_TICKS(20));
   }
 }
 
