@@ -18,6 +18,7 @@
      https://www.wisslanding.com
  */
 
+#include <algorithm>
 #include <cstdlib>
 #include <cstring>
 #include <ios>
@@ -115,40 +116,48 @@ void mcrDev::crcMismatch() { _crc_mismatches++; }
 void mcrDev::readFailure() { _read_errors++; }
 void mcrDev::writeFailure() { _write_errors++; }
 
+// this is a fairly expensive method, avoid production use
 const unique_ptr<char[]> mcrDev::debug() {
-  // std::ostringstream debug_str;
+  auto const max_len = 319;
 
-  // debug_str << "mcrDev(" << _addr.debug() << " id=" << (const char *)id()
-  //           << " desc=" << description().c_str();
-  //
-  // if (readUS() > 0) {
-  //   debug_str << " rus=" << readUS();
-  // }
-  //
-  // if (writeUS() > 0) {
-  //   debug_str << " wus=" << writeUS();
-  // }
-  //
-  // if (_crc_mismatches > 0) {
-  //   debug_str << " crc_mismatches=" << _crc_mismatches;
-  // }
-  //
-  // if (_read_errors > 0) {
-  //   debug_str << " read_errors=" << _read_errors;
-  // }
-  //
-  // if (_write_errors > 0) {
-  //   debug_str << " write_errors=" << _write_errors;
-  // }
-  //
-  // debug_str << ")";
-  //
-  // return debug_str.str();
+  // allocate from the heap to minimize task stack impact
+  unique_ptr<char[]> debug_str(new char[max_len + 1]);
+  unique_ptr<statsMap_t> map_ptr(new statsMap_t);
 
-  static const char *disabled = "debug disabled";
-  unique_ptr<char[]> debug_str(new char[strlen(disabled) + 1]);
+  // get pointers to increase code readability
+  char *str = debug_str.get();
+  statsMap_t *map = map_ptr.get();
 
-  strcpy(debug_str.get(), disabled);
+  // null terminate the char array for use as string buffer
+  str[0] = 0x00;
+  auto curr_len = strlen(str);
+
+  snprintf(str, max_len, "mcrDev(%s id(%s) desc(%s)", _addr.debug().get(),
+           id().c_str(), description().c_str());
+
+  map->insert({"crc_fail", _crc_mismatches});
+  map->insert({"err_read", _read_errors});
+  map->insert({"err_write", _write_errors});
+  map->insert({"us_read", readUS()});
+  map->insert({"us_write", writeUS()});
+
+  // append stats that are non-zero
+  for_each(map->begin(), map->end(), [this, str](statEntry_t item) {
+    std::string &metric = item.first;
+    uint32_t val = item.second;
+
+    if (val > 0) {
+      auto curr_len = strlen(str);
+      char *s = str + curr_len;
+      auto max = max_len - curr_len;
+
+      snprintf(s, max, " %s(%u)", metric.c_str(), val);
+    }
+  });
+
+  // append the closing parenenthesis ')' for readability
+  curr_len = strlen(str);
+  snprintf(str + curr_len, (max_len - curr_len), ")");
 
   return move(debug_str);
 }

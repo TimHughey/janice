@@ -51,8 +51,9 @@ static mcrI2c_t *__singleton__ = nullptr;
 
 mcrI2c::mcrI2c() {
   setTags(localTags());
-  setLoggingLevel(ESP_LOG_WARN);
-  setLoggingLevel(tagEngine(), ESP_LOG_INFO);
+  // setLoggingLevel(ESP_LOG_WARN);
+  setLoggingLevel(ESP_LOG_DEBUG);
+  // setLoggingLevel(tagEngine(), ESP_LOG_INFO);
   // setLoggingLevel(tagDetectDev(), ESP_LOG_INFO);
   // setLoggingLevel(tagDiscover(), ESP_LOG_INFO);
   // setLoggingLevel(tagReport(), ESP_LOG_INFO);

@@ -81,18 +81,12 @@ bool mcrCmdSwitch::sendToQueue(cmdQueue_t &cmd_q) {
 }
 
 const unique_ptr<char[]> mcrCmdSwitch::debug() {
-  static const char *disabled = "debug disabled";
-  unique_ptr<char[]> debug_str(new char[strlen(disabled) + 1]);
+  const auto max_len = 127;
+  unique_ptr<char[]> debug_str(new char[max_len + 1]);
 
-  strcpy(debug_str.get(), disabled);
-
-  // std::ostringstream debug_str;
-  //
-  // debug_str << mcrCmd::debug() << " mcrCmdSwitch(" << _dev_id << " mask=0b"
-  //           << _mask << " state=0b" << _state << ((_ack) ? " ACK" : "NOACK")
-  //           << ")";
-
-  // return debug_str.c_str();
+  snprintf(debug_str.get(), max_len, " mcrCmdSwitch(%s mask=0b%s state=0b%s %s",
+           _dev_id.c_str(), _mask.to_string().c_str(),
+           _state.to_string().c_str(), ((_ack) ? "ACK" : ""));
 
   return move(debug_str);
 }

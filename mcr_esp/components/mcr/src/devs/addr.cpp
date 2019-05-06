@@ -64,23 +64,24 @@ bool mcrDevAddr::isValid() {
 }
 
 const std::unique_ptr<char[]> mcrDevAddr::debug() {
-  static const char *disabled = "debug disabled";
-  unique_ptr<char[]> debug_str(new char[strlen(disabled) + 1]);
+  auto const max_len = 63;
+  unique_ptr<char[]> debug_str(new char[max_len + 1]);
+  char *str = debug_str.get();
+  str[0] = 0x00; // terminate the char array for string use
+  auto curr_len = strlen(str);
 
-  strcpy(debug_str.get(), disabled);
+  snprintf(str, max_len, "mcrDevAddr(0x");
 
+  // append each of the address bytes
+  for_each(_addr.begin(), _addr.end(), [this, str](uint8_t byte) {
+    auto curr_len = strlen(str);
+    snprintf(str + curr_len, (max_len - curr_len), "%02x", byte);
+  });
+
+  // append the closing paren ')' for readability
+  curr_len = strlen(str);
+  snprintf(str + curr_len, (max_len - curr_len), ")");
+
+  // move (return) the newly created string to the caller
   return move(debug_str);
-  // std::stringstream debug_str;
-  //
-  // debug_str << "mcrDevAddr(0x";
-  // for (auto it = _addr.begin(); it != _addr.end(); it++) {
-  //   debug_str << std::setfill('0') << std::setw(sizeof(uint8_t) * 2) <<
-  //   std::hex
-  //             << (int)*it;
-  // };
-  //
-  // debug_str << ")";
-  //
-  // return debug_str.str();
-  // return debug_str;
 }

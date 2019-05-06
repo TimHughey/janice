@@ -23,6 +23,7 @@
 
 #include <cstdlib>
 #include <ios>
+#include <map>
 #include <memory>
 #include <string>
 #include <tuple>
@@ -110,6 +111,9 @@ private:
   std::string _id;    // unique identifier of this device
   mcrDevAddr_t _addr; // address of this device
   std::string _desc;
+
+  typedef std::pair<std::string, uint32_t> statEntry_t;
+  typedef std::map<std::string, uint32_t> statsMap_t;
 
 protected:
   static const uint32_t _addr_len = mcrDevAddr::max_addr_len;
