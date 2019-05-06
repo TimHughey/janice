@@ -513,7 +513,6 @@ protected:
 
     // null terminate the char array for use as string buffer
     str[0] = 0x00;
-    auto curr_len = strlen(str);
 
     map->insert({"convert", &(metrics.convert)});
     map->insert({"discover", &(metrics.discover)});
