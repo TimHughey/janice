@@ -23,7 +23,7 @@
 
 #include <bitset>
 #include <cstdlib>
-#include <sstream>
+#include <memory>
 #include <string>
 
 #include <esp_timer.h>
@@ -34,12 +34,14 @@
 #include "cmds/cmd_base.hpp"
 #include "misc/mcr_types.hpp"
 
+using std::unique_ptr;
+
 typedef std::bitset<8> cmd_bitset_t;
 
 typedef class mcrCmdSwitch mcrCmdSwitch_t;
 class mcrCmdSwitch : public mcrCmd {
 private:
-  mcrDevID_t _dev_id;
+  std::string _dev_id;
   cmd_bitset_t _mask;
   cmd_bitset_t _state;
   mcrRefID_t _refid;
@@ -50,13 +52,13 @@ public:
       : mcrCmd(mcrCmdType::setswitch), _dev_id(cmd->_dev_id), _mask(cmd->_mask),
         _state(cmd->_state), _refid(cmd->_refid), _ack(cmd->_ack){};
   mcrCmdSwitch(JsonDocument &doc);
-  mcrCmdSwitch(const mcrDevID_t &id, cmd_bitset_t mask, cmd_bitset_t state)
+  mcrCmdSwitch(const std::string &id, cmd_bitset_t mask, cmd_bitset_t state)
       : mcrCmd(mcrCmdType::setswitch), _dev_id(id), _mask(mask),
         _state(state){};
 
   void ack(bool ack) { _ack = ack; }
   bool ack() { return _ack; }
-  const mcrDevID_t &dev_id() const { return _dev_id; };
+  const std::string &dev_id() const { return _dev_id; };
   cmd_bitset_t mask() { return _mask; };
   bool matchPrefix(const char *prefix);
   bool process();
@@ -65,7 +67,7 @@ public:
   size_t size() { return sizeof(mcrCmdSwitch_t); };
   cmd_bitset_t state() { return _state; };
 
-  const std::string debug();
+  const unique_ptr<char[]> debug();
 };
 
 #endif

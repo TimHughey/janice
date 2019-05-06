@@ -29,7 +29,6 @@
 #include <sys/time.h>
 #include <time.h>
 
-#include "devs/id.hpp"
 #include "misc/mcr_types.hpp"
 
 // Possible future improvement
@@ -54,7 +53,7 @@ typedef class Reading Reading_t;
 class Reading {
 private:
   // reading metadata (id, measured time and type)
-  mcrDevID_t _id;
+  std::string _id;
   time_t _mtime = time(nullptr); // time the reading was measureed
 
   // tracking info
@@ -79,7 +78,7 @@ protected:
 public:
   // default constructor, Reading type undefined
   Reading(){};
-  Reading(const mcrDevID_t &id, time_t mtime = time(nullptr));
+  Reading(const std::string &id, time_t mtime = time(nullptr));
   Reading(time_t mtime);
   virtual ~Reading();
 

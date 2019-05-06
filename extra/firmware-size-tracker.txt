@@ -1,0 +1,31 @@
+Mon May  6 00:07:49 EDT 2019
+Toolchain path: /Users/thughey/devel/xtensa-esp32-elf/bin/xtensa-esp32-elf-gcc
+Toolchain version: crosstool-ng-1.22.0-80-g6c4433a
+Compiler version: 5.2.0
+App "mcr_esp" version: janice2.01.01-2-gf5ad153
+Python requirements from /Users/thughey/devel/esp-idf/requirements.txt are satisfied.
+Total sizes:
+ DRAM .data size:   14012 bytes
+ DRAM .bss  size:   28752 bytes
+Used static DRAM:   42764 bytes ( 137972 available, 23.7% used)
+Used static IRAM:   72316 bytes (  58756 available, 55.2% used)
+      Flash code:  793838 bytes
+    Flash rodata:  227020 bytes
+Total image size:~1107186 bytes (.bin may be padded larger)
+
+Mon May  6 01:46:43 EDT 2019 [AFTER REMOVAL OF STREAM STRING + FORMATTING]
+Toolchain path: /Users/thughey/devel/xtensa-esp32-elf/bin/xtensa-esp32-elf-gcc
+Toolchain version: crosstool-ng-1.22.0-80-g6c4433a
+Compiler version: 5.2.0
+App "mcr_esp" version: janice2.01.01-2-gf5ad153-dirty
+Python requirements from /Users/thughey/devel/esp-idf/requirements.txt are satisfied.
+Total sizes:
+ DRAM .data size:   13872 bytes
+ DRAM .bss  size:   24496 bytes
+Used static DRAM:   38368 bytes ( 142368 available, 21.2% used)
+Used static IRAM:   72316 bytes (  58756 available, 55.2% used)
+      Flash code:  656178 bytes
+    Flash rodata:  165288 bytes
+Total image size:~ 907654 bytes (.bin may be padded larger)
+
+

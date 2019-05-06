@@ -23,12 +23,11 @@
 #include <sys/time.h>
 #include <time.h>
 
-#include "devs/id.hpp"
 #include "readings/celsius.hpp"
 
 namespace mcr {
 
-celsiusReading::celsiusReading(const mcrDevID_t &id, time_t mtime,
+celsiusReading::celsiusReading(const std::string &id, time_t mtime,
                                float celsius)
     : Reading(id, mtime) {
   _celsius = celsius;

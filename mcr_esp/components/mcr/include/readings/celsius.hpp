@@ -25,7 +25,6 @@
 #include <sys/time.h>
 #include <time.h>
 
-#include "devs/id.hpp"
 #include "readings/reading.hpp"
 
 namespace mcr {
@@ -37,7 +36,7 @@ private:
   float _celsius = 0.0;
 
 public:
-  celsiusReading(const mcrDevID_t &id, time_t mtime, float celsius);
+  celsiusReading(const std::string &id, time_t mtime, float celsius);
 
 protected:
   virtual void populateJSON(JsonDocument &doc);

@@ -1,6 +1,9 @@
 
 #include "cmds/cmd_base.hpp"
 
+using std::move;
+using std::unique_ptr;
+
 // static const char *TAG = "mcrCmd";
 static const char *k_mtime = "mtime";
 static const char *k_cmd = "cmd";
@@ -31,13 +34,15 @@ void mcrCmd::populate(JsonDocument &doc) {
   }
 }
 
-const std::string mcrCmd::debug() {
-  std::ostringstream debug_str;
-  float latency_ms = (float)latency() / 1000.0;
-  float parse_ms = (float)_parse_us / 1000.0;
-  float create_ms = (float)_create_us / 1000.0;
+const unique_ptr<char[]> mcrCmd::debug() {
 
-  debug_str << "mcrCmd(latency=" << latency_ms << "ms parse=" << parse_ms
-            << "ms create=" << create_ms << "ms)";
-  return debug_str.str();
+  const auto max_buf = 128;
+  unique_ptr<char[]> debug_str(new char[max_buf]);
+
+  snprintf(debug_str.get(), max_buf,
+           "mcrCmd(latency=%02fms parse=%02fms create=%02fms",
+           ((float)latency() / 1000.0), ((float)_parse_us / 1000.0),
+           ((float)_create_us / 1000.0));
+
+  return move(debug_str);
 }

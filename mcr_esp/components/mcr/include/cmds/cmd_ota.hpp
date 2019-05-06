@@ -22,7 +22,7 @@
 #define mcr_cmd_ota_h
 
 #include <cstdlib>
-#include <sstream>
+#include <memory>
 #include <string>
 
 #include <esp_http_client.h>
@@ -37,6 +37,8 @@
 #include "cmds/cmd_base.hpp"
 #include "cmds/cmd_types.hpp"
 #include "misc/mcr_types.hpp"
+
+using std::unique_ptr;
 
 typedef class mcrCmdOTA mcrCmdOTA_t;
 class mcrCmdOTA : public mcrCmd {
@@ -62,7 +64,7 @@ public:
   bool process();
   uint32_t reboot_delay_ms() { return _reboot_delay_ms; };
 
-  const std::string debug();
+  const unique_ptr<char[]> debug();
 };
 
 #endif

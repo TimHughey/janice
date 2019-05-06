@@ -22,7 +22,7 @@
 #define mcr_cmd_network_h
 
 #include <cstdlib>
-#include <sstream>
+#include <memory>
 #include <string>
 
 #include <esp_timer.h>
@@ -34,6 +34,8 @@
 #include "cmds/cmd_base.hpp"
 #include "cmds/cmd_types.hpp"
 #include "misc/mcr_types.hpp"
+
+using std::unique_ptr;
 
 typedef class mcrCmdNetwork mcrCmdNetwork_t;
 class mcrCmdNetwork : public mcrCmd {
@@ -47,7 +49,7 @@ public:
 
   bool process();
   virtual size_t size() { return sizeof(mcrCmdNetwork_t); };
-  const std::string debug();
+  const unique_ptr<char[]> debug();
 };
 
 #endif

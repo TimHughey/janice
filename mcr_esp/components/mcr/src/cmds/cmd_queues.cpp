@@ -1,3 +1,4 @@
+#include <string.h>
 
 #include "cmds/cmd_queues.hpp"
 
@@ -17,4 +18,12 @@ void mcrCmdQueues::registerQ(cmdQueue_t &cmd_q) {
            cmd_q.prefix, (void *)cmd_q.q);
 
   instance()->add(cmd_q);
+}
+
+const unique_ptr<char[]> mcrCmdQueues::debug() {
+  unique_ptr<char[]> debug_str(new char[strlen(TAG) + 1]);
+
+  strcpy(debug_str.get(), TAG);
+
+  return move(debug_str);
 }

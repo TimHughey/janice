@@ -23,12 +23,11 @@
 #include <sys/time.h>
 #include <time.h>
 
-#include "devs/id.hpp"
 #include "readings/celsius.hpp"
 #include "readings/humidity.hpp"
 
 namespace mcr {
-humidityReading::humidityReading(const mcrDevID_t &id, time_t mtime,
+humidityReading::humidityReading(const std::string &id, time_t mtime,
                                  float celsius, float relhum)
     : celsiusReading(id, mtime, celsius) {
   // NOTE: subclassing of this class is not supported so _type

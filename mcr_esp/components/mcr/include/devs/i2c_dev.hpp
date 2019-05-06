@@ -21,10 +21,12 @@
 #ifndef i2c_dev_h
 #define i2c_dev_h
 
-#include <sstream>
+#include <memory>
 #include <string>
 
 #include "devs/base.hpp"
+
+using std::unique_ptr;
 
 typedef class i2cDev i2cDev_t;
 
@@ -34,6 +36,7 @@ public:
   static const char *i2cDevDesc(uint8_t addr);
 
 private:
+  std::string _external_name; // name used to report externally
   static const uint32_t _i2c_max_addr_len = 1;
   static const uint32_t _i2c_max_id_len = 30;
   static const uint32_t _i2c_addr_byte = 0;
@@ -50,10 +53,10 @@ public:
   uint8_t readAddr();
   uint8_t writeAddr();
 
-  const mcrDevID_t &externalName();
+  const char *externalName();
 
   // info / debug functions
-  const std::string debug();
+  const unique_ptr<char[]> debug();
 };
 
 #endif // i2c_dev_h

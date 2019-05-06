@@ -22,7 +22,7 @@
 #define mcr_cmd_queues_h
 
 #include <cstdlib>
-#include <sstream>
+#include <memory>
 #include <string>
 
 #include <esp_log.h>
@@ -33,6 +33,8 @@
 #include <time.h>
 
 #include "misc/mcr_types.hpp"
+
+using std::unique_ptr;
 
 typedef class mcrCmdQueues mcrCmdQueues_t;
 class mcrCmdQueues {
@@ -48,7 +50,7 @@ public:
   std::vector<cmdQueue_t> &queues() { return _queues; };
   static void registerQ(cmdQueue_t &cmd_q);
 
-  const std::string debug() { return std::string("mcrCmdQueues"); };
+  const unique_ptr<char[]> debug();
 };
 
 #endif

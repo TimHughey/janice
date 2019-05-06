@@ -27,7 +27,6 @@
 #include <sys/time.h>
 #include <time.h>
 
-#include "devs/id.hpp"
 #include "readings/celsius.hpp"
 
 namespace mcr {
@@ -41,7 +40,7 @@ private:
 public:
   // undefined reading
   // celsiusReading(){};
-  soilReading(const mcrDevID_t &id, time_t mtime, float celsius,
+  soilReading(const std::string &id, time_t mtime, float celsius,
               int soil_moisture);
 
 protected:

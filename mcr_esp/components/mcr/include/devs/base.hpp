@@ -23,7 +23,7 @@
 
 #include <cstdlib>
 #include <ios>
-#include <sstream>
+#include <memory>
 #include <string>
 #include <tuple>
 
@@ -32,10 +32,10 @@
 #include <time.h>
 
 #include "devs/addr.hpp"
-#include "devs/id.hpp"
 #include "misc/mcr_types.hpp"
 #include "readings/readings.hpp"
 
+using std::unique_ptr;
 using namespace mcr;
 
 typedef class mcrDev mcrDev_t;
@@ -44,14 +44,12 @@ public:
   mcrDev() {} // all values are defaulted in definition of class(es)
 
   mcrDev(mcrDevAddr_t &addr);
-  mcrDev(const mcrDevID_t &id, mcrDevAddr_t &addr);
+  mcrDev(const std::string &id, mcrDevAddr_t &addr);
   // mcrDev(const mcrDev_t &dev); // copy constructor
   virtual ~mcrDev(); // base class will handle deleting the reading, if needed
 
   // operators
-  // mcrDev_t &operator=(mcrDev_t &dev);
-  // bool operator==(mcrDevID_t &rhs) const;
-  bool operator==(mcrDev_t *rhs) const; // based entirely on mcrDevID
+  bool operator==(mcrDev_t *rhs) const;
 
   static uint32_t idMaxLen();
   bool isValid();
@@ -65,14 +63,15 @@ public:
   mcrDevAddr_t &addr();
   uint8_t *addrBytes();
 
-  void setID(const mcrDevID_t &new_id);
-  const mcrDevID_t &id() const { return _id; };
+  void setID(const std::string &new_id);
+  void setID(char *new_id);
+  const std::string &id() const { return _id; };
 
   // description of device
   void setDescription(const std::string &desc) { _desc = desc; };
   void setDescription(const char *desc) { _desc = desc; };
   const std::string &description() const { return _desc; };
-  virtual const mcrDevID_t &externalName() const { return _id; };
+  virtual const char *externalName() const { return _id.c_str(); };
 
   void setReading(Reading_t *reading);
   Reading_t *reading();
@@ -103,12 +102,12 @@ public:
   // int readErrorCount();
   // int writeErrorCount();
 
-  virtual const std::string debug();
-  virtual const std::string to_string(mcrDev_t const &);
+  virtual const unique_ptr<char[]> debug();
+  // virtual const std::string to_string(mcrDev_t const &);
   // virtual void debug(char *buff, size_t len);
 
 private:
-  mcrDevID_t _id;     // unique identifier of this device
+  std::string _id;    // unique identifier of this device
   mcrDevAddr_t _addr; // address of this device
   std::string _desc;
 
@@ -135,9 +134,6 @@ protected:
   int _read_errors = 0;
 
   int _write_errors = 0;
-
-  mcrDevID_t _external_name; // name used when reporting externally
-  void setExternalName(const mcrDevID_t &ext_name);
 };
 
 #endif // mcrDev_h

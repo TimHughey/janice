@@ -27,7 +27,6 @@
 #include <sys/time.h>
 #include <time.h>
 
-#include "devs/id.hpp"
 #include "readings/reading.hpp"
 
 namespace mcr {

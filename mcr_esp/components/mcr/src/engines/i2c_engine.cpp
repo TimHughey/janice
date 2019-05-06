@@ -38,7 +38,6 @@
 
 #include "devs/addr.hpp"
 #include "devs/i2c_dev.hpp"
-#include "devs/id.hpp"
 #include "engines/engine.hpp"
 #include "engines/i2c_engine.hpp"
 #include "misc/mcr_nvs.hpp"
@@ -86,7 +85,7 @@ esp_err_t mcrI2c::busRead(i2cDev_t *dev, uint8_t *buff, uint32_t len,
   if (prev_esp_rc != ESP_OK) {
     ESP_LOGD(tagEngine(),
              "aborted bus_read(%s, ...) invoked with prev_esp_rc = %s",
-             dev->debug().c_str(), esp_err_to_name(prev_esp_rc));
+             dev->debug().get(), esp_err_to_name(prev_esp_rc));
     return prev_esp_rc;
   }
 
@@ -111,10 +110,10 @@ esp_err_t mcrI2c::busRead(i2cDev_t *dev, uint8_t *buff, uint32_t len,
   if (esp_rc == ESP_OK) {
     // TODO: set to debug for production release
     ESP_LOGD(tagEngine(), "ESP_OK: bus_read(%s, %p, %d, %s)",
-             dev->debug().c_str(), buff, len, esp_err_to_name(prev_esp_rc));
+             dev->debug().get(), buff, len, esp_err_to_name(prev_esp_rc));
   } else {
     ESP_LOGD(tagEngine(), "%s: bus_read(%s, %p, %d, %s)",
-             esp_err_to_name(esp_rc), dev->debug().c_str(), buff, len,
+             esp_err_to_name(esp_rc), dev->debug().get(), buff, len,
              esp_err_to_name(prev_esp_rc));
     dev->readFailure();
   }
@@ -130,7 +129,7 @@ esp_err_t mcrI2c::busWrite(i2cDev_t *dev, uint8_t *bytes, uint32_t len,
   if (prev_esp_rc != ESP_OK) {
     ESP_LOGD(tagEngine(),
              "aborted bus_write(%s, ...) invoked with prev_esp_rc = %s",
-             dev->debug().c_str(), esp_err_to_name(prev_esp_rc));
+             dev->debug().get(), esp_err_to_name(prev_esp_rc));
     return prev_esp_rc;
   }
 
@@ -150,10 +149,10 @@ esp_err_t mcrI2c::busWrite(i2cDev_t *dev, uint8_t *bytes, uint32_t len,
 
   if (esp_rc == ESP_OK) {
     ESP_LOGD(tagEngine(), "ESP_OK: bus_write(%s, %p, %d, %s)",
-             dev->debug().c_str(), bytes, len, esp_err_to_name(prev_esp_rc));
+             dev->debug().get(), bytes, len, esp_err_to_name(prev_esp_rc));
   } else {
     ESP_LOGD(tagEngine(), "%s: bus_write(%s, %p, %d, %s)",
-             esp_err_to_name(esp_rc), dev->debug().c_str(), bytes, len,
+             esp_err_to_name(esp_rc), dev->debug().get(), bytes, len,
              esp_err_to_name(prev_esp_rc));
     dev->writeFailure();
   }
@@ -184,7 +183,7 @@ bool mcrI2c::detectDevice(i2cDev_t *dev) {
   //                             0xa2};
   uint8_t detect_cmd[] = {dev->devAddr()};
 
-  ESP_LOGD(tagDetectDev(), "looking for %s", dev->debug().c_str());
+  ESP_LOGD(tagDetectDev(), "looking for %s", dev->debug().get());
 
   switch (dev->devAddr()) {
 
@@ -209,7 +208,7 @@ bool mcrI2c::detectDevice(i2cDev_t *dev) {
     rc = true;
   } else {
 
-    ESP_LOGD(tagEngine(), "%s not found (%s)", dev->debug().c_str(),
+    ESP_LOGD(tagEngine(), "%s not found (%s)", dev->debug().get(),
              espError(esp_rc));
   }
 
@@ -229,12 +228,12 @@ bool mcrI2c::detectDevicesOnBus(int bus) {
       if (detectDevice(&dev)) {
 
         if (i2cDev_t *found = (i2cDev_t *)justSeenDevice(dev)) {
-          ESP_LOGD(tagDiscover(), "already know %s", found->debug().c_str());
+          ESP_LOGD(tagDiscover(), "already know %s", found->debug().get());
         } else { // device was not known, must add
           i2cDev_t *new_dev = new i2cDev(dev);
 
           ESP_LOGD(tagDiscover(), "new (%p) %s", (void *)new_dev,
-                   dev.debug().c_str());
+                   dev.debug().get());
           addDevice(new_dev);
         }
       }
@@ -349,7 +348,7 @@ mcrI2c_t *mcrI2c::instance() {
 uint32_t mcrI2c::maxBuses() { return _max_buses; }
 
 void mcrI2c::printUnhandledDev(i2cDev_t *dev) {
-  ESP_LOGW(tagEngine(), "unhandled dev %s", dev->debug().c_str());
+  ESP_LOGW(tagEngine(), "unhandled dev %s", dev->debug().get());
 }
 
 bool mcrI2c::useMultiplexer() { return _use_multiplexer; }
@@ -415,7 +414,7 @@ bool mcrI2c::readAM2315(i2cDev_t *dev, bool wake) {
 
       rc = true;
     } else { // crc did not match
-      ESP_LOGW(tagReadAM2315(), "crc mismatch for %s", dev->debug().c_str());
+      ESP_LOGW(tagReadAM2315(), "crc mismatch for %s", dev->debug().get());
       dev->crcMismatch();
     }
   }
@@ -567,7 +566,7 @@ bool mcrI2c::readSHT31(i2cDev_t *dev) {
 
       rc = true;
     } else { // crc did not match
-      ESP_LOGW(tagReadSHT31(), "crc mismatch for %s", dev->debug().c_str());
+      ESP_LOGW(tagReadSHT31(), "crc mismatch for %s", dev->debug().get());
       dev->crcMismatch();
     }
   }
@@ -610,15 +609,15 @@ void mcrI2c::report(void *task_data) {
 
         if (rc) {
           publish(dev);
-          ESP_LOGI(tagReport(), "%s success", dev->debug().c_str());
+          ESP_LOGI(tagReport(), "%s success", dev->debug().get());
         } else {
-          ESP_LOGE(tagReport(), "%s failed", dev->debug().c_str());
+          ESP_LOGE(tagReport(), "%s failed", dev->debug().get());
           // hardReset();
         }
       }
     } else {
       if (dev->missing()) {
-        ESP_LOGW(tagReport(), "device missing: %s", dev->debug().c_str());
+        ESP_LOGW(tagReport(), "device missing: %s", dev->debug().get());
       }
     }
   });
@@ -676,12 +675,12 @@ esp_err_t mcrI2c::requestData(const char *TAG, i2cDev_t *dev, uint8_t *send,
   if (esp_rc == ESP_OK) {
     // TODO: set to debug for production release
     ESP_LOGD(TAG, "ESP_OK: requestData(%s, %p, %d, %p, %d, %s, %d)",
-             dev->debug().c_str(), send, send_len, recv, recv_len,
+             dev->debug().get(), send, send_len, recv, recv_len,
              esp_err_to_name(prev_esp_rc), timeout);
   } else {
     ESP_LOGE(TAG, "%s: requestData(%s, %p, %d, %p, %d, %s, %d)",
-             esp_err_to_name(esp_rc), dev->debug().c_str(), send, send_len,
-             recv, recv_len, esp_err_to_name(prev_esp_rc), timeout);
+             esp_err_to_name(esp_rc), dev->debug().get(), send, send_len, recv,
+             recv_len, esp_err_to_name(prev_esp_rc), timeout);
     dev->readFailure();
   }
 

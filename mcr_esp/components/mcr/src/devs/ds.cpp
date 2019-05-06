@@ -20,7 +20,7 @@
 
 #include <cstdlib>
 #include <cstring>
-#include <sstream>
+// #include <sstream>
 #include <string>
 
 #include <esp_log.h>
@@ -53,7 +53,7 @@ dsDev::dsDev(mcrDevAddr_t &addr, bool power) : mcrDev(addr) {
           addr[1], addr[2], addr[3],  // byte 1-3: serial number
           addr[4], addr[5], addr[6]); // byte 4-6: serial number
 
-  const mcrDevID_t dev_id = mcrDevID(buff);
+  const std::string dev_id = buff;
   setID(dev_id);
 };
 
@@ -176,11 +176,12 @@ bool dsDev::validAddress(mcrDevAddr_t &addr) {
   return rc;
 }
 
-const std::string dsDev::debug() {
-  std::ostringstream debug_str;
+const unique_ptr<char[]> dsDev::debug() {
+  const auto max_len = 63;
+  unique_ptr<char[]> debug_str(new char[max_len + 1]);
 
-  debug_str << "dsDev(family=" << familyDescription().c_str() << " "
-            << addr().debug().c_str() << ")";
+  snprintf(debug_str.get(), max_len, "dsDev(family=%s %s)",
+           familyDescription().c_str(), addr().debug().get());
 
-  return debug_str.str();
+  return move(debug_str);
 }

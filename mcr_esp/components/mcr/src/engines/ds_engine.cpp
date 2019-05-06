@@ -108,7 +108,7 @@ void mcrDS::command(void *task_data) {
       continue;
     }
 
-    ESP_LOGD(tagCommand(), "processing %s", cmd->debug().c_str());
+    ESP_LOGD(tagCommand(), "processing %s", cmd->debug().get());
 
     dsDev_t *dev = findDevice(cmd->dev_id());
 
@@ -142,10 +142,10 @@ void mcrDS::command(void *task_data) {
 
       if ((set_rc) && commandAck(*cmd)) {
         ESP_LOGD(tagCommand(), "cmd and ack complete %s",
-                 (const char *)cmd->dev_id());
+                 (const char *)cmd->dev_id().c_str());
       } else {
         ESP_LOGW(tagCommand(), "cmd and/or ack failed for %s",
-                 (const char *)cmd->dev_id());
+                 (const char *)cmd->dev_id().c_str());
       }
 
       trackSwitchCmd(false);
@@ -154,14 +154,14 @@ void mcrDS::command(void *task_data) {
       ESP_LOGD(tagCommand(), "released bus mutex");
     } else {
       ESP_LOGD(tagCommand(), "device %s not available",
-               (const char *)cmd->dev_id());
+               (const char *)cmd->dev_id().c_str());
     }
 
     int64_t elapsed_us = esp_timer_get_time() - start;
     if (elapsed_us > 100000) { // 100ms
       float elapsed_ms = (float)elapsed_us / 1000.0;
       ESP_LOGW(tagCommand(), "took %0.3fms for %s", elapsed_ms,
-               cmd->debug().c_str());
+               cmd->debug().get());
     }
 
     delete cmd;
@@ -182,10 +182,10 @@ bool mcrDS::commandAck(mcrCmdSwitch_t &cmd) {
     }
   } else {
     ESP_LOGW(tagCommand(), "unable to find device for cmd ack %s",
-             cmd.debug().c_str());
+             cmd.debug().get());
   }
 
-  ESP_LOGI(tagCommand(), "completed cmd: %s", cmd.debug().c_str());
+  ESP_LOGI(tagCommand(), "completed cmd: %s", cmd.debug().get());
 
   int64_t elapsed_us = esp_timer_get_time() - start;
   if (elapsed_us > 100000) { // 100ms
@@ -371,11 +371,11 @@ void mcrDS::discover(void *task_data) {
       dsDev_t dev(found_addr, true);
 
       if (justSeenDevice(dev)) {
-        ESP_LOGD(tagDiscover(), "previously seen %s", dev.debug().c_str());
+        ESP_LOGD(tagDiscover(), "previously seen %s", dev.debug().get());
       } else {
         dsDev_t *new_dev = new dsDev(dev);
         ESP_LOGI(tagDiscover(), "new (%p) %s", (void *)new_dev,
-                 dev.debug().c_str());
+                 dev.debug().get());
         addDevice(new_dev);
       }
 
@@ -462,14 +462,14 @@ void mcrDS::report(void *task_data) {
 
     for_each(beginDevices(), endDevices(), [this](dsDev_t *dev) {
       if (dev->available()) {
-        ESP_LOGI(tagReport(), "reading device %s", dev->debug().c_str());
+        ESP_LOGI(tagReport(), "reading device %s", dev->debug().get());
 
         takeBus();
         auto rc = readDevice(dev);
 
         if (rc) {
           ESP_LOGI(tagReport(), "publishing reading for %s",
-                   dev->debug().c_str());
+                   dev->debug().get());
           publish(dev);
           dev->justSeen();
         }
@@ -478,7 +478,7 @@ void mcrDS::report(void *task_data) {
         giveBus();
       } else {
         if (dev->missing()) {
-          ESP_LOGW(tagReport(), "device missing: %s", dev->debug().c_str());
+          ESP_LOGW(tagReport(), "device missing: %s", dev->debug().get());
         }
       }
     });
@@ -619,7 +619,7 @@ bool mcrDS::readDS1820(dsDev_t *dev, celsiusReading_t **reading) {
 
   if (crc8 != 0x00) {
     ESP_LOGW(tagReadDS1820(), "crc FAILED (0x%02x) for %s", crc8,
-             dev->debug().c_str());
+             dev->debug().get());
     return rc;
   }
 
@@ -758,7 +758,7 @@ bool mcrDS::readDS2408(dsDev_t *dev, positionsReading_t **reading) {
 
   if (!crc16) {
     ESP_LOGW(tagReadDS2408(), "crc FAILED (0x%02x) for %s", crc16,
-             dev->debug().c_str());
+             dev->debug().get());
     return rc;
   }
 
@@ -1026,7 +1026,7 @@ bool mcrDS::setDS2408(mcrCmdSwitch_t &cmd, dsDev_t *dev) {
   // state for the pios not changing
   if (readDevice(dev) == false) {
     ESP_LOGW(tagSetDS2408(), "read before set failed for %s",
-             dev->debug().c_str());
+             dev->debug().get());
     return rc;
   }
 
@@ -1076,7 +1076,7 @@ bool mcrDS::setDS2408(mcrCmdSwitch_t &cmd, dsDev_t *dev) {
 
   if (owb_s != OWB_STATUS_OK) {
     ESP_LOGW(tagSetDS2408(), "device cmd failed for %s owb_s=%d",
-             dev->debug().c_str(), owb_s);
+             dev->debug().get(), owb_s);
     dev->stopWrite();
     return rc;
   }
@@ -1086,7 +1086,7 @@ bool mcrDS::setDS2408(mcrCmdSwitch_t &cmd, dsDev_t *dev) {
 
   if (owb_s != OWB_STATUS_OK) {
     ESP_LOGW(tagSetDS2408(), "read of check bytes failed for %s owb_s=%d",
-             dev->debug().c_str(), owb_s);
+             dev->debug().get(), owb_s);
     dev->stopWrite();
     return rc;
   }
@@ -1104,14 +1104,14 @@ bool mcrDS::setDS2408(mcrCmdSwitch_t &cmd, dsDev_t *dev) {
   if (((check[0] | 0x80) == 0xaa) || (dev_state == new_state)) {
     // cmd_bitset_t b0 = check[0];
     // cmd_bitset_t b1 = check[1];
-    ESP_LOGI(tagSetDS2408(), "CONFIRMED for %s", dev->debug().c_str());
+    ESP_LOGI(tagSetDS2408(), "CONFIRMED for %s", dev->debug().get());
     ESP_LOGI(tagSetDS2408(),
              "CONFIRMED expected 0x%02x==0xaa *OR* 0x%02x==0x%02x", check[0],
              new_state, dev_state);
 
     rc = true;
   } else {
-    ESP_LOGW(tagSetDS2408(), "FAILED for %s", dev->debug().c_str());
+    ESP_LOGW(tagSetDS2408(), "FAILED for %s", dev->debug().get());
     ESP_LOGW(tagSetDS2408(), "FAILED expected 0x%02x==aa *OR* 0x%02x==0x%02x",
              check[0], new_state, dev_state);
   }
@@ -1136,7 +1136,7 @@ bool mcrDS::setDS2413(mcrCmdSwitch_t &cmd, dsDev_t *dev) {
   // state for the pios not changing
   if (readDevice(dev) == false) {
     ESP_LOGW(tagSetDS2413(), "read before set failed for %s",
-             dev->debug().c_str());
+             dev->debug().get());
     return rc;
   }
 
@@ -1181,7 +1181,7 @@ bool mcrDS::setDS2413(mcrCmdSwitch_t &cmd, dsDev_t *dev) {
 
   if (owb_s != OWB_STATUS_OK) {
     ESP_LOGW(tagSetDS2413(), "device cmd failed for %s owb_s=%d",
-             dev->debug().c_str(), owb_s);
+             dev->debug().get(), owb_s);
     dev->stopWrite();
     return rc;
   }
@@ -1191,7 +1191,7 @@ bool mcrDS::setDS2413(mcrCmdSwitch_t &cmd, dsDev_t *dev) {
 
   if (owb_s != OWB_STATUS_OK) {
     ESP_LOGW(tagSetDS2413(), "read of check bytes failed for %s owb_s=%d",
-             dev->debug().c_str(), owb_s);
+             dev->debug().get(), owb_s);
     dev->stopWrite();
     return rc;
   }
@@ -1211,11 +1211,11 @@ bool mcrDS::setDS2413(mcrCmdSwitch_t &cmd, dsDev_t *dev) {
     cmd_bitset_t b1 = check[1];
     ESP_LOGD(tagSetDS2413(), "CONFIRMED check[0]=0b%s check[1]=0b%s for %s",
              b0.to_string().c_str(), b1.to_string().c_str(),
-             dev->debug().c_str());
+             dev->debug().get());
     rc = true;
   } else {
     ESP_LOGW(tagSetDS2413(), "FAILED check[0]=0x%x check[1]=0x%x for %s",
-             check[0], check[1], dev->debug().c_str());
+             check[0], check[1], dev->debug().get());
   }
 
   return rc;
@@ -1278,5 +1278,5 @@ void mcrDS::printInvalidDev(dsDev_t *dev) {
   }
 
   ESP_LOGW(tagEngine(), "%s dev id=%s", __PRETTY_FUNCTION__,
-           (const char *)dev->id());
+           (const char *)dev->id().c_str());
 }

@@ -27,7 +27,6 @@
 #include <sys/time.h>
 #include <time.h>
 
-#include "devs/id.hpp"
 #include "readings/reading.hpp"
 
 namespace mcr {
@@ -42,7 +41,7 @@ private:
 
 public:
   // undefined reading
-  positionsReading(const mcrDevID_t &id, time_t mtime, uint32_t states,
+  positionsReading(const std::string &id, time_t mtime, uint32_t states,
                    uint32_t pios);
   uint32_t state() { return _states; }
 

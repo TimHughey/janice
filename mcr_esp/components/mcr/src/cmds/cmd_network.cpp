@@ -23,4 +23,10 @@ bool mcrCmdNetwork::process() {
   return false;
 }
 
-const std::string mcrCmdNetwork::debug() { return std::string(TAG); }
+const unique_ptr<char[]> mcrCmdNetwork::debug() {
+  unique_ptr<char[]> debug_str(new char[strlen(TAG) + 1]);
+
+  strcpy(debug_str.get(), TAG);
+
+  return move(debug_str);
+}

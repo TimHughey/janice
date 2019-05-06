@@ -22,10 +22,10 @@
 #define mcr_cmd_factory_h
 
 #include <cstdlib>
-#include <sstream>
 #include <string>
 #include <vector>
 
+#include <esp_log.h>
 #include <esp_timer.h>
 #include <freertos/FreeRTOS.h>
 #include <sys/time.h>

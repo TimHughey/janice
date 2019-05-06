@@ -22,7 +22,7 @@
 #define mcr_cmd_base_h
 
 #include <cstdlib>
-#include <sstream>
+#include <memory>
 #include <string>
 
 #include <esp_timer.h>
@@ -35,6 +35,7 @@
 #include "cmds/cmd_types.hpp"
 #include "misc/mcr_types.hpp"
 
+using std::unique_ptr;
 using namespace mcr;
 
 typedef class mcrCmd mcrCmd_t;
@@ -64,7 +65,7 @@ public:
   virtual size_t size() { return sizeof(mcrCmd_t); };
   mcrCmdType_t type() { return _type; };
 
-  virtual const std::string debug();
+  virtual const unique_ptr<char[]> debug();
 };
 
 #endif

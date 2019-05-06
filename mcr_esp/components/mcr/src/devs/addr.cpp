@@ -20,8 +20,6 @@
 #include <algorithm>
 #include <cstdlib>
 #include <cstring>
-#include <iomanip>
-#include <sstream>
 
 #include <esp_log.h>
 #include <sys/time.h>
@@ -46,7 +44,7 @@ uint8_t mcrDevAddr::firstAddressByte() { return _addr.front(); }
 uint8_t mcrDevAddr::lastAddressByte() { return _addr.back(); }
 uint32_t mcrDevAddr::max_len() { return _max_len; }
 
-// support type casting from mcrDevID_t to a plain ole char array
+// support type casting from mcrDevAddr to a plain ole char array
 mcrDevAddr::operator uint8_t *() { return _addr.data(); }
 
 uint8_t mcrDevAddr::operator[](int i) { return _addr.at(i); }
@@ -65,16 +63,24 @@ bool mcrDevAddr::isValid() {
   return true;
 }
 
-std::string mcrDevAddr::debug() {
-  std::stringstream debug_str;
+const std::unique_ptr<char[]> mcrDevAddr::debug() {
+  static const char *disabled = "debug disabled";
+  unique_ptr<char[]> debug_str(new char[strlen(disabled) + 1]);
 
-  debug_str << "mcrDevAddr(0x";
-  for (auto it = _addr.begin(); it != _addr.end(); it++) {
-    debug_str << std::setfill('0') << std::setw(sizeof(uint8_t) * 2) << std::hex
-              << (int)*it;
-  };
+  strcpy(debug_str.get(), disabled);
 
-  debug_str << ")";
-
-  return debug_str.str();
+  return move(debug_str);
+  // std::stringstream debug_str;
+  //
+  // debug_str << "mcrDevAddr(0x";
+  // for (auto it = _addr.begin(); it != _addr.end(); it++) {
+  //   debug_str << std::setfill('0') << std::setw(sizeof(uint8_t) * 2) <<
+  //   std::hex
+  //             << (int)*it;
+  // };
+  //
+  // debug_str << ")";
+  //
+  // return debug_str.str();
+  // return debug_str;
 }

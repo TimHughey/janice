@@ -22,7 +22,7 @@
 
 #include <array>
 #include <cstdlib>
-#include <sstream>
+#include <memory>
 #include <string>
 
 #include <esp_log.h>
@@ -38,6 +38,8 @@
 #include "protocols/mqtt.hpp"
 #include "protocols/mqtt_in.hpp"
 #include "readings/readings.hpp"
+
+using std::unique_ptr;
 
 static mcrMQTT *__singleton = nullptr;
 
@@ -56,11 +58,14 @@ mcrMQTT_t *mcrMQTT::instance() {
 // SINGLETON! constructor is private
 mcrMQTT::mcrMQTT() {
   // convert the port number to a string
-  std::ostringstream endpoint_ss;
-  endpoint_ss << _host << ':' << _port;
+  // std::ostringstream endpoint_ss;
+  // endpoint_ss << _host << ':' << _port;
 
   // create the endpoint URI
-  _endpoint = endpoint_ss.str();
+  const auto max_endpoint = 127;
+  unique_ptr<char[]> endpoint(new char[max_endpoint + 1]);
+  snprintf(endpoint.get(), max_endpoint, "%s:%d", _host.c_str(), _port);
+  _endpoint = endpoint.get();
 
   _rb_in_lowwater = _rb_in_size * .02;
   _rb_in_highwater = _rb_in_size * .98;

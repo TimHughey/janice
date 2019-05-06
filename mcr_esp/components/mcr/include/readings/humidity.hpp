@@ -27,7 +27,6 @@
 #include <sys/time.h>
 #include <time.h>
 
-#include "devs/id.hpp"
 #include "readings/celsius.hpp"
 
 namespace mcr {
@@ -40,7 +39,7 @@ private:
 
 public:
   // undefined reading
-  humidityReading(const mcrDevID_t &id, time_t mtime, float celsius,
+  humidityReading(const std::string &id, time_t mtime, float celsius,
                   float relhum);
 
 protected:

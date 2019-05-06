@@ -126,9 +126,6 @@ private:
 
   bool devicesPowered() { return _devices_powered; }
 
-  // accept a mcrCmdSwitch_t as input to reportDevice
-  // bool readDevice(mcrCmdSwitch_t &cmd);
-  // bool readDevice(const mcrDevID_t &id);
   bool readDevice(dsDev_t *dev);
 
   // specific methods to read devices

@@ -112,7 +112,13 @@ bool mcrCmdOTA::process() {
   return true;
 }
 
-const std::string mcrCmdOTA::debug() { return std::string(TAG); };
+const unique_ptr<char[]> mcrCmdOTA::debug() {
+  unique_ptr<char[]> debug_str(new char[strlen(TAG) + 1]);
+
+  strcpy(debug_str.get(), TAG);
+
+  return move(debug_str);
+}
 
 //
 // STATIC!

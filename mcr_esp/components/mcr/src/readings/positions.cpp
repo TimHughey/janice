@@ -23,11 +23,10 @@
 #include <sys/time.h>
 #include <time.h>
 
-#include "devs/id.hpp"
 #include "readings/positions.hpp"
 
 namespace mcr {
-positionsReading::positionsReading(const mcrDevID_t &id, time_t mtime,
+positionsReading::positionsReading(const std::string &id, time_t mtime,
                                    uint32_t states, uint32_t pios)
     : Reading(id, mtime) {
 

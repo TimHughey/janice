@@ -18,7 +18,6 @@
     https://www.wisslanding.com
 */
 
-#include <sstream>
 #include <string>
 
 #include <esp_log.h>
@@ -33,7 +32,7 @@ namespace mcr {
 
 Reading::Reading(time_t mtime) { _mtime = mtime; }
 
-Reading::Reading(const mcrDevID_t &id, time_t mtime) {
+Reading::Reading(const std::string &id, time_t mtime) {
   _id = id;
   _mtime = mtime;
 }
@@ -51,8 +50,8 @@ void Reading::commonJSON(JsonDocument &doc) {
   doc["mtime"] = _mtime;
   doc["type"] = typeString(_type);
 
-  if (_id.valid()) {
-    doc["device"] = _id.asString();
+  if (_id.length() > 0) {
+    doc["device"] = _id;
   }
 
   if (_cmd_ack) {

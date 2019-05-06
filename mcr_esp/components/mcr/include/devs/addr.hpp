@@ -21,9 +21,11 @@
 #ifndef dev_addr_hpp
 #define dev_addr_hpp
 
-#include <sstream>
+#include <memory>
 #include <string>
 #include <vector>
+
+using std::unique_ptr;
 
 typedef class mcrDevAddr mcrDevAddr_t;
 
@@ -47,14 +49,14 @@ public:
   uint32_t max_len();
   bool isValid();
 
-  // support type casting from mcrDevID_t to a plain ole uint8_t array
+  // support type casting from mcrDevAddr to a plain ole uint8_t array
   operator uint8_t *();
 
   uint8_t operator[](int i);
 
   bool operator==(const mcrDevAddr_t &rhs);
 
-  std::string debug();
+  const unique_ptr<char[]> debug();
 
 private:
 };

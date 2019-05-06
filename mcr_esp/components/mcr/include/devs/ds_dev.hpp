@@ -21,10 +21,12 @@
 #ifndef ds_dev_h
 #define ds_dev_h
 
-#include <sstream>
+#include <memory>
 #include <string>
 
 #include "devs/base.hpp"
+
+using std::unique_ptr;
 
 typedef class dsDev dsDev_t;
 
@@ -71,7 +73,7 @@ public:
   // static member function for validating an address (ROM) is validAddress
   static bool validAddress(mcrDevAddr_t &addr);
 
-  const std::string debug();
+  const unique_ptr<char[]> debug();
 };
 
 typedef class dsDev dsDev_t;

@@ -52,9 +52,7 @@ mcrCmdSwitch::mcrCmdSwitch(JsonDocument &doc)
 }
 
 bool mcrCmdSwitch::matchPrefix(const char *prefix) {
-  const std::string prefix_str(prefix);
-
-  return _dev_id.matchPrefix(prefix);
+  return ((_dev_id.substr(0, strlen(prefix))) == prefix);
 }
 
 bool mcrCmdSwitch::process() {
@@ -74,7 +72,7 @@ bool mcrCmdSwitch::sendToQueue(cmdQueue_t &cmd_q) {
 
     if (xQueueSendToBack(cmd_q.q, (void *)&fresh_cmd, pdMS_TO_TICKS(10)) ==
         pdTRUE) {
-      ESP_LOGD(TAG, "%s queued %s", cmd_q.id, debug().c_str());
+      ESP_LOGD(TAG, "%s queued %s", cmd_q.id, debug().get());
     } else
       ESP_LOGW(TAG, "queue to %s FAILED", cmd_q.id);
   }
@@ -82,12 +80,19 @@ bool mcrCmdSwitch::sendToQueue(cmdQueue_t &cmd_q) {
   return true;
 }
 
-const std::string mcrCmdSwitch::debug() {
-  std::ostringstream debug_str;
+const unique_ptr<char[]> mcrCmdSwitch::debug() {
+  static const char *disabled = "debug disabled";
+  unique_ptr<char[]> debug_str(new char[strlen(disabled) + 1]);
 
-  debug_str << mcrCmd::debug() << " mcrCmdSwitch(" << _dev_id << " mask=0b"
-            << _mask << " state=0b" << _state << ((_ack) ? " ACK" : "NOACK")
-            << ")";
+  strcpy(debug_str.get(), disabled);
 
-  return debug_str.str();
+  // std::ostringstream debug_str;
+  //
+  // debug_str << mcrCmd::debug() << " mcrCmdSwitch(" << _dev_id << " mask=0b"
+  //           << _mask << " state=0b" << _state << ((_ack) ? " ACK" : "NOACK")
+  //           << ")";
+
+  // return debug_str.c_str();
+
+  return move(debug_str);
 }

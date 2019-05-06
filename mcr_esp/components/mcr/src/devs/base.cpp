@@ -21,6 +21,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <ios>
+#include <memory>
 #include <string>
 #include <tuple>
 
@@ -32,14 +33,16 @@
 
 #include "devs/addr.hpp"
 #include "devs/base.hpp"
-#include "devs/id.hpp"
 #include "misc/mcr_types.hpp"
 #include "readings/readings.hpp"
+
+using std::move;
+using std::unique_ptr;
 
 // construct a new mcrDev with only an address
 mcrDev::mcrDev(mcrDevAddr_t &addr) { _addr = addr; }
 
-mcrDev::mcrDev(const mcrDevID_t &id, mcrDevAddr_t &addr) {
+mcrDev::mcrDev(const std::string &id, mcrDevAddr_t &addr) {
   _id = id; // copy id and addr objects
   _addr = addr;
 }
@@ -50,12 +53,11 @@ mcrDev::~mcrDev() {
     delete _reading;
 }
 
-bool mcrDev::operator==(mcrDev_t *rhs) const {
-  return (_id == (mcrDevID_t)rhs->_id);
-}
+bool mcrDev::operator==(mcrDev_t *rhs) const { return (_id == rhs->_id); }
 
 void mcrDev::justSeen() { _last_seen = time(nullptr); }
-void mcrDev::setID(const mcrDevID_t &new_id) { _id = new_id; }
+void mcrDev::setID(const std::string &new_id) { _id = new_id; }
+void mcrDev::setID(char *new_id) { _id = new_id; }
 
 // updaters
 void mcrDev::setReading(Reading_t *reading) {
@@ -113,43 +115,40 @@ void mcrDev::crcMismatch() { _crc_mismatches++; }
 void mcrDev::readFailure() { _read_errors++; }
 void mcrDev::writeFailure() { _write_errors++; }
 
-void mcrDev::setExternalName(const mcrDevID_t &ext_name) {
-  _external_name = ext_name;
+const unique_ptr<char[]> mcrDev::debug() {
+  // std::ostringstream debug_str;
+
+  // debug_str << "mcrDev(" << _addr.debug() << " id=" << (const char *)id()
+  //           << " desc=" << description().c_str();
+  //
+  // if (readUS() > 0) {
+  //   debug_str << " rus=" << readUS();
+  // }
+  //
+  // if (writeUS() > 0) {
+  //   debug_str << " wus=" << writeUS();
+  // }
+  //
+  // if (_crc_mismatches > 0) {
+  //   debug_str << " crc_mismatches=" << _crc_mismatches;
+  // }
+  //
+  // if (_read_errors > 0) {
+  //   debug_str << " read_errors=" << _read_errors;
+  // }
+  //
+  // if (_write_errors > 0) {
+  //   debug_str << " write_errors=" << _write_errors;
+  // }
+  //
+  // debug_str << ")";
+  //
+  // return debug_str.str();
+
+  static const char *disabled = "debug disabled";
+  unique_ptr<char[]> debug_str(new char[strlen(disabled) + 1]);
+
+  strcpy(debug_str.get(), disabled);
+
+  return move(debug_str);
 }
-
-const std::string mcrDev::debug() {
-  std::ostringstream debug_str;
-
-  debug_str << "mcrDev(" << _addr.debug() << " id=" << (const char *)id()
-            << " desc=" << description().c_str();
-
-  if (readUS() > 0) {
-    debug_str << " rus=" << readUS();
-  }
-
-  if (writeUS() > 0) {
-    debug_str << " wus=" << writeUS();
-  }
-
-  if (_crc_mismatches > 0) {
-    debug_str << " crc_mismatches=" << _crc_mismatches;
-  }
-
-  if (_read_errors > 0) {
-    debug_str << " read_errors=" << _read_errors;
-  }
-
-  if (_write_errors > 0) {
-    debug_str << " write_errors=" << _write_errors;
-  }
-
-  debug_str << ")";
-
-  return debug_str.str();
-}
-
-const std::string mcrDev::to_string(mcrDev_t const &) { return debug(); }
-
-// void mcrDev::debug(char *buff, size_t len) {
-//   strncat(buff, debug().c_str(), len);
-// }

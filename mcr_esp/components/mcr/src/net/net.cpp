@@ -1,6 +1,5 @@
 #include <cstdlib>
-#include <iomanip>
-#include <sstream>
+#include <memory>
 #include <string>
 
 #include <esp_attr.h>
@@ -28,6 +27,8 @@ extern "C" {
 int setenv(const char *envname, const char *envval, int overwrite);
 void tzset(void);
 }
+
+using std::unique_ptr;
 
 namespace mcr {
 
@@ -376,17 +377,21 @@ const std::string &Net::macAddress() {
   waitForInitialization();
 
   if (_mac.length() == 0) {
-    std::stringstream bytes;
+    unique_ptr<char[]> buf(new char[24]);
     uint8_t mac[6] = {};
 
     esp_wifi_get_mac(WIFI_IF_STA, mac);
 
-    bytes << std::hex << std::setfill('0');
-    for (int i = 0; i <= 5; i++) {
-      bytes << std::setw(sizeof(uint8_t) * 2) << static_cast<unsigned>(mac[i]);
-    }
+    sprintf(buf.get(), "%02x%02x%02x%02x%02x%02x", mac[0], mac[1], mac[2],
+            mac[3], mac[4], mac[5]);
 
-    _mac = bytes.str();
+    // bytes << std::hex << std::setfill('0');
+    // for (int i = 0; i <= 5; i++) {
+    //   bytes << std::setw(sizeof(uint8_t) * 2) <<
+    //   static_cast<unsigned>(mac[i]);
+    // }
+    //
+    _mac = buf.get();
   }
 
   return _mac;

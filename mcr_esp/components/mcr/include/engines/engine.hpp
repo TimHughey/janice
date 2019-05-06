@@ -23,9 +23,7 @@
 
 #include <algorithm>
 #include <cstdlib>
-#include <iomanip>
 #include <map>
-#include <sstream>
 #include <string>
 #include <vector>
 
@@ -153,12 +151,12 @@ public:
     DEV *found_dev = findDevice(dev.id());
 
     if (LOG_LOCAL_LEVEL >= ESP_LOG_DEBUG) {
-      ESP_LOGD(tagEngine(), "just saw: %s", dev.debug().c_str());
+      ESP_LOGD(tagEngine(), "just saw: %s", dev.debug().get());
     }
 
     if (found_dev) {
       if (found_dev->missing()) {
-        ESP_LOGW(tagEngine(), "device returned %s", found_dev->debug().c_str());
+        ESP_LOGW(tagEngine(), "device returned %s", found_dev->debug().get());
       }
 
       found_dev->justSeen();
@@ -172,7 +170,7 @@ public:
     DEV *found = nullptr;
 
     if (LOG_LOCAL_LEVEL >= ESP_LOG_DEBUG) {
-      ESP_LOGD(tagEngine(), "adding: %s", dev->debug().c_str());
+      ESP_LOGD(tagEngine(), "adding: %s", dev->debug().get());
     }
 
     if (numKnownDevices() > maxDevices()) {
@@ -183,14 +181,13 @@ public:
     if ((found = findDevice(dev->id())) == nullptr) {
       dev->justSeen();
       _devices.push_back(dev);
-      ESP_LOGI(tagEngine(), "added %s", dev->debug().c_str());
+      ESP_LOGI(tagEngine(), "added %s", dev->debug().get());
     }
 
     return (found == nullptr) ? true : false;
   };
 
-  DEV *findDevice(const mcrDevID_t &dev) {
-    // DEV *search = nullptr;
+  DEV *findDevice(const std::string &dev) {
 
     // my first lambda in C++, wow this languge has really evolved
     // since I used it 15+ years ago
@@ -225,7 +222,7 @@ public:
   };
 
   uint32_t numKnownDevices() { return _devices.size(); };
-  bool isDeviceKnown(const mcrDevID_t &id) {
+  bool isDeviceKnown(const std::string &id) {
     bool rc = false;
 
     rc = (findDevice(id) == nullptr ? false : true);
@@ -312,7 +309,7 @@ protected:
   }
 
   bool publish(mcrCmdSwitch_t &cmd) { return publish(cmd.dev_id()); };
-  bool publish(const mcrDevID_t &dev_id) {
+  bool publish(const std::string &dev_id) {
     DEV *search = findDevice(dev_id);
 
     if (search != nullptr) {
@@ -347,14 +344,14 @@ protected:
   };
 
   bool readDevice(mcrCmdSwitch_t &cmd) {
-    mcrDevID_t &dev_id = cmd.dev_id();
+    std::string &dev_id = cmd.dev_id();
 
     return readDevice(dev_id);
   };
 
   // virtual bool readDevice(DEV *);
 
-  bool readDevice(const mcrDevID_t &id) {
+  bool readDevice(const std::string &id) {
     DEV *dev = findDevice(id);
 
     if (dev != nullptr) {
@@ -502,28 +499,30 @@ protected:
   }
 
   void runtimeMetricsReport() {
-    typedef struct {
-      const char *tag;
-      mcrEngineMetric_t *metric;
-    } metricDef_t;
-
-    std::ostringstream rep_str;
-
-    metricDef_t m[] = {{"convert", &(metrics.convert)},
-                       {"discover", &(metrics.discover)},
-                       {"report", &(metrics.report)},
-                       {"switch_cmd", &(metrics.switch_cmd)}};
-
-    for (int i = 0; i < (sizeof(m) / sizeof(metricDef_t)); i++) {
-      if (m[i].metric->elapsed_us > 0) {
-        rep_str << m[i].tag << "=";
-        rep_str << std::fixed << std::setprecision(2)
-                << ((float)(m[i].metric->elapsed_us / 1000.0));
-        rep_str << "ms ";
-      }
-    }
-
-    ESP_LOGI(tagPhase(), "metrics: %s", rep_str.str().c_str());
+    //
+    // typedef struct {
+    //   const char *tag;
+    //   mcrEngineMetric_t *metric;
+    // } metricDef_t;
+    //
+    // std::ostringstream rep_str;
+    //
+    // metricDef_t m[] = {{"convert", &(metrics.convert)},
+    //                    {"discover", &(metrics.discover)},
+    //                    {"report", &(metrics.report)},
+    //                    {"switch_cmd", &(metrics.switch_cmd)}};
+    //
+    // for (int i = 0; i < (sizeof(m) / sizeof(metricDef_t)); i++) {
+    //   if (m[i].metric->elapsed_us > 0) {
+    //     rep_str << m[i].tag << "=";
+    //     rep_str << std::fixed << std::setprecision(2)
+    //             << ((float)(m[i].metric->elapsed_us / 1000.0));
+    //     rep_str << "ms ";
+    //   }
+    // }
+    //
+    // ESP_LOGI(tagPhase(), "metrics: %s", rep_str.str().c_str());
+    ESP_LOGI(tagPhase(), "runtime metrics reporting disabled");
   };
 };
 

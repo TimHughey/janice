@@ -23,11 +23,10 @@
 #include <sys/time.h>
 #include <time.h>
 
-#include "devs/id.hpp"
 #include "readings/soil.hpp"
 
 namespace mcr {
-soilReading::soilReading(const mcrDevID_t &id, time_t mtime, float celsius,
+soilReading::soilReading(const std::string &id, time_t mtime, float celsius,
                          int soil_moisture)
     : celsiusReading(id, mtime, celsius) {
   // override the reading type from the base class
