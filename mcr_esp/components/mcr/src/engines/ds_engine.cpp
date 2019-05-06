@@ -458,8 +458,8 @@ void mcrDS::report(void *task_data) {
     _reportTask.lastWake = xTaskGetTickCount();
 
     trackReport(true);
-    ESP_LOGI(tagReport(), "will attempt to report %d devices",
-             numKnownDevices());
+    ESP_LOGI(tagReport(), "will attempt to report %d device%s",
+             numKnownDevices(), (numKnownDevices() > 1) ? "s" : "");
 
     for_each(beginDevices(), endDevices(), [this](dsDev_t *dev) {
       if (dev->available()) {
