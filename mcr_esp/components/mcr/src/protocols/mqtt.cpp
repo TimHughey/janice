@@ -193,6 +193,12 @@ void mcrMQTT::publish(Reading_t &reading) {
   publish(json);
 }
 
+void mcrMQTT::publish(std::unique_ptr<Reading_t> reading) {
+  auto *json = reading->json();
+
+  publish(json);
+}
+
 void mcrMQTT::outboundMsg() {
   size_t len = 0;
   // mqttOutMsg_t *entry = nullptr;
@@ -248,20 +254,17 @@ void mcrMQTT::publish(std::string *json) {
 
   if (rb_rc == pdFALSE) {
     delete json;
-
-    auto *msg = (char *)calloc(sizeof(char), 128);
-    // auto *msg = new char[128]();
+    std::unique_ptr<char[]> msg(new char[128]);
 
     size_t avail_bytes = xRingbufferGetCurFreeSize(_rb_out);
 
-    sprintf(msg, "PUBLISH msg FAILED (len=%u) (rb_avail=%u)",
+    sprintf(msg.get(), "PUBLISH msg FAILED (len=%u) (rb_avail=%u)",
             sizeof(mqttOutMsg_t), avail_bytes);
-    ESP_LOGW(tagEngine(), "%s", msg);
+    ESP_LOGW(tagEngine(), "%s", msg.get());
 
     // we only commit the failure to NVS and directly call esp_restart()
     // since mcrMQTT is broken
-    mcrNVS::commitMsg(tagEngine(), msg);
-    free(msg);
+    mcrNVS::commitMsg(tagEngine(), msg.get());
 
     esp_restart();
   }

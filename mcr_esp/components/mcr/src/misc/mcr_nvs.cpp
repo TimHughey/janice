@@ -121,13 +121,14 @@ esp_err_t mcrNVS::__commitMsg(const char *key, const char *msg) {
   _blob->time = time(nullptr);
   strncpy(_blob->msg, msg, MCR_NVS_MSG_MAX_LEN);
 
-  ESP_LOGI(TAG, "attempting nvs_set_blob(%d, %p, %p, %d)", _handle, key, _blob,
-           sizeof(mcrNVSMessage_t));
+  // ESP_LOGD(TAG, "attempting nvs_set_blob(%d, %p, %p, %d)", _handle, key, _blob,
+  //          sizeof(mcrNVSMessage_t));
 
   _esp_rc = nvs_set_blob(_handle, key, _blob, sizeof(mcrNVSMessage_t));
 
-  ESP_LOGI(TAG, "[%s] nvs_set_blob(%d, %p, %p, %d)", esp_err_to_name(_esp_rc),
-           _handle, key, _blob, sizeof(mcrNVSMessage_t));
+  // ESP_LOGI(TAG, "[%s] nvs_set_blob(%d, %p, %p, %d)",
+  // esp_err_to_name(_esp_rc),
+  //          _handle, key, _blob, sizeof(mcrNVSMessage_t));
 
   if (_esp_rc == ESP_OK) {
     _esp_rc = nvs_commit(_handle);
@@ -146,7 +147,7 @@ esp_err_t mcrNVS::__processCommittedMsgs() {
 
   zeroBuffers();
 
-  ESP_LOGD(TAG, "entered processCommittedMsgs()");
+  // ESP_LOGD(TAG, "entered processCommittedMsgs()");
 
   if (notOpen()) {
     return _nvs_open_rc;
@@ -155,7 +156,7 @@ esp_err_t mcrNVS::__processCommittedMsgs() {
   for (uint8_t i = 0; strncmp(_possible_keys[i], "END_KEYS", 15) != 0; i++) {
     _msg_len = sizeof(mcrNVSMessage_t);
 
-    ESP_LOGD(TAG, "looking for key(%s)", _possible_keys[i]);
+    // ESP_LOGD(TAG, "looking for key(%s)", _possible_keys[i]);
     _esp_rc = nvs_get_blob(_handle, _possible_keys[i], _blob, &_msg_len);
 
     switch (_esp_rc) {
@@ -166,7 +167,7 @@ esp_err_t mcrNVS::__processCommittedMsgs() {
       break;
 
     case ESP_ERR_NVS_NOT_FOUND:
-      ESP_LOGD(TAG, "key(%s) not available", _possible_keys[i]);
+      // ESP_LOGD(TAG, "key(%s) not available", _possible_keys[i]);
       break;
 
     default:

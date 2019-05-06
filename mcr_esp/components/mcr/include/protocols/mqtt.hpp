@@ -22,6 +22,7 @@
 #define mcr_mqtt_h
 
 #include <cstdlib>
+#include <memory>
 #include <string>
 
 #include <esp_log.h>
@@ -54,6 +55,7 @@ public:
   static void otaPrep() { instance()->__otaPrep(); };
   void publish(Reading_t *reading);
   void publish(Reading_t &reading);
+  void publish(std::unique_ptr<Reading_t> reading);
   void run(void *data);
   void setSubscribedOTA() { _ota_subscribed = true; };
   void subACK(struct mg_mqtt_message *msg);

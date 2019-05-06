@@ -73,11 +73,13 @@ Net::Net() {
 
   esp_err_t esp_rc;
   esp_rc = ledc_timer_config(&ledc_timer);
-  ESP_LOGI(tagEngine(), "[%s] ledc_timer_config()", esp_err_to_name(esp_rc));
+  // ESP_LOGI(tagEngine(), "[%s] ledc_timer_config()", esp_err_to_name(esp_rc));
 
-  esp_rc = ledc_fade_func_install(0);
-  ESP_LOGI(tagEngine(), "[%s] ledc_fade_func_install()",
-           esp_err_to_name(esp_rc));
+  if (esp_rc == ESP_OK) {
+    esp_rc = ledc_fade_func_install(0);
+    // ESP_LOGI(tagEngine(), "[%s] ledc_fade_func_install()",
+    //          esp_err_to_name(esp_rc));
+  }
 
   ledc_channel_config_t ledc_channel;
   ledc_channel.channel = LEDC_CHANNEL_0;
@@ -87,17 +89,25 @@ Net::Net() {
   ledc_channel.hpoint = 0;
   ledc_channel.timer_sel = LEDC_TIMER_0;
 
-  esp_rc = ledc_channel_config(&ledc_channel);
-  ESP_LOGI(tagEngine(), "[%s] ledc_channel_config()", esp_err_to_name(esp_rc));
+  if (esp_rc == ESP_OK) {
+    esp_rc = ledc_channel_config(&ledc_channel);
+    // ESP_LOGI(tagEngine(), "[%s] ledc_channel_config()",
+    // esp_err_to_name(esp_rc));
+  }
 
-  esp_rc = ledc_set_fade_with_time(ledc_channel.speed_mode,
-                                   ledc_channel.channel, 8000, 5000);
-  ESP_LOGI(tagEngine(), "[%s] ledc_set_fade_with_time()",
-           esp_err_to_name(esp_rc));
+  if (esp_rc == ESP_OK) {
+    esp_rc = ledc_set_fade_with_time(ledc_channel.speed_mode,
+                                     ledc_channel.channel, 8000, 5000);
+    // ESP_LOGI(tagEngine(), "[%s] ledc_set_fade_with_time()",
+    // esp_err_to_name(esp_rc));
+  }
 
-  esp_rc = ledc_fade_start(ledc_channel.speed_mode, ledc_channel.channel,
-                           LEDC_FADE_NO_WAIT);
-  ESP_LOGI(tagEngine(), "[%s] ledc_fade_start()", esp_err_to_name(esp_rc));
+  if (esp_rc == ESP_OK) {
+    esp_rc = ledc_fade_start(ledc_channel.speed_mode, ledc_channel.channel,
+                             LEDC_FADE_NO_WAIT);
+    // ESP_LOGI(tagEngine(), "[%s] ledc_fade_start()",
+    // esp_err_to_name(esp_rc));
+  }
 
   uint8_t hw_conf = 0;
   for (auto conf_bit = 0; conf_bit < 3; conf_bit++) {
@@ -109,7 +119,7 @@ Net::Net() {
   hw_conf_ = (mcrHardwareConfig_t)hw_conf;
 
   ESP_LOGI(tagEngine(), "hardware jumper config [0x%02x]", hw_conf_);
-} // namespace mcr
+}
 
 void Net::acquiredIP(void *event_data) {
   wifi_ap_record_t ap;
@@ -126,7 +136,7 @@ void Net::acquiredIP(void *event_data) {
   ESP_LOGI(tagEngine(), "[%s] AP channel(%d,%d) rssi(%ddB)",
            esp_err_to_name(ap_rc), ap.primary, ap.second, ap.rssi);
 
-  ESP_LOGI(tagEngine(), "ready [ip=" IPSTR " dns=%s]", IP2STR(&ip_info_.ip),
+  ESP_LOGI(tagEngine(), "ready ip(" IPSTR ") dns(%s)", IP2STR(&ip_info_.ip),
            dns_str_);
 
   xEventGroupSetBits(evg_, ipBit());
@@ -385,7 +395,7 @@ const std::string &Net::macAddress() {
 void Net::setName(const std::string name) {
 
   instance()->_name = name;
-  ESP_LOGI(tagEngine(), "mcp assigned name=%s", instance()->_name.c_str());
+  ESP_LOGI(tagEngine(), "mcp assigned name [%s]", instance()->_name.c_str());
 
   xEventGroupSetBits(instance()->eventGroup(), nameBit());
 }
@@ -397,9 +407,10 @@ bool Net::start() {
   rc = ::esp_wifi_set_mode(WIFI_MODE_STA);
   checkError(__PRETTY_FUNCTION__, rc);
 
-  rc = ::esp_wifi_set_ps(WIFI_PS_NONE);
-  checkError(__PRETTY_FUNCTION__, rc);
-  ESP_LOGI(tagEngine(), "[%s] wifi powersave set to none", esp_err_to_name(rc));
+  // rc = ::esp_wifi_set_ps(WIFI_PS_NONE);
+  // checkError(__PRETTY_FUNCTION__, rc);
+  // ESP_LOGI(tagEngine(), "[%s] wifi powersave set to none",
+  // esp_err_to_name(rc));
 
   rc = ::esp_wifi_set_protocol(
       WIFI_IF_STA, WIFI_PROTOCOL_11B | WIFI_PROTOCOL_11G | WIFI_PROTOCOL_11N);
@@ -422,7 +433,7 @@ bool Net::start() {
 
   ::esp_wifi_start();
 
-  ESP_LOGI(tagEngine(), "waiting for IP address...");
+  ESP_LOGI(tagEngine(), "standing by for IP address...");
   if (waitForIP()) {
     sntp_setoperatingmode(SNTP_OPMODE_POLL);
     sntp_setservername(0, (char *)"ntp1.wisslanding.com");
@@ -443,11 +454,12 @@ bool Net::start() {
   return true;
 }
 void Net::statusLED(bool on) { // gpio_set_level(instance()->led_gpio_, on);
-  esp_err_t esp_rc;
+  // esp_err_t esp_rc;
 
-  esp_rc = ledc_stop(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0, 0);
+  // esp_rc = ledc_stop(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0, 0);
+  ledc_stop(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0, 0);
 
-  ESP_LOGI(tagEngine(), "[%s] ledc_stop()", esp_err_to_name(esp_rc));
+  // ESP_LOGI(tagEngine(), "[%s] ledc_stop()", esp_err_to_name(esp_rc));
 }
 
 void Net::resumeNormalOps() {
