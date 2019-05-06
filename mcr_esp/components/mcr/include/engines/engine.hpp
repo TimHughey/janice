@@ -78,6 +78,8 @@ private:
   SemaphoreHandle_t _bus_mutex = nullptr;
 
   mcrEngineMetrics_t metrics;
+  typedef std::pair<std::string, mcrEngineMetric_t *> metricEntry_t;
+  typedef std::map<std::string, mcrEngineMetric_t *> metricMap_t;
 
   engineEventBits_t _event_bits = {.need_bus = BIT0,
                                    .engine_running = BIT1,
@@ -499,30 +501,41 @@ protected:
   }
 
   void runtimeMetricsReport() {
-    //
-    // typedef struct {
-    //   const char *tag;
-    //   mcrEngineMetric_t *metric;
-    // } metricDef_t;
-    //
-    // std::ostringstream rep_str;
-    //
-    // metricDef_t m[] = {{"convert", &(metrics.convert)},
-    //                    {"discover", &(metrics.discover)},
-    //                    {"report", &(metrics.report)},
-    //                    {"switch_cmd", &(metrics.switch_cmd)}};
-    //
-    // for (int i = 0; i < (sizeof(m) / sizeof(metricDef_t)); i++) {
-    //   if (m[i].metric->elapsed_us > 0) {
-    //     rep_str << m[i].tag << "=";
-    //     rep_str << std::fixed << std::setprecision(2)
-    //             << ((float)(m[i].metric->elapsed_us / 1000.0));
-    //     rep_str << "ms ";
-    //   }
-    // }
-    //
-    // ESP_LOGI(tagPhase(), "metrics: %s", rep_str.str().c_str());
-    ESP_LOGI(tagPhase(), "runtime metrics reporting disabled");
+    auto const max_len = 319;
+
+    // allocate from the heap to minimize task stack impact
+    unique_ptr<char[]> debug_str(new char[max_len + 1]);
+    unique_ptr<metricMap_t> map_ptr(new metricMap_t);
+
+    // get pointers to increase code readability
+    char *str = debug_str.get();
+    metricMap_t *map = map_ptr.get();
+
+    // null terminate the char array for use as string buffer
+    str[0] = 0x00;
+    auto curr_len = strlen(str);
+
+    map->insert({"convert", &(metrics.convert)});
+    map->insert({"discover", &(metrics.discover)});
+    map->insert({"report", &(metrics.report)});
+    map->insert({"switch_cmd", &(metrics.switch_cmd)});
+
+    // append stats that are non-zero
+    for_each(map->begin(), map->end(), [this, str](metricEntry_t item) {
+      std::string &metric = item.first;
+      uint64_t val = (item.second)->elapsed_us;
+
+      if (val > 0) {
+        auto curr_len = strlen(str);
+        char *s = str + curr_len;
+        auto max = max_len - curr_len;
+
+        snprintf(s, max, "%s(%0.2lfms) ", metric.c_str(),
+                 (float)(val / 1000.0));
+      }
+    });
+
+    ESP_LOGI(tagPhase(), "metrics %s", str);
   };
 };
 
