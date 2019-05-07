@@ -2,7 +2,7 @@
 
 host=$(hostname)
 
-[[ $host -ne "jophiel" ]] && echo "please run jophiel" && exit 255
+[[ $host -ne "jophiel" ]] && echo "please run on jophiel" && exit 255
 
 function run_cmd {
     "$@"
@@ -38,8 +38,8 @@ else
 fi
 
 pushd $mcr
-print -n "building mcr_esp..."
-run_cmd make app-clean 1> /dev/null
+print -n "make ${MAKEOPTS} 1> /dev/null"
+# run_cmd make app-clean 1> /dev/null
 run_cmd make ${MAKEOPTS} 1> /dev/null && print " done"
 
 popd

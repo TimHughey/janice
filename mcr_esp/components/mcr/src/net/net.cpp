@@ -323,7 +323,7 @@ void Net::ensureTimeIsSet() {
            total_wait_ms, check_wait_ms);
 
   // continue to query the system time until seconds since epoch are
-  // sufficiently greater than a known recent time
+  // greater than a known recent time
   while ((curr_time.tv_sec < 1554830134) && (++retry < retry_count)) {
     if ((retry > (retry_count - 5)) || ((retry % 50) == 0)) {
       ESP_LOGW(tagEngine(), "waiting for SNTP... (%d/%d)", retry, retry_count);
@@ -336,16 +336,19 @@ void Net::ensureTimeIsSet() {
     ESP_LOGE(tagEngine(), "timeout waiting for SNTP");
     checkError(__PRETTY_FUNCTION__, 0x1100FE);
   } else {
-    char buf[20] = {};
-    const auto buf_len = sizeof(buf);
-    struct tm timeinfo = {};
+    const auto buf_len = 28;
+    unique_ptr<char[]> buf(new char[buf_len]);
+    auto str = buf.get();
+
+    unique_ptr<struct tm> time_buf(new struct tm);
+    auto timeinfo = time_buf.get();
     time_t now = time(nullptr);
 
-    localtime_r(&now, &timeinfo);
-    strftime(buf, buf_len, "%c", &timeinfo);
+    localtime_r(&now, timeinfo);
+    strftime(str, buf_len, "%+", timeinfo);
 
     xEventGroupSetBits(evg_, timeSetBit());
-    ESP_LOGI(tagEngine(), "SNTP complete: %s", buf);
+    ESP_LOGI(tagEngine(), "SNTP complete: %s", str);
   }
 }
 
