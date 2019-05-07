@@ -60,7 +60,7 @@ private:
   TickType_t _last_wake;
   const TickType_t _loop_frequency = pdMS_TO_TICKS(3 * 1000); // 13 seconds
   bool _task_report = false;
-  time_t _timestamp_freq_secs = (60 * 60);
+  time_t _timestamp_freq_secs = (15 * 60);
 
   const char *_watch_task_name = nullptr;
   TaskHandle_t _watch_task_handle = nullptr;

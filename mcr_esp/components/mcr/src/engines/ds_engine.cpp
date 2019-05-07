@@ -52,7 +52,7 @@ mcrDS_t *__singleton__ = nullptr;
 mcrDS::mcrDS() {
   setTags(localTags());
   // setLoggingLevel(ESP_LOG_DEBUG);
-  setLoggingLevel(ESP_LOG_INFO);
+  setLoggingLevel(ESP_LOG_WARN);
   // setLoggingLevel(tagConvert(), ESP_LOG_INFO);
   // setLoggingLevel(tagReport(), ESP_LOG_INFO);
   // setLoggingLevel(tagDiscover(), ESP_LOG_INFO);
@@ -441,8 +441,8 @@ void mcrDS::report(void *task_data) {
 
   for (;;) {
     // let's wait here for the signal devices are available
-    // important to ensure we don't start reporting before the rest of the
-    // system is fully available (e.g. wifi, mqtt)
+    // important to ensure we don't start reporting before
+    // the rest of the system is fully available (e.g. wifi, mqtt)
     waitFor(devicesAvailableBit());
 
     // there are two cases of when report should run:

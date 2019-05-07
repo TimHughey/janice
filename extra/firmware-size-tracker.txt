@@ -138,3 +138,34 @@ Used static IRAM:   72316 bytes (  58756 available, 55.2% used)
     Flash rodata:  165860 bytes
 Total image size:~ 910594 bytes (.bin may be padded larger)
 <<<
+>>>
+commit fb962fd
+Author: Tim Hughey <timhughey@mac.com>
+Date:   Tue May 7 11:28:28 2019 -0400
+
+    MCR Code Cleanup (continued)
+    
+    -moved mcrDS owb_reset() to higher level method to eliminate redundant
+    code
+    -began renaming classes to elminiate mcr prefix in favor of mcr
+    namespace
+    -migrated some mcrDS config values to Kconfig
+Toolchain path: /Users/thughey/devel/xtensa-esp32-elf/bin/xtensa-esp32-elf-gcc
+Toolchain version: crosstool-ng-1.22.0-80-g6c4433a
+Compiler version: 5.2.0
+App "mcr_esp" version: janice2.02.02-4-gfb962fd-dirty
+CC build/app_update/esp_app_desc.o
+AR build/app_update/libapp_update.a
+Generating libapp_update.a.sections_info
+Generating esp32.project.ld
+LD build/mcr_esp.elf
+Python requirements from /Users/thughey/devel/esp-idf/requirements.txt are satisfied.
+Total sizes:
+ DRAM .data size:   13872 bytes
+ DRAM .bss  size:   24496 bytes
+Used static DRAM:   38368 bytes ( 142368 available, 21.2% used)
+Used static IRAM:   72316 bytes (  58756 available, 55.2% used)
+      Flash code:  658262 bytes
+    Flash rodata:  165896 bytes
+Total image size:~ 910346 bytes (.bin may be padded larger)
+<<<
