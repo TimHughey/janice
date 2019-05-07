@@ -345,7 +345,7 @@ void Net::ensureTimeIsSet() {
     time_t now = time(nullptr);
 
     localtime_r(&now, timeinfo);
-    strftime(str, buf_len, "%+", timeinfo);
+    strftime(str, buf_len, "%c %Z", timeinfo);
 
     xEventGroupSetBits(evg_, timeSetBit());
     ESP_LOGI(tagEngine(), "SNTP complete: %s", str);
