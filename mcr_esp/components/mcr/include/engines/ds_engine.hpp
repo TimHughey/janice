@@ -41,7 +41,7 @@
 #include "misc/mcr_types.hpp"
 #include "protocols/mqtt.hpp"
 
-#define W1_PIN 14
+namespace mcr {
 
 typedef class mcrDS mcrDS_t;
 class mcrDS : public mcrEngine<dsDev_t> {
@@ -56,9 +56,10 @@ public:
   void stop();
 
 private:
-  OneWireBus *ds = nullptr;
+  uint8_t _pin = CONFIG_MCR_W1_PIN;
+  OneWireBus *_ds = nullptr;
 
-  const int _max_queue_len = 30;
+  const int _max_queue_depth = CONFIG_MCR_CMD_Q_MAX_DEPTH;
   QueueHandle_t _cmd_q = nullptr;
   mcrTask_t _engineTask = {.handle = nullptr,
                            .data = nullptr,
@@ -147,13 +148,14 @@ private:
 
   void printInvalidDev(dsDev_t *dev);
 
-  mcrEngineTagMap_t &localTags() {
+  EngineTagMap_t &localTags() {
     static std::map<std::string, std::string> tag_map = {
         {"engine", "mcrDS"},
         {"discover", "mcrDS discover"},
         {"convert", "mcrDS convert"},
         {"report", "mcrDS report"},
         {"command", "mcrDS command"},
+        {"readDevice", "DS readDevice"},
         {"readDS1820", "mcrDS readDS1820"},
         {"readDS2406", "mcrDS readDS2406"},
         {"readDS2408", "mcrDS readDS2408"},
@@ -164,6 +166,14 @@ private:
 
     ESP_LOGD(tag_map["engine"].c_str(), "tag_map sizeof=%u", sizeof(tag_map));
     return tag_map;
+  }
+
+  const char *tagReadDevice() {
+    static const char *tag = nullptr;
+    if (tag == nullptr) {
+      tag = _tags["readDevice"].c_str();
+    }
+    return tag;
   }
 
   const char *tagReadDS1820() {
@@ -222,5 +232,6 @@ private:
     return tag;
   }
 };
+} // namespace mcr
 
 #endif // mcr_ds_h

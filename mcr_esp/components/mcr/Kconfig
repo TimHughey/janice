@@ -21,6 +21,33 @@ menu "Engines"
 		select MCR_DS_PHASES
 		select MCR_DS_TASKS
 
+		config MCR_W1_PIN
+			depends on MCR_DS_ENABLE
+			int "Bus GPIO Pin"
+			default 14
+			range 14 16
+			help
+				The GPIO pin used by RMT for One-Wire bus communications.
+
+		config MCR_CMD_Q_MAX_DEPTH
+			depends on MCR_DS_ENABLE
+			int "Command Queue Maximum Depth"
+			default 30
+			range 10 50
+			help
+				A queue is used for commands sent via MQTT.  This parameter defines
+				the maximum depth of the queue.
+
+				This value should be greater than the number of expected devices
+				that can receive commands (e.g. switches) in the event a command is
+				sent for every device.
+
+				Depending on the number of devices and speed of the network, it is very possible for commands to arrive faster than they can be executed on the relatively slow One-Wire Bus.
+
+				The behaviour of command processing is UNDEFINED if this value is
+				too low.  In other words, the command is likely silently dropped and
+				not acknowledged.
+
 		config MCR_DS_PHASES
 			depends on MCR_DS_ENABLE
 			bool "1-Wire Phases"

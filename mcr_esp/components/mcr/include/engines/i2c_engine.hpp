@@ -129,7 +129,7 @@ private:
 
   bool wakeAM2315(i2cDev_t *dev);
 
-  mcrEngineTagMap_t &localTags() {
+  EngineTagMap_t &localTags() {
     static std::map<std::string, std::string> tag_map = {
         {"engine", "mcrI2c"},
         {"discover", "mcrI2c discover"},

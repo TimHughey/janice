@@ -118,3 +118,23 @@ Used static IRAM:   72316 bytes (  58756 available, 55.2% used)
 Total image size:~ 906846 bytes (.bin may be padded larger)
 
 <<<
+>>>
+commit bc0a743
+Author: Tim Hughey <timhughey@mac.com>
+Date:   Mon May 6 19:34:43 2019 -0400
+
+    MCR Trivial Log Change Due to OCD
+Toolchain path: /Users/thughey/devel/xtensa-esp32-elf/bin/xtensa-esp32-elf-gcc
+Toolchain version: crosstool-ng-1.22.0-80-g6c4433a
+Compiler version: 5.2.0
+App "mcr_esp" version: janice2.02.02-3-gbc0a743-dirty
+Python requirements from /Users/thughey/devel/esp-idf/requirements.txt are satisfied.
+Total sizes:
+ DRAM .data size:   13872 bytes
+ DRAM .bss  size:   24496 bytes
+Used static DRAM:   38368 bytes ( 142368 available, 21.2% used)
+Used static IRAM:   72316 bytes (  58756 available, 55.2% used)
+      Flash code:  658546 bytes
+    Flash rodata:  165860 bytes
+Total image size:~ 910594 bytes (.bin may be padded larger)
+<<<

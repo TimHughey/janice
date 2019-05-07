@@ -39,47 +39,42 @@
 #include "protocols/mqtt.hpp"
 #include "readings/readings.hpp"
 
-using namespace mcr;
+namespace mcr {
 
-typedef std::map<std::string, std::string> mcrEngineTagMap_t;
-typedef std::pair<std::string, std::string> mcrEngineTagItem_t;
-
-typedef struct mcrEngineMetric {
+typedef struct EngineMetric {
   int64_t start_us = 0;
   int64_t elapsed_us = 0;
   time_t last_time = 0;
-} mcrEngineMetric_t;
+} EngineMetric_t;
 
-typedef struct mcrEngineMetrics {
-  mcrEngineMetric_t discover;
-  mcrEngineMetric_t convert;
-  mcrEngineMetric_t report;
-  mcrEngineMetric_t switch_cmd;
-  mcrEngineMetric_t switch_cmdack;
-} mcrEngineMetrics_t;
-
-typedef struct {
-  EventBits_t need_bus;
-  EventBits_t engine_running;
-  EventBits_t devices_available;
-  EventBits_t temp_available;
-  EventBits_t temp_sensors_available;
-} engineEventBits_t;
+typedef struct EngineMetrics {
+  EngineMetric_t discover;
+  EngineMetric_t convert;
+  EngineMetric_t report;
+  EngineMetric_t switch_cmd;
+  EngineMetric_t switch_cmdack;
+} EngineMetrics_t;
 
 template <class DEV> class mcrEngine {
 
 private:
   std::vector<DEV *> _devices;
-  uint32_t _dev_count = 0;
-  uint32_t _next_known_index = 0;
 
   xTaskHandle _engine_task = nullptr;
   EventGroupHandle_t _evg;
   SemaphoreHandle_t _bus_mutex = nullptr;
 
-  mcrEngineMetrics_t metrics;
-  typedef std::pair<std::string, mcrEngineMetric_t *> metricEntry_t;
-  typedef std::map<std::string, mcrEngineMetric_t *> metricMap_t;
+  EngineMetrics_t metrics;
+  typedef std::pair<std::string, EngineMetric_t *> metricEntry_t;
+  typedef std::map<std::string, EngineMetric_t *> metricMap_t;
+
+  typedef struct {
+    EventBits_t need_bus;
+    EventBits_t engine_running;
+    EventBits_t devices_available;
+    EventBits_t temp_available;
+    EventBits_t temp_sensors_available;
+  } engineEventBits_t;
 
   engineEventBits_t _event_bits = {.need_bus = BIT0,
                                    .engine_running = BIT1,
@@ -142,9 +137,6 @@ public:
   bool any_of_devices(bool (*func)(const DEV &)) {
     return std::any_of(_devices.cbegin(), _devices.cend(), func);
   }
-
-  // functions for handling known devices
-  // mcrDev_t *findDevice(mcrDev_t &dev);
 
   // justSeenDevice():
   //    will return true if the device was found
@@ -237,7 +229,9 @@ protected:
   uint16_t _engine_stack_size = 10000;
   uint16_t _engine_priority = 5;
 
-  mcrEngineTagMap_t _tags;
+  typedef std::map<std::string, std::string> EngineTagMap_t;
+
+  EngineTagMap_t _tags;
 
   DEV *getDeviceByCmd(mcrCmdSwitch_t &cmd) {
     DEV *dev = findDevice(cmd.dev_id());
@@ -375,16 +369,21 @@ protected:
     esp_log_level_set(tag, level);
   }
 
+  // definition of an entry in the EngineTagMap:
+  //  key:    identifier (e.g. 'engine', 'discover')
+  //  entry:  text displayed by ESP_LOG* when logging level matches
+  typedef std::pair<std::string, std::string> EngineTagItem_t;
   void setLoggingLevel(esp_log_level_t level) {
-    for_each(_tags.begin(), _tags.end(),
-             [this, level](std::pair<std::string, std::string> item) {
-               ESP_LOGD(_tags["engine"].c_str(),
-                        "key=%s tag=%s logging at level=%d", item.first.c_str(),
-                        item.second.c_str(), level);
-               esp_log_level_set(item.second.c_str(), level);
-             });
+    for_each(_tags.begin(), _tags.end(), [this, level](EngineTagItem_t item) {
+      std::string &key = item.first;
+      std::string &tag_text = item.second;
+
+      ESP_LOGD(_tags["engine"].c_str(), "key=%s tag=%s logging at level=%d",
+               key.c_str(), tag_text.c_str(), level);
+      esp_log_level_set(tag_text.c_str(), level);
+    });
   }
-  void setTags(mcrEngineTagMap_t &map) {
+  void setTags(EngineTagMap_t &map) {
     std::string phase_tag = map["engine"] + " phase";
 
     _tags = map;
@@ -442,7 +441,7 @@ public:
 
   // misc metrics tracking
 protected:
-  int64_t trackPhase(const char *lTAG, mcrEngineMetric_t &phase, bool start) {
+  int64_t trackPhase(const char *lTAG, EngineMetric_t &phase, bool start) {
     if (start) {
       phase.start_us = esp_timer_get_time();
       ESP_LOGI(lTAG, "phase started");
@@ -486,8 +485,8 @@ protected:
   time_t lastSwitchCmdTimestamp() { return metrics.switch_cmd.last_time; };
 
   void reportMetrics() {
-    mcr::EngineReading reading(tagEngine(), discoverUS(), convertUS(),
-                               reportUS(), switchCmdUS());
+    EngineReading reading(tagEngine(), discoverUS(), convertUS(), reportUS(),
+                          switchCmdUS());
 
     if (reading.hasNonZeroValues()) {
       publish(&reading);
@@ -508,8 +507,8 @@ protected:
     unique_ptr<metricMap_t> map_ptr(new metricMap_t);
 
     // get pointers to increase code readability
-    char *str = debug_str.get();
-    metricMap_t *map = map_ptr.get();
+    auto *str = debug_str.get();
+    auto *map = map_ptr.get();
 
     // null terminate the char array for use as string buffer
     str[0] = 0x00;
@@ -526,7 +525,7 @@ protected:
 
       if (val > 0) {
         auto curr_len = strlen(str);
-        char *s = str + curr_len;
+        auto *s = str + curr_len;
         auto max = max_len - curr_len;
 
         snprintf(s, max, "%s(%0.2lfms) ", metric.c_str(),
@@ -537,5 +536,6 @@ protected:
     ESP_LOGI(tagPhase(), "metrics %s", str);
   };
 };
+} // namespace mcr
 
 #endif // mcp_engine_h
