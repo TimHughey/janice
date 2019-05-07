@@ -336,7 +336,7 @@ void Net::ensureTimeIsSet() {
     ESP_LOGE(tagEngine(), "timeout waiting for SNTP");
     checkError(__PRETTY_FUNCTION__, 0x1100FE);
   } else {
-    const auto buf_len = 28;
+    const auto buf_len = 48;
     unique_ptr<char[]> buf(new char[buf_len]);
     auto str = buf.get();
 
