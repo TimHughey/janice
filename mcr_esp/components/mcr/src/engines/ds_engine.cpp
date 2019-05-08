@@ -54,8 +54,8 @@ mcrDS_t *__singleton__ = nullptr;
 mcrDS::mcrDS() {
   setTags(localTags());
   // setLoggingLevel(ESP_LOG_DEBUG);
-  setLoggingLevel(ESP_LOG_INFO);
-  // setLoggingLevel(ESP_LOG_WARN);
+  // setLoggingLevel(ESP_LOG_INFO);
+  setLoggingLevel(ESP_LOG_WARN);
   // setLoggingLevel(tagConvert(), ESP_LOG_INFO);
   // setLoggingLevel(tagReport(), ESP_LOG_INFO);
   // setLoggingLevel(tagDiscover(), ESP_LOG_INFO);
