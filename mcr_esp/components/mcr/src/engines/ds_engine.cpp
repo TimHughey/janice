@@ -19,6 +19,7 @@
       */
 
 #include <bitset>
+#include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <map>
@@ -41,6 +42,7 @@
 #include "drivers/owb_gpio.h"
 #include "engines/ds_engine.hpp"
 #include "engines/engine.hpp"
+#include "misc/elapsedMillis.hpp"
 #include "misc/mcr_types.hpp"
 #include "net/mcr_net.hpp"
 #include "protocols/mqtt.hpp"
@@ -52,7 +54,8 @@ mcrDS_t *__singleton__ = nullptr;
 mcrDS::mcrDS() {
   setTags(localTags());
   // setLoggingLevel(ESP_LOG_DEBUG);
-  setLoggingLevel(ESP_LOG_WARN);
+  setLoggingLevel(ESP_LOG_INFO);
+  // setLoggingLevel(ESP_LOG_WARN);
   // setLoggingLevel(tagConvert(), ESP_LOG_INFO);
   // setLoggingLevel(tagReport(), ESP_LOG_INFO);
   // setLoggingLevel(tagDiscover(), ESP_LOG_INFO);
@@ -101,7 +104,7 @@ void mcrDS::command(void *task_data) {
 
     releaseBus();
     queue_rc = xQueueReceive(_cmd_q, &cmd, portMAX_DELAY);
-    int64_t start = esp_timer_get_time();
+    elapsedMicros process_cmd;
 
     if (queue_rc == pdFALSE) {
       ESP_LOGW(tagCommand(), "[rc=%d] queue receive failed", queue_rc);
@@ -123,15 +126,15 @@ void mcrDS::command(void *task_data) {
 
       needBus();
       ESP_LOGD(tagCommand(), "attempting to aquire bux mutex...");
-      int64_t bus_wait_start = esp_timer_get_time();
+      elapsedMicros bus_wait;
       takeBus();
-      int64_t bus_wait_us = esp_timer_get_time() - bus_wait_start;
 
-      if (bus_wait_us < 500) {
-        ESP_LOGD(tagCommand(), "acquired bus mutex (%lluus)", bus_wait_us);
+      if (bus_wait < 500) {
+        ESP_LOGD(tagCommand(), "acquired bus mutex (%lluus)",
+                 (uint64_t)bus_wait);
       } else {
-        float wait_ms = ((float)bus_wait_us / 1000.0);
-        ESP_LOGW(tagCommand(), "acquire bus mutex took %0.2fms", wait_ms);
+        ESP_LOGW(tagCommand(), "acquire bus mutex took %0.2fms",
+                 (float)(bus_wait / 1000.0));
       }
 
       if (dev->isDS2406())
@@ -161,11 +164,9 @@ void mcrDS::command(void *task_data) {
                (const char *)cmd->dev_id().c_str());
     }
 
-    int64_t elapsed_us = esp_timer_get_time() - start;
-    if (elapsed_us > 100000) { // 100ms
-      float elapsed_ms = (float)elapsed_us / 1000.0;
-      ESP_LOGW(tagCommand(), "took %0.3fms for %s", elapsed_ms,
-               cmd->debug().get());
+    if (process_cmd > 100000) { // 100ms
+      ESP_LOGW(tagCommand(), "took %0.3fms for %s",
+               (float)(process_cmd / 1000.0), cmd->debug().get());
     }
 
     delete cmd;

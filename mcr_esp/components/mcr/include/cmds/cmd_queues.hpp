@@ -36,6 +36,8 @@
 
 using std::unique_ptr;
 
+namespace mcr {
+
 typedef class mcrCmdQueues mcrCmdQueues_t;
 class mcrCmdQueues {
 private:
@@ -52,5 +54,6 @@ public:
 
   const unique_ptr<char[]> debug();
 };
+} // namespace mcr
 
 #endif

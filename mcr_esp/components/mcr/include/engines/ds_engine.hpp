@@ -149,22 +149,20 @@ private:
   void printInvalidDev(dsDev_t *dev);
 
   EngineTagMap_t &localTags() {
-    static std::map<std::string, std::string> tag_map = {
-        {"engine", "mcrDS"},
-        {"discover", "mcrDS discover"},
-        {"convert", "mcrDS convert"},
-        {"report", "mcrDS report"},
-        {"command", "mcrDS command"},
-        {"readDevice", "DS readDevice"},
-        {"readDS1820", "mcrDS readDS1820"},
-        {"readDS2406", "mcrDS readDS2406"},
-        {"readDS2408", "mcrDS readDS2408"},
-        {"readDS2413", "mcrDS readDS2413"},
-        {"setDS2406", "mcrDS setDS2406"},
-        {"setDS2408", "mcrDS setDS2408"},
-        {"setDS2413", "mcrDS setDS2413"}};
+    static EngineTagMap_t tag_map = {{"engine", "mcrDS"},
+                                     {"discover", "mcrDS discover"},
+                                     {"convert", "mcrDS convert"},
+                                     {"report", "mcrDS report"},
+                                     {"command", "mcrDS command"},
+                                     {"readDevice", "DS readDevice"},
+                                     {"readDS1820", "mcrDS readDS1820"},
+                                     {"readDS2406", "mcrDS readDS2406"},
+                                     {"readDS2408", "mcrDS readDS2408"},
+                                     {"readDS2413", "mcrDS readDS2413"},
+                                     {"setDS2406", "mcrDS setDS2406"},
+                                     {"setDS2408", "mcrDS setDS2408"},
+                                     {"setDS2413", "mcrDS setDS2413"}};
 
-    ESP_LOGD(tag_map["engine"].c_str(), "tag_map sizeof=%u", sizeof(tag_map));
     return tag_map;
   }
 

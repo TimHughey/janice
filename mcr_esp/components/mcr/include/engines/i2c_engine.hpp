@@ -39,6 +39,8 @@
 #include "misc/mcr_types.hpp"
 #include "protocols/mqtt.hpp"
 
+namespace mcr {
+
 typedef struct {
   TickType_t engine;
   TickType_t convert;
@@ -130,7 +132,7 @@ private:
   bool wakeAM2315(i2cDev_t *dev);
 
   EngineTagMap_t &localTags() {
-    static std::map<std::string, std::string> tag_map = {
+    static std::unordered_map<std::string, std::string> tag_map = {
         {"engine", "mcrI2c"},
         {"discover", "mcrI2c discover"},
         {"convert", "mcrI2c convert"},
@@ -209,5 +211,6 @@ private:
     return catch_all;
   }
 };
+} // namespace mcr
 
 #endif // mcr_i2c_h

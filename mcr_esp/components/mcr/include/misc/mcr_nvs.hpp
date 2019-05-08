@@ -32,6 +32,8 @@
 
 #define MCR_NVS_MSG_MAX_LEN 256
 
+namespace mcr {
+
 typedef struct {
   time_t time = 0;
   char msg[MCR_NVS_MSG_MAX_LEN] = {};
@@ -79,5 +81,6 @@ public:
   static esp_err_t processCommittedMsgs();
   // static esp_err_t processCommittedMsgs();
 };
+} // namespace mcr
 
 #endif // mcr_nvs_hpp

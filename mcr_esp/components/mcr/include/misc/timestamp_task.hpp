@@ -13,6 +13,7 @@
 
 using std::unique_ptr;
 
+namespace mcr {
 class mcrTimestampTask {
 
 public:
@@ -84,5 +85,6 @@ private:
     ::vTaskDelete(temp);
   }
 };
+} // namespace mcr
 
 #endif /* _MCR_TIMESTAMP_TASK_H_ */

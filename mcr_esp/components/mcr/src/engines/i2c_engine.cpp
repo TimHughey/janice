@@ -47,12 +47,15 @@
 #include "protocols/mqtt.hpp"
 #include "readings/readings.hpp"
 
+namespace mcr {
+
 static mcrI2c_t *__singleton__ = nullptr;
 
 mcrI2c::mcrI2c() {
   setTags(localTags());
-  setLoggingLevel(ESP_LOG_WARN);
-  // setLoggingLevel(ESP_LOG_INFO);
+  // setLoggingLevel(ESP_LOG_DEBUG);
+  setLoggingLevel(ESP_LOG_INFO);
+  // setLoggingLevel(ESP_LOG_WARN);
   // setLoggingLevel(tagEngine(), ESP_LOG_INFO);
   // setLoggingLevel(tagDetectDev(), ESP_LOG_INFO);
   // setLoggingLevel(tagDiscover(), ESP_LOG_INFO);
@@ -727,10 +730,12 @@ void mcrI2c::run(void *task_data) {
     discover(nullptr);
 
     for (int i = 0; i < 6; i++) {
-      report(nullptr);
+      if (numKnownDevices() > 0) {
+        report(nullptr);
 
-      runtimeMetricsReport();
-      reportMetrics();
+        runtimeMetricsReport();
+        reportMetrics();
+      }
 
       vTaskDelayUntil(&(_last_wake.engine), _loop_frequency);
     }
@@ -791,3 +796,4 @@ bool mcrI2c::wakeAM2315(i2cDev_t *dev) {
 
   return true;
 }
+} // namespace mcr

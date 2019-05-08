@@ -2,6 +2,8 @@
 
 #include "cmds/cmd_queues.hpp"
 
+namespace mcr {
+
 static const char *TAG = "mcrCmdQueues";
 static mcrCmdQueues_t *__singleton = nullptr;
 
@@ -27,3 +29,4 @@ const unique_ptr<char[]> mcrCmdQueues::debug() {
 
   return move(debug_str);
 }
+} // namespace mcr

@@ -29,6 +29,11 @@
 #include <freertos/task.h>
 #include <sdkconfig.h>
 
+// just in case we ever want to change
+// TODO:  roll this out across the entire project
+using string_t = std::string;
+
+namespace mcr {
 typedef struct {
   TaskHandle_t handle;
   void *data;
@@ -37,7 +42,7 @@ typedef struct {
   UBaseType_t stackSize;
 } mcrTask_t;
 
-typedef std::string mcrRefID_t;
+typedef string_t mcrRefID_t;
 
 typedef struct {
   char id[16];
@@ -47,10 +52,12 @@ typedef struct {
 
 typedef enum mcrHardwareConfig {
   LEGACY = 0x00,
-  BASIC,
-  I2C_MULTIPLEXER
+  BASIC = 0x01,
+  I2C_MULTIPLEXER = 0x02
 } mcrHardwareConfig_t;
 
+// messages received via MQTT that are then sent for parsing by Arduino JSON
 typedef std::vector<char> mcrRawMsg_t;
 
+} // namespace mcr
 #endif // mcr_type_h

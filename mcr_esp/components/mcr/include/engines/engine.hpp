@@ -23,8 +23,8 @@
 
 #include <algorithm>
 #include <cstdlib>
-#include <map>
-#include <string>
+// #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include <esp_log.h>
@@ -35,6 +35,7 @@
 
 #include "cmds/cmd_switch.hpp"
 #include "devs/base.hpp"
+#include "misc/elapsedMillis.hpp"
 #include "misc/mcr_types.hpp"
 #include "protocols/mqtt.hpp"
 #include "readings/readings.hpp"
@@ -65,8 +66,8 @@ private:
   SemaphoreHandle_t _bus_mutex = nullptr;
 
   EngineMetrics_t metrics;
-  typedef std::pair<std::string, EngineMetric_t *> metricEntry_t;
-  typedef std::map<std::string, EngineMetric_t *> metricMap_t;
+  typedef std::pair<string_t, EngineMetric_t *> metricEntry_t;
+  typedef std::map<string_t, EngineMetric_t *> metricMap_t;
 
   typedef struct {
     EventBits_t need_bus;
@@ -181,7 +182,7 @@ public:
     return (found == nullptr) ? true : false;
   };
 
-  DEV *findDevice(const std::string &dev) {
+  DEV *findDevice(const string_t &dev) {
 
     // my first lambda in C++, wow this languge has really evolved
     // since I used it 15+ years ago
@@ -216,7 +217,7 @@ public:
   };
 
   uint32_t numKnownDevices() { return _devices.size(); };
-  bool isDeviceKnown(const std::string &id) {
+  bool isDeviceKnown(const string_t &id) {
     bool rc = false;
 
     rc = (findDevice(id) == nullptr ? false : true);
@@ -225,11 +226,11 @@ public:
 
 protected:
   void *_engine_task_data;
-  std::string _engine_task_name;
+  string_t _engine_task_name;
   uint16_t _engine_stack_size = 10000;
   uint16_t _engine_priority = 5;
 
-  typedef std::map<std::string, std::string> EngineTagMap_t;
+  typedef std::unordered_map<string_t, string_t> EngineTagMap_t;
 
   EngineTagMap_t _tags;
 
@@ -305,7 +306,7 @@ protected:
   }
 
   bool publish(mcrCmdSwitch_t &cmd) { return publish(cmd.dev_id()); };
-  bool publish(const std::string &dev_id) {
+  bool publish(const string_t &dev_id) {
     DEV *search = findDevice(dev_id);
 
     if (search != nullptr) {
@@ -339,23 +340,23 @@ protected:
     return rc;
   };
 
-  bool readDevice(mcrCmdSwitch_t &cmd) {
-    std::string &dev_id = cmd.dev_id();
-
-    return readDevice(dev_id);
-  };
+  // bool readDevice(mcrCmdSwitch_t &cmd) {
+  //   string_t &dev_id = cmd.dev_id();
+  //
+  //   return readDevice(dev_id);
+  // };
 
   // virtual bool readDevice(DEV *);
 
-  bool readDevice(const std::string &id) {
-    DEV *dev = findDevice(id);
-
-    if (dev != nullptr) {
-      readDevice(dev);
-    }
-
-    return (dev == nullptr) ? false : true;
-  }
+  // bool readDevice(const string_t &id) {
+  //   DEV *dev = findDevice(id);
+  //
+  //   if (dev != nullptr) {
+  //     readDevice(dev);
+  //   }
+  //
+  //   return (dev == nullptr) ? false : true;
+  // }
 
   void setCmdAck(mcrCmdSwitch_t &cmd) {
     DEV *dev = findDevice(cmd.dev_id());
@@ -372,71 +373,92 @@ protected:
   // definition of an entry in the EngineTagMap:
   //  key:    identifier (e.g. 'engine', 'discover')
   //  entry:  text displayed by ESP_LOG* when logging level matches
-  typedef std::pair<std::string, std::string> EngineTagItem_t;
+  typedef std::pair<string_t, string_t> EngineTagItem_t;
   void setLoggingLevel(esp_log_level_t level) {
     for_each(_tags.begin(), _tags.end(), [this, level](EngineTagItem_t item) {
-      std::string &key = item.first;
-      std::string &tag_text = item.second;
+      string_t &key = item.first;
+      string_t &tag_text = item.second;
 
-      ESP_LOGD(_tags["engine"].c_str(), "key=%s tag=%s logging at level=%d",
+      ESP_LOGI(_tags["engine"].c_str(), "key=%s tag=%s logging at level=%d",
                key.c_str(), tag_text.c_str(), level);
       esp_log_level_set(tag_text.c_str(), level);
     });
-  }
-  void setTags(EngineTagMap_t &map) {
-    std::string phase_tag = map["engine"] + " phase";
 
-    _tags = map;
-    _tags["phase"] = phase_tag;
+    elapsedMicros find;
+    const char *tag = _tags["engine"].c_str();
+
+    auto elapsed = (uint64_t)find;
+    auto load = _tags.load_factor();
+    auto buckets = _tags.bucket_count();
+
+    ESP_LOGW(tag,
+             "_tags us(%llu) sizeof(%zu) size(%u) load(%0.2f) "
+             "buckets(%u)",
+             elapsed, sizeof(_tags), _tags.size(), load, buckets);
   }
+
+  void setTags(EngineTagMap_t &map) { _tags = map; }
 
 public:
   const char *tagCommand() {
-    static const char *tag = nullptr;
-    if (tag == nullptr) {
-      tag = _tags["command"].c_str();
-    }
-    return tag;
+    // static const char *tag = nullptr;
+    // if (tag == nullptr) {
+    //   tag = _tags["command"].c_str();
+    // }
+    // return tag;
+
+    return tagGeneric("command");
   }
 
   const char *tagConvert() {
-    static const char *tag = nullptr;
-    if (tag == nullptr) {
-      tag = _tags["convert"].c_str();
-    }
-    return tag;
+    // static const char *tag = nullptr;
+    // if (tag == nullptr) {
+    //   tag = _tags["convert"].c_str();
+    // }
+    // return tag;
+
+    return tagGeneric("convert");
   }
 
   const char *tagDiscover() {
-    static const char *tag = nullptr;
-    if (tag == nullptr) {
-      tag = _tags["discover"].c_str();
-    }
-    return tag;
+    // static const char *tag = nullptr;
+    // if (tag == nullptr) {
+    //   tag = _tags["discover"].c_str();
+    // }
+    // return tag;
+
+    return tagGeneric("discover");
   }
 
+  const char *tagGeneric(const char *tag) { return _tags[tag].c_str(); }
+
   const char *tagEngine() {
-    static const char *tag = nullptr;
-    if (tag == nullptr) {
-      tag = _tags["engine"].c_str();
-    }
-    return tag;
+    // static const char *tag = nullptr;
+    // if (tag == nullptr) {
+    //   tag = _tags["engine"].c_str();
+    // }
+    // return tag;
+
+    return tagGeneric("engine");
   }
 
   const char *tagPhase() {
-    static const char *tag = nullptr;
-    if (tag == nullptr) {
-      tag = _tags["phase"].c_str();
-    }
-    return tag;
+    // static const char *tag = nullptr;
+    // if (tag == nullptr) {
+    //   tag = _tags["phase"].c_str();
+    // }
+    // return tag;
+    return tagGeneric("phase");
   }
 
   const char *tagReport() {
-    static const char *tag = nullptr;
-    if (tag == nullptr) {
-      tag = _tags["report"].c_str();
-    }
-    return tag;
+    // static const char *tag = nullptr;
+    // if (tag == nullptr) {
+    //   tag = _tags["report"].c_str();
+    // }
+    // return tag;
+
+    return tagGeneric("report");
   }
 
   // misc metrics tracking
@@ -520,7 +542,7 @@ protected:
 
     // append stats that are non-zero
     for_each(map->begin(), map->end(), [this, str](metricEntry_t item) {
-      std::string &metric = item.first;
+      string_t &metric = item.first;
       uint64_t val = (item.second)->elapsed_us;
 
       if (val > 0) {
@@ -533,7 +555,7 @@ protected:
       }
     });
 
-    ESP_LOGI(tagPhase(), "metrics %s", str);
+    ESP_LOGI(tagEngine(), "%s", str);
   };
 };
 } // namespace mcr
