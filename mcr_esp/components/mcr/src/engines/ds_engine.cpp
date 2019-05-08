@@ -466,28 +466,32 @@ void mcrDS::report(void *task_data) {
     ESP_LOGI(tagReport(), "will attempt to report %d device%s",
              numKnownDevices(), (numKnownDevices() > 1) ? "s" : "");
 
-    for_each(beginDevices(), endDevices(), [this](dsDev_t *dev) {
-      if (dev->available()) {
-        ESP_LOGI(tagReport(), "reading device %s", dev->debug().get());
+    for_each(beginDevices(), endDevices(),
+             [this](std::pair<string_t, dsDev_t *> item) {
+               auto dev = item.second;
 
-        takeBus();
-        auto rc = readDevice(dev);
+               if (dev->available()) {
+                 ESP_LOGI(tagReport(), "reading device %s", dev->debug().get());
 
-        if (rc) {
-          ESP_LOGI(tagReport(), "publishing reading for %s",
-                   dev->debug().get());
-          publish(dev);
-          dev->justSeen();
-        }
-        // hold onto the bus mutex to ensure that the device publih
-        // succeds (another task doesn't change the device just read)
-        giveBus();
-      } else {
-        if (dev->missing()) {
-          ESP_LOGW(tagReport(), "device missing: %s", dev->debug().get());
-        }
-      }
-    });
+                 takeBus();
+                 auto rc = readDevice(dev);
+
+                 if (rc) {
+                   ESP_LOGI(tagReport(), "publishing reading for %s",
+                            dev->debug().get());
+                   publish(dev);
+                   dev->justSeen();
+                 }
+                 // hold onto the bus mutex to ensure that the device publih
+                 // succeds (another task doesn't change the device just read)
+                 giveBus();
+               } else {
+                 if (dev->missing()) {
+                   ESP_LOGW(tagReport(), "device missing: %s",
+                            dev->debug().get());
+                 }
+               }
+             });
 
     trackReport(false);
     reportMetrics();

@@ -25,7 +25,7 @@
 #include <cstdlib>
 // #include <string>
 #include <unordered_map>
-#include <vector>
+// #include <vector>
 
 #include <esp_log.h>
 #include <freertos/FreeRTOS.h>
@@ -58,8 +58,13 @@ typedef struct EngineMetrics {
 
 template <class DEV> class mcrEngine {
 
+public:
+  typedef std::unordered_map<string_t, DEV *> DeviceMap_t;
+
 private:
-  std::vector<DEV *> _devices;
+  // std::vector<DEV *> _devices;
+
+  DeviceMap_t _devices;
 
   xTaskHandle _engine_task = nullptr;
   EventGroupHandle_t _evg;
@@ -140,10 +145,9 @@ public:
   }
 
   // justSeenDevice():
-  //    will return true if the device was found
-  //    and call justSeen() on the device if found
+  //    will return true and call justSeen() If the device was found
   DEV *justSeenDevice(DEV &dev) {
-    DEV *found_dev = findDevice(dev.id());
+    auto *found_dev = findDevice(dev.id());
 
     if (LOG_LOCAL_LEVEL >= ESP_LOG_DEBUG) {
       ESP_LOGD(tagEngine(), "just saw: %s", dev.debug().get());
@@ -164,9 +168,7 @@ public:
     auto rc = false;
     DEV *found = nullptr;
 
-    if (LOG_LOCAL_LEVEL >= ESP_LOG_DEBUG) {
-      ESP_LOGD(tagEngine(), "adding: %s", dev->debug().get());
-    }
+    ESP_LOGD(tagEngine(), "adding: %s", dev->debug().get());
 
     if (numKnownDevices() > maxDevices()) {
       ESP_LOGW(tagEngine(), "attempt to exceed max devices!");
@@ -175,7 +177,8 @@ public:
 
     if ((found = findDevice(dev->id())) == nullptr) {
       dev->justSeen();
-      _devices.push_back(dev);
+      // _devices.push_back(dev);
+      _devices[dev->id()] = dev;
       ESP_LOGI(tagEngine(), "added %s", dev->debug().get());
     }
 
@@ -186,33 +189,35 @@ public:
 
     // my first lambda in C++, wow this languge has really evolved
     // since I used it 15+ years ago
-    auto found =
-        std::find_if(_devices.begin(), _devices.end(),
-                     [dev](DEV *search) { return search->id() == dev; });
+    // auto found =
+    //     std::find_if(_devices.begin(), _devices.end(),
+    //                  [dev](DEV *search) { return search->id() == dev; });
+
+    auto found = _devices.find(dev);
 
     if (found != _devices.end()) {
-      return *found;
+      // auto dev = found->second;
+      // return *dev;
+      return found->second;
     }
 
     return nullptr;
   }
 
-  auto beginDevices() -> typename std::vector<DEV *>::iterator {
+  auto beginDevices() -> typename DeviceMap_t::iterator {
     return _devices.begin();
   }
 
-  auto endDevices() -> typename std::vector<DEV *>::iterator {
-    return _devices.end();
-  }
+  auto endDevices() -> typename DeviceMap_t::iterator { return _devices.end(); }
 
-  auto knownDevices() -> typename std::vector<DEV *>::iterator {
+  auto knownDevices() -> typename DeviceMap_t::iterator {
     return _devices.begin();
   }
-  bool endOfDevices(typename std::vector<DEV *>::iterator it) {
+  bool endOfDevices(typename DeviceMap_t::iterator it) {
     return it == _devices.end();
   };
 
-  bool moreDevices(typename std::vector<DEV *>::iterator it) {
+  bool moreDevices(typename DeviceMap_t::iterator it) {
     return it != _devices.end();
   };
 
