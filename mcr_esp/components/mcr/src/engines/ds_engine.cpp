@@ -22,9 +22,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
-#include <map>
 #include <string>
-#include <vector>
 
 #include <esp_log.h>
 #include <esp_timer.h>
@@ -345,9 +343,11 @@ void mcrDS::discover(void *task_data) {
     _discoverTask.lastWake = xTaskGetTickCount();
     bzero(&search_state, sizeof(OneWireBus_SearchState));
 
-    trackDiscover(true);
-
+    // take the bus before beginning time tracking to avoid
+    // artificially inflating discover elapsed time
     takeBus();
+
+    trackDiscover(true);
 
     owb_s = owb_reset(_ds, &present);
 
