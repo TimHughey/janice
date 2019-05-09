@@ -15,7 +15,7 @@ defmodule Dutycycle.Supervisor do
       end
 
     # List all child processes to be supervised
-    c = if Map.get(args, :start_servers, false), do: dc_children, else: []
+    c = if Map.get(args, :start_children, false), do: dc_children, else: []
 
     opts = [strategy: :rest_for_one, name: Dutycycle.Supervisor]
     Supervisor.init(c, opts)

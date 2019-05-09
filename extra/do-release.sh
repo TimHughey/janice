@@ -1,22 +1,25 @@
-#!/bin/zsh
+#!/usr/bin/env zsh
 
-function run_cmd {
-    "$@"
-    local rc=$?
-    if [ $rc -ne 0 ]; then
-        echo "error with $1" >&2
-				exit 1
-    fi
-    return $rc
-}
-
-base=${HOME}/devel/janice
-extra=$base/extra
-mcp_releases=${base}/mcp/_build/prod/rel/mcp/releases
-
-
-cd $base
-run_cmd git pull --tags
-run_cmd $extra/prod-release.sh
-run_cmd $extra/install-and-start.sh --clean
-run_cmd find $mcp_releases -maxdepth 1 -mtime 3 -print
+echo "The production build and deploy capabilities are now provided by:"
+echo " "
+echo "  MCP Full Release"
+echo "  ----------------"
+echo "   a. mix.prod.full.release"
+echo "   b. extra/install-and-start.sh"
+echo " "
+echo "  MCP Upgrade Release"
+echo "  -------------------"
+echo "   a. mix upgrade.release"
+echo "   b. mcp upgrade <vsn>"
+echo " "
+echo "  MCR Full Release"
+echo "  ----------------"
+echo "   a. extra/deploy-mcr-firmware.sh"
+echo " "
+echo "  NOTES:"
+echo "   a. Build and deploy scripts no longer automatically git pull"
+echo "      so don't forgot to do so if needed."
+echo "   b. The MCR Full Release script deploys the firmware to htdocs"
+echo "      and creates the latest-* symbolic links.  Use Remote.ota_update/1"
+echo "      to trigger the firmware update."
+exit 1

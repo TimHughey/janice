@@ -34,59 +34,73 @@ defmodule Mcp.Application do
   end
 
   # Private Functions
-  defp children_by_env(build_env) when is_binary(build_env) do
-    initial = initial_args(build_env)
+  defp children_by_env(build_env) when is_binary(build_env),
+    do:
+      [{Repo, []}] ++
+        protocols(build_env) ++
+        apps(build_env) ++ support(build_env) ++ support(build_env)
 
-    base = [{Repo, []}]
+  defp apps(build_env) do
+    case build_env do
+      "dev" ->
+        [
+          {Janitor, %{autostart: true}},
+          server(Dutycycle.Supervisor, build_env),
+          {Thermostat.Supervisor, initial}
+        ]
 
-    protocols =
-      case build_env do
-        "dev" ->
-          [
-            {Fact.Supervisor, initial},
-            {Mqtt.Supervisor, Map.put(initial, :autostart, true)}
-          ]
+      "test" ->
+        [
+          {Janitor, initial},
+          server(Dutycycle.Server, build_env),
+          {Thermostat.Supervisor, initial}
+        ]
 
-        "standby" ->
-          []
+      "prod" ->
+        [
+          {Janitor, initial},
+          erver(Dutycycle.Server, build_env),
+          {Thermostat.Supervisor, initial}
+        ]
 
-        _othets ->
-          [{Fact.Supervisor, initial}, {Mqtt.Supervisor, initial}]
-      end
+      "standby" ->
+        []
 
-    apps =
-      case build_env do
-        "dev" ->
-          [{Janitor, %{autostart: true}}, {Thermostat.Supervisor, initial}]
+      _others ->
+        []
+    end
+  end
 
-        "test" ->
-          [
-            {Janitor, initial},
-            {Dutycycle.Supervisor, initial},
-            {Thermostat.Supervisor, initial}
-          ]
+  defp protocols(build_env) do
+    case build_env do
+      "dev" ->
+        [
+          {Fact.Supervisor, initial},
+          {Mqtt.Supervisor, Map.put(initial, :autostart, true)}
+        ]
 
-        "prod" ->
-          [
-            {Janitor, initial},
-            {Dutycycle.Supervisor, initial},
-            {Thermostat.Supervisor, initial}
-          ]
+      "standby" ->
+        []
 
-        "standby" ->
-          []
+      _othets ->
+        [{Fact.Supervisor, initial}, {Mqtt.Supervisor, initial}]
+    end
+  end
 
-        _others ->
-          []
-      end
+  defp server(Dutycycle.Supervisor, "test"),
+    do: {Dutycyle.Supervisor, %{autostart: true, start_children: false}}
 
-    additional =
-      case build_env do
-        "standby" -> []
-        _others -> [{Janice.Scheduler, []}]
-      end
+  defp server(Dutycycle.Supervisor, "prod"),
+    do: {Dutycyle.Supervisor, %{autostart: true, start_children: true}}
 
-    base ++ protocols ++ apps ++ additional
+  defp server(Dutycycle.Supervisor, _other_env),
+    do: {Dutycyle.Supervisor, %{autostart: false, start_children: false}}
+
+  defp support(build_env) do
+    case build_env do
+      "standby" -> []
+      _others -> [{Janice.Scheduler, []}]
+    end
   end
 
   defp initial_args(build_env) when is_binary(build_env) do
@@ -98,7 +112,7 @@ defmodule Mcp.Application do
         %{autostart: true}
 
       "prod" ->
-        %{autostart: true, start_servers: true}
+        %{autostart: true}
 
       "standby" ->
         %{autostart: false}
