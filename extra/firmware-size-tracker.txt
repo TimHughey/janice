@@ -194,3 +194,25 @@ Used static IRAM:   72316 bytes (  58756 available, 55.2% used)
     Flash rodata:  165896 bytes
 Total image size:~ 910342 bytes (.bin may be padded larger)
 <<<
+>>>
+commit e377a1b
+Author: Tim Hughey <timhughey@mac.com>
+Date:   Thu May 9 08:52:11 2019 -0400
+
+    Clean-up of Build and Deploy Scripts
+    
+    -Fixed MCP Dutycycle startup parameterization
+Toolchain path: /Users/thughey/devel/xtensa-esp32-elf/bin/xtensa-esp32-elf-gcc
+Toolchain version: crosstool-ng-1.22.0-80-g6c4433a
+Compiler version: 5.2.0
+App "mcr_esp" version: janice2.02.02-16-ge377a1b-dirty
+Python requirements from /Users/thughey/devel/esp-idf/requirements.txt are satisfied.
+Total sizes:
+ DRAM .data size:   13872 bytes
+ DRAM .bss  size:   24464 bytes
+Used static DRAM:   38336 bytes ( 142400 available, 21.2% used)
+Used static IRAM:   72316 bytes (  58756 available, 55.2% used)
+      Flash code:  660114 bytes
+    Flash rodata:  167632 bytes
+Total image size:~ 913934 bytes (.bin may be padded larger)
+<<<

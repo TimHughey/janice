@@ -102,7 +102,7 @@ void mcrDS::command(void *task_data) {
     BaseType_t queue_rc = pdFALSE;
     mcrCmdSwitch_t *cmd = nullptr;
 
-    releaseBus();
+    clearNeedBus();
     queue_rc = xQueueReceive(_cmd_q, &cmd, portMAX_DELAY);
     elapsedMicros process_cmd;
 

@@ -278,8 +278,9 @@ protected:
     EventBits_t bits = xEventGroupGetBits(_evg);
     return (bits & needBusBit());
   }
+
   void needBus() { xEventGroupSetBits(_evg, needBusBit()); }
-  void releaseBus() { xEventGroupClearBits(_evg, needBusBit()); }
+  void clearNeedBus() { xEventGroupClearBits(_evg, needBusBit()); }
   void tempAvailable() { xEventGroupSetBits(_evg, _event_bits.temp_available); }
   void tempUnavailable() {
     xEventGroupClearBits(_evg, _event_bits.temp_available);
