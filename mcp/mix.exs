@@ -131,7 +131,8 @@ defmodule Mcp.Mixfile do
   defp args do
     [
       build_env: "#{Mix.env()}",
-      git_vsn: "#{git_describe()}"
+      git_vsn: "#{git_describe()}",
+      start_servers: true
     ]
   end
 

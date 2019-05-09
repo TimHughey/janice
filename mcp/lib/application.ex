@@ -98,7 +98,7 @@ defmodule Mcp.Application do
         %{autostart: true}
 
       "prod" ->
-        %{autostart: true}
+        %{autostart: true, start_servers: true}
 
       "standby" ->
         %{autostart: false}
