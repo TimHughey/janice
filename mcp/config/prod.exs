@@ -22,7 +22,7 @@ config :mcp, Janitor,
     purge_timeout: {:ms, 300},
     log: false
   ],
-  orphan_acks: [interval: {:secs, 30}, older_than: {:mins, 1}, log: true]
+  orphan_acks: [interval: {:mins, 5}, older_than: {:mins, 10}, log: true]
 
 config :mcp, MessageSave,
   save: false,
