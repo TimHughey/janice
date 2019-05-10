@@ -12,6 +12,7 @@ defmodule Fact.FreeRamStat do
     measurement("mcr_stat")
 
     tag(:remote_host)
+    tag(:remote_name)
     tag(:env, default: Application.get_env(:mcp, :build_env, "dev"))
     tag(:mcr_stat, default: "freeram")
 
@@ -25,6 +26,7 @@ defmodule Fact.FreeRamStat do
 
     f = set_tag(f, opts, :remote_host)
     f = set_tag(f, opts, :mcr_stat)
+    f = set_tag(f, opts, :remote_name)
 
     f = set_field(f, opts, :val)
 

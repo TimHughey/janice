@@ -38,7 +38,7 @@ defmodule Mcp.Application do
     do:
       [{Repo, []}] ++
         protocols(build_env) ++
-        apps(build_env) ++ support(build_env) ++ support(build_env)
+        apps(build_env) ++ support(build_env)
 
   defp apps(build_env) do
     case build_env do
@@ -46,21 +46,21 @@ defmodule Mcp.Application do
         [
           {Janitor, %{autostart: true}},
           server(Dutycycle.Supervisor, build_env),
-          {Thermostat.Supervisor, initial}
+          {Thermostat.Supervisor, initial_args(build_env)}
         ]
 
       "test" ->
         [
-          {Janitor, initial},
-          server(Dutycycle.Server, build_env),
-          {Thermostat.Supervisor, initial}
+          {Janitor, initial_args(build_env)},
+          server(Dutycycle.Supervisor, build_env),
+          {Thermostat.Supervisor, initial_args(build_env)}
         ]
 
       "prod" ->
         [
-          {Janitor, initial},
-          erver(Dutycycle.Server, build_env),
-          {Thermostat.Supervisor, initial}
+          {Janitor, initial_args(build_env)},
+          server(Dutycycle.Supervisor, build_env),
+          {Thermostat.Supervisor, initial_args(build_env)}
         ]
 
       "standby" ->
@@ -75,26 +75,29 @@ defmodule Mcp.Application do
     case build_env do
       "dev" ->
         [
-          {Fact.Supervisor, initial},
-          {Mqtt.Supervisor, Map.put(initial, :autostart, true)}
+          {Fact.Supervisor, initial_args(build_env)},
+          {Mqtt.Supervisor, initial_args(build_env)}
         ]
 
       "standby" ->
         []
 
       _othets ->
-        [{Fact.Supervisor, initial}, {Mqtt.Supervisor, initial}]
+        [
+          {Fact.Supervisor, initial_args(build_env)},
+          {Mqtt.Supervisor, initial_args(build_env)}
+        ]
     end
   end
 
   defp server(Dutycycle.Supervisor, "test"),
-    do: {Dutycyle.Supervisor, %{autostart: true, start_children: false}}
+    do: {Dutycycle.Supervisor, %{autostart: true, start_children: false}}
 
   defp server(Dutycycle.Supervisor, "prod"),
-    do: {Dutycyle.Supervisor, %{autostart: true, start_children: true}}
+    do: {Dutycycle.Supervisor, %{autostart: true, start_children: true}}
 
   defp server(Dutycycle.Supervisor, _other_env),
-    do: {Dutycyle.Supervisor, %{autostart: false, start_children: false}}
+    do: {Dutycycle.Supervisor, %{autostart: false, start_children: false}}
 
   defp support(build_env) do
     case build_env do

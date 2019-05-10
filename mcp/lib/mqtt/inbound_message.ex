@@ -175,7 +175,15 @@ defmodule Mqtt.InboundMessage do
           Map.get(s, :switch_msgs, {:missing, :missing})
 
         Reading.free_ram_stat?(r) ->
-          FreeRamStat.record(remote_host: r.host, val: r.freeram)
+          rem = Remote.get_by(host: r.host, only: :name)
+          name = if is_nil(rem), do: r.host, else: Map.get(rem, :name)
+
+          FreeRamStat.record(
+            remote_host: r.host,
+            remote_name: name,
+            val: r.freeram
+          )
+
           {nil, nil}
 
         Reading.engine_metric?(r) ->

@@ -1,6 +1,6 @@
 defmodule Mqtt.Client do
-  @moduledoc """
-  """
+  @moduledoc false
+
   require Logger
   use GenServer
 

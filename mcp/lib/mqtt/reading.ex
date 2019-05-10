@@ -25,16 +25,14 @@ defmodule Mqtt.Reading do
 
   def boot?(%{}), do: false
 
-  def check_metadata(%{} = r) do
-    if metadata?(r), do: Map.put_new(r, :metadata, :ok), else: Map.put_new(r, :metadata, :fail)
-  end
+  def check_metadata(%{} = r), do: metadata(r)
 
   @doc ~S"""
   Parse a JSON into a Reading
 
    ##Examples:
     iex> json =
-    ...>   ~s({"host": "mcr-macaddr", "device": "ds/29.00000ffff",
+    ...>   ~s({"host": "mcr.macaddr", "device": "ds/29.00000ffff",
     ...>       "mtime": 1506867918, "type": "temp", "tc": 20.0, "tf": 80.0})
     ...> Jason.decode!(json, keys: :atoms) |> Mqtt.Reading.metadata?()
     true
@@ -67,21 +65,38 @@ defmodule Mqtt.Reading do
 
    ##Examples:
     iex> json =
-    ...>   ~s({"host":"mcr-macaddr", "device":"ds/28.00000ffff",
+    ...>   ~s({"host":"mcr.macaddr", "device":"ds/28.00000ffff",
     ...>       "mtime": 1506867918, "type": "temp", "tc": 20.0, "tf": 80.0})
     ...> Jason.decode!(json, keys: :atoms) |> Mqtt.Reading.metadata?()
     true
 
   """
-  def metadata?(%{} = r) do
-    mtime = Map.get(r, :mtime, nil)
-    type = Map.get(r, :type, nil)
 
-    proper = is_integer(mtime) and String.starts_with?(r.host, "mcr") and is_binary(type)
+  def metadata(%{mtime: mtime, type: type, host: <<"mcr.", _rest::binary>>} = r)
+      when is_integer(mtime) and
+             is_binary(type),
+      do: Map.put(r, :metadata, :ok)
 
-    not proper && Logger.warn(fn -> "bad metadata #{inspect(r)}" end)
-    proper
+  def metadata(bad) do
+    Logger.warn(fn -> "bad metadata #{inspect(bad)}" end)
+    %{metadata: :failed}
   end
+
+  def metadata?(%{metadata: :ok}), do: true
+  def metadata?(%{metadata: :failed}), do: false
+  def metadata?(%{} = r), do: metadata(r) |> metadata?()
+
+  # def metadata?(%{} = r) do
+  #   mtime = Map.get(r, :mtime, nil)
+  #   type = Map.get(r, :type, nil)
+  #
+  #   proper =
+  #     is_integer(mtime) and String.starts_with?(r.host, "mcr") and
+  #       is_binary(type)
+  #
+  #   not proper && Logger.warn(fn -> "bad metadata #{inspect(r)}" end)
+  #   proper
+  # end
 
   @doc ~S"""
   Does the Reading have a good mtime?
@@ -92,7 +107,7 @@ defmodule Mqtt.Reading do
 
    ##Examples:
     iex> json =
-    ...>   ~s({"host":"mcr-macaddr", "device":"ds/28.0000",
+    ...>   ~s({"host":"mcr.macaddr", "device":"ds/28.0000",
     ...>       "mtime": 1506867918, "type": "temp", "tc": 20.0, "tf": 80.0})
     ...> Jason.decode!(json, keys: :atoms) |> Mqtt.Reading.mtime_good?()
     true
@@ -119,7 +134,7 @@ defmodule Mqtt.Reading do
 
    ##Examples:
     iex> json =
-    ...>   ~s({"host": "mcr-macaddr",
+    ...>   ~s({"host": "mcr.macaddr",
     ...>       "mtime": 2106, "type": "text", "text": "simple message"})
     ...> Jason.decode!(json, keys: :atoms) |> Mqtt.Reading.simple_text?()
     true
@@ -135,13 +150,13 @@ defmodule Mqtt.Reading do
 
    ##Examples:
     iex> json =
-    ...>   ~s({"host": "mcr-macaddr",
+    ...>   ~s({"host": "mcr.macaddr",
     ...>       "mtime": 2106, "type": "startup"})
     ...> Jason.decode!(json, keys: :atoms) |> Mqtt.Reading.startup?()
     true
 
     iex> json =
-    ...>   ~s({"host":"mcr-macaddr", "device":"ds/28.0000",
+    ...>   ~s({"host":"mcr.macaddr", "device":"ds/28.0000",
     ...>       "mtime": 1506867918, "type": "temp", "tc": 20.0, "tf": 80.0})
     ...> Jason.decode!(json, keys: :atoms) |> Mqtt.Reading.startup?()
     false
@@ -155,7 +170,7 @@ defmodule Mqtt.Reading do
 
    ##Examples:
     iex> json =
-    ...>   ~s({"host": "mcr-macaddr", "device": "ds/28.0000",
+    ...>   ~s({"host": "mcr.macaddr", "device": "ds/28.0000",
     ...>       "mtime": 1506867918, "type": "temp", "tc": 20.0, "tf": 80.0})
     ...> Jason.decode!(json, keys: :atoms) |> Mqtt.Reading.temperature?()
     true
@@ -163,7 +178,9 @@ defmodule Mqtt.Reading do
   def temperature?(%{} = r) do
     tc = Map.get(r, :tc)
     tf = Map.get(r, :tf)
-    check = (metadata?(r) and r.type === @temp_t and is_number(tc)) or is_number(tf)
+
+    check =
+      (metadata?(r) and r.type === @temp_t and is_number(tc)) or is_number(tf)
 
     if check && Map.get(r, :log_reading, false),
       do:
@@ -179,7 +196,7 @@ defmodule Mqtt.Reading do
 
    ##Examples:
    iex> json =
-   ...>   ~s({"host": "mcr-macaddr",
+   ...>   ~s({"host": "mcr.macaddr",
    ...>       "device": "ds/29.0000", "mtime": 1506867918,
    ...>       "type": "relhum",
    ...>       "rh": 56.0})
@@ -204,7 +221,7 @@ defmodule Mqtt.Reading do
 
    ##Examples:
     iex> json =
-    ...>   ~s({"host": "mcr-macaddr",
+    ...>   ~s({"host": "mcr.macaddr",
     ...>       "device": "ds/29.0000", "mtime": 1506867918,
     ...>        "type": "switch",
     ...>        "states": [{"pio": 0, "state": true},
@@ -218,7 +235,8 @@ defmodule Mqtt.Reading do
     states = Map.get(r, :states)
     pio_count = Map.get(r, :pio_count)
 
-    metadata?(r) and r.type === @switch_t and is_binary(device) and is_list(states) and
+    metadata?(r) and r.type === @switch_t and is_binary(device) and
+      is_list(states) and
       pio_count > 0
   end
 
@@ -236,7 +254,7 @@ defmodule Mqtt.Reading do
 
    ##Examples:
     iex> json =
-    ...>   ~s({ "host": "mcr-macaddr",
+    ...>   ~s({ "host": "mcr.macaddr",
     ...>       "device": "ds/29.0000", "mtime": 1506867918,
     ...>        "type": "switch",
     ...>        "states": [{"pio": 0, "state": true},
