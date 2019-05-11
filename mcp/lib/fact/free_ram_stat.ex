@@ -1,8 +1,13 @@
 defmodule Fact.FreeRamStat do
   @moduledoc false
 
+  require Logger
+
   use Instream.Series
   alias Fact.FreeRamStat
+  alias Fact.FreeRamStat.Fields
+  alias Fact.FreeRamStat.Tags
+
   import(Fact.Influx, only: [write: 2])
 
   alias Janice.TimeSupport
@@ -19,42 +24,62 @@ defmodule Fact.FreeRamStat do
     field(:val)
   end
 
-  def record(opts)
-      when is_list(opts) do
-    def_mtime = TimeSupport.unix_now(:seconds)
-    f = %FreeRamStat{}
+  @doc ~S"""
+  Record a completely defined FreeRamStat metric
 
-    f = set_tag(f, opts, :remote_host)
-    f = set_tag(f, opts, :mcr_stat)
-    f = set_tag(f, opts, :remote_name)
+    ##Examples:
+     iex> %{host: "mcr.xxxx", name: "mcr-name", mtime: 1557515656, val: 262000}
+     ...> |> Fact.FreeRamStat.record()
+     :ok
+  """
+  def record(%{host: host, name: name, mtime: mtime, freeram: freeram}) do
+    tags = %{remote_host: host, remote_name: name, mcr_stat: "freeram"}
 
-    f = set_field(f, opts, :val)
-
-    f = %{f | timestamp: Keyword.get(opts, :mtime, def_mtime)}
-    write(f, precision: :seconds, async: true)
+    write(
+      %FreeRamStat{
+        tags: Kernel.struct(Tags, tags),
+        fields: Kernel.struct(Fields, %{val: freeram}),
+        timestamp: mtime
+      },
+      precision: :seconds,
+      async: true
+    )
   end
 
-  defp set_tag(map, opts, key)
-       when is_map(map) and is_list(opts) and is_atom(key) do
-    set_tag(map, key, Keyword.get(opts, key))
+  @doc ~S"""
+  Record a FreeRamStat metric that is missing the mcr name
+
+    ##Examples:
+     iex> %{host: "mcr.xxxx", mtime: 1557515656, val: 262000}
+     ...> |> Fact.FreeRamStat.record()
+     :ok
+  """
+  def record(%{host: host, mtime: _mtime, freeram: _freeram} = r) do
+    remote = Remote.get_by(host: host, only: :name)
+    name = if is_nil(remote), do: r.host, else: remote.name
+
+    Map.put_new(r, :name, name) |> record()
   end
 
-  defp set_tag(map, _key, nil) when is_map(map), do: map
+  @doc ~S"""
+  Record a FreeRamStat metric that is missing the mtime
 
-  defp set_tag(map, key, value)
-       when is_map(map) and is_atom(key) do
-    %{map | tags: %{map.tags | key => value}}
+    ##Examples:
+     iex> %{host: "mcr.xxxx", name: "mcr-name", val: 262000}
+     ...> |> Fact.FreeRamStat.record()
+     :ok
+  """
+  def record(%{host: _host, freeram: _freeram} = r) do
+    Map.put_new(r, :mtime, TimeSupport.unix_now(:seconds)) |> record()
   end
 
-  defp set_field(map, opts, key)
-       when is_map(map) and is_list(opts) and is_atom(key) do
-    set_field(map, key, Keyword.get(opts, key))
-  end
+  @doc ~S"""
+  Properly handle a request to record an invalid FreeRamStat metric
 
-  defp set_field(map, _key, nil) when is_map(map), do: map
-
-  defp set_field(map, key, value)
-       when is_map(map) and is_atom(key) do
-    %{map | fields: %{map.fields | key => value}}
-  end
+    ##Examples:
+     iex> %{bad_host: "mcr.xxxx", name: "mcr-name", val: 262000}
+     ...> |> Fact.FreeRamStat.record()
+     :fail
+  """
+  def record(_nomatch), do: :fail
 end
