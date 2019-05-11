@@ -23,7 +23,7 @@ defmodule MqttInboundMessageTest do
       name: name(num),
       # hw: "esp32",
       # vsn: preferred_vsn(),
-      mtime: TimeSupport.unix_now(:seconds),
+      mtime: TimeSupport.unix_now(:second),
       log: false
     }
 

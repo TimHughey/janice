@@ -12,7 +12,16 @@ defmodule Fact.EngineMetric do
 
   @metric_type "mcr_stat"
   @metric_name "engine_phase"
-  @metric_tags [:vsn, :host, :name, :engine, :metric, :discover_us, :convert_us, :report_us]
+  @metric_tags [
+    :vsn,
+    :host,
+    :name,
+    :engine,
+    :metric,
+    :discover_us,
+    :convert_us,
+    :report_us
+  ]
   @metric_fields [:convert_us, :discover_us, :report_us, :switch_cmd_us]
 
   series do
@@ -52,7 +61,7 @@ defmodule Fact.EngineMetric do
     pt = set_field(pt, fields, :report_us)
     pt = set_field(pt, fields, :switch_cmd_us)
 
-    %{pt | timestamp: Map.get(r, :mtime, TimeSupport.unix_now(:seconds))}
+    %{pt | timestamp: Map.get(r, :mtime, TimeSupport.unix_now(:second))}
   end
 
   # trap when the input map doesn't match
@@ -63,7 +72,7 @@ defmodule Fact.EngineMetric do
 
   def record(%{} = r) do
     db = Application.get_env(:mcp, Fact.Influx) |> Keyword.get(:database)
-    make_point(r) |> write(database: db, async: true, precision: :seconds)
+    make_point(r) |> write(database: db, async: true, precision: :second)
   end
 
   defp field?({k, _v}), do: k in @metric_fields

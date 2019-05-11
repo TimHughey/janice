@@ -24,7 +24,7 @@ defmodule Fact.StartupAnnouncement do
 
   def record(opts)
       when is_list(opts) do
-    def_mtime = TimeSupport.unix_now(:seconds)
+    def_mtime = TimeSupport.unix_now(:second)
     f = %StartupAnnouncement{}
 
     f = set_tag(f, opts, :host)
@@ -32,7 +32,7 @@ defmodule Fact.StartupAnnouncement do
     f = set_field(f, [val: 1], :val)
 
     f = %{f | timestamp: Keyword.get(opts, :mtime, def_mtime)}
-    write(f, precision: :seconds, async: true)
+    write(f, precision: :second, async: true)
   end
 
   defp set_tag(map, opts, key)

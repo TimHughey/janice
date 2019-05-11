@@ -18,12 +18,13 @@ defmodule Mqtt.SetSwitch do
     true
   """
   def new_cmd(device, states, refid, opts \\ [])
-      when is_binary(device) and is_list(states) and is_binary(refid) and is_list(opts) do
+      when is_binary(device) and is_list(states) and is_binary(refid) and
+             is_list(opts) do
     ack = Keyword.get(opts, :ack, true)
 
     cmd = %{
       cmd: @setswitch_cmd,
-      mtime: TimeSupport.unix_now(:seconds),
+      mtime: TimeSupport.unix_now(:second),
       switch: device,
       states: states,
       refid: refid

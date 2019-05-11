@@ -152,7 +152,8 @@ defmodule Remote do
     end
   end
 
-  def change_name(host, new_name) when is_binary(host) and is_binary(new_name) do
+  def change_name(host, new_name)
+      when is_binary(host) and is_binary(new_name) do
     remote = get_by(host: host)
     check = get_by(name: new_name)
 
@@ -162,7 +163,10 @@ defmodule Remote do
           {res, rem} = changeset(remote, %{name: new_name}) |> update()
 
           if res == :ok,
-            do: SetName.new_cmd(rem.host, rem.name) |> SetName.json() |> Client.publish()
+            do:
+              SetName.new_cmd(rem.host, rem.name)
+              |> SetName.json()
+              |> Client.publish()
 
           res
 
@@ -177,7 +181,9 @@ defmodule Remote do
   def change_name(_, _), do: {:error, :bad_args}
 
   def delete(id) when is_integer(id),
-    do: from(s in Remote, where: s.id == ^id) |> Repo.delete_all(timeout: @delete_timeout_ms)
+    do:
+      from(s in Remote, where: s.id == ^id)
+      |> Repo.delete_all(timeout: @delete_timeout_ms)
 
   def delete_all(:dangerous),
     do:
@@ -212,7 +218,11 @@ defmodule Remote do
     result =
       :timer.tc(fn ->
         Logger.debug(fn -> "external_update() handling:" end)
-        Logger.debug(fn -> "#{inspect(eu, binaries: :as_strings, pretty: true)}" end)
+
+        Logger.debug(fn ->
+          "#{inspect(eu, binaries: :as_strings, pretty: true)}"
+        end)
+
         eu |> add() |> send_remote_config(eu)
       end)
 
@@ -242,13 +252,20 @@ defmodule Remote do
 
   def external_update(no_match) do
     log = is_map(no_match) and Map.get(no_match, :log, true)
-    log && Logger.warn(fn -> "external update received a bad map #{inspect(no_match)}" end)
+
+    log &&
+      Logger.warn(fn ->
+        "external update received a bad map #{inspect(no_match)}"
+      end)
+
     :error
   end
 
   def get_by(opts) when is_list(opts) do
     filter = Keyword.take(opts, [:id, :host, :name])
-    select = Keyword.take(opts, [:only]) |> Keyword.get_values(:only) |> List.flatten()
+
+    select =
+      Keyword.take(opts, [:only]) |> Keyword.get_values(:only) |> List.flatten()
 
     if Enum.empty?(filter) do
       Logger.warn(fn -> "get_by bad args: #{inspect(opts)}" end)
@@ -256,7 +273,9 @@ defmodule Remote do
     else
       rem = from(remote in Remote, where: ^filter) |> one()
 
-      if is_nil(rem) or Enum.empty?(select), do: rem, else: Map.take(rem, select)
+      if is_nil(rem) or Enum.empty?(select),
+        do: rem,
+        else: Map.take(rem, select)
     end
   end
 
@@ -410,7 +429,9 @@ defmodule Remote do
 
     log &&
       Logger.warn(fn ->
-        "attempt to process unknown message type: #{Map.get(eu, :type, "unknown")}"
+        "attempt to process unknown message type: #{
+          Map.get(eu, :type, "unknown")
+        }"
       end)
 
     {:error, "unknown message type"}

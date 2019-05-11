@@ -14,7 +14,7 @@ defmodule RemoteTest do
     do: %{
       host: host(num),
       type: "remote_runtime",
-      mtime: TimeSupport.unix_now(:seconds),
+      mtime: TimeSupport.unix_now(:second),
       async: false
     }
 
@@ -118,7 +118,7 @@ defmodule RemoteTest do
     ext(6) |> Remote.external_update()
     before_mark = Remote.get_by(host: host(6))
 
-    Remote.mark_as_seen(host(1), TimeSupport.unix_now(:seconds))
+    Remote.mark_as_seen(host(1), TimeSupport.unix_now(:second))
 
     after_mark = Remote.get_by(host: host(6))
 
@@ -130,7 +130,7 @@ defmodule RemoteTest do
     ext(5) |> Remote.external_update()
     before_mark = Remote.get_by(host: host(5))
     :timer.sleep(1001)
-    Remote.mark_as_seen(host(5), TimeSupport.unix_now(:seconds), 0)
+    Remote.mark_as_seen(host(5), TimeSupport.unix_now(:second), 0)
     after_mark = Remote.get_by(host: host(5))
 
     assert Timex.compare(after_mark.last_seen_at, before_mark.last_seen_at) == 1

@@ -41,7 +41,7 @@ defmodule Fact.FreeRamStat do
         fields: Kernel.struct(Fields, %{val: freeram}),
         timestamp: mtime
       },
-      precision: :seconds,
+      precision: :second,
       async: true
     )
   end
@@ -70,7 +70,7 @@ defmodule Fact.FreeRamStat do
      :ok
   """
   def record(%{host: _host, freeram: _freeram} = r) do
-    Map.put_new(r, :mtime, TimeSupport.unix_now(:seconds)) |> record()
+    Map.put_new(r, :mtime, TimeSupport.unix_now(:second)) |> record()
   end
 
   @doc ~S"""

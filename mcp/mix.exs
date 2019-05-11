@@ -85,6 +85,7 @@ defmodule Mcp.Mixfile do
       {:distillery, "~> 2.0"},
       {:quantum, "~> 2.2"},
       {:scribe, "~> 0.8.2"},
+      {:msgpax, "~> 2.0"},
       {:credo, "> 0.0.0", only: [:dev, :test], runtime: false},
       {:coverex, "~> 1.0", only: :test}
       # {:phoenix, "~> 1.4.0"},

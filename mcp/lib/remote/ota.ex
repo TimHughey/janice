@@ -44,7 +44,7 @@ defmodule OTA do
         rc =
           %{
             cmd: @restart_cmd,
-            mtime: TimeSupport.unix_now(:seconds),
+            mtime: TimeSupport.unix_now(:second),
             host: host,
             name: name,
             reboot_delay_ms: Keyword.get(opts, :reboot_delay_ms, 0)
@@ -94,7 +94,7 @@ defmodule OTA do
         rc =
           %{
             cmd: @ota_https,
-            mtime: TimeSupport.unix_now(:seconds),
+            mtime: TimeSupport.unix_now(:second),
             host: host,
             name: name,
             fw_url: Keyword.get(opts, :url),

@@ -33,8 +33,6 @@ defmodule Janice.TimeSupport do
     DateTime.utc_now() |> DateTime.to_unix(:second)
   end
 
-  def unix_now(:seconds), do: unix_now(:second)
-
   def utc_now do
     DateTime.utc_now()
   end

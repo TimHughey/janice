@@ -14,7 +14,7 @@ defmodule Mcp.IExHelpers do
   end
 
   def make_mtime_current(json) do
-    mtime = TimeSupport.unix_now(:seconds)
+    mtime = TimeSupport.unix_now(:second)
 
     Jason.decode!(json, keys: :atoms)
     |> Map.put(:mtime, mtime)
@@ -130,7 +130,7 @@ defmodule Mcp.IExHelpers do
       version: "aac8961",
       host: "mcr.f8f005e755da",
       device: cmd.switch.device,
-      mtime: TimeSupport.unix_now(:seconds),
+      mtime: TimeSupport.unix_now(:second),
       type: "switch",
       pio_count: pio_count,
       states: states,

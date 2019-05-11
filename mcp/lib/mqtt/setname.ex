@@ -12,7 +12,7 @@ defmodule Mqtt.SetName do
     cmd =
       %{}
       |> Map.put(:cmd, @setname_cmd)
-      |> Map.put(:mtime, TimeSupport.unix_now(:seconds))
+      |> Map.put(:mtime, TimeSupport.unix_now(:second))
       |> Map.put_new(:host, host)
       |> Map.put_new(:name, String.replace_prefix(name, "mcr.", ""))
 

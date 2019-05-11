@@ -9,7 +9,7 @@ defmodule JanTest do
       name: name(name, num),
       hw: "esp32",
       vsn: preferred_vsn(),
-      mtime: TimeSupport.unix_now(:seconds),
+      mtime: TimeSupport.unix_now(:second),
       log: false
     }
 
@@ -127,7 +127,7 @@ defmodule JanTest do
       pio_count: num_pios,
       states: pios(num_pios, pos),
       vsn: preferred_vsn(),
-      mtime: TimeSupport.unix_now(:seconds),
+      mtime: TimeSupport.unix_now(:second),
       log: false
     }
     |> Switch.external_update()
@@ -145,7 +145,7 @@ defmodule JanTest do
       pio_count: num_pios,
       states: pios(num_pios, pos),
       vsn: preferred_vsn(),
-      mtime: TimeSupport.unix_now(:seconds),
+      mtime: TimeSupport.unix_now(:second),
       log: false
     }
 end

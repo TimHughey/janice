@@ -22,7 +22,7 @@ defmodule FactEngineMetricTest do
       convert_us: 0,
       report_us: 0,
       switch_cmd_us: 0,
-      mtime: TimeSupport.unix_now(:seconds),
+      mtime: TimeSupport.unix_now(:second),
       log: false
     }
 

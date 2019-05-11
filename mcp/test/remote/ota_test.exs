@@ -13,7 +13,7 @@ defmodule OTATest do
   def ext(num),
     do: %{
       host: host(num),
-      mtime: TimeSupport.unix_now(:seconds),
+      mtime: TimeSupport.unix_now(:second),
       log: false
     }
 
