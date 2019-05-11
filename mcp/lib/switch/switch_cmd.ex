@@ -112,7 +112,7 @@ defmodule SwitchCmd do
     lower_limit = utc_now() |> Timex.shift(days: -1)
 
     # compute the date / time of what is considered an orphan
-    oldest = interval |> Timex.shift(milliseconds: ms(opts.older_than) * -1)
+    oldest = utc_now() |> Timex.shift(milliseconds: ms(opts.older_than) * -1)
 
     ack_at = utc_now()
 
