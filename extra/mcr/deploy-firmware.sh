@@ -38,6 +38,7 @@ else
 fi
 
 pushd $mcr
+git --pull || exit 1
 print -n "make ${MAKEOPTS} 1> /dev/null"
 # run_cmd make app-clean 1> /dev/null
 run_cmd make ${MAKEOPTS} 1> /dev/null && print " done"

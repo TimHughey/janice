@@ -66,7 +66,7 @@ defmodule Janitor do
   end
 
   @opts_msg :opts
-  def opts(new_opts \\ []) do
+  def opts(new_opts \\ %{}) when is_map(new_opts) do
     GenServer.call(Janitor, {@opts_msg, new_opts})
   end
 
@@ -90,21 +90,19 @@ defmodule Janitor do
     {:error, :bad_params}
   end
 
-  # if an empty list this is a request for the current configred opts
-  def handle_call({@opts_msg, []}, _from, s) do
-    {:reply, s.opts, s}
-  end
-
-  # if there is a non-empty list then set the opts to the list
-  def handle_call({@opts_msg, new_opts}, _from, s)
-      when is_list(new_opts) do
+  def handle_call({@opts_msg, %{} = new_opts}, _from, s) do
     opts = %{opts: new_opts}
-    s = Map.merge(s, opts)
 
-    # reschedule purge won't do anything if the interval is the same
-    s = reschedule_purge(s, new_opts)
+    if Enum.empty?(new_opts) do
+      {:reply, s.opts, s}
+    else
+      s = Map.merge(s, opts)
 
-    {:reply, s.opts, s}
+      # reschedule purge won't do anything if the interval is the same
+      s = reschedule_purge(s, new_opts)
+
+      {:reply, s.opts, s}
+    end
   end
 
   def handle_call({@log_purge_cmd_msg, val}, _from, s) do

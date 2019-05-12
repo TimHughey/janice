@@ -147,20 +147,24 @@ void mcrDS::command(void *task_data) {
 
       trackSwitchCmd(false);
 
+      msg_buff_t buff(new char[textReading::maxLength()]);
+
       if ((set_rc) && commandAck(*cmd)) {
-        ESP_LOGD(tagCommand(), "cmd and ack complete %s",
+        snprintf(buff.get(), textReading::maxLength(),
+                 "cmd and ack complete for %s",
                  (const char *)cmd->dev_id().c_str());
+        ESP_LOGD(tagCommand(), "%s", buff.get());
+
       } else {
-        msg_buff_t buff(new char[textReading::maxLength()]);
 
         snprintf(buff.get(), textReading::maxLength(),
                  "cmd and/or ack failed for %s",
                  (const char *)cmd->dev_id().c_str());
         ESP_LOGW(tagCommand(), "%s", buff.get());
-
-        textReading reading(buff);
-        mcrMQTT::instance()->publish(reading);
       }
+
+      textReading reading(buff);
+      mcrMQTT::instance()->publish(reading);
 
       giveBus();
 
