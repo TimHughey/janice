@@ -31,7 +31,7 @@ fw_suffixes=(bin elf)
 vsn=$(git describe)
 htdocs=/dar/www/wisslanding/htdocs/janice/mcr_esp/firmware
 
-if ! type "portageq" > /dev/null; then
+if [[ -x /usr/bin/portageq ]]; then
 	MAKEOPTS=$(portageq envvar MAKEOPTS)
 else
 	MAKEOPTS="-j9"

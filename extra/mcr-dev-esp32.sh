@@ -6,7 +6,9 @@ export ESPPORT=/dev/ttyUSB1
 
 pushd $mcr_base
 
+MAKEOPTS=$(portageq envvar MAKEOPTS)
+
 git pull
-make flash && make monitor
+make ${MAKEOPTS} flash && make monitor
 
 popd
