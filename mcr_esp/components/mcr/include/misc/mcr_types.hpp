@@ -21,6 +21,7 @@
 #ifndef mcr_type_hpp
 #define mcr_type_hpp
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -32,6 +33,8 @@
 // just in case we ever want to change
 // TODO:  roll this out across the entire project
 using string_t = std::string;
+
+typedef std::unique_ptr<char[]> msg_buff_t;
 
 namespace mcr {
 typedef struct {

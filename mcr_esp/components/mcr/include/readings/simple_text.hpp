@@ -26,6 +26,7 @@
 #include <sys/time.h>
 #include <time.h>
 
+#include "misc/mcr_types.hpp"
 #include "readings/reading.hpp"
 
 namespace mcr {
@@ -35,9 +36,11 @@ typedef class textReading textReading_t;
 class textReading : public Reading {
 private:
   char *_text = nullptr;
+  bool _do_free = true;
 
 public:
   textReading(const char *text = nullptr);
+  textReading(msg_buff_t &buff);
   ~textReading();
 
   const char *text() { return _text; };

@@ -36,8 +36,13 @@ textReading::textReading(const char *text) {
   }
 }
 
+textReading::textReading(msg_buff_t &buff) {
+  _do_free = false;
+  _text = buff.get();
+}
+
 textReading::~textReading() {
-  if (_text)
+  if ((_do_free) && (_text != nullptr))
     free(_text);
 }
 
