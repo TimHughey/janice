@@ -195,7 +195,7 @@ defmodule Mqtt.InboundMessage do
 
         true ->
           Logger.warn(fn ->
-            "#{r.name} unhandled message [#{Map.get(r, :type, "unknown")}]"
+            "#{r.name} unhandled reading #{inspect(r, pretty: true)}"
           end)
 
           {nil, nil}

@@ -37,6 +37,8 @@ textReading::textReading(const char *text) {
 }
 
 textReading::textReading(msg_buff_t &buff) {
+  _type = ReadingType_t::TEXT;
+
   _do_free = false;
   _text = buff.get();
 }
