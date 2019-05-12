@@ -86,9 +86,9 @@ std::string *Reading::json(char *buffer, size_t len) {
   // std::unique_ptr<std::string> json_S(new std::string());
   // json_S.get()->reserve(1024);
   std::string *json_string = new std::string;
-  json_string->reserve(1024);
+  json_string->reserve(2048);
 
-  DynamicJsonDocument doc(1024);
+  DynamicJsonDocument doc(2048);
 
   commonJSON(doc);
   populateJSON(doc);
