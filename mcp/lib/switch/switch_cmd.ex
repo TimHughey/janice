@@ -18,8 +18,7 @@ defmodule SwitchCmd do
       delete_all: 2,
       one: 1,
       preload: 2,
-      update: 1,
-      update_all: 2
+      update: 1
     ]
 
   import Janice.TimeSupport, only: [before_time: 2, ms: 1, utc_now: 0]
@@ -108,6 +107,7 @@ defmodule SwitchCmd do
   def ack_if_needed(%{}), do: :bad_cmd_ack
 
   def ack_orphans(opts) do
+    log = opts.log
     # set a lower limit to improve performance
     lower_limit = utc_now() |> Timex.shift(days: -1)
 
@@ -116,14 +116,47 @@ defmodule SwitchCmd do
 
     ack_at = utc_now()
 
-    from(
-      sc in SwitchCmd,
-      update: [set: [acked: true, ack_at: ^ack_at, orphan: true]],
-      where: sc.acked == false,
-      where: sc.sent_at > ^lower_limit,
-      where: sc.sent_at < ^oldest
-    )
-    |> update_all([])
+    query =
+      from(
+        sc in SwitchCmd,
+        where: sc.acked == false,
+        where: sc.sent_at > ^lower_limit,
+        where: sc.sent_at < ^oldest
+      )
+
+    orphans = all(query)
+
+    if Enum.empty?(orphans) do
+      {0, nil}
+    else
+      o =
+        for s <- orphans do
+          cs = change(s, acked: true, ack_at: ack_at, orphan: true)
+
+          case update(cs) do
+            {:ok, u} ->
+              log &&
+                Logger.warn(fn ->
+                  sent_ago =
+                    Timex.diff(Timex.now(), u.sent_at, :duration)
+                    |> Timex.format_duration(:humanized)
+
+                  # lower = Timex.from_now(lower_limit)
+                  # oldest = Timex.from_now(oldest)
+
+                  "#{u.name} ack'ed orphan sent #{sent_ago} ago"
+                end)
+
+            {:error, changeset} ->
+              log &&
+                Logger.error(fn ->
+                  "failed to ack orphan: #{inspect(changeset, pretty: true)}"
+                end)
+          end
+        end
+
+      {Enum.count(o), nil}
+    end
   end
 
   def get_rt_latency(list, name) when is_list(list) and is_binary(name) do

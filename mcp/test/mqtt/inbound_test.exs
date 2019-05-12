@@ -115,6 +115,7 @@ defmodule MqttInboundMessageTest do
   end
 
   setup_all do
+    Mqtt.InboundMessage.log_json(log: true)
     :ok
   end
 

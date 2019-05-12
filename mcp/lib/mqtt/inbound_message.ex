@@ -78,10 +78,16 @@ defmodule Mqtt.InboundMessage do
           {_, json_log} =
             File.open("/tmp/json.log", [:append, :utf8, :delayed_write])
 
+          # wrap this in square brackets to create a list of json strings
+          IO.puts(json_log, "[")
+
           json_log
 
         # log stop requested and it is open, close it
         not log and is_pid(pid) ->
+          # since the last json string would have a comma after it
+          # put an empty list here before closing the list, then flattn it
+          IO.puts(pid, "[] ] |> List.flatten()")
           File.close(pid)
           nil
 
@@ -226,10 +232,21 @@ defmodule Mqtt.InboundMessage do
   defp incoming_msg(msg, s, opts) do
     {elapsed_us, log_task} =
       :timer.tc(fn ->
+        log_opt = :as_elixir
+
         task =
-          if is_pid(s.json_log),
-            do: Task.async(fn -> IO.puts(s.json_log, msg) end),
-            else: nil
+          if is_pid(s.json_log) do
+            Task.async(fn ->
+              out =
+                if log_opt == :as_elixir,
+                  do: "~S(" <> msg <> "), ",
+                  else: msg
+
+              IO.puts(s.json_log, out)
+            end)
+          else
+            nil
+          end
 
         Reading.decode(msg) |> decoded_msg(s, opts)
         task
