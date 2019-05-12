@@ -149,7 +149,9 @@ void mcrDS::command(void *task_data) {
 
       msg_buff_t buff(new char[textReading::maxLength()]);
 
-      if ((set_rc) && commandAck(*cmd)) {
+      bool ack_success = commandAck(*cmd);
+
+      if (set_rc && ack_success) {
         snprintf(buff.get(), textReading::maxLength(),
                  "cmd and ack complete for %s",
                  (const char *)cmd->dev_id().c_str());
@@ -158,8 +160,9 @@ void mcrDS::command(void *task_data) {
       } else {
 
         snprintf(buff.get(), textReading::maxLength(),
-                 "cmd and/or ack failed for %s",
-                 (const char *)cmd->dev_id().c_str());
+                 "%s ack failed set_rc(%s) ack(%s)",
+                 (const char *)cmd->dev_id().c_str(),
+                 (set_rc) ? "true" : "false", (ack_success) ? "true" : "false");
         ESP_LOGW(tagCommand(), "%s", buff.get());
       }
 
