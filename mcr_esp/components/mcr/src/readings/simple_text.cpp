@@ -25,31 +25,17 @@
 #include "readings/simple_text.hpp"
 
 namespace mcr {
+textReading::textReading() { init(); }
 textReading::textReading(const char *text) {
+  init();
 
-  _type = ReadingType_t::TEXT;
-
-  if (text == nullptr) {
-    _text = nullptr;
-  } else {
-    _text = strndup(text, maxLength());
-  }
+  strncpy(_actual, text, maxLength());
 }
 
-textReading::textReading(msg_buff_t &buff) {
-  _type = ReadingType_t::TEXT;
-
-  _do_free = false;
-  _text = buff.get();
-}
-
-textReading::~textReading() {
-  if ((_do_free) && (_text != nullptr))
-    free(_text);
-}
+textReading::~textReading() {}
 
 void textReading::populateJSON(JsonDocument &doc) {
-  doc["text"] = _text;
+  doc["text"] = _actual;
   doc["log"] = true;
 }
 } // namespace mcr

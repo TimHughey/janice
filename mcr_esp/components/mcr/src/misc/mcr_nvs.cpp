@@ -121,7 +121,8 @@ esp_err_t mcrNVS::__commitMsg(const char *key, const char *msg) {
   _blob->time = time(nullptr);
   strncpy(_blob->msg, msg, MCR_NVS_MSG_MAX_LEN);
 
-  // ESP_LOGD(TAG, "attempting nvs_set_blob(%d, %p, %p, %d)", _handle, key, _blob,
+  // ESP_LOGD(TAG, "attempting nvs_set_blob(%d, %p, %p, %d)", _handle, key,
+  // _blob,
   //          sizeof(mcrNVSMessage_t));
 
   _esp_rc = nvs_set_blob(_handle, key, _blob, sizeof(mcrNVSMessage_t));
@@ -193,22 +194,23 @@ bool mcrNVS::notOpen() {
 }
 
 void mcrNVS::publishMsg(const char *key, mcrNVSMessage_t *blob) {
-  char *time_str = new char[_time_str_max_len];
-  char *text = new char[MCR_NVS_MSG_MAX_LEN];
-  struct tm *timeinfo = new struct tm;
+  textReading_t *rlog = new textReading();
+  std::unique_ptr<textReading_t> rlog_ptr(rlog);
+  std::unique_ptr<struct tm> timeinfo(new struct tm);
+  size_t bytes;
 
-  localtime_r(&(blob->time), timeinfo);
-  strftime(time_str, _time_str_max_len, "%F %T", timeinfo);
-  snprintf(text, MCR_NVS_MSG_MAX_LEN, "key(%s) time(%s) msg(%s)", key, time_str,
-           blob->msg);
+  localtime_r(&(blob->time), timeinfo.get());
+  bytes =
+      snprintf(rlog->append(), rlog->availableBytes(), "key(%s) time(", key);
+  rlog->use(bytes);
 
-  delete timeinfo;
-  delete time_str;
+  bytes = strftime((rlog->append()), rlog->availableBytes(), "%F %T",
+                   timeinfo.get());
+  rlog->use(bytes);
 
-  textReading reading(text);
-  mcrMQTT::instance()->publish(reading);
+  snprintf(rlog->text(), rlog->availableBytes(), ") msg(%s)", blob->msg);
 
-  delete text;
+  mcrMQTT::instance()->publish(rlog);
 }
 
 void mcrNVS::zeroBuffers() {

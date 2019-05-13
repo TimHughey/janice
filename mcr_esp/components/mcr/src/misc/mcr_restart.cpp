@@ -57,9 +57,10 @@ void mcrRestart::restart(const char *text, const char *func,
            (text == nullptr) ? "UNSPECIFIED REASON" : text);
 
   if (text) {
-    textReading_t reading(text);
+    textReading_t *rlog = new textReading(text);
+    std::unique_ptr<textReading_t> rlog_ptr(rlog);
 
-    mcrMQTT::instance()->publish(reading);
+    mcrMQTT::instance()->publish(rlog);
 
     // pause to ensure reading has been published
     // FUTURE:  query mcrMQTT to ensure all messages have been sent

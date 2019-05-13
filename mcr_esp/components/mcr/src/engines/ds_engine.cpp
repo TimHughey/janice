@@ -147,7 +147,9 @@ void mcrDS::command(void *task_data) {
 
       trackSwitchCmd(false);
 
-      msg_buff_t buff(new char[textReading::maxLength()]);
+      // create a textReading on the heap
+      textReading_t *rlog(new textReading_t);
+      std::unique_ptr<textReading_t> rlog_ptr(rlog); // use unique_ptr
 
       if (set_rc) {
         ack_success = commandAck(*cmd);
@@ -155,24 +157,23 @@ void mcrDS::command(void *task_data) {
 
       if (set_rc && ack_success) {
         if (remote_log) {
-          snprintf(buff.get(), textReading::maxLength(),
+          snprintf(rlog->buff(), rlog->maxLength(),
                    "cmd and ack complete for %s",
                    (const char *)cmd->dev_id().c_str());
         }
-        ESP_LOGD(tagCommand(), "%s", buff.get());
+        ESP_LOGD(tagCommand(), "%s", rlog->buff());
 
       } else {
         remote_log = true;
-        snprintf(buff.get(), textReading::maxLength(),
+        snprintf(rlog->buff(), rlog->maxLength(),
                  "%s ack failed set_rc(%s) ack(%s)",
                  (const char *)cmd->dev_id().c_str(),
                  (set_rc) ? "true" : "false", (ack_success) ? "true" : "false");
-        ESP_LOGW(tagCommand(), "%s", buff.get());
+        ESP_LOGW(tagCommand(), "%s", rlog->buff());
       }
 
       if (remote_log) {
-        textReading reading(buff);
-        mcrMQTT::instance()->publish(reading);
+        mcrMQTT::instance()->publish(rlog);
       }
       giveBus();
 

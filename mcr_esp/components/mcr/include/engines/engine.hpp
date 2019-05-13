@@ -308,7 +308,9 @@ protected:
   // semaphore
   void giveBus() { xSemaphoreGive(_bus_mutex); }
   bool takeBus(TickType_t wait_ticks = portMAX_DELAY) {
-
+    // the bus will be in an indeterminate state if we do acquire it so
+    // call resetBus(). said differently, we could have taken the bus
+    // in the middle of some other operation (e.g. discover, device read)
     if ((xSemaphoreTake(_bus_mutex, wait_ticks) == pdTRUE) && resetBus()) {
       return true;
     }

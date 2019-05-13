@@ -31,25 +31,38 @@
 
 namespace mcr {
 typedef class textReading textReading_t;
-#define MAX_LEN 128
 
 class textReading : public Reading {
-private:
-  char *_text = nullptr;
-  bool _do_free = true;
-
 public:
-  textReading(const char *text = nullptr);
-  textReading(msg_buff_t &buff);
+  textReading();
+  textReading(const char *text);
   ~textReading();
 
-  const char *text() { return _text; };
+  char *append() { return _append_text; };
+  uint32_t availableBytes() { return _remaining_bytes; };
+  char *buff() { return _actual; };
+  static uint32_t maxLength() { return _max_len; };
+  char *text() { return _actual; };
+  void use(size_t bytes) {
+    _append_text += bytes;
+    _remaining_bytes -= bytes;
+  };
 
-  static uint8_t maxLength() { return MAX_LEN; };
+private:
+  static const uint32_t _max_len = 640;
+
+  char _actual[_max_len + 1];
+  char *_append_text = _actual;
+  uint32_t _remaining_bytes = _max_len;
+
+  void init() {
+    _type = ReadingType_t::TEXT;
+    _actual[0] = 0x00; // null terminate the buffer
+  }
 
 protected:
   virtual void populateJSON(JsonDocument &doc);
-};
+}; // namespace mcr
 } // namespace mcr
 
 #endif // text_reading_hpp
