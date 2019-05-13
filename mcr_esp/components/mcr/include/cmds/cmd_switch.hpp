@@ -60,10 +60,10 @@ public:
   bool ack() { return _ack; }
   const std::string &dev_id() const { return _dev_id; };
   cmd_bitset_t mask() { return _mask; };
-  bool matchPrefix(const char *prefix);
-  bool process();
+  bool IRAM_ATTR matchPrefix(const char *prefix);
+  bool IRAM_ATTR process();
   mcrRefID_t &refID() { return _refid; };
-  bool sendToQueue(cmdQueue_t &cmd_q);
+  bool IRAM_ATTR sendToQueue(cmdQueue_t &cmd_q);
   size_t size() { return sizeof(mcrCmdSwitch_t); };
   cmd_bitset_t state() { return _state; };
 

@@ -39,6 +39,10 @@ public:
   elapsedMillis(void) { ms = millis() / 1000; }
   elapsedMillis(uint64_t val) { ms = millis() - val; }
   elapsedMillis(const elapsedMillis &orig) { ms = orig.ms; }
+  float asSeconds() {
+    uint64_t e = millis() - ms;
+    return (float)(e / 1000.0);
+  }
   operator uint64_t() const { return millis() - ms; }
   elapsedMillis &operator=(const elapsedMillis &rhs) {
     ms = rhs.ms;
@@ -108,6 +112,10 @@ public:
   elapsedMicros(void) { us = micros(); }
   elapsedMicros(uint64_t val) { us = micros() - val; }
   elapsedMicros(const elapsedMicros &orig) { us = orig.us; }
+  float asSeconds() {
+    uint64_t e = micros() - us;
+    return (float)(e / 1000000.0);
+  }
   operator uint64_t() const { return micros() - us; }
   elapsedMicros &operator=(const elapsedMicros &rhs) {
     us = rhs.us;

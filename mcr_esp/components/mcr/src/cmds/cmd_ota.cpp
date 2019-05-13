@@ -8,6 +8,7 @@
 #include "cmds/cmd_ota.hpp"
 #include "engines/ds_engine.hpp"
 #include "engines/i2c_engine.hpp"
+#include "misc/elapsedMillis.hpp"
 #include "misc/mcr_restart.hpp"
 #include "net/mcr_net.hpp"
 #include "protocols/mqtt.hpp"
@@ -18,11 +19,6 @@ static const char *k_reboot_delay_ms = "reboot_delay_ms";
 static const char *k_fw_url = "fw_url";
 
 static bool _ota_in_progress = false;
-static float _ota_elapsed_sec = 0.0;
-
-static char _shared_msg[128];
-// prevent dup strings
-static const char *_shared_msg_fmt = "[%s] OTA elapsed(%0.2fs)";
 
 extern const uint8_t ca_start[] asm("_binary_ca_pem_start");
 extern const uint8_t ca_end[] asm("_binary_ca_pem_end");
@@ -50,7 +46,7 @@ void mcrCmdOTA::doUpdate() {
     textReading_t *rlog = new textReading_t;
     textReading_ptr_t rlog_ptr(rlog);
 
-    rlog->printf("begin OTA part(run) name(%-8s) addr(0x%x)", run_part->label,
+    rlog->printf("OTA begin part(run) name(%-8s) addr(0x%x)", run_part->label,
                  run_part->address);
     rlog->publish();
     ESP_LOGI(TAG, "%s", rlog->text());
@@ -63,26 +59,25 @@ void mcrCmdOTA::doUpdate() {
 
   mcrMQTT::otaPrep();
 
-  uint64_t ota_start_us = esp_timer_get_time();
+  textReading_t *rlog = new textReading_t;
+  textReading_ptr_t rlog_ptr(rlog);
 
+  // track the time it takes to perform ota
+  elapsedMicros ota_elapsed;
   esp_err_t esp_rc = esp_https_ota(&config);
-  _ota_elapsed_sec = (float)((esp_timer_get_time() - ota_start_us) / 1000000.0);
+
+  rlog->printf("[%s] OTA elapsed(%0.2fs)", esp_err_to_name(esp_rc),
+               ota_elapsed.asSeconds());
 
   if (esp_rc == ESP_OK) {
-    snprintf(_shared_msg, sizeof(_shared_msg), _shared_msg_fmt,
-             esp_err_to_name(esp_rc), _ota_elapsed_sec);
+    ESP_LOGI(TAG, "%s", rlog->text());
 
-    ESP_LOGI(TAG, "%s", _shared_msg);
-
-    mcrRestart::instance()->restart(_shared_msg, __PRETTY_FUNCTION__,
-                                    reboot_delay_ms());
   } else {
-    snprintf(_shared_msg, sizeof(_shared_msg), _shared_msg_fmt,
-             esp_err_to_name(esp_rc), _ota_elapsed_sec);
-    ESP_LOGE(TAG, "%s", _shared_msg);
-
-    mcrRestart::instance()->restart(_shared_msg, __PRETTY_FUNCTION__);
+    ESP_LOGE(TAG, "%s", rlog->text());
   }
+
+  mcrRestart::instance()->restart(rlog->text(), __PRETTY_FUNCTION__,
+                                  reboot_delay_ms());
 }
 
 bool mcrCmdOTA::process() {
