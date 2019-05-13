@@ -1027,7 +1027,7 @@ bool mcrDS::setDS2408(mcrCmdSwitch_t &cmd, dsDev_t *dev) {
   owb_status owb_s;
   bool rc = false;
 
-  textReading *rlog = new (textReading_t);
+  textReading *rlog = new textReading_t;
   textReading_ptr_t rlog_ptr(rlog);
 
   // read the device to ensure we have the current state
@@ -1121,13 +1121,13 @@ bool mcrDS::setDS2408(mcrCmdSwitch_t &cmd, dsDev_t *dev) {
     // cmd_bitset_t b0 = check[0];
     // cmd_bitset_t b1 = check[1];
     rlog->printf("[%s] PASSED expected 0x%02x==0xaa *OR* 0x%02x==0x%02x",
-                 check[0], new_state, dev_state);
+                 dev->debug().get(), check[0], new_state, dev_state);
     rlog->consoleInfo(tagSetDS2408());
 
     rc = true;
   } else {
     rlog->printf("[%s] FAILED expected 0x%02x==0xaa *OR* 0x%02x==0x%02x",
-                 check[0], new_state, dev_state);
+                 dev->debug().get(), check[0], new_state, dev_state);
     rlog->publish();
     rlog->consoleWarn(tagSetDS2408());
   }
