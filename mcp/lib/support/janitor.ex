@@ -9,7 +9,7 @@ defmodule Janitor do
 
   alias Fact.RunMetric
 
-  @vsn :janitor0003
+  @vsn :janitor0004
 
   @orphan_timer :orphan_timer
   @purge_timer :purge_timer
@@ -96,10 +96,7 @@ defmodule Janitor do
     if Enum.empty?(new_opts) do
       {:reply, s.opts, s}
     else
-      s = Map.merge(s, opts)
-
-      # reschedule purge won't do anything if the interval is the same
-      s = reschedule_purge(s, new_opts)
+      s = Map.merge(s, opts) |> schedule_purge() |> schedule_orphan()
 
       {:reply, s.opts, s}
     end
@@ -218,49 +215,29 @@ defmodule Janitor do
     purged
   end
 
-  # handle the situation where the interval has been changed
-  defp reschedule_purge(s, new_opts)
-       when is_map(s) and is_list(new_opts) do
-    asis = s.opts.switch_cmds.interval
-    tobe = s.opts.switch_cmds.interval
+  defp schedule_orphan(s),
+    do: schedule_orphan(s, ms(s.opts.orphan_acks.interval))
 
-    if asis != tobe do
-      Logger.info(fn -> "rescheduling purge for interval #{tobe}" end)
-      reschedule_purge(s)
-    else
-      s
-    end
-  end
-
-  defp reschedule_purge(s) do
-    timer = Map.get(s, @purge_timer)
-
-    unless timer do
-      Process.cancel_timer(timer)
+  defp schedule_orphan(s, millis) do
+    with false <- is_nil(Map.get(s, @orphan_timer, nil)),
+         true <- Process.alive?(s.orphan_timer) do
+      Process.cancel_timer(s.orphan_timer)
     end
 
-    schedule_purge(s)
-  end
-
-  defp schedule_orphan(s) when is_map(s) do
-    after_millis = ms(s.opts.orphan_acks.interval)
-    schedule_orphan(s, after_millis)
-  end
-
-  defp schedule_orphan(s, after_millis) when is_map(s) do
-    t = send_after(self(), {:clean_orphan_acks}, after_millis)
+    t = send_after(self(), {:clean_orphan_acks}, millis)
     Map.put(s, @orphan_timer, t)
   end
 
-  defp schedule_purge(s)
-       when is_map(s) do
-    after_millis = ms(s.opts.switch_cmds.interval)
-    schedule_purge(s, after_millis)
-  end
+  defp schedule_purge(s),
+    do: schedule_purge(s, ms(s.opts.switch_cmds.interval))
 
-  defp schedule_purge(s, after_millis)
-       when is_map(s) do
-    t = send_after(self(), {:purge_switch_cmds}, after_millis)
+  defp schedule_purge(s, millis) do
+    with false <- is_nil(Map.get(s, @purge_timer, nil)),
+         true <- Process.alive?(s.purge_timer) do
+      Process.cancel_timer(s.purge_timer)
+    end
+
+    t = send_after(self(), {:purge_switch_cmds}, millis)
     Map.put(s, @purge_timer, t)
   end
 end
