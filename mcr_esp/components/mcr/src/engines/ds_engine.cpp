@@ -1091,8 +1091,12 @@ bool mcrDS::setDS2408(mcrCmdSwitch_t &cmd, dsDev_t *dev) {
     return rc;
   }
 
-  uint8_t check[2] = {0x00};
-  owb_s = owb_read_bytes(_ds, check, sizeof(check));
+  uint8_t check[2];
+  // read the confirmation bye and new state
+  // we do this with two reads of a single byte to give time for the device
+  // to respond and avoid dropped bits
+  owb_s = owb_read_byte(_ds, &(check[0]));
+  owb_s = owb_read_byte(_ds, &(check[1]));
 
   if (owb_s != OWB_STATUS_OK) {
     dev->stopWrite();
@@ -1111,23 +1115,19 @@ bool mcrDS::setDS2408(mcrCmdSwitch_t &cmd, dsDev_t *dev) {
 
   rlog->reuse();
   // check what the device returned to determine success or failure
-  // byte 0 = 0xAA is a success, byte 1 = new_state
-  // this might be a bit of a hack however let's accept success if either
-  // the check byte is 0xAA, 0x2A *OR* the reported dev_state == new_state
-  // this handles the occasional situation where there is a single dropped
-  // bit in either (but hopefully not both)
-  uint32_t dev_state = check[1];
-  if (((check[0] | 0x80) == 0xaa) || (dev_state == new_state)) {
-    // cmd_bitset_t b0 = check[0];
-    // cmd_bitset_t b1 = check[1];
+  // byte 0: 0xAA is the confirmation response
+  // byte 1: new_state
+  uint8_t conf_byte = check[0];
+  uint8_t dev_state = check[1];
+  if ((conf_byte == 0xaa) || (dev_state == new_state)) {
     rlog->printf("[%s] PASSED expected 0x%02x==0xaa *OR* 0x%02x==0x%02x",
-                 dev->debug().get(), check[0], new_state, dev_state);
+                 dev->debug().get(), conf_byte, new_state, dev_state);
     rlog->consoleInfo(tagSetDS2408());
 
     rc = true;
   } else {
     rlog->printf("[%s] FAILED expected 0x%02x==0xaa *OR* 0x%02x==0x%02x",
-                 dev->debug().get(), check[0], new_state, dev_state);
+                 dev->debug().get(), conf_byte, new_state, dev_state);
     rlog->publish();
     rlog->consoleWarn(tagSetDS2408());
   }
