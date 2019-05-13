@@ -44,8 +44,16 @@ void mcrCmdOTA::doUpdate() {
   config.timeout_ms = 1000;
 
   if (_ota_in_progress) {
-    ESP_LOGI(TAG, "ota in-progress, ignoring spurious begin");
+    ESP_LOGW(TAG, "ota in-progress, ignoring spurious begin");
     return;
+  } else {
+    textReading_t *rlog = new textReading_t;
+    textReading_ptr_t rlog_ptr(rlog);
+
+    rlog->printf("begin OTA part(run) name(%-8s) addr(0x%x)", run_part->label,
+                 run_part->address);
+    rlog->publish();
+    ESP_LOGI(TAG, "%s", rlog->text());
   }
 
   _ota_in_progress = true;
@@ -56,9 +64,6 @@ void mcrCmdOTA::doUpdate() {
   mcrMQTT::otaPrep();
 
   uint64_t ota_start_us = esp_timer_get_time();
-
-  ESP_LOGI(TAG, "part(run) name(%-8s) addr(0x%x)", run_part->label,
-           run_part->address);
 
   esp_err_t esp_rc = esp_https_ota(&config);
   _ota_elapsed_sec = (float)((esp_timer_get_time() - ota_start_us) / 1000000.0);
@@ -86,7 +91,7 @@ bool mcrCmdOTA::process() {
   bool this_host = (_host.compare(Net::hostID()) == 0) ? true : false;
 
   if (this_host == false) {
-    ESP_LOGI(TAG, "OTA command not for us, ignoring.");
+    ESP_LOGD(TAG, "OTA command not for us, ignoring.");
     return true;
   }
 
