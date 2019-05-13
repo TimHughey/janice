@@ -3,7 +3,7 @@
 janice=${HOME}/devel/janice
 extra=${janice}/extra
 mcr_base=${janice}/mcr_esp
-tracker=${extra}/firmware-size-tracker.txt
+tracker=${extra}/mcr/firmware-size-tracker.txt
 
 pushd $mcr_base
 

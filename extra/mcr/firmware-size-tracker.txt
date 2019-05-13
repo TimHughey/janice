@@ -216,3 +216,28 @@ Used static IRAM:   72316 bytes (  58756 available, 55.2% used)
     Flash rodata:  167632 bytes
 Total image size:~ 913934 bytes (.bin may be padded larger)
 <<<
+>>>
+commit 9a85f50
+Author: Tim Hughey <timhughey@mac.com>
+Date:   Mon May 13 12:57:50 2019 -0400
+
+    MCP Improved OTA Logging and Added asSeconds to elapsedMillis/Micros
+Toolchain path: /Users/thughey/devel/xtensa-esp32-elf/bin/xtensa-esp32-elf-gcc
+Toolchain version: crosstool-ng-1.22.0-80-g6c4433a
+Compiler version: 5.2.0
+App "mcr_esp" version: janice2.02.02-40-g9a85f50-dirty
+CC build/app_update/esp_app_desc.o
+AR build/app_update/libapp_update.a
+Generating libapp_update.a.sections_info
+Generating esp32.project.ld
+LD build/mcr_esp.elf
+Python requirements from /Users/thughey/devel/esp-idf/requirements.txt are satisfied.
+Total sizes:
+ DRAM .data size:   13872 bytes
+ DRAM .bss  size:   24336 bytes
+Used static DRAM:   38208 bytes ( 142528 available, 21.1% used)
+Used static IRAM:   72772 bytes (  58300 available, 55.5% used)
+      Flash code:  660338 bytes
+    Flash rodata:  167772 bytes
+Total image size:~ 914754 bytes (.bin may be padded larger)
+<<<
