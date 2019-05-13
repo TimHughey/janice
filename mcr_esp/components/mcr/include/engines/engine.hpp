@@ -307,8 +307,13 @@ protected:
 
   // semaphore
   void giveBus() { xSemaphoreGive(_bus_mutex); }
-  void takeBus(TickType_t wait_ticks = portMAX_DELAY) {
-    xSemaphoreTake(_bus_mutex, wait_ticks);
+  bool takeBus(TickType_t wait_ticks = portMAX_DELAY) {
+
+    if ((xSemaphoreTake(_bus_mutex, wait_ticks) == pdTRUE) && resetBus()) {
+      return true;
+    }
+
+    return false;
   }
 
   bool publish(mcrCmdSwitch_t &cmd) { return publish(cmd.dev_id()); };
@@ -363,6 +368,8 @@ protected:
   //
   //   return (dev == nullptr) ? false : true;
   // }
+
+  virtual bool resetBus() { return true; }
 
   void setCmdAck(mcrCmdSwitch_t &cmd) {
     DEV *dev = findDevice(cmd.dev_id());

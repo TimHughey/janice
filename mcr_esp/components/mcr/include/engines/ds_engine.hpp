@@ -55,6 +55,9 @@ public:
   void suspend();
   void stop();
 
+protected:
+  bool resetBus();
+
 private:
   uint8_t _pin = CONFIG_MCR_W1_PIN;
   OneWireBus *_ds = nullptr;

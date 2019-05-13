@@ -119,6 +119,8 @@ void mcrDS::command(void *task_data) {
 
     if ((dev != nullptr) && dev->isValid()) {
       bool set_rc = false;
+      bool ack_success = false;
+      bool remote_log = false;
 
       trackSwitchCmd(true);
 
@@ -135,13 +137,11 @@ void mcrDS::command(void *task_data) {
                  (float)(bus_wait / 1000.0));
       }
 
-      if (dev->isDS2406())
+      if (dev->isDS2406()) {
         set_rc = setDS2406(*cmd, dev);
-
-      if (dev->isDS2408())
+      } else if (dev->isDS2408()) {
         set_rc = setDS2408(*cmd, dev);
-
-      if (dev->isDS2413()) {
+      } else if (dev->isDS2413()) {
         set_rc = setDS2413(*cmd, dev);
       }
 
@@ -149,11 +149,12 @@ void mcrDS::command(void *task_data) {
 
       msg_buff_t buff(new char[textReading::maxLength()]);
 
-      bool ack_success = commandAck(*cmd);
-      bool log = false;
+      if (set_rc) {
+        ack_success = commandAck(*cmd);
+      }
 
       if (set_rc && ack_success) {
-        if (log) {
+        if (remote_log) {
           snprintf(buff.get(), textReading::maxLength(),
                    "cmd and ack complete for %s",
                    (const char *)cmd->dev_id().c_str());
@@ -161,7 +162,7 @@ void mcrDS::command(void *task_data) {
         ESP_LOGD(tagCommand(), "%s", buff.get());
 
       } else {
-        log = true;
+        remote_log = true;
         snprintf(buff.get(), textReading::maxLength(),
                  "%s ack failed set_rc(%s) ack(%s)",
                  (const char *)cmd->dev_id().c_str(),
@@ -169,7 +170,7 @@ void mcrDS::command(void *task_data) {
         ESP_LOGW(tagCommand(), "%s", buff.get());
       }
 
-      if (log) {
+      if (remote_log) {
         textReading reading(buff);
         mcrMQTT::instance()->publish(reading);
       }
@@ -188,7 +189,7 @@ void mcrDS::command(void *task_data) {
 
     delete cmd;
   }
-}
+} // namespace mcr
 
 bool mcrDS::commandAck(mcrCmdSwitch_t &cmd) {
   bool rc = true;
@@ -851,6 +852,19 @@ bool mcrDS::readDS2413(dsDev_t *dev, positionsReading_t **reading) {
       new positionsReading(dev->id(), time(nullptr), positions, (uint8_t)2);
 
   return rc;
+}
+
+bool mcrDS::resetBus() {
+  bool present = false;
+  owb_status owb_s;
+
+  owb_s = owb_reset(_ds, &present);
+
+  if (owb_s == OWB_STATUS_OK) {
+    return true;
+  }
+
+  return false;
 }
 
 void mcrDS::run(void *data) {
