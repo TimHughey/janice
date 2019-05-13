@@ -23,6 +23,7 @@
 
 #include <string>
 
+#include <stdarg.h>
 #include <sys/time.h>
 #include <time.h>
 
@@ -31,6 +32,8 @@
 
 namespace mcr {
 typedef class textReading textReading_t;
+
+typedef std::unique_ptr<textReading_t> textReading_ptr_t;
 
 class textReading : public Reading {
 public:
@@ -42,6 +45,9 @@ public:
   uint32_t availableBytes() { return _remaining_bytes; };
   char *buff() { return _actual; };
   static uint32_t maxLength() { return _max_len; };
+  void printf(const char *format, ...);
+  void printf(struct tm *timeinfo, const char *format, ...);
+  void publish();
   char *text() { return _actual; };
   void use(size_t bytes) {
     _append_text += bytes;

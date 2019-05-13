@@ -58,7 +58,7 @@ void mcrRestart::restart(const char *text, const char *func,
 
   if (text) {
     textReading_t *rlog = new textReading(text);
-    std::unique_ptr<textReading_t> rlog_ptr(rlog);
+    textReading_ptr_t rlog_ptr(rlog);
 
     mcrMQTT::instance()->publish(rlog);
 

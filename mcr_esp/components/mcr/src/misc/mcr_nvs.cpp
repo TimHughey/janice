@@ -197,18 +197,10 @@ void mcrNVS::publishMsg(const char *key, mcrNVSMessage_t *blob) {
   textReading_t *rlog = new textReading();
   std::unique_ptr<textReading_t> rlog_ptr(rlog);
   std::unique_ptr<struct tm> timeinfo(new struct tm);
-  size_t bytes;
 
   localtime_r(&(blob->time), timeinfo.get());
-  bytes =
-      snprintf(rlog->append(), rlog->availableBytes(), "key(%s) time(", key);
-  rlog->use(bytes);
 
-  bytes = strftime((rlog->append()), rlog->availableBytes(), "%F %T",
-                   timeinfo.get());
-  rlog->use(bytes);
-
-  snprintf(rlog->text(), rlog->availableBytes(), ") msg(%s)", blob->msg);
+  rlog->printf(timeinfo.get(), "key(%s) msg(%s)", key, blob->msg);
 
   mcrMQTT::instance()->publish(rlog);
 }

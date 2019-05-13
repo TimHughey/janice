@@ -22,6 +22,7 @@
 #include <sys/time.h>
 #include <time.h>
 
+#include "protocols/mqtt.hpp"
 #include "readings/simple_text.hpp"
 
 namespace mcr {
@@ -38,4 +39,44 @@ void textReading::populateJSON(JsonDocument &doc) {
   doc["text"] = _actual;
   doc["log"] = true;
 }
+
+void textReading::printf(const char *format, ...) {
+  va_list arglist;
+  size_t bytes;
+
+  va_start(arglist, format);
+  bytes = vsnprintf(_actual, availableBytes(), format, arglist);
+  va_end(arglist);
+
+  use(bytes);
+}
+
+void textReading::printf(struct tm *timeinfo, const char *format, ...) {
+  va_list arglist;
+  size_t bytes;
+
+  // print the formatted string to the buffer and use the bytes
+  va_start(arglist, format);
+  bytes = vsnprintf(_actual, availableBytes(), format, arglist);
+  va_end(arglist);
+
+  use(bytes);
+
+  // alloc memory for the time string then append it to the buffer
+  const size_t time_str_max_len = 40;
+  std::unique_ptr<char[]> time_str(new char[time_str_max_len + 1]);
+
+  strftime(time_str.get(), time_str_max_len, "%F %T", timeinfo);
+
+  bytes = snprintf(append(), availableBytes(), " time(%s)", time_str.get());
+
+  use(bytes);
+}
+
+void textReading::publish() {
+  if (_actual[0] != 0x00) {
+    mcrMQTT::instance()->publish(this);
+  }
+}
+
 } // namespace mcr
