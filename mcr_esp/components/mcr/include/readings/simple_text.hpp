@@ -23,6 +23,7 @@
 
 #include <string>
 
+#include <esp_log.h>
 #include <stdarg.h>
 #include <sys/time.h>
 #include <time.h>
@@ -44,10 +45,20 @@ public:
   char *append() { return _append_text; };
   uint32_t availableBytes() { return _remaining_bytes; };
   char *buff() { return _actual; };
+
+  void consoleInfo(const char *tag);
+  void consoleErr(const char *tag);
+  void consoleWarn(const char *tag);
+
   static uint32_t maxLength() { return _max_len; };
   void printf(const char *format, ...);
   void printf(struct tm *timeinfo, const char *format, ...);
   void publish();
+  void reuse() {
+    _actual[0] = 0x00;
+    _remaining_bytes = _max_len;
+    _append_text = _actual;
+  }
   char *text() { return _actual; };
   void use(size_t bytes) {
     _append_text += bytes;

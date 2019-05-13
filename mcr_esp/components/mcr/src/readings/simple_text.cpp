@@ -35,6 +35,10 @@ textReading::textReading(const char *text) {
 
 textReading::~textReading() {}
 
+void textReading::consoleInfo(const char *tag) { ESP_LOGI(tag, "%s", _actual); }
+void textReading::consoleErr(const char *tag) { ESP_LOGE(tag, "%s", _actual); }
+void textReading::consoleWarn(const char *tag) { ESP_LOGW(tag, "%s", _actual); }
+
 void textReading::populateJSON(JsonDocument &doc) {
   doc["text"] = _actual;
   doc["log"] = true;

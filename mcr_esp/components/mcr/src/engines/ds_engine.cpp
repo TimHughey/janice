@@ -1027,12 +1027,18 @@ bool mcrDS::setDS2408(mcrCmdSwitch_t &cmd, dsDev_t *dev) {
   owb_status owb_s;
   bool rc = false;
 
+  textReading *rlog = new (textReading_t);
+  textReading_ptr_t rlog_ptr(rlog);
+
   // read the device to ensure we have the current state
   // important because setting the new state relies, in part, on the existing
   // state for the pios not changing
   if (readDevice(dev) == false) {
-    ESP_LOGW(tagSetDS2408(), "read before set failed for %s",
-             dev->debug().get());
+    rlog->reuse();
+    rlog->printf("read before set failed for %s", dev->debug().get());
+    rlog->publish();
+    rlog->consoleWarn(tagSetDS2408());
+
     return rc;
   }
 
@@ -1076,9 +1082,12 @@ bool mcrDS::setDS2408(mcrCmdSwitch_t &cmd, dsDev_t *dev) {
   owb_s = owb_write_bytes(_ds, dev_cmd, sizeof(dev_cmd));
 
   if (owb_s != OWB_STATUS_OK) {
-    ESP_LOGW(tagSetDS2408(), "device cmd failed for %s owb_s=%d",
-             dev->debug().get(), owb_s);
     dev->stopWrite();
+    rlog->reuse();
+    rlog->printf("[%s] cmd failed owb_s(%d)", dev->debug().get(), owb_s);
+    rlog->publish();
+    rlog->consoleWarn(tagSetDS2408());
+
     return rc;
   }
 
@@ -1086,15 +1095,21 @@ bool mcrDS::setDS2408(mcrCmdSwitch_t &cmd, dsDev_t *dev) {
   owb_s = owb_read_bytes(_ds, check, sizeof(check));
 
   if (owb_s != OWB_STATUS_OK) {
-    ESP_LOGW(tagSetDS2408(), "read of check bytes failed for %s owb_s=%d",
-             dev->debug().get(), owb_s);
     dev->stopWrite();
+
+    rlog->reuse();
+    rlog->printf("[%s] read of check bytes failed owb_s(%d)",
+                 dev->debug().get(), owb_s);
+    rlog->publish();
+    rlog->consoleWarn(tagSetDS2408());
+
     return rc;
   }
 
   owb_s = owb_reset(_ds, &present);
   dev->stopWrite();
 
+  rlog->reuse();
   // check what the device returned to determine success or failure
   // byte 0 = 0xAA is a success, byte 1 = new_state
   // this might be a bit of a hack however let's accept success if either
@@ -1105,16 +1120,16 @@ bool mcrDS::setDS2408(mcrCmdSwitch_t &cmd, dsDev_t *dev) {
   if (((check[0] | 0x80) == 0xaa) || (dev_state == new_state)) {
     // cmd_bitset_t b0 = check[0];
     // cmd_bitset_t b1 = check[1];
-    ESP_LOGI(tagSetDS2408(), "CONFIRMED for %s", dev->debug().get());
-    ESP_LOGI(tagSetDS2408(),
-             "CONFIRMED expected 0x%02x==0xaa *OR* 0x%02x==0x%02x", check[0],
-             new_state, dev_state);
+    rlog->printf("[%s] PASSED expected 0x%02x==0xaa *OR* 0x%02x==0x%02x",
+                 check[0], new_state, dev_state);
+    rlog->consoleInfo(tagSetDS2408());
 
     rc = true;
   } else {
-    ESP_LOGW(tagSetDS2408(), "FAILED for %s", dev->debug().get());
-    ESP_LOGW(tagSetDS2408(), "FAILED expected 0x%02x==aa *OR* 0x%02x==0x%02x",
-             check[0], new_state, dev_state);
+    rlog->printf("[%s] FAILED expected 0x%02x==0xaa *OR* 0x%02x==0x%02x",
+                 check[0], new_state, dev_state);
+    rlog->publish();
+    rlog->consoleWarn(tagSetDS2408());
   }
 
   return rc;
