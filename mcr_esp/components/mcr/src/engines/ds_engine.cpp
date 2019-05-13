@@ -150,15 +150,18 @@ void mcrDS::command(void *task_data) {
       msg_buff_t buff(new char[textReading::maxLength()]);
 
       bool ack_success = commandAck(*cmd);
+      bool log = false;
 
       if (set_rc && ack_success) {
-        snprintf(buff.get(), textReading::maxLength(),
-                 "cmd and ack complete for %s",
-                 (const char *)cmd->dev_id().c_str());
+        if (log) {
+          snprintf(buff.get(), textReading::maxLength(),
+                   "cmd and ack complete for %s",
+                   (const char *)cmd->dev_id().c_str());
+        }
         ESP_LOGD(tagCommand(), "%s", buff.get());
 
       } else {
-
+        log = true;
         snprintf(buff.get(), textReading::maxLength(),
                  "%s ack failed set_rc(%s) ack(%s)",
                  (const char *)cmd->dev_id().c_str(),
@@ -166,9 +169,10 @@ void mcrDS::command(void *task_data) {
         ESP_LOGW(tagCommand(), "%s", buff.get());
       }
 
-      textReading reading(buff);
-      mcrMQTT::instance()->publish(reading);
-
+      if (log) {
+        textReading reading(buff);
+        mcrMQTT::instance()->publish(reading);
+      }
       giveBus();
 
       ESP_LOGD(tagCommand(), "released bus mutex");
