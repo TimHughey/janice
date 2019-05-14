@@ -1104,9 +1104,10 @@ bool mcrDS::setDS2408(mcrCmdSwitch_t &cmd, dsDev_t *dev) {
   uint8_t conf_byte = check[0];
   uint8_t dev_state = check[1];
   if ((conf_byte == 0xaa) || (dev_state == new_state)) {
-    rlog->printf("%s SET OK conf(%02x) *or* req_state(%02x) != dev_state(02x)",
-                 dev->debug().get(), conf_byte, new_state, dev_state);
-    rlog->consoleInfo(tagSetDS2408());
+    // rlog->printf("%s SET OK conf(%02x) *or* "
+    //              "state req(%02x) != dev(02x)",
+    //              dev->debug().get(), conf_byte, new_state, dev_state);
+    // rlog->consoleInfo(tagSetDS2408());
 
     rc = true;
   } else if (((conf_byte & 0xa0) == 0xa0) || ((conf_byte & 0x0a) == 0x0a)) {
