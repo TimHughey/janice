@@ -266,3 +266,23 @@ Used static IRAM:   72772 bytes (  58300 available, 55.5% used)
     Flash rodata:  167928 bytes
 Total image size:~ 914638 bytes (.bin may be padded larger)
 <<<
+>>>
+commit 4d72eb1
+Author: Tim Hughey <timhughey@mac.com>
+Date:   Tue May 14 14:21:29 2019 -0400
+
+    MCR Corrected Command Queue Overload Memory Leak
+Toolchain path: /Users/thughey/devel/xtensa-esp32-elf/bin/xtensa-esp32-elf-gcc
+Toolchain version: crosstool-ng-1.22.0-80-g6c4433a
+Compiler version: 5.2.0
+App "mcr_esp" version: janice2.02.02-55-g4d72eb1-dirty
+Python requirements from /Users/thughey/devel/esp-idf/requirements.txt are satisfied.
+Total sizes:
+ DRAM .data size:   13872 bytes
+ DRAM .bss  size:   24336 bytes
+Used static DRAM:   38208 bytes ( 142528 available, 21.1% used)
+Used static IRAM:   72792 bytes (  58280 available, 55.5% used)
+      Flash code:  660078 bytes
+    Flash rodata:  167844 bytes
+Total image size:~ 914586 bytes (.bin may be padded larger)
+<<<
