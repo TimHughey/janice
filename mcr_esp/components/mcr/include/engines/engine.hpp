@@ -371,7 +371,7 @@ protected:
   //   return (dev == nullptr) ? false : true;
   // }
 
-  virtual bool resetBus() { return true; }
+  virtual bool resetBus(bool *additional_status = nullptr) { return true; }
 
   void setCmdAck(mcrCmdSwitch_t &cmd) {
     DEV *dev = findDevice(cmd.dev_id());

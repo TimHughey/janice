@@ -56,7 +56,7 @@ public:
   void stop();
 
 protected:
-  bool resetBus();
+  bool resetBus(bool *present = nullptr);
 
 private:
   uint8_t _pin = CONFIG_MCR_W1_PIN;
