@@ -220,7 +220,7 @@ defmodule Janitor do
 
   defp schedule_orphan(s, millis) do
     with false <- is_nil(Map.get(s, @orphan_timer, nil)),
-         true <- Process.alive?(s.orphan_timer) do
+         x when is_number(x) <- Process.read_timer(s.orphan_timer) do
       Process.cancel_timer(s.orphan_timer)
     end
 
@@ -233,7 +233,7 @@ defmodule Janitor do
 
   defp schedule_purge(s, millis) do
     with false <- is_nil(Map.get(s, @purge_timer, nil)),
-         true <- Process.alive?(s.purge_timer) do
+         x when is_number(x) <- Process.read_timer(s.purge_timer) do
       Process.cancel_timer(s.purge_timer)
     end
 
