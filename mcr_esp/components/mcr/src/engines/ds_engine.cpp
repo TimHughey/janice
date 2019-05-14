@@ -1035,7 +1035,7 @@ bool mcrDS::setDS2408(mcrCmdSwitch_t &cmd, dsDev_t *dev) {
   // state for the pios not changing
   if (readDevice(dev) == false) {
     rlog->reuse();
-    rlog->printf("read before set failed for %s", dev->debug().get());
+    rlog->printf("%s FAILED read before set", dev->debug().get());
     rlog->publish();
     rlog->consoleWarn(tagSetDS2408());
 
@@ -1084,28 +1084,25 @@ bool mcrDS::setDS2408(mcrCmdSwitch_t &cmd, dsDev_t *dev) {
   if (owb_s != OWB_STATUS_OK) {
     dev->stopWrite();
     rlog->reuse();
-    rlog->printf("[%s] cmd failed owb_s(%d)", dev->debug().get(), owb_s);
+    rlog->printf("%s FAILED cmd owb_s(%d)", dev->debug().get(), owb_s);
     rlog->publish();
     rlog->consoleWarn(tagSetDS2408());
 
     return rc;
   }
 
-  vTaskDelay(1); // 10ms (this is way too long, should be 10us)
-
-  uint8_t check[2];
+  uint8_t check[4];
   // read the confirmation bye and new state
   // we do this with two reads of a single byte to give time for the device
   // to respond and avoid dropped bits
-  owb_s = owb_read_byte(_ds, &(check[0]));
-  owb_s = owb_read_byte(_ds, &(check[1]));
+  owb_s = owb_read_bytes(_ds, check, sizeof(check));
 
   if (owb_s != OWB_STATUS_OK) {
     dev->stopWrite();
 
     rlog->reuse();
-    rlog->printf("[%s] read of check bytes failed owb_s(%d)",
-                 dev->debug().get(), owb_s);
+    rlog->printf("%s FAILED check bytes read owb_s(%d)", dev->debug().get(),
+                 owb_s);
     rlog->publish();
     rlog->consoleWarn(tagSetDS2408());
 
@@ -1122,14 +1119,16 @@ bool mcrDS::setDS2408(mcrCmdSwitch_t &cmd, dsDev_t *dev) {
   uint8_t conf_byte = check[0];
   uint8_t dev_state = check[1];
   if ((conf_byte == 0xaa) || (dev_state == new_state)) {
-    rlog->printf("[%s] PASSED expected 0x%02x==0xaa *OR* 0x%02x==0x%02x",
+    rlog->printf("%s PASSED expected 0x%02x==0xaa *OR* 0x%02x==0x%02x",
                  dev->debug().get(), conf_byte, new_state, dev_state);
     rlog->consoleInfo(tagSetDS2408());
 
     rc = true;
   } else {
-    rlog->printf("[%s] FAILED expected 0x%02x==0xaa *OR* 0x%02x==0x%02x",
-                 dev->debug().get(), conf_byte, new_state, dev_state);
+    rlog->printf("%s FAILED confirm byte0(%02x==aa) "
+                 "byte1(%02x==%02x) byte2(%02x==aa) byte3(%02x==%02x)",
+                 dev->id().c_str(), conf_byte, new_state, dev_state, check[2],
+                 check[3]);
     rlog->publish();
     rlog->consoleWarn(tagSetDS2408());
   }
