@@ -1105,18 +1105,18 @@ bool mcrDS::setDS2408(mcrCmdSwitch_t &cmd, dsDev_t *dev) {
   uint8_t dev_state = check[1];
   if ((conf_byte == 0xaa) || (dev_state == new_state)) {
     // rlog->printf("%s SET OK conf(%02x) *or* "
-    //              "state req(%02x) != dev(02x)",
+    //              "state req(%02x) == dev(02x)",
     //              dev->debug().get(), conf_byte, new_state, dev_state);
     // rlog->consoleInfo(tagSetDS2408());
 
     rc = true;
   } else if (((conf_byte & 0xa0) == 0xa0) || ((conf_byte & 0x0a) == 0x0a)) {
-    rlog->printf("%s SET OK-PARTIAL conf(%02x) req_state(%02x) dev_state(%02x)",
+    rlog->printf("%s SET OK-PARTIAL conf(%02x) state req(%02x) dev(%02x)",
                  dev->id().c_str(), conf_byte, new_state, dev_state);
     rc = true;
     rlog->consoleWarn(tagSetDS2408());
   } else {
-    rlog->printf("%s SET FAILED conf(%02x) req_state(%02x) dev_state(%02x)",
+    rlog->printf("%s SET FAILED conf(%02x) state req(%02x) dev(%02x)",
                  dev->id().c_str(), conf_byte, new_state, dev_state);
 
     rlog->consoleErr(tagSetDS2408());
