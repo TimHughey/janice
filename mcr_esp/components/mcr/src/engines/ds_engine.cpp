@@ -1091,6 +1091,8 @@ bool mcrDS::setDS2408(mcrCmdSwitch_t &cmd, dsDev_t *dev) {
     return rc;
   }
 
+  vTaskDelay(1); // 10ms (this is way too long, should be 10us)
+
   uint8_t check[2];
   // read the confirmation bye and new state
   // we do this with two reads of a single byte to give time for the device
