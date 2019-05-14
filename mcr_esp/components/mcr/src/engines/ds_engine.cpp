@@ -105,10 +105,6 @@ void mcrDS::command(void *task_data) {
 
     if (queue_rc == pdFALSE) {
       ESP_LOGW(tagCommand(), "[rc=%d] queue receive failed", queue_rc);
-
-      // HACK: pause if the queue receive fails
-      // the intent here is to give time for vTaskDelete to complete
-      vTaskDelay(pdMS_TO_TICKS(20000));
       continue;
     }
 

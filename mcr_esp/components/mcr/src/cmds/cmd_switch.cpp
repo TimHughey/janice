@@ -64,20 +64,30 @@ bool mcrCmdSwitch::process() {
 }
 
 bool mcrCmdSwitch::sendToQueue(cmdQueue_t &cmd_q) {
+  auto rc = false;
+  auto q_rc = pdFALSE;
+
   if (matchPrefix(cmd_q.prefix)) {
     // make a fresh copy of the cmd before pusing to the queue to ensure:
     //   a. each queue receives it's own copy
     //   b. we're certain each cmd is in a clean state
     mcrCmdSwitch_t *fresh_cmd = new mcrCmdSwitch(this);
 
-    if (xQueueSendToBack(cmd_q.q, (void *)&fresh_cmd, pdMS_TO_TICKS(10)) ==
-        pdTRUE) {
-      ESP_LOGD(TAG, "%s queued %s", cmd_q.id, debug().get());
-    } else
+    q_rc = xQueueSendToBack(cmd_q.q, (void *)&fresh_cmd, pdMS_TO_TICKS(10));
+
+    switch (q_rc) {
+    case pdTRUE:
+      rc = true;
+      break;
+
+    case pdFALSE:
       ESP_LOGW(TAG, "queue to %s FAILED", cmd_q.id);
+      delete fresh_cmd;
+      break;
+    }
   }
 
-  return true;
+  return rc;
 }
 
 const unique_ptr<char[]> mcrCmdSwitch::debug() {
