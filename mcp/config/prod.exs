@@ -9,7 +9,7 @@ config :logger,
 
 config :mcp,
   feeds: [
-    cmd: {"prod/mcr/f/command", :qos0},
+    cmd: {"prod/mcr/f/command", :qos1},
     rpt: {"prod/mcr/f/report", :qos0},
     ota: {"prod/mcr/f/ota", :qos0}
   ]
