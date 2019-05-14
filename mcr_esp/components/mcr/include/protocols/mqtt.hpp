@@ -89,6 +89,7 @@ public:
 
 private:
   mcrMQTT(); // singleton, constructor is private
+  static void _ev_handler(struct mg_connection *nc, int ev, void *p);
 
   std::string _client_id;
   std::string _endpoint;

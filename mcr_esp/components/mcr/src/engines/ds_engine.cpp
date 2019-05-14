@@ -1106,7 +1106,7 @@ bool mcrDS::setDS2408(mcrCmdSwitch_t &cmd, dsDev_t *dev) {
   if ((conf_byte == 0xaa) || (dev_state == new_state)) {
     // rlog->printf("%s SET OK conf(%02x) *or* "
     //              "state req(%02x) == dev(02x)",
-    //              dev->debug().get(), conf_byte, new_state, dev_state);
+    //              dev->id().c_str(), conf_byte, new_state, dev_state);
     // rlog->consoleInfo(tagSetDS2408());
 
     rc = true;

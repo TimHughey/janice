@@ -43,9 +43,6 @@ using std::unique_ptr;
 
 static mcrMQTT *__singleton = nullptr;
 
-// prototype for the event handler
-static void _ev_handler(struct mg_connection *nc, int ev, void *);
-
 // SINGLETON!  use instance() for object access
 mcrMQTT_t *mcrMQTT::instance() {
   if (__singleton == nullptr) {
@@ -344,7 +341,8 @@ void mcrMQTT::subscribeCommandFeed(struct mg_connection *nc) {
   mg_mqtt_subscribe(nc, &sub, 1, _cmd_feed_msg_id);
 }
 
-static void _ev_handler(struct mg_connection *nc, int ev, void *p) {
+// STATIC
+void mcrMQTT::_ev_handler(struct mg_connection *nc, int ev, void *p) {
   auto *msg = (struct mg_mqtt_message *)p;
 
   switch (ev) {
@@ -385,6 +383,10 @@ static void _ev_handler(struct mg_connection *nc, int ev, void *p) {
     break;
 
   case MG_EV_MQTT_PUBLISH:
+    if (msg->qos == 1) {
+      mg_mqtt_puback(mcrMQTT::instance()->_connection, msg->message_id);
+    }
+
     mcrMQTT::instance()->incomingMsg(&(msg->topic), &(msg->payload));
     break;
 
