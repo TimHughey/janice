@@ -119,8 +119,6 @@ void mcrDS::command(void *task_data) {
 
     if ((dev != nullptr) && dev->isValid()) {
       bool set_rc = false;
-      bool ack_success = false;
-      bool remote_log = false;
 
       trackSwitchCmd(true);
 
@@ -145,34 +143,38 @@ void mcrDS::command(void *task_data) {
         set_rc = setDS2413(*cmd, dev);
       }
 
+      // bool ack_success = false;
       if (set_rc) {
-        ack_success = commandAck(*cmd);
+        // ack_success = commandAck(*cmd);
+        commandAck(*cmd);
       }
 
       trackSwitchCmd(false);
 
       // we create a textReading then wrap in textReading_ptr_t (aka unique_ptr)
       // to delete when it falls out of scope
-      textReading_t *rlog(new textReading_t);
-      textReading_ptr_t rlog_ptr(rlog);
+      // bool remote_log = false;
 
-      if (set_rc && ack_success) {
-        if (remote_log) {
-          rlog->printf("cmd and ack complete for %s",
-                       (const char *)cmd->dev_id().c_str());
-        }
-        ESP_LOGD(tagCommand(), "%s", rlog->text());
+      // textReading_t *rlog(new textReading_t);
+      // textReading_ptr_t rlog_ptr(rlog);
 
-      } else {
-        remote_log = true;
-        rlog->printf("%s ack failed set_rc(%s) ack(%s)",
-                     (const char *)cmd->dev_id().c_str(),
-                     (set_rc) ? "true" : "false",
-                     (ack_success) ? "true" : "false");
-        ESP_LOGW(tagCommand(), "%s", rlog->text());
-      }
-
-      rlog->publish();
+      // if (set_rc && ack_success) {
+      //   if (remote_log) {
+      //     rlog->printf("cmd and ack complete for %s",
+      //                  (const char *)cmd->dev_id().c_str());
+      //   }
+      //   ESP_LOGD(tagCommand(), "%s", rlog->text());
+      //
+      // } else {
+      //
+      //   rlog->printf("%s ack failed set_rc(%s) ack(%s)",
+      //                (const char *)cmd->dev_id().c_str(),
+      //                (set_rc) ? "true" : "false",
+      //                (ack_success) ? "true" : "false");
+      //   ESP_LOGW(tagCommand(), "%s", rlog->text());
+      // }
+      //
+      // rlog->publish();
 
       giveBus();
 
@@ -1119,7 +1121,7 @@ bool mcrDS::setDS2408(mcrCmdSwitch_t &cmd, dsDev_t *dev) {
   uint8_t conf_byte = check[0];
   uint8_t dev_state = check[1];
   if ((conf_byte == 0xaa) || (dev_state == new_state)) {
-    rlog->printf("%s PASSED expected 0x%02x==0xaa *OR* 0x%02x==0x%02x",
+    rlog->printf("%s PASSED confirm 0x%02x==0xaa *OR* 0x%02x==0x%02x",
                  dev->debug().get(), conf_byte, new_state, dev_state);
     rlog->consoleInfo(tagSetDS2408());
 
@@ -1128,7 +1130,7 @@ bool mcrDS::setDS2408(mcrCmdSwitch_t &cmd, dsDev_t *dev) {
     rlog->printf("%s FAILED confirm byte0(%02x==aa) "
                  "byte1(%02x==%02x) byte2(%02x==aa) byte3(%02x==%02x)",
                  dev->id().c_str(), conf_byte, new_state, dev_state, check[2],
-                 check[3]);
+                 check[3], dev_state);
     rlog->publish();
     rlog->consoleWarn(tagSetDS2408());
   }
