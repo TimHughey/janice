@@ -83,6 +83,7 @@ public:
   virtual ~Reading();
 
   std::string *json(char *buffer = nullptr, size_t len = 0);
+  virtual void refresh() { time(&_mtime); }
   void setCmdAck(time_t latency, mcrRefID_t &refid);
 
   void setCRCMismatches(int crc_mismatches) {

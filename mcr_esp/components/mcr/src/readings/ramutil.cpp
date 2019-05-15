@@ -49,6 +49,7 @@ void ramUtilReading::publish() {
 }
 
 void ramUtilReading::refresh() {
+  Reading::refresh();
   _free_ram = heap_caps_get_free_size(MALLOC_CAP_8BIT);
 }
 } // namespace mcr
