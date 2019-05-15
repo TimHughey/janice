@@ -58,8 +58,6 @@ private:
   time_t _lastLoop;
   uint16_t _msg_id = 0;
 
-  void process(mcrCmd_t *cmd);
-
   // Task implementation
   static void runEngine(void *task_instance) {
     mcrMQTTin_t *task = (mcrMQTTin_t *)task_instance;

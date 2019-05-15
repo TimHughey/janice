@@ -37,8 +37,6 @@
 #include "protocols/mqtt_in.hpp"
 #include "readings/readings.hpp"
 
-// static uint32_t cmd_callback_count = 0;
-// static cmdCallback_t cmd_callback[10] = {nullptr};
 static char TAG[] = "mcrMQTTin";
 
 static mcrMQTTin_t *__singleton = nullptr;
@@ -46,7 +44,7 @@ static mcrMQTTin_t *__singleton = nullptr;
 mcrMQTTin::mcrMQTTin(RingbufHandle_t rb) {
   _rb = rb;
 
-  ESP_LOGI(TAG, "task created, inboud ringbuff=%p", (void *)rb);
+  ESP_LOGI(TAG, "task created, inbound ringbuff=%p", (void *)rb);
   __singleton = this;
 }
 
@@ -55,19 +53,6 @@ mcrMQTTin_t *mcrMQTTin::instance() { return __singleton; }
 UBaseType_t mcrMQTTin::changePriority(UBaseType_t priority) {
   vTaskPrioritySet(_task.handle, priority);
   return _task.priority;
-}
-
-void mcrMQTTin::process(mcrCmd_t *cmd) {
-  if (cmd == nullptr) {
-    ESP_LOGW(TAG, "command factory could not crete a command");
-    return;
-  }
-
-  // the factory created a command, let's process it
-  cmd->process();
-
-  // free the command
-  delete cmd;
 }
 
 void mcrMQTTin::restorePriority() {
@@ -116,13 +101,14 @@ void mcrMQTTin::run(void *data) {
     // ESP_LOGD(TAG, "recv msg(len=%u): topic(%s) data(ptr=%p)", msg_len,
     //         entry.topic->c_str(), (void *)entry.data);
 
-    // reminder:  must do a != check to determine if a match
-    if ((entry.topic->find("command") != std::string::npos) ||
-        (entry.topic->find("ota") != std::string::npos)) {
-
+    // reminder:  must do a != to test for
+    if (entry.topic->find("command") != std::string::npos) {
       mcrCmd_t *cmd = factory.fromRaw(entry.data);
-      process(cmd);
+      mcrCmd_t_ptr cmd_ptr(cmd);
 
+      if (cmd != nullptr) {
+        cmd->process();
+      }
     } else {
       ESP_LOGI(TAG, "ignoring topic(%s)", entry.topic->c_str());
     }

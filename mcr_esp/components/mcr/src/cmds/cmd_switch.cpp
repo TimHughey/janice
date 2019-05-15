@@ -2,7 +2,7 @@
 #include "cmds/cmd_switch.hpp"
 #include "cmds/cmd_queues.hpp"
 
-const static char *TAG = "mcrCmdSwitch";
+// const static char *TAG = "mcrCmdSwitch";
 
 mcrCmdSwitch::mcrCmdSwitch(JsonDocument &doc)
     : mcrCmd(mcrCmdType::setswitch, doc) {
@@ -12,7 +12,8 @@ mcrCmdSwitch::mcrCmdSwitch(JsonDocument &doc)
   //   "refid":"0fc4417c-f1bb-11e7-86bd-6cf049e7139f",
   //   "mtime":1515117138,
   //   "cmd":"set.switch"}
-  int64_t create_start = esp_timer_get_time();
+  elapsedMicros create_elapsed;
+
   _dev_id = doc["switch"].as<std::string>();
   _refid = doc["refid"].as<std::string>();
   const JsonArray states = doc["states"].as<JsonArray>();
@@ -47,7 +48,7 @@ mcrCmdSwitch::mcrCmdSwitch(JsonDocument &doc)
   _mask = mask;
   _state = tobe_state;
 
-  int64_t create_us = esp_timer_get_time() - create_start;
+  int64_t create_us = create_elapsed;
   recordCreateMetric(create_us);
 }
 
@@ -65,25 +66,43 @@ bool mcrCmdSwitch::process() {
 
 bool mcrCmdSwitch::sendToQueue(cmdQueue_t &cmd_q) {
   auto rc = false;
-  auto q_rc = pdFALSE;
+  auto q_rc = pdTRUE;
 
   if (matchPrefix(cmd_q.prefix)) {
-    // make a fresh copy of the cmd before pusing to the queue to ensure:
+    // make a fresh copy of the cmd before pushing to the queue to ensure:
     //   a. each queue receives it's own copy
     //   b. we're certain each cmd is in a clean state
     mcrCmdSwitch_t *fresh_cmd = new mcrCmdSwitch(this);
 
-    q_rc = xQueueSendToBack(cmd_q.q, (void *)&fresh_cmd, pdMS_TO_TICKS(10));
+    // pop the oldest cmd (at the front) to make space when the queue is full
+    if (uxQueueSpacesAvailable(cmd_q.q) == 0) {
+      mcrCmdSwitch_t *old_cmd = nullptr;
 
-    switch (q_rc) {
-    case pdTRUE:
-      rc = true;
-      break;
+      q_rc = xQueueReceive(cmd_q.q, &old_cmd, pdMS_TO_TICKS(10));
 
-    case pdFALSE:
-      ESP_LOGW(TAG, "queue to %s FAILED", cmd_q.id);
-      delete fresh_cmd;
-      break;
+      if ((q_rc == pdTRUE) && (old_cmd != nullptr)) {
+        textReading_t *rlog(new textReading_t);
+        textReading_ptr_t rlog_ptr(rlog);
+        rlog->printf("[%s] queue FULL, removing oldest cmd (%s)", cmd_q.id,
+                     old_cmd->dev_id().c_str());
+        rlog->publish();
+        delete old_cmd;
+      }
+    }
+
+    if (q_rc == pdTRUE) {
+      q_rc = xQueueSendToBack(cmd_q.q, (void *)&fresh_cmd, pdMS_TO_TICKS(10));
+
+      if (q_rc == pdTRUE) {
+        rc = true;
+      } else {
+        textReading_t *rlog(new textReading_t);
+        textReading_ptr_t rlog_ptr(rlog);
+        rlog->printf("[%s] queue FAILURE for %s", cmd_q.id, _dev_id.c_str());
+        rlog->publish();
+
+        delete fresh_cmd; // delete the fresh cmd since it wasn't queued
+      }
     }
   }
 

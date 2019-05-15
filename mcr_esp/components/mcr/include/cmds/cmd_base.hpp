@@ -39,6 +39,7 @@ using std::unique_ptr;
 using namespace mcr;
 
 typedef class mcrCmd mcrCmd_t;
+typedef unique_ptr<mcrCmd_t> mcrCmd_t_ptr;
 class mcrCmd {
 private:
   mcrCmdType_t _type;

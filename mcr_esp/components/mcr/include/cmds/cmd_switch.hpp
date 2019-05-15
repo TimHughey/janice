@@ -32,6 +32,7 @@
 #include <time.h>
 
 #include "cmds/cmd_base.hpp"
+#include "misc/elapsedMillis.hpp"
 #include "misc/mcr_types.hpp"
 
 using std::unique_ptr;
