@@ -30,12 +30,10 @@
 
 namespace mcr {
 
-Reading::Reading(time_t mtime) { _mtime = mtime; }
+Reading::Reading(time_t mtime) : _mtime(mtime) {}
 
-Reading::Reading(const std::string &id, time_t mtime) {
-  _id = id;
-  _mtime = mtime;
-}
+Reading::Reading(const std::string &id, time_t mtime)
+    : _id(id), _mtime(mtime) {}
 
 Reading::~Reading() {
   if (_json != nullptr) {

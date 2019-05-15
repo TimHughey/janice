@@ -62,12 +62,17 @@ void mcrCmdOTA::doUpdate() {
   textReading_t *rlog = new textReading_t;
   textReading_ptr_t rlog_ptr(rlog);
 
+  ramUtilReading_t_ptr ram(new ramUtilReading_t);
+  ram->publish();
+
   // track the time it takes to perform ota
   elapsedMicros ota_elapsed;
   esp_err_t esp_rc = esp_https_ota(&config);
 
   rlog->printf("[%s] OTA elapsed(%0.2fs)", esp_err_to_name(esp_rc),
                ota_elapsed.asSeconds());
+
+  ram->publish();
 
   if (esp_rc == ESP_OK) {
     ESP_LOGI(TAG, "%s", rlog->text());

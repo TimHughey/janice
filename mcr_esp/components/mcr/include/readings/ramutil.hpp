@@ -21,6 +21,7 @@
 #ifndef ram_util_reading_h
 #define ram_util_reading_h
 
+#include <memory>
 #include <string>
 
 #include <sys/time.h>
@@ -30,6 +31,7 @@
 
 namespace mcr {
 typedef class ramUtilReading ramUtilReading_t;
+typedef std::unique_ptr<ramUtilReading> ramUtilReading_t_ptr;
 
 class ramUtilReading : public Reading {
 private:
@@ -39,8 +41,12 @@ private:
 
 public:
   // undefined reading
+  ramUtilReading();
   ramUtilReading(uint32_t free_ram, time_t mtime = time(nullptr));
+
   uint32_t freeRAM() { return _free_ram; }
+  void publish();
+  void refresh();
 
 protected:
   virtual void populateJSON(JsonDocument &doc);

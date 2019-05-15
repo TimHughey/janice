@@ -22,17 +22,33 @@
 #include <sys/time.h>
 #include <time.h>
 
+#include "protocols/mqtt.hpp"
 #include "readings/ramutil.hpp"
 
 namespace mcr {
-ramUtilReading::ramUtilReading(uint32_t free_ram, time_t mtime)
-    : Reading(mtime) {
+
+ramUtilReading::ramUtilReading() {
   _type = ReadingType_t::RAM;
-  _free_ram = free_ram;
+  refresh();
+}
+
+ramUtilReading::ramUtilReading(uint32_t free_ram, time_t mtime)
+    : Reading(mtime), _free_ram(free_ram) {
+  _type = ReadingType_t::RAM;
 }
 
 void ramUtilReading::populateJSON(JsonDocument &doc) {
   doc["freeram"] = _free_ram;
   doc["maxram"] = _max_ram;
+}
+
+void ramUtilReading::publish() {
+  refresh();
+  mcrMQTT_t *mqtt = mcrMQTT::instance();
+  mqtt->publish(this);
+}
+
+void ramUtilReading::refresh() {
+  _free_ram = heap_caps_get_free_size(MALLOC_CAP_8BIT);
 }
 } // namespace mcr

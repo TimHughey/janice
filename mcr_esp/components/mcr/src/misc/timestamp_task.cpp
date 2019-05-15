@@ -130,8 +130,8 @@ void mcrTimestampTask::run(void *data) {
 
     mcrMQTT_t *mqtt = mcrMQTT::instance();
 
-    unique_ptr<ramUtilReading_t> ram(new ramUtilReading(curr_heap));
-    mqtt->publish(move(ram));
+    ramUtilReading_t_ptr ram(new ramUtilReading());
+    ram->publish();
 
     // ramUtilReading_t replacement
     unique_ptr<remoteReading_t> remote(new remoteReading(batt_mv));
