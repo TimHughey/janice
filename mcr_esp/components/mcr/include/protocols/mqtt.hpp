@@ -28,7 +28,7 @@
 #include <esp_log.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/event_groups.h>
-#include <freertos/ringbuf.h>
+#include <freertos/queue.h>
 #include <freertos/task.h>
 #include <sdkconfig.h>
 
@@ -111,15 +111,13 @@ private:
   TickType_t _outbound_msg_ticks =
       pdMS_TO_TICKS(CONFIG_MCR_MQTT_OUTBOUND_MSG_WAIT_MS);
 
-  const size_t _rb_out_size =
+  const size_t _q_out_len =
       (sizeof(mqttOutMsg_t) * CONFIG_MCR_MQTT_RINGBUFFER_PENDING_MSGS);
-  const size_t _rb_in_size =
+  const size_t _q_in_len =
       ((sizeof(mqttInMsg_t) * CONFIG_MCR_MQTT_RINGBUFFER_PENDING_MSGS) / 2);
-  size_t _rb_in_lowwater = 0;
-  size_t _rb_in_highwater = 0;
   bool _ota_overload = false;
-  RingbufHandle_t _rb_out = nullptr;
-  RingbufHandle_t _rb_in = nullptr;
+  QueueHandle_t _q_out = nullptr;
+  QueueHandle_t _q_in = nullptr;
 
   mcrMQTTin_t *_mqtt_in = nullptr;
 

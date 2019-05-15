@@ -28,7 +28,7 @@
 #include <forward_list>
 #include <freertos/FreeRTOS.h>
 #include <freertos/event_groups.h>
-#include <freertos/ringbuf.h>
+#include <freertos/queue.h>
 
 // MCR specific includes
 #include "cmds/cmd_factory.hpp"
@@ -41,10 +41,9 @@ static char TAG[] = "mcrMQTTin";
 
 static mcrMQTTin_t *__singleton = nullptr;
 
-mcrMQTTin::mcrMQTTin(RingbufHandle_t rb) {
-  _rb = rb;
+mcrMQTTin::mcrMQTTin(QueueHandle_t q_in) : _q_in(q_in) {
 
-  ESP_LOGI(TAG, "task created, inbound ringbuff=%p", (void *)rb);
+  ESP_LOGI(TAG, "task created, queue(%p)", (void *)_q_in);
   __singleton = this;
 }
 
@@ -60,63 +59,43 @@ void mcrMQTTin::restorePriority() {
 }
 
 void mcrMQTTin::run(void *data) {
-  size_t msg_len = 0;
-  mqttInMsg_t entry;
-  void *msg = nullptr;
+  mqttInMsg_t msg;
   mcrCmdFactory_t factory;
 
   // note:  no reason to wait for wifi, normal ops or other event group
-  //        bits since mcrMQTTin waits on ringbuffer data from other tasks
-  //        that do wait for event group bits.
+  //        bits since mcrMQTTin waits for queue data from other tasks via
+  //        MQTT::publish().
   //
   //        said differently, this task will not execute until another task
-  //        sends it something through the ringbuffer.
+  //        sends it something through the queue.
   ESP_LOGI(TAG, "started, entering run loop");
 
   for (;;) {
-    // ESP_LOGD(TAG, "wait indefinitly for rb data");
-    msg = xRingbufferReceive(_rb, &msg_len, portMAX_DELAY);
+    BaseType_t q_rc = pdFALSE;
 
-    if (msg_len != sizeof(mqttInMsg_t)) {
-      ESP_LOGW(TAG, "dropping msg of wrong size (msg_len(%u) != %u)", msg_len,
-               sizeof(msg_len));
+    bzero(&msg, sizeof(mqttInMsg_t)); // just because we like clean memory
+    q_rc = xQueueReceive(_q_in, &msg, portMAX_DELAY);
 
-      // even though the msg_len is wrong we still return the msg to
-      // the ringbuffer to free resources (see notes below)
-      vRingbufferReturnItem(_rb, msg);
+    if (q_rc == pdTRUE) {
+      // reminder:  must do a != to test for equality
+      if (msg.topic->find("command") != std::string::npos) {
+        mcrCmd_t *cmd = factory.fromRaw(msg.data);
+        mcrCmd_t_ptr cmd_ptr(cmd);
+
+        if (cmd != nullptr) {
+          cmd->process();
+        }
+      } else {
+        ESP_LOGI(TAG, "ignoring topic(%s)", msg.topic->c_str());
+      }
+
+      // ok, we're done with the contents of the previously allocated msg
+      delete msg.topic;
+      delete msg.data;
+
+    } else {
+      ESP_LOGW(TAG, "queue received failed");
       continue;
     }
-
-    // _rb->receive returns a pointer to the msg of type mqttInMsg_t
-    // make a local copy so the message in the ringbuffer can be released
-    memcpy(&entry, msg, sizeof(mqttInMsg_t));
-
-    // done with message. quickly return to ringbuffer to release resources
-    // for the msg to make space for more messages. note entry.[topic,data]
-    // were allocated elsewhere (not stored in the ringbuffer) and must be
-    // released seperately.
-    // for clarity, the ringbuffer entry only contains pointers for efficiency
-    vRingbufferReturnItem(_rb, msg);
-
-    // ESP_LOGD(TAG, "recv msg(len=%u): topic(%s) data(ptr=%p)", msg_len,
-    //         entry.topic->c_str(), (void *)entry.data);
-
-    // reminder:  must do a != to test for
-    if (entry.topic->find("command") != std::string::npos) {
-      mcrCmd_t *cmd = factory.fromRaw(entry.data);
-      mcrCmd_t_ptr cmd_ptr(cmd);
-
-      if (cmd != nullptr) {
-        cmd->process();
-      }
-    } else {
-      ESP_LOGI(TAG, "ignoring topic(%s)", entry.topic->c_str());
-    }
-
-    // ok, we're done with the contents of the previously allocated msg
-    delete entry.topic;
-    delete entry.data;
-
-    // infinite loop to process inbound MQTT messages
-  }
+  } // infinite loop to process inbound MQTT messages
 }

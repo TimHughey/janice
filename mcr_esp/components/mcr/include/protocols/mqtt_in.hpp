@@ -32,7 +32,6 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/event_groups.h>
 #include <freertos/queue.h>
-#include <freertos/ringbuf.h>
 #include <freertos/task.h>
 
 #include "cmds/cmd_factory.hpp"
@@ -52,7 +51,7 @@ private:
                      .lastWake = 0,
                      .priority = CONFIG_MCR_MQTT_INBOUND_TASK_PRIORITY,
                      .stackSize = (5 * 1024)};
-  RingbufHandle_t _rb;
+  QueueHandle_t _q_in;
   void *_task_data = nullptr;
 
   time_t _lastLoop;
@@ -65,7 +64,7 @@ private:
   }
 
 public:
-  mcrMQTTin(RingbufHandle_t rb);
+  mcrMQTTin(QueueHandle_t q);
   static mcrMQTTin_t *instance();
 
   UBaseType_t changePriority(UBaseType_t priority);

@@ -64,17 +64,14 @@ mcrMQTT::mcrMQTT() {
   snprintf(endpoint.get(), max_endpoint, "%s:%d", _host.c_str(), _port);
   _endpoint = endpoint.get();
 
-  _rb_in_lowwater = _rb_in_size * .02;
-  _rb_in_highwater = _rb_in_size * .98;
+  _q_out = xQueueCreate(_q_out_len, sizeof(mqttOutMsg_t));
+  _q_in = xQueueCreate(_q_in_len, sizeof(mqttInMsg_t));
 
-  _rb_out = xRingbufferCreate(_rb_out_size, RINGBUF_TYPE_NOSPLIT);
-  _rb_in = xRingbufferCreate(_rb_in_size, RINGBUF_TYPE_NOSPLIT);
-
-  ESP_LOGI(tagEngine(), "ringb in  size=%u msgs=%d low_water=%u high_water=%u",
-           _rb_in_size, (_rb_in_size / sizeof(mqttInMsg_t)), _rb_in_lowwater,
-           _rb_in_highwater);
-  ESP_LOGI(tagEngine(), "ringb out size=%u msgs=%d", _rb_out_size,
-           (_rb_out_size / sizeof(mqttOutMsg_t)));
+  ESP_LOGI(tagEngine(), "queue IN  len(%d) msg_size(%u) total_size(%u)",
+           _q_in_len, sizeof(mqttInMsg_t), (sizeof(mqttInMsg_t) * _q_in_len));
+  ESP_LOGI(tagEngine(), "queue OUT len(%d) msg_size(%u) total_size(%u)",
+           _q_out_len, sizeof(mqttOutMsg_t),
+           (sizeof(mqttOutMsg_t) * _q_out_len));
 }
 
 void mcrMQTT::announceStartup() {
@@ -133,33 +130,18 @@ void mcrMQTT::incomingMsg(struct mg_str *in_topic, struct mg_str *in_payload) {
   auto *data =
       new std::vector<char>(in_payload->p, (in_payload->p + in_payload->len));
   mqttInMsg_t entry;
-  BaseType_t rb_rc;
+  BaseType_t q_rc;
 
   entry.topic = topic;
   entry.data = data;
 
-  rb_rc = xRingbufferSend(_rb_in, &entry, sizeof(mqttInMsg_t),
-                          _inbound_rb_wait_ticks);
+  // queue send takes a pointer to what should be copied to the queue
+  // using the size defined when the queue was created
+  q_rc = xQueueSendToBack(_q_in, (void *)&entry, _inbound_rb_wait_ticks);
 
-  size_t avail_bytes = xRingbufferGetCurFreeSize(_rb_in);
-
-  if ((_ota_overload == false) && (avail_bytes < _rb_in_lowwater)) {
-    _ota_overload = true;
-    ESP_LOGW(tagEngine(),
-             "--> ota buffer overload avail(%04u) low(%04u) total(%u)",
-             avail_bytes, _rb_in_lowwater, _rb_in_size);
-  }
-
-  if (_ota_overload && (avail_bytes > _rb_in_highwater)) {
-    _ota_overload = false;
-    ESP_LOGI(tagEngine(),
-             "--> ota buffer drained  avail(%04u) low(%04u) total(%u)",
-             avail_bytes, _rb_in_highwater, _rb_in_size);
-  }
-
-  if (rb_rc) {
+  if (q_rc) {
     ESP_LOGD(tagEngine(),
-             "INCOMING msg SENT to ringbuff (topic=%s,len=%u,json_len=%u)",
+             "INCOMING msg SENT to QUEUE (topic=%s,len=%u,json_len=%u)",
              topic->c_str(), sizeof(mqttInMsg_t), in_payload->len);
   } else {
     delete data;
@@ -203,33 +185,25 @@ void mcrMQTT::publish(std::unique_ptr<Reading_t> reading) {
 
 void mcrMQTT::outboundMsg() {
   size_t len = 0;
-  // mqttOutMsg_t *entry = nullptr;
+  mqttOutMsg_t entry;
+  auto q_rc = pdFALSE;
 
-  auto *entry =
-      (mqttOutMsg_t *)xRingbufferReceive(_rb_out, &len, _outbound_msg_ticks);
+  q_rc = xQueueReceive(_q_out, &entry, _outbound_msg_ticks);
 
-  while (entry) {
-    int64_t start_us = esp_timer_get_time();
+  while (q_rc == pdTRUE) {
+    elapsedMicros publish_elapse;
 
-    if (len != sizeof(mqttOutMsg_t)) {
-      ESP_LOGW(tagEngine(), "skipping ringbuffer msg of wrong length=%u", len);
-      vRingbufferReturnItem(_rb_out, entry);
-      break;
-    }
-
-    const auto *json = entry->data;
-    size_t json_len = entry->len;
+    const auto *json = entry.data;
+    size_t json_len = entry.len;
 
     ESP_LOGD(tagEngine(), "send msg(len=%u), payload(len=%u)", len, json_len);
-    // ESP_LOGI(tagEngine(), "json: %s", json->c_str());
 
     mg_mqtt_publish(_connection, _rpt_feed, _msg_id++, MG_MQTT_QOS(1),
                     json->data(), json_len);
 
     delete json;
-    vRingbufferReturnItem(_rb_out, entry);
 
-    int64_t publish_us = esp_timer_get_time() - start_us;
+    int64_t publish_us = publish_elapse;
     if (publish_us > 3000) {
       ESP_LOGW(tagOutbound(), "publish msg took %0.2fms",
                ((float)publish_us / 1000.0));
@@ -237,31 +211,31 @@ void mcrMQTT::outboundMsg() {
       ESP_LOGD(tagOutbound(), "publish msg took %lluus", publish_us);
     }
 
-    entry =
-        (mqttOutMsg_t *)xRingbufferReceive(_rb_out, &len, pdMS_TO_TICKS(20));
+    q_rc = xQueueReceive(_q_out, &entry, pdMS_TO_TICKS(20));
   }
 }
 
 void mcrMQTT::publish(std::string *json) {
-  BaseType_t rb_rc = false;
+  auto q_rc = pdFALSE;
   mqttOutMsg_t entry;
 
   // setup the entry noting that the actual pointer to the string will
-  // be included so be certain to deallocate when it comes out of the ringbuffer
+  // be included so be certain to deallocate when it comes out of the
+  // ringbuffer
   entry.len = json->length();
   entry.data = json;
 
-  rb_rc = xRingbufferSend(_rb_out, (void *)&entry, sizeof(mqttOutMsg_t),
-                          pdMS_TO_TICKS(50));
+  // queue send takes a pointer to what should be copied to the queue
+  // using the size defined when the queue was created
+  q_rc = xQueueSendToBack(_q_in, (void *)&entry, pdMS_TO_TICKS(50));
 
-  if (rb_rc == pdFALSE) {
+  if (q_rc == pdFALSE) {
     delete json;
     std::unique_ptr<char[]> msg(new char[128]);
+    auto space_avail = uxQueueSpacesAvailable(_q_out);
 
-    size_t avail_bytes = xRingbufferGetCurFreeSize(_rb_out);
+    sprintf(msg.get(), "PUBLISH msg FAILED space_avail(%d)", space_avail);
 
-    sprintf(msg.get(), "PUBLISH msg FAILED (len=%u) (rb_avail=%u)",
-            sizeof(mqttOutMsg_t), avail_bytes);
     ESP_LOGW(tagEngine(), "%s", msg.get());
 
     // we only commit the failure to NVS and directly call esp_restart()
@@ -275,7 +249,7 @@ void mcrMQTT::publish(std::string *json) {
 void mcrMQTT::run(void *data) {
   struct mg_mgr_init_opts opts = {};
 
-  _mqtt_in = new mcrMQTTin(_rb_in);
+  _mqtt_in = new mcrMQTTin(_q_in);
   ESP_LOGI(tagEngine(), "started, created mcrMQTTin task %p", (void *)_mqtt_in);
   _mqtt_in->start();
 
