@@ -64,8 +64,8 @@ mcrMQTT::mcrMQTT() {
   snprintf(endpoint.get(), max_endpoint, "%s:%d", _host.c_str(), _port);
   _endpoint = endpoint.get();
 
-  _q_out = xQueueCreate(_q_out_len, sizeof(mqttOutMsg_t));
-  _q_in = xQueueCreate(_q_in_len, sizeof(mqttInMsg_t));
+  _q_out = xQueueCreate(_q_out_len, sizeof(mqttOutMsg_t *));
+  _q_in = xQueueCreate(_q_in_len, sizeof(mqttInMsg_t *));
 
   ESP_LOGI(tagEngine(), "queue IN  len(%d) msg_size(%u) total_size(%u)",
            _q_in_len, sizeof(mqttInMsg_t), (sizeof(mqttInMsg_t) * _q_in_len));
@@ -126,14 +126,18 @@ void mcrMQTT::handshake(struct mg_connection *nc) {
 
 void mcrMQTT::incomingMsg(struct mg_str *in_topic, struct mg_str *in_payload) {
   // allocate a new string here and deallocate it once processed through MQTTin
+  mqttInMsg_t *entry = new mqttInMsg_t;
   auto *topic = new std::string(in_topic->p, in_topic->len);
   auto *data =
       new std::vector<char>(in_payload->p, (in_payload->p + in_payload->len));
-  mqttInMsg_t entry;
+
   BaseType_t q_rc;
 
-  entry.topic = topic;
-  entry.data = data;
+  entry->topic = topic;
+  entry->data = data;
+
+  // ESP_LOGI(tagEngine(), "entry(%p) topic(%p) data(%p)", entry, entry->topic,
+  //          entry->data);
 
   // queue send takes a pointer to what should be copied to the queue
   // using the size defined when the queue was created
@@ -185,7 +189,7 @@ void mcrMQTT::publish(std::unique_ptr<Reading_t> reading) {
 
 void mcrMQTT::outboundMsg() {
   size_t len = 0;
-  mqttOutMsg_t entry;
+  mqttOutMsg_t *entry;
   auto q_rc = pdFALSE;
 
   q_rc = xQueueReceive(_q_out, &entry, _outbound_msg_ticks);
@@ -193,8 +197,8 @@ void mcrMQTT::outboundMsg() {
   while (q_rc == pdTRUE) {
     elapsedMicros publish_elapse;
 
-    const auto *json = entry.data;
-    size_t json_len = entry.len;
+    const auto *json = entry->data;
+    size_t json_len = entry->len;
 
     ESP_LOGD(tagEngine(), "send msg(len=%u), payload(len=%u)", len, json_len);
 
@@ -202,6 +206,7 @@ void mcrMQTT::outboundMsg() {
                     json->data(), json_len);
 
     delete json;
+    delete entry;
 
     int64_t publish_us = publish_elapse;
     if (publish_us > 3000) {
@@ -217,20 +222,22 @@ void mcrMQTT::outboundMsg() {
 
 void mcrMQTT::publish(std::string *json) {
   auto q_rc = pdFALSE;
-  mqttOutMsg_t entry;
+  mqttOutMsg_t *entry = new mqttOutMsg_t;
 
   // setup the entry noting that the actual pointer to the string will
   // be included so be certain to deallocate when it comes out of the
   // ringbuffer
-  entry.len = json->length();
-  entry.data = json;
+  entry->len = json->length();
+  entry->data = json;
 
   // queue send takes a pointer to what should be copied to the queue
   // using the size defined when the queue was created
-  q_rc = xQueueSendToBack(_q_in, (void *)&entry, pdMS_TO_TICKS(50));
+  q_rc = xQueueSendToBack(_q_out, (void *)&entry, pdMS_TO_TICKS(50));
 
   if (q_rc == pdFALSE) {
+    delete entry;
     delete json;
+
     std::unique_ptr<char[]> msg(new char[128]);
     auto space_avail = uxQueueSpacesAvailable(_q_out);
 

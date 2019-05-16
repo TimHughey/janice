@@ -59,7 +59,7 @@ void mcrMQTTin::restorePriority() {
 }
 
 void mcrMQTTin::run(void *data) {
-  mqttInMsg_t msg;
+  mqttInMsg_t *msg;
   mcrCmdFactory_t factory;
 
   // note:  no reason to wait for wifi, normal ops or other event group
@@ -73,25 +73,29 @@ void mcrMQTTin::run(void *data) {
   for (;;) {
     BaseType_t q_rc = pdFALSE;
 
-    bzero(&msg, sizeof(mqttInMsg_t)); // just because we like clean memory
+    bzero(&msg, sizeof(mqttInMsg_t *)); // just because we like clean memory
     q_rc = xQueueReceive(_q_in, &msg, portMAX_DELAY);
 
     if (q_rc == pdTRUE) {
+      // ESP_LOGI(TAG, "msg(%p) topic(%p) data(%p)", msg, msg->topic,
+      // msg->data);
+
       // reminder:  must do a != to test for equality
-      if (msg.topic->find("command") != std::string::npos) {
-        mcrCmd_t *cmd = factory.fromRaw(msg.data);
+      if (msg->topic->find("command") != std::string::npos) {
+        mcrCmd_t *cmd = factory.fromRaw(msg->data);
         mcrCmd_t_ptr cmd_ptr(cmd);
 
         if (cmd != nullptr) {
           cmd->process();
         }
       } else {
-        ESP_LOGI(TAG, "ignoring topic(%s)", msg.topic->c_str());
+        ESP_LOGI(TAG, "ignoring topic(%s)", msg->topic->c_str());
       }
 
       // ok, we're done with the contents of the previously allocated msg
-      delete msg.topic;
-      delete msg.data;
+      delete msg->topic;
+      delete msg->data;
+      delete msg;
 
     } else {
       ESP_LOGW(TAG, "queue received failed");
