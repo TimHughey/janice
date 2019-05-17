@@ -36,17 +36,18 @@
 #include "cmds/cmd_ota.hpp"
 #include "cmds/cmd_switch.hpp"
 #include "cmds/cmd_types.hpp"
+#include "external/ArduinoJson.hpp"
 #include "misc/mcr_types.hpp"
 
 typedef class mcrCmdFactory mcrCmdFactory_t;
 class mcrCmdFactory {
 private:
-  mcrCmd_t *fromJSON(mcrRawMsg_t *raw);
+  mcrCmd_t *fromJSON(JsonDocument &doc, mcrRawMsg_t *raw);
 
 public:
   mcrCmdFactory();
 
-  mcrCmd_t *fromRaw(mcrRawMsg_t *raw);
+  mcrCmd_t *fromRaw(JsonDocument &doc, mcrRawMsg_t *raw);
 };
 
 #endif

@@ -61,6 +61,7 @@ void mcrMQTTin::restorePriority() {
 void mcrMQTTin::run(void *data) {
   mqttInMsg_t *msg;
   mcrCmdFactory_t factory;
+  DynamicJsonDocument doc(1024); // allocate the json buffer here
 
   // note:  no reason to wait for wifi, normal ops or other event group
   //        bits since mcrMQTTin waits for queue data from other tasks via
@@ -82,7 +83,7 @@ void mcrMQTTin::run(void *data) {
 
       // reminder:  must do a != to test for equality
       if (msg->topic->find("command") != std::string::npos) {
-        mcrCmd_t *cmd = factory.fromRaw(msg->data);
+        mcrCmd_t *cmd = factory.fromRaw(doc, msg->data);
         mcrCmd_t_ptr cmd_ptr(cmd);
 
         if (cmd != nullptr) {
