@@ -48,6 +48,7 @@
 namespace mcr {
 
 mcrDS_t *__singleton__ = nullptr;
+static const string_t engine_name = "mcrDS";
 
 mcrDS::mcrDS() {
   setTags(localTags());
@@ -60,10 +61,17 @@ mcrDS::mcrDS() {
   // setLoggingLevel(tagCommand(), ESP_LOG_INFO);
   // setLoggingLevel(tagSetDS2408(), ESP_LOG_INFO);
 
-  // task setup
-  _engine_task_name = tagEngine();
-  _engine_stack_size = 5 * 1024;
-  _engine_priority = CONFIG_MCR_DS_TASK_INIT_PRIORITY;
+  EngineTask_t core("core", CONFIG_MCR_DS_TASK_INIT_PRIORITY, 5120);
+  EngineTask_t convert("con", CONFIG_MCR_DS_CONVERT_TASK_PRIORITY);
+  EngineTask_t command("cmd", CONFIG_MCR_DS_COMMAND_TASK_PRIORITY, 3072);
+  EngineTask_t discover("dis", CONFIG_MCR_DS_DISCOVER_TASK_PRIORITY, 4096);
+  EngineTask_t report("rpt", CONFIG_MCR_DS_REPORT_TASK_PRIORITY, 3072);
+
+  addTask(engine_name, CORE, core);
+  addTask(engine_name, CONVERT, convert);
+  addTask(engine_name, COMMAND, command);
+  addTask(engine_name, DISCOVER, discover);
+  addTask(engine_name, REPORT, report);
 }
 
 bool mcrDS::checkDevicesPowered() {
@@ -227,7 +235,6 @@ void mcrDS::convert(void *task_data) {
   tempUnavailable();
 
   for (;;) {
-    // bool temp_convert_done = false;
     bool present = false;
     uint8_t data = 0x00;
     owb_status owb_s;
@@ -476,7 +483,7 @@ void mcrDS::report(void *task_data) {
       waitFor(temperatureAvailableBit(), _report_frequency, true);
     }
 
-    // last wake is actually after the event group has been satisified
+    // last wake is after the event group has been satisified
     _reportTask.lastWake = xTaskGetTickCount();
 
     trackReport(true);

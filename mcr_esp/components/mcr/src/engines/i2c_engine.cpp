@@ -50,6 +50,7 @@
 namespace mcr {
 
 static mcrI2c_t *__singleton__ = nullptr;
+static const string_t engine_name = "mcrI2c";
 
 mcrI2c::mcrI2c() {
   setTags(localTags());
@@ -62,9 +63,17 @@ mcrI2c::mcrI2c() {
   // setLoggingLevel(tagReport(), ESP_LOG_INFO);
   // setLoggingLevel(tagReadSHT31(), ESP_LOG_INFO);
 
-  _engine_task_name = tagEngine();
-  _engine_stack_size = 4 * 1024;
-  _engine_priority = CONFIG_MCR_I2C_TASK_CORE_PRIORITY;
+  EngineTask_t core("core", CONFIG_MCR_I2C_TASK_CORE_PRIORITY, 4096);
+  // EngineTask_t convert("con", CONFIG_MCR_I2C_CONVERT_TASK_PRIORITY);
+  // EngineTask_t command("cmd", CONFIG_MCR_I2C_COMMAND_TASK_PRIORITY, 3072);
+  // EngineTask_t discover("dis", CONFIG_MCR_I2C_DISCOVER_TASK_PRIORITY, 4096);
+  // EngineTask_t report("rpt", CONFIG_MCR_I2C_REPORT_TASK_PRIORITY, 3072);
+
+  addTask(engine_name, CORE, core);
+  // addTask(engine_name, CONVERT, convert);
+  // addTask(engine_name, COMMAND, command);
+  // addTask(engine_name, DISCOVER, discover);
+  // addTask(engine_name, REPORT, report);
 
   if (mcr::Net::hardwareConfig() == I2C_MULTIPLEXER) {
     gpio_config_t rst_pin_cfg;

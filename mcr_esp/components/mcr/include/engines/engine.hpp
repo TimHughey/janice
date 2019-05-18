@@ -23,18 +23,16 @@
 
 #include <algorithm>
 #include <cstdlib>
-// #include <string>
 #include <unordered_map>
-// #include <vector>
 
 #include <esp_log.h>
 #include <freertos/FreeRTOS.h>
-#include <freertos/event_groups.h>
 #include <freertos/task.h>
 #include <sdkconfig.h>
 
 #include "cmds/cmd_switch.hpp"
 #include "devs/base.hpp"
+#include "engines/types.hpp"
 #include "misc/elapsedMillis.hpp"
 #include "misc/mcr_types.hpp"
 #include "protocols/mqtt.hpp"
@@ -42,45 +40,17 @@
 
 namespace mcr {
 
-typedef struct EngineMetric {
-  int64_t start_us = 0;
-  int64_t elapsed_us = 0;
-  time_t last_time = 0;
-} EngineMetric_t;
-
-typedef struct EngineMetrics {
-  EngineMetric_t discover;
-  EngineMetric_t convert;
-  EngineMetric_t report;
-  EngineMetric_t switch_cmd;
-  EngineMetric_t switch_cmdack;
-} EngineMetrics_t;
-
 template <class DEV> class mcrEngine {
-
-public:
-  typedef std::unordered_map<string_t, DEV *> DeviceMap_t;
-
 private:
-  // std::vector<DEV *> _devices;
+  TaskMap_t _task_map;
 
+  typedef std::unordered_map<string_t, DEV *> DeviceMap_t;
   DeviceMap_t _devices;
 
-  xTaskHandle _engine_task = nullptr;
   EventGroupHandle_t _evg;
   SemaphoreHandle_t _bus_mutex = nullptr;
 
   EngineMetrics_t metrics;
-  typedef std::pair<string_t, EngineMetric_t *> metricEntry_t;
-  typedef std::map<string_t, EngineMetric_t *> metricMap_t;
-
-  typedef struct {
-    EventBits_t need_bus;
-    EventBits_t engine_running;
-    EventBits_t devices_available;
-    EventBits_t temp_available;
-    EventBits_t temp_sensors_available;
-  } engineEventBits_t;
 
   engineEventBits_t _event_bits = {.need_bus = BIT0,
                                    .engine_running = BIT1,
@@ -88,53 +58,94 @@ private:
                                    .temp_available = BIT3,
                                    .temp_sensors_available = BIT4};
 
-  // Task implementation
-  static void runEngine(void *task_instance) {
+  // Core Task Implementation
+  //
+  // running the core task has a different implementation since it is
+  // wrapped in a class
+  static void runCore(void *task_instance) {
     mcrEngine *task = (mcrEngine *)task_instance;
+    auto task_map = task->taskMap();
+    auto *data = task_map[CORE]->_data;
 
-    task->run(task->_engine_task_data);
+    task->run(data);
   }
+
+  // Engine Sub Tasks
+  //
+  // Running the sub-tasks of an engine are different since they are
+  // not wrapped in a class (contrast the below with runCore above)
+  static void runConvert(TaskFunc_t main, void *data) { main(data); }
+  static void runDiscover(TaskFunc_t main, void *data) { main(data); }
+  static void runReport(TaskFunc_t main, void *data) { main(data); }
+  static void runCommand(TaskFunc_t main, void *data) { main(data); }
 
 public:
   mcrEngine() {
     _evg = xEventGroupCreate();
     _bus_mutex = xSemaphoreCreateMutex();
   };
+
   virtual ~mcrEngine(){};
 
   // task methods
-  xTaskHandle taskHandle() { return _engine_task; }
+  void addTask(const string_t &engine_name, TaskTypes_t task_type,
+               EngineTask_t &task) {
+
+    EngineTask_ptr_t new_task = new EngineTask(task);
+    // when the task name is 'core' then set it to the engine name
+    // otherwise prepend the engine name
+    if (new_task->_name.find("core") != std::string::npos) {
+      new_task->_name = engine_name;
+    } else {
+      new_task->_name.insert(0, engine_name);
+    }
+
+    _task_map[task_type] = new_task;
+  }
+
+  const TaskMap_t &taskMap() { return _task_map; }
+
+  xTaskHandle taskHandle() {
+    auto task = _task_map[CORE];
+
+    return task->_handle;
+  }
+
   void delay(int ms) { ::vTaskDelay(pdMS_TO_TICKS(ms)); }
 
   virtual void run(void *data) = 0;
   virtual void suspend() {
-    ESP_LOGW(tagEngine(), "suspending self(%p)", this->_engine_task);
-    vTaskSuspend(this->_engine_task);
+    auto task = _task_map[CORE];
+    ESP_LOGW(tagEngine(), "suspending self(%p)", task->_handle);
+    vTaskSuspend(task->_handle);
   };
 
   void start(void *task_data = nullptr) {
+    // we make an assumption that the 'core' task was added
+    auto task = _task_map[CORE];
 
-    if (_engine_task != nullptr) {
-      ESP_LOGW(tagEngine(), "task already running %p", (void *)_engine_task);
+    if (task->_handle != nullptr) {
+      ESP_LOGW(tagEngine(), "task already running %p", (void *)task->_handle);
     }
 
     // this (object) is passed as the data to the task creation and is
-    // used by the static runEngine method to call the implemented run
+    // used by the static runCore method to call the implemented run
     // method
-    ::xTaskCreate(&runEngine, _engine_task_name.c_str(), _engine_stack_size,
-                  this, _engine_priority, &_engine_task);
+    ::xTaskCreate(&runCore, task->_name.c_str(), task->_stackSize, this,
+                  task->_priority, &task->_handle);
   }
 
   void stop() {
-    if (_engine_task == nullptr) {
+    auto task = _task_map[CORE];
+    if (task->_handle == nullptr) {
       return;
     }
 
     ESP_LOGW(tagEngine(), "task stopping, goodbye");
 
-    xTaskHandle task = _engine_task;
-    _engine_task = nullptr;
-    ::vTaskDelete(task);
+    xTaskHandle handle = task->_handle;
+    task->_handle = nullptr;
+    ::vTaskDelete(handle);
   }
 
   // FIXME: move to external config
@@ -196,8 +207,6 @@ public:
     auto found = _devices.find(dev);
 
     if (found != _devices.end()) {
-      // auto dev = found->second;
-      // return *dev;
       return found->second;
     }
 
@@ -230,10 +239,10 @@ public:
   };
 
 protected:
-  void *_engine_task_data;
-  string_t _engine_task_name;
-  uint16_t _engine_stack_size = 10000;
-  uint16_t _engine_priority = 5;
+  virtual void convert(void *){};
+  virtual void command(void *){};
+  virtual void discover(void *){};
+  virtual void report(void *){};
 
   typedef std::unordered_map<string_t, string_t> EngineTagMap_t;
 
@@ -385,6 +394,35 @@ protected:
     esp_log_level_set(tag, level);
   }
 
+  const char *logLevelAsText(esp_log_level_t level) {
+    const char *text;
+
+    switch (level) {
+    case ESP_LOG_NONE:
+      text = "none";
+      break;
+    case ESP_LOG_DEBUG:
+      text = "debug";
+      break;
+    case ESP_LOG_INFO:
+      text = "info";
+      break;
+    case ESP_LOG_WARN:
+      text = "warning";
+      break;
+    case ESP_LOG_ERROR:
+      text = "error";
+      break;
+    case ESP_LOG_VERBOSE:
+      text = "verbose";
+      break;
+    default:
+      text = "unknown";
+    }
+
+    return text;
+  }
+
   // definition of an entry in the EngineTagMap:
   //  key:    identifier (e.g. 'engine', 'discover')
   //  entry:  text displayed by ESP_LOG* when logging level matches
@@ -394,8 +432,8 @@ protected:
       string_t &key = item.first;
       string_t &tag_text = item.second;
 
-      ESP_LOGI(_tags["engine"].c_str(), "key=%s tag=%s logging at level=%d",
-               key.c_str(), tag_text.c_str(), level);
+      ESP_LOGI(_tags["engine"].c_str(), "key(%s) tag(%s) %s logging",
+               key.c_str(), tag_text.c_str(), logLevelAsText(level));
       esp_log_level_set(tag_text.c_str(), level);
     });
 
@@ -406,7 +444,7 @@ protected:
     auto load = _tags.load_factor();
     auto buckets = _tags.bucket_count();
 
-    ESP_LOGW(tag,
+    ESP_LOGD(tag,
              "_tags us(%llu) sizeof(%zu) size(%u) load(%0.2f) "
              "buckets(%u)",
              elapsed, sizeof(_tags), _tags.size(), load, buckets);
@@ -415,66 +453,19 @@ protected:
   void setTags(EngineTagMap_t &map) { _tags = map; }
 
 public:
-  const char *tagCommand() {
-    // static const char *tag = nullptr;
-    // if (tag == nullptr) {
-    //   tag = _tags["command"].c_str();
-    // }
-    // return tag;
+  const char *tagCommand() { return tagGeneric("command"); }
 
-    return tagGeneric("command");
-  }
+  const char *tagConvert() { return tagGeneric("convert"); }
 
-  const char *tagConvert() {
-    // static const char *tag = nullptr;
-    // if (tag == nullptr) {
-    //   tag = _tags["convert"].c_str();
-    // }
-    // return tag;
-
-    return tagGeneric("convert");
-  }
-
-  const char *tagDiscover() {
-    // static const char *tag = nullptr;
-    // if (tag == nullptr) {
-    //   tag = _tags["discover"].c_str();
-    // }
-    // return tag;
-
-    return tagGeneric("discover");
-  }
+  const char *tagDiscover() { return tagGeneric("discover"); }
 
   const char *tagGeneric(const char *tag) { return _tags[tag].c_str(); }
 
-  const char *tagEngine() {
-    // static const char *tag = nullptr;
-    // if (tag == nullptr) {
-    //   tag = _tags["engine"].c_str();
-    // }
-    // return tag;
+  const char *tagEngine() { return tagGeneric("engine"); }
 
-    return tagGeneric("engine");
-  }
+  const char *tagPhase() { return tagGeneric("phase"); }
 
-  const char *tagPhase() {
-    // static const char *tag = nullptr;
-    // if (tag == nullptr) {
-    //   tag = _tags["phase"].c_str();
-    // }
-    // return tag;
-    return tagGeneric("phase");
-  }
-
-  const char *tagReport() {
-    // static const char *tag = nullptr;
-    // if (tag == nullptr) {
-    //   tag = _tags["report"].c_str();
-    // }
-    // return tag;
-
-    return tagGeneric("report");
-  }
+  const char *tagReport() { return tagGeneric("report"); }
 
   // misc metrics tracking
 protected:
