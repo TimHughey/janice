@@ -882,7 +882,7 @@ bool mcrDS::resetBus(bool *present) {
   return false;
 }
 
-void mcrDS::run(void *data) {
+void mcrDS::core(void *data) {
   owb_rmt_driver_info *rmt_driver = new owb_rmt_driver_info;
   _ds = owb_rmt_initialize(rmt_driver, _pin, RMT_CHANNEL_0, RMT_CHANNEL_1);
 

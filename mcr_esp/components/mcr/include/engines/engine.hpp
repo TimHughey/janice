@@ -68,7 +68,7 @@ private:
     auto task_map = task->taskMap();
     auto *data = task_map[CORE]->_data;
 
-    task->run(data);
+    task->core(data);
   }
 
   //
@@ -160,7 +160,7 @@ public:
 
   void delay(int ms) { ::vTaskDelay(pdMS_TO_TICKS(ms)); }
 
-  virtual void run(void *data) = 0;
+  virtual void core(void *data) = 0; // pure virtual, subclass must implement
   virtual void suspend() {
 
     for_each(_task_map.begin(), _task_map.end(), [this](TaskMapItem_t item) {

@@ -67,7 +67,7 @@ private:
 
 public:
   static mcrI2c_t *instance();
-  void run(void *data);
+  void core(void *data);
 
 private:
   i2c_config_t _conf;

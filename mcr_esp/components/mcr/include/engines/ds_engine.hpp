@@ -55,9 +55,9 @@ public:
 
   void command(void *data);
   void convert(void *data);
+  void core(void *data);
   void discover(void *data);
   void report(void *data);
-  void run(void *data);
 
   void stop();
 

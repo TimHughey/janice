@@ -710,7 +710,7 @@ esp_err_t mcrI2c::requestData(const char *TAG, i2cDev_t *dev, uint8_t *send,
   return esp_rc;
 }
 
-void mcrI2c::run(void *task_data) {
+void mcrI2c::core(void *task_data) {
   int wait_for_name_ms = 30000;
   bool driver_ready = false;
   bool net_name = false;
