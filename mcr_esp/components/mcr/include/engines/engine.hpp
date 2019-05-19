@@ -190,9 +190,8 @@ public:
     // method
     ::xTaskCreate(&runCore, task->_name.c_str(), task->_stackSize, this,
                   task->_priority, &task->_handle);
-    ESP_LOGI(tagEngine(), "engine %s priority(%d) stack(%d) handle(%p)",
-             task->_name.c_str(), task->_priority, task->_stackSize,
-             task->_handle);
+    ESP_LOGI(task->_name.c_str(), "core(%p) priority(%d) stack(%d)",
+             task->_handle, task->_priority, task->_stackSize);
 
     // now start any sub-tasks added
     for_each(_task_map.begin(), _task_map.end(), [this](TaskMapItem_t item) {
@@ -230,7 +229,7 @@ public:
         ::xTaskCreate(run_subtask, subtask->_name.c_str(), subtask->_stackSize,
                       this, subtask->_priority, &subtask->_handle);
 
-        ESP_LOGI(tagEngine(), "subtask %s priority(%d) stack(%d) handle(%p)",
+        ESP_LOGV(tagEngine(), "subtask %s priority(%d) stack(%d) handle(%p)",
                  subtask->_name.c_str(), subtask->_priority,
                  subtask->_stackSize, subtask->_handle);
       }
@@ -292,7 +291,7 @@ public:
       dev->justSeen();
       // _devices.push_back(dev);
       _devices[dev->id()] = dev;
-      ESP_LOGI(tagEngine(), "added %s", dev->debug().get());
+      ESP_LOGV(tagEngine(), "added %s", dev->debug().get());
     }
 
     return (found == nullptr) ? true : false;
@@ -353,8 +352,9 @@ protected:
   }
 
   void logSubTaskStart(EngineTask_ptr_t task_info) {
-    ESP_LOGI(task_info->_name.c_str(), "subtask(%p) started",
-             task_info->_handle);
+    ESP_LOGI(task_info->_name.c_str(),
+             "subtask(%p) running, priority(%d) stack(%d)", task_info->_handle,
+             task_info->_priority, task_info->_stackSize);
   }
 
   DEV *getDeviceByCmd(mcrCmdSwitch_t &cmd) {
@@ -562,7 +562,7 @@ protected:
   int64_t trackPhase(const char *lTAG, EngineMetric_t &phase, bool start) {
     if (start) {
       phase.start_us = esp_timer_get_time();
-      ESP_LOGI(lTAG, "phase started");
+      ESP_LOGV(lTAG, "phase started");
     } else {
       time_t recent_us = esp_timer_get_time() - phase.start_us;
       phase.elapsed_us = (phase.elapsed_us > 0)
@@ -570,7 +570,7 @@ protected:
                              : recent_us;
       phase.start_us = 0;
       phase.last_time = time(nullptr);
-      ESP_LOGI(lTAG, "phase ended, took %lldms", phase.elapsed_us / 1000);
+      ESP_LOGV(lTAG, "phase ended, took %lldms", phase.elapsed_us / 1000);
     }
 
     return phase.elapsed_us;
@@ -652,7 +652,7 @@ protected:
     });
 
     if (str[0] != 0x00) {
-      ESP_LOGI(tagEngine(), "%s", str);
+      ESP_LOGV(tagEngine(), "%s", str);
     }
   };
 };

@@ -55,8 +55,8 @@ static const string_t engine_name = "mcrI2c";
 mcrI2c::mcrI2c() {
   setTags(localTags());
   // setLoggingLevel(ESP_LOG_DEBUG);
-  // setLoggingLevel(ESP_LOG_INFO);
-  setLoggingLevel(ESP_LOG_WARN);
+  setLoggingLevel(ESP_LOG_INFO);
+  // setLoggingLevel(ESP_LOG_WARN);
   // setLoggingLevel(tagEngine(), ESP_LOG_INFO);
   // setLoggingLevel(tagDetectDev(), ESP_LOG_INFO);
   // setLoggingLevel(tagDiscover(), ESP_LOG_INFO);
@@ -317,7 +317,7 @@ bool mcrI2c::hardReset() {
   delay(1000);
 
   rc = i2c_driver_delete(I2C_NUM_0);
-  ESP_LOGI(tagEngine(), "i2c_driver_delete() == %s", espError(rc));
+  ESP_LOGV(tagEngine(), "i2c_driver_delete() == %s", espError(rc));
 
   periph_module_disable(PERIPH_I2C0_MODULE);
   periph_module_enable(PERIPH_I2C0_MODULE);
@@ -338,11 +338,11 @@ bool mcrI2c::installDriver() {
   _conf.master.clk_speed = 100000;
 
   esp_err = i2c_param_config(I2C_NUM_0, &_conf);
-  ESP_LOGI(tagEngine(), "%s i2c_param_config()", esp_err_to_name(esp_err));
+  ESP_LOGV(tagEngine(), "%s i2c_param_config()", esp_err_to_name(esp_err));
 
   if (esp_err == ESP_OK) {
     esp_err = i2c_driver_install(I2C_NUM_0, _conf.mode, 0, 0, 0);
-    ESP_LOGI(tagEngine(), "%s i2c_driver_install()", esp_err_to_name(esp_err));
+    ESP_LOGW(tagEngine(), "%s i2c_driver_install()", esp_err_to_name(esp_err));
   }
 
   delay(1000);
@@ -624,7 +624,7 @@ void mcrI2c::report(void *task_data) {
 
                  if (rc) {
                    publish(dev);
-                   ESP_LOGI(tagReport(), "%s success", dev->debug().get());
+                   ESP_LOGV(tagReport(), "%s success", dev->debug().get());
                  } else {
                    ESP_LOGE(tagReport(), "%s failed", dev->debug().get());
                    // hardReset();
@@ -658,7 +658,7 @@ esp_err_t mcrI2c::requestData(const char *TAG, i2cDev_t *dev, uint8_t *send,
   int _save_timeout = 0;
   if (timeout > 0) {
     i2c_get_timeout(I2C_NUM_0, &_save_timeout);
-    ESP_LOGI(TAG, "saving previous i2c timeout: %d", _save_timeout);
+    ESP_LOGV(TAG, "saving previous i2c timeout: %d", _save_timeout);
     i2c_set_timeout(I2C_NUM_0, timeout);
   }
 
@@ -718,7 +718,7 @@ void mcrI2c::core(void *task_data) {
     driver_ready = installDriver();
   }
 
-  ESP_LOGI(tagEngine(), "waiting for normal ops...");
+  ESP_LOGV(tagEngine(), "waiting for normal ops...");
   mcr::Net::waitForNormalOps();
 
   // wait for up to 30 seconds for name assigned by mcp
@@ -727,7 +727,7 @@ void mcrI2c::core(void *task_data) {
 
   // this is because i2c devices do not have a globally assigned
   // unique identifier (like Maxim / Dallas Semiconductors devices)
-  ESP_LOGI(tagEngine(), "waiting up to %dms for network name...",
+  ESP_LOGV(tagEngine(), "waiting up to %dms for network name...",
            wait_for_name_ms);
   net_name = mcr::Net::waitForName(pdMS_TO_TICKS(wait_for_name_ms));
 
@@ -735,7 +735,7 @@ void mcrI2c::core(void *task_data) {
     ESP_LOGW(tagEngine(), "network name not available, using host name");
   }
 
-  ESP_LOGI(tagEngine(), "normal ops, proceeding to task loop");
+  ESP_LOGV(tagEngine(), "normal ops, proceeding to task loop");
 
   _last_wake.engine = xTaskGetTickCount();
   for (;;) {

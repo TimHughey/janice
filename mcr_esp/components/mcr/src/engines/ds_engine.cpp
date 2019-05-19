@@ -53,8 +53,8 @@ static const string_t engine_name = "mcrDS";
 mcrDS::mcrDS() {
   setTags(localTags());
   // setLoggingLevel(ESP_LOG_DEBUG);
-  // setLoggingLevel(ESP_LOG_INFO);
-  setLoggingLevel(ESP_LOG_WARN);
+  setLoggingLevel(ESP_LOG_INFO);
+  // setLoggingLevel(ESP_LOG_WARN);
   // setLoggingLevel(tagConvert(), ESP_LOG_INFO);
   // setLoggingLevel(tagReport(), ESP_LOG_INFO);
   // setLoggingLevel(tagDiscover(), ESP_LOG_INFO);
@@ -88,7 +88,7 @@ bool mcrDS::checkDevicesPowered() {
   owb_s = owb_read_byte(_ds, &pwr);
 
   if ((owb_s == OWB_STATUS_OK) && pwr) {
-    ESP_LOGI(tagDiscover(), "all devices are powered");
+    ESP_LOGV(tagDiscover(), "all devices are powered");
     rc = true;
   } else {
     ESP_LOGW(tagDiscover(),
@@ -384,7 +384,7 @@ void mcrDS::discover(void *data) {
 
     bool present = false;
     if (resetBus(&present) && (present == false)) {
-      ESP_LOGI(tagDiscover(), "no devices present");
+      ESP_LOGV(tagDiscover(), "no devices present");
       giveBus();
       trackDiscover(false);
       taskDelayUntil(DISCOVER, _discover_frequency);
@@ -412,8 +412,8 @@ void mcrDS::discover(void *data) {
         ESP_LOGD(tagDiscover(), "previously seen %s", dev.debug().get());
       } else {
         dsDev_t *new_dev = new dsDev(dev);
-        ESP_LOGI(tagDiscover(), "new (%p) %s", (void *)new_dev,
-                 dev.debug().get());
+        ESP_LOGI(tagDiscover(), "%s is new (%p)", dev.debug().get(),
+                 (void *)new_dev);
         addDevice(new_dev);
       }
 
@@ -457,6 +457,9 @@ void mcrDS::discover(void *data) {
     // signal to other tasks if there are devices available
     devicesAvailable(device_found);
 
+    // to avoid including the execution time of the discover phase
+    saveTaskLastWake(DISCOVER);
+
     taskDelayUntil(DISCOVER, _discover_frequency);
   }
 }
@@ -487,7 +490,7 @@ void mcrDS::report(void *data) {
       // let's wait here for the temperature available bit
       // once we see it then clear it to ensure we don't run again until
       // it's available again
-      ESP_LOGI(tagReport(), "standing by for temperature");
+      ESP_LOGV(tagReport(), "standing by for temperature");
       waitFor(temperatureAvailableBit(), _report_frequency, true);
     }
 
@@ -495,7 +498,7 @@ void mcrDS::report(void *data) {
     saveTaskLastWake(REPORT);
 
     trackReport(true);
-    ESP_LOGI(tagReport(), "will attempt to report %d device%s",
+    ESP_LOGV(tagReport(), "will attempt to report %d device%s",
              numKnownDevices(), (numKnownDevices() > 1) ? "s" : "");
 
     for_each(beginDevices(), endDevices(),
@@ -503,13 +506,13 @@ void mcrDS::report(void *data) {
                auto dev = item.second;
 
                if (dev->available()) {
-                 ESP_LOGI(tagReport(), "reading device %s", dev->debug().get());
+                 ESP_LOGV(tagReport(), "reading device %s", dev->debug().get());
 
                  takeBus();
                  auto rc = readDevice(dev);
 
                  if (rc) {
-                   ESP_LOGI(tagReport(), "publishing reading for %s",
+                   ESP_LOGV(tagReport(), "publishing reading for %s",
                             dev->debug().get());
                    publish(dev);
                    dev->justSeen();
@@ -530,7 +533,7 @@ void mcrDS::report(void *data) {
 
     // case b:  wait a present duration (no temp devices)
     if (!_temp_devices_present) {
-      ESP_LOGI(tagReport(), "no temperature devices, sleeping for %u ticks",
+      ESP_LOGV(tagReport(), "no temperature devices, sleeping for %u ticks",
                _report_frequency);
       taskDelayUntil(REPORT, _report_frequency);
     }
@@ -895,9 +898,9 @@ void mcrDS::core(void *data) {
   cmdQueue_t cmd_q = {"mcrDS", "ds", _cmd_q};
   mcrCmdQueues::registerQ(cmd_q);
 
-  ESP_LOGI(tagEngine(), "waiting for normal ops...");
+  ESP_LOGV(tagEngine(), "waiting for normal ops...");
   mcr::Net::waitForNormalOps();
-  ESP_LOGI(tagEngine(), "normal ops, proceeding to task loop");
+  ESP_LOGV(tagEngine(), "normal ops, proceeding to task loop");
 
   saveTaskLastWake(CORE);
 
