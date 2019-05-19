@@ -51,6 +51,7 @@ typedef EngineTask_t *EngineTask_ptr_t;
 typedef std::unordered_map<TaskTypes_t, EngineTask_t *, TaskTypesHash>
     TaskMap_t;
 typedef TaskMap_t *TaskMap_ptr_t;
+typedef std::pair<TaskTypes_t, EngineTask_t *> TaskMapItem_t;
 
 class EngineTask {
 public:

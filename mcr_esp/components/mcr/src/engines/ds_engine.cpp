@@ -100,7 +100,9 @@ bool mcrDS::checkDevicesPowered() {
   return rc;
 }
 
-void mcrDS::command(void *task_data) {
+void mcrDS::command(void *data) {
+  logSubTaskStart(data);
+
   // no setup required before jumping into task loop
 
   for (;;) {
@@ -228,8 +230,11 @@ bool mcrDS::commandAck(mcrCmdSwitch_t &cmd) {
   return rc;
 }
 
-void mcrDS::convert(void *task_data) {
+// SubTasks receive their task config via the void *data
+void mcrDS::convert(void *data) {
   uint8_t temp_convert_cmd[] = {0xcc, 0x44};
+
+  logSubTaskStart(data);
 
   // ensure the temp available bit is cleared at task startup
   tempUnavailable();
@@ -244,7 +249,7 @@ void mcrDS::convert(void *task_data) {
 
     // now that the wait has been satisified record the last wake time
     // this is important to avoid performing the convert too frequently
-    _convertTask.lastWake = xTaskGetTickCount();
+    saveTaskLastWake(CONVERT);
 
     // use event bits to signal when there are temperatures available
     // start by clearing the bit to signal there isn't a temperature available
@@ -256,7 +261,7 @@ void mcrDS::convert(void *task_data) {
       ESP_LOGW(tagConvert(),
                "devices not powered or no temperature devices present");
       trackConvert(false);
-      vTaskDelayUntil(&(_convertTask.lastWake), _convert_frequency);
+      taskDelayUntil(CONVERT, _convert_frequency);
       continue;
     }
 
@@ -265,7 +270,7 @@ void mcrDS::convert(void *task_data) {
     if (resetBus(&present) && (present == false)) {
       ESP_LOGW(tagConvert(), "no devices present (but there should be)");
       giveBus();
-      vTaskDelayUntil(&(_convertTask.lastWake), _convert_frequency);
+      taskDelayUntil(CONVERT, _convert_frequency);
       continue;
     }
 
@@ -288,7 +293,7 @@ void mcrDS::convert(void *task_data) {
       }
 
       giveBus();
-      vTaskDelayUntil(&(_convertTask.lastWake), _convert_frequency);
+      taskDelayUntil(CONVERT, _convert_frequency);
       continue;
     }
 
@@ -329,7 +334,6 @@ void mcrDS::convert(void *task_data) {
           resetBus();          // abort the temperature convert
           in_progress = false; // signal to break from loop
           ESP_LOGW(tagConvert(), "another task needs the bus, convert aborted");
-          _convertTask.lastWake -= 5; // NOTE: magic!
         }
 
         if ((esp_timer_get_time() - _wait_start) >= _max_temp_convert_us) {
@@ -348,14 +352,18 @@ void mcrDS::convert(void *task_data) {
       tempAvailable();
     }
 
-    vTaskDelayUntil(&(_convertTask.lastWake), _convert_frequency);
+    taskDelayUntil(CONVERT, _convert_frequency);
   }
 }
 
-void mcrDS::discover(void *task_data) {
+void mcrDS::discover(void *data) {
+  logSubTaskStart(data);
+
   waitFor(engineBit());
   devicesUnavailable(); // ensure the devices available bit is cleared on task
                         // startup
+
+  saveTaskLastWake(DISCOVER);
 
   for (;;) {
     owb_status owb_s;
@@ -366,7 +374,6 @@ void mcrDS::discover(void *task_data) {
     bool bus_needed = false;
     OneWireBus_SearchState search_state;
 
-    _discoverTask.lastWake = xTaskGetTickCount();
     bzero(&search_state, sizeof(OneWireBus_SearchState));
 
     // take the bus before beginning time tracking to avoid
@@ -380,7 +387,7 @@ void mcrDS::discover(void *task_data) {
       ESP_LOGI(tagDiscover(), "no devices present");
       giveBus();
       trackDiscover(false);
-      vTaskDelayUntil(&(_discoverTask.lastWake), _discover_frequency);
+      taskDelayUntil(DISCOVER, _discover_frequency);
       continue;
     }
 
@@ -390,7 +397,7 @@ void mcrDS::discover(void *task_data) {
       ESP_LOGW(tagDiscover(), "search first failed owb_s=%d", owb_s);
       giveBus();
       trackDiscover(false);
-      vTaskDelayUntil(&(_discoverTask.lastWake), _discover_frequency);
+      taskDelayUntil(DISCOVER, _discover_frequency);
       continue;
     }
 
@@ -450,7 +457,7 @@ void mcrDS::discover(void *task_data) {
     // signal to other tasks if there are devices available
     devicesAvailable(device_found);
 
-    vTaskDelayUntil(&(_discoverTask.lastWake), _discover_frequency);
+    taskDelayUntil(DISCOVER, _discover_frequency);
   }
 }
 
@@ -462,7 +469,8 @@ mcrDS_t *mcrDS::instance() {
   return __singleton__;
 }
 
-void mcrDS::report(void *task_data) {
+void mcrDS::report(void *data) {
+  logSubTaskStart(data);
 
   for (;;) {
     // let's wait here for the signal devices are available
@@ -484,7 +492,7 @@ void mcrDS::report(void *task_data) {
     }
 
     // last wake is after the event group has been satisified
-    _reportTask.lastWake = xTaskGetTickCount();
+    saveTaskLastWake(REPORT);
 
     trackReport(true);
     ESP_LOGI(tagReport(), "will attempt to report %d device%s",
@@ -524,7 +532,7 @@ void mcrDS::report(void *task_data) {
     if (!_temp_devices_present) {
       ESP_LOGI(tagReport(), "no temperature devices, sleeping for %u ticks",
                _report_frequency);
-      vTaskDelayUntil(&(_reportTask.lastWake), _report_frequency);
+      taskDelayUntil(REPORT, _report_frequency);
     }
   }
 }
@@ -880,34 +888,9 @@ void mcrDS::run(void *data) {
 
   _cmd_q = xQueueCreate(_max_queue_depth, sizeof(mcrCmdSwitch_t *));
 
-  // the command task will wait for the queue which is fed by MQTTin
-  xTaskCreate(&runCommand, "mcrDScmd", (4 * 1024), this, _cmdTask.priority,
-              &(_cmdTask.handle));
-
-  // the convert task will wait for the devices available bit
-  xTaskCreate(&runConvert, "mcrDScon", (4 * 1024), this, _convertTask.priority,
-              &(_convertTask.handle));
-
-  // the discover task will immediate start, no reason to wait
-  xTaskCreate(&runDiscover, "mcrDSdis", (4 * 1024), this,
-              _discoverTask.priority, &(_discoverTask.handle));
-
-  // the report task will wait for the temperature available bit
-  // FIXME: this should be smarter and discern the difference between
-  //        temperature devices and switch devices
-  //        ** until this is done there will never be a report if temperature
-  //        devices are not on the bus **
-  xTaskCreate(&runReport, "mcrDSrep", (4 * 1024), this, _reportTask.priority,
-              &(_reportTask.handle));
-
   owb_use_crc(_ds, true);
 
-  ESP_LOGD(tagEngine(),
-           "created ow_rmt=%p cmd_q=%p cmd_task=%p "
-           "convert_task=%p discover_task=%p report_task=%p",
-           _ds, (void *)_cmd_q, (void *)_cmdTask.handle,
-           (void *)_convertTask.handle, (void *)_discoverTask.handle,
-           (void *)_reportTask.handle);
+  ESP_LOGD(tagEngine(), "created ow_rmt=%p cmd_q=%p", _ds, (void *)_cmd_q);
 
   cmdQueue_t cmd_q = {"mcrDS", "ds", _cmd_q};
   mcrCmdQueues::registerQ(cmd_q);
@@ -916,10 +899,7 @@ void mcrDS::run(void *data) {
   mcr::Net::waitForNormalOps();
   ESP_LOGI(tagEngine(), "normal ops, proceeding to task loop");
 
-  _engineTask.lastWake = xTaskGetTickCount();
-
-  // adjust the engine task priority as we enter into the main run loop
-  vTaskPrioritySet(nullptr, _engineTask.priority);
+  saveTaskLastWake(CORE);
 
   for (;;) {
     // signal to other tasks the dsEngine task is in it's run loop
@@ -927,33 +907,9 @@ void mcrDS::run(void *data) {
     engineRunning();
 
     // do high-level engine actions here (e.g. general housekeeping)
-    vTaskDelayUntil(&(_engineTask.lastWake), _loop_frequency);
+    taskDelayUntil(CORE, _loop_frequency);
     runtimeMetricsReport();
   }
-}
-
-void mcrDS::runCommand(void *task_data) {
-  mcrDS *instance = (mcrDS *)task_data;
-  instance->command(instance->_handle_cmd_task_data);
-  ::vTaskDelete(instance->_cmdTask.handle);
-}
-
-void mcrDS::runConvert(void *task_data) {
-  mcrDS *instance = (mcrDS *)task_data;
-  instance->convert(instance->_convertTask.data);
-  ::vTaskDelete(instance->_convertTask.handle);
-}
-
-void mcrDS::runDiscover(void *task_data) {
-  mcrDS *instance = (mcrDS *)task_data;
-  instance->discover(instance->_discoverTask.data);
-  ::vTaskDelete(instance->_discoverTask.handle);
-}
-
-void mcrDS::runReport(void *task_data) {
-  mcrDS *instance = (mcrDS *)task_data;
-  instance->report(instance->_reportTask.data);
-  ::vTaskDelete(instance->_reportTask.handle);
 }
 
 bool mcrDS::setDS2406(mcrCmdSwitch_t &cmd, dsDev_t *dev) {
@@ -1210,27 +1166,6 @@ bool mcrDS::setDS2413(mcrCmdSwitch_t &cmd, dsDev_t *dev) {
   }
 
   return rc;
-}
-
-void mcrDS::suspend() {
-  struct tasks {
-    const char *name;
-    mcrTask_t *task;
-  };
-
-  struct tasks suspend[] = {{.name = tagConvert(), .task = &_convertTask},
-                            {.name = tagDiscover(), .task = &_discoverTask},
-                            {.name = tagReport(), .task = &_reportTask},
-                            {.name = tagCommand(), .task = &_cmdTask}};
-
-  uint8_t num_suspend = sizeof(suspend) / sizeof(tasks);
-  for (uint8_t i = 0; i < num_suspend; i++) {
-    ESP_LOGW(tagEngine(), "suspending %s(%p)", suspend[i].name,
-             suspend[i].task->handle);
-    ::vTaskSuspend(suspend[i].task->handle);
-  }
-
-  this->mcrEngine::suspend();
 }
 
 bool mcrDS::check_crc16(const uint8_t *input, uint16_t len,

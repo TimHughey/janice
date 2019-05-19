@@ -58,10 +58,11 @@ private:
                                    .temp_available = BIT3,
                                    .temp_sensors_available = BIT4};
 
+  //
   // Core Task Implementation
   //
-  // running the core task has a different implementation since it is
-  // wrapped in a class
+  // to satisify C++ requiremeents we must wrap the object member function
+  // in a static function
   static void runCore(void *task_instance) {
     mcrEngine *task = (mcrEngine *)task_instance;
     auto task_map = task->taskMap();
@@ -70,14 +71,49 @@ private:
     task->run(data);
   }
 
+  //
   // Engine Sub Tasks
   //
-  // Running the sub-tasks of an engine are different since they are
-  // not wrapped in a class (contrast the below with runCore above)
-  static void runConvert(TaskFunc_t main, void *data) { main(data); }
-  static void runDiscover(TaskFunc_t main, void *data) { main(data); }
-  static void runReport(TaskFunc_t main, void *data) { main(data); }
-  static void runCommand(TaskFunc_t main, void *data) { main(data); }
+  static void runConvert(void *task_instance) {
+    mcrEngine *task = (mcrEngine *)task_instance;
+    auto task_map = task->taskMap();
+    auto *data = task_map[CONVERT];
+
+    task->convert(data);
+  }
+
+  static void runDiscover(void *task_instance) {
+    mcrEngine *task = (mcrEngine *)task_instance;
+    auto task_map = task->taskMap();
+    auto *data = task_map[DISCOVER];
+
+    task->discover(data);
+  }
+
+  static void runReport(void *task_instance) {
+    mcrEngine *task = (mcrEngine *)task_instance;
+    auto task_map = task->taskMap();
+    auto *data = task_map[REPORT];
+
+    task->report(data);
+  }
+
+  static void runCommand(void *task_instance) {
+    mcrEngine *task = (mcrEngine *)task_instance;
+    auto task_map = task->taskMap();
+    auto *data = task_map[COMMAND];
+
+    task->command(data);
+  }
+
+  //
+  // Default Do Nothing Task Implementation
+  //
+  void doNothing() {
+    while (true) {
+      vTaskDelay(pdMS_TO_TICKS(60 * 1000));
+    }
+  }
 
 public:
   mcrEngine() {
@@ -103,6 +139,17 @@ public:
     _task_map[task_type] = new_task;
   }
 
+  void saveTaskLastWake(TaskTypes_t tt) {
+    auto task = _task_map[tt];
+    task->_lastWake = xTaskGetTickCount();
+  }
+
+  void taskDelayUntil(TaskTypes_t tt, TickType_t ticks) {
+    auto task = _task_map[tt];
+
+    ::vTaskDelayUntil(&(task->_lastWake), ticks);
+  }
+
   const TaskMap_t &taskMap() { return _task_map; }
 
   xTaskHandle taskHandle() {
@@ -115,9 +162,19 @@ public:
 
   virtual void run(void *data) = 0;
   virtual void suspend() {
-    auto task = _task_map[CORE];
-    ESP_LOGW(tagEngine(), "suspending self(%p)", task->_handle);
-    vTaskSuspend(task->_handle);
+
+    for_each(_task_map.begin(), _task_map.end(), [this](TaskMapItem_t item) {
+      auto subtask = item.second;
+
+      ESP_LOGW(tagEngine(), "suspending subtask %s(%p)", subtask->_name.c_str(),
+               subtask->_handle);
+      ::vTaskSuspend(subtask->_handle);
+    });
+
+    auto coretask = _task_map[CORE];
+    ESP_LOGW(tagEngine(), "suspending engine %s (%p)", coretask->_name.c_str(),
+             coretask->_handle);
+    vTaskSuspend(coretask->_handle);
   };
 
   void start(void *task_data = nullptr) {
@@ -133,6 +190,51 @@ public:
     // method
     ::xTaskCreate(&runCore, task->_name.c_str(), task->_stackSize, this,
                   task->_priority, &task->_handle);
+    ESP_LOGI(tagEngine(), "engine %s priority(%d) stack(%d) handle(%p)",
+             task->_name.c_str(), task->_priority, task->_stackSize,
+             task->_handle);
+
+    // now start any sub-tasks added
+    for_each(_task_map.begin(), _task_map.end(), [this](TaskMapItem_t item) {
+      auto sub_type = item.first;
+      auto subtask = item.second;
+      TaskFunc_t *run_subtask;
+
+      switch (sub_type) {
+      case CORE:
+        // core is already started, skip it
+        subtask = nullptr;
+
+        break;
+      case CONVERT:
+        run_subtask = &runConvert;
+
+        break;
+      case DISCOVER:
+        run_subtask = &runDiscover;
+
+        break;
+      case COMMAND:
+        run_subtask = &runCommand;
+
+        break;
+      case REPORT:
+        run_subtask = &runReport;
+
+        break;
+      default:
+        subtask = nullptr;
+      }
+
+      if (subtask != nullptr) {
+        ::xTaskCreate(run_subtask, subtask->_name.c_str(), subtask->_stackSize,
+                      this, subtask->_priority, &subtask->_handle);
+
+        ESP_LOGI(tagEngine(), "subtask %s priority(%d) stack(%d) handle(%p)",
+                 subtask->_name.c_str(), subtask->_priority,
+                 subtask->_stackSize, subtask->_handle);
+      }
+    });
   }
 
   void stop() {
@@ -197,7 +299,6 @@ public:
   };
 
   DEV *findDevice(const string_t &dev) {
-
     // my first lambda in C++, wow this languge has really evolved
     // since I used it 15+ years ago
     // auto found =
@@ -239,14 +340,22 @@ public:
   };
 
 protected:
-  virtual void convert(void *){};
-  virtual void command(void *){};
-  virtual void discover(void *){};
-  virtual void report(void *){};
-
   typedef std::unordered_map<string_t, string_t> EngineTagMap_t;
-
   EngineTagMap_t _tags;
+
+  virtual void convert(void *data) { doNothing(); };
+  virtual void command(void *data) { doNothing(); };
+  virtual void discover(void *data) { doNothing(); };
+  virtual void report(void *data) { doNothing(); };
+
+  void logSubTaskStart(void *task_info) {
+    logSubTaskStart((EngineTask_ptr_t)task_info);
+  }
+
+  void logSubTaskStart(EngineTask_ptr_t task_info) {
+    ESP_LOGI(task_info->_name.c_str(), "subtask(%p) started",
+             task_info->_handle);
+  }
 
   DEV *getDeviceByCmd(mcrCmdSwitch_t &cmd) {
     DEV *dev = findDevice(cmd.dev_id());
@@ -304,7 +413,6 @@ protected:
 
   EventBits_t waitFor(EventBits_t bits, TickType_t wait_ticks = portMAX_DELAY,
                       bool clear_bits = false) {
-
     EventBits_t set_bits = xEventGroupWaitBits(
         _evg, bits,
         (clear_bits ? pdTRUE : pdFALSE), // clear bits (if set while waiting)
@@ -361,24 +469,6 @@ protected:
 
     return rc;
   };
-
-  // bool readDevice(mcrCmdSwitch_t &cmd) {
-  //   string_t &dev_id = cmd.dev_id();
-  //
-  //   return readDevice(dev_id);
-  // };
-
-  // virtual bool readDevice(DEV *);
-
-  // bool readDevice(const string_t &id) {
-  //   DEV *dev = findDevice(id);
-  //
-  //   if (dev != nullptr) {
-  //     readDevice(dev);
-  //   }
-  //
-  //   return (dev == nullptr) ? false : true;
-  // }
 
   virtual bool resetBus(bool *additional_status = nullptr) { return true; }
 
@@ -561,7 +651,9 @@ protected:
       }
     });
 
-    ESP_LOGI(tagEngine(), "%s", str);
+    if (str[0] != 0x00) {
+      ESP_LOGI(tagEngine(), "%s", str);
+    }
   };
 };
 } // namespace mcr

@@ -51,8 +51,14 @@ private:
 
 public:
   static mcrDS_t *instance();
+  // tasks
+
+  void command(void *data);
+  void convert(void *data);
+  void discover(void *data);
+  void report(void *data);
   void run(void *data);
-  void suspend();
+
   void stop();
 
 protected:
@@ -64,40 +70,9 @@ private:
 
   const int _max_queue_depth = CONFIG_MCR_CMD_Q_MAX_DEPTH;
   QueueHandle_t _cmd_q = nullptr;
-  mcrTask_t _engineTask = {.handle = nullptr,
-                           .data = nullptr,
-                           .lastWake = 0,
-                           .priority = CONFIG_MCR_DS_TASK_HOUSEKEEPING_PRIORITY,
-                           .stackSize = (2 * 1024)};
-
-  mcrTask_t _cmdTask = {.handle = nullptr,
-                        .data = nullptr,
-                        .lastWake = 0,
-                        .priority = CONFIG_MCR_DS_COMMAND_TASK_PRIORITY,
-                        .stackSize = (3 * 1024)};
-  mcrTask_t _convertTask = {.handle = nullptr,
-                            .data = nullptr,
-                            .lastWake = 0,
-                            .priority = CONFIG_MCR_DS_CONVERT_TASK_PRIORITY,
-                            .stackSize = (3 * 1024)};
-
-  mcrTask_t _discoverTask = {.handle = nullptr,
-                             .data = nullptr,
-                             .lastWake = 0,
-                             .priority = CONFIG_MCR_DS_DISCOVER_TASK_PRIORITY,
-                             .stackSize = (4 * 1024)};
-
-  mcrTask_t _reportTask = {.handle = nullptr,
-                           .data = nullptr,
-                           .lastWake = 0,
-                           .priority = CONFIG_MCR_DS_REPORT_TASK_PRIORITY,
-                           .stackSize = (3 * 1024)};
 
   bool _devices_powered = true;
   bool _temp_devices_present = true;
-
-  // task data
-  void *_handle_cmd_task_data = nullptr;
 
   // delay times
   const TickType_t _loop_frequency =
@@ -112,18 +87,6 @@ private:
       pdMS_TO_TICKS(CONFIG_MCR_DS_TEMP_CONVERT_POLL_MS);
   const uint64_t _max_temp_convert_us =
       (1000 * 1000); // one second in microsecs
-
-  // static entry point to tasks
-  static void runConvert(void *data);
-  static void runDiscover(void *data);
-  static void runCommand(void *data);
-  static void runReport(void *data);
-
-  // tasks
-  void discover(void *data);
-  void convert(void *data);
-  void report(void *data);
-  void command(void *data);
 
   bool checkDevicesPowered();
   bool commandAck(mcrCmdSwitch_t &cmd);
