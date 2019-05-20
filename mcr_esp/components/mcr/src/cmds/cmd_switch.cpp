@@ -52,6 +52,12 @@ mcrCmdSwitch::mcrCmdSwitch(JsonDocument &doc)
   recordCreateMetric(create_us);
 }
 
+bool mcrCmdSwitch::matchDevID(const string_t &match) {
+  _match_pos = _dev_id.find(match);
+
+  return (_match_pos == std::string::npos) ? false : true;
+}
+
 bool mcrCmdSwitch::matchPrefix(const char *prefix) {
   return ((_dev_id.substr(0, strlen(prefix))) == prefix);
 }
@@ -84,7 +90,7 @@ bool mcrCmdSwitch::sendToQueue(cmdQueue_t &cmd_q) {
         textReading_t *rlog(new textReading_t);
         textReading_ptr_t rlog_ptr(rlog);
         rlog->printf("[%s] queue FULL, removing oldest cmd (%s)", cmd_q.id,
-                     old_cmd->dev_id().c_str());
+                     old_cmd->devID().c_str());
         rlog->publish();
         delete old_cmd;
       }
@@ -107,6 +113,12 @@ bool mcrCmdSwitch::sendToQueue(cmdQueue_t &cmd_q) {
   }
 
   return rc;
+}
+
+void mcrCmdSwitch::translateDevID(const string_t &str, const char *with_str) {
+  // make a copy of the cmd dev name so we can change it
+  string_t _internal_dev_id = _dev_id;
+  _internal_dev_id.replace(_match_pos, str.length(), with_str);
 }
 
 const unique_ptr<char[]> mcrCmdSwitch::debug() {

@@ -42,7 +42,13 @@ typedef std::bitset<8> cmd_bitset_t;
 typedef class mcrCmdSwitch mcrCmdSwitch_t;
 class mcrCmdSwitch : public mcrCmd {
 private:
+  // the device name as sent from mcp
   string_t _dev_id;
+  // some devices have a global unique name (e.g. Dallas Semiconductor) while
+  // others don't (e.g. i2c).  this string is provided when translation is
+  // necessary.
+  string_t _internal_dev_id;
+  size_t _match_pos = std::string::npos;
   cmd_bitset_t _mask;
   cmd_bitset_t _state;
   mcrRefID_t _refid;
@@ -59,14 +65,17 @@ public:
 
   void ack(bool ack) { _ack = ack; }
   bool ack() { return _ack; }
-  const string_t &dev_id() const { return _dev_id; };
+  const string_t &devID() const { return _dev_id; };
+  const string_t &internalDevID() const { return _internal_dev_id; };
   cmd_bitset_t mask() { return _mask; };
+  bool matchDevID(const string_t &);
   bool IRAM_ATTR matchPrefix(const char *prefix);
   bool IRAM_ATTR process();
   mcrRefID_t &refID() { return _refid; };
   bool IRAM_ATTR sendToQueue(cmdQueue_t &cmd_q);
   size_t size() { return sizeof(mcrCmdSwitch_t); };
   cmd_bitset_t state() { return _state; };
+  void translateDevID(const string_t &str, const char *with_str);
 
   const unique_ptr<char[]> debug();
 };

@@ -119,22 +119,17 @@ void mcrI2c::command(void *data) {
     // is the command for this mcr?
 
     const string_t &mcr_name = Net::getName();
-    const size_t name_pos = cmd->dev_id().find(mcr_name);
 
-    if (name_pos == std::string::npos) {
-      ESP_LOGI(tagCommand(), "command is not for this mcr");
+    if (cmd->matchDevID(mcr_name) == false) {
       continue;
     }
 
-    // make a copy of the cmd dev name so we can change it
-    string_t dev_name = cmd->dev_id();
-    const string_t &local_dev_name =
-        dev_name.replace(name_pos, mcr_name.length(), "self");
+    cmd->translateDevID(mcr_name, "self");
 
     ESP_LOGI(tagCommand(), "cmd dev_name(%s) local_dev_name(%s)",
-             dev_name.c_str(), local_dev_name.c_str());
+             cmd->devID().c_str(), cmd->internalDevID().c_str());
 
-    i2cDev_t *dev = findDevice(local_dev_name);
+    i2cDev_t *dev = findDevice(cmd->internalDevID());
 
     if ((dev != nullptr) && dev->isValid()) {
       bool set_rc = false;
@@ -179,14 +174,14 @@ void mcrI2c::command(void *data) {
       // if (set_rc && ack_success) {
       //   if (remote_log) {
       //     rlog->printf("cmd and ack complete for %s",
-      //                  (const char *)cmd->dev_id().c_str());
+      //                  (const char *)cmd->devID().c_str());
       //   }
       //   ESP_LOGV(tagCommand(), "%s", rlog->text());
       //
       // } else {
       //
       //   rlog->printf("%s ack failed set_rc(%s) ack(%s)",
-      //                (const char *)cmd->dev_id().c_str(),
+      //                (const char *)cmd->devID().c_str(),
       //                (set_rc) ? "true" : "false",
       //                (ack_success) ? "true" : "false");
       //   ESP_LOGW(tagCommand(), "%s", rlog->text());
@@ -200,7 +195,7 @@ void mcrI2c::command(void *data) {
       ESP_LOGV(tagCommand(), "released bus mutex");
     } else {
       ESP_LOGW(tagCommand(), "device %s not available",
-               (const char *)cmd->dev_id().c_str());
+               (const char *)cmd->devID().c_str());
     }
 
     if (process_cmd > 100000) { // 100ms
@@ -212,8 +207,8 @@ void mcrI2c::command(void *data) {
 
 bool mcrI2c::commandAck(mcrCmdSwitch_t &cmd) {
   bool rc = true;
-  int64_t start = esp_timer_get_time();
-  i2cDev_t *dev = findDevice(cmd.dev_id());
+  elapsedMicros elapsed;
+  i2cDev_t *dev = findDevice(cmd.internalDevID());
 
   if (dev != nullptr) {
     rc = readDevice(dev);
@@ -229,9 +224,8 @@ bool mcrI2c::commandAck(mcrCmdSwitch_t &cmd) {
 
   ESP_LOGI(tagCommand(), "completed cmd: %s", cmd.debug().get());
 
-  int64_t elapsed_us = esp_timer_get_time() - start;
-  if (elapsed_us > 100000) { // 100ms
-    float elapsed_ms = (float)(elapsed_us / 1000.0);
+  if (elapsed > 100000) { // 100ms
+    float elapsed_ms = (float)(elapsed / 1000.0);
     ESP_LOGW(tagCommand(), "ACK took %0.3fms", elapsed_ms);
   }
 

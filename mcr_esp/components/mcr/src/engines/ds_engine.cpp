@@ -124,7 +124,7 @@ void mcrDS::command(void *data) {
 
     ESP_LOGD(tagCommand(), "processing %s", cmd->debug().get());
 
-    dsDev_t *dev = findDevice(cmd->dev_id());
+    dsDev_t *dev = findDevice(cmd->devID());
 
     if ((dev != nullptr) && dev->isValid()) {
       bool set_rc = false;
@@ -174,14 +174,14 @@ void mcrDS::command(void *data) {
       // if (set_rc && ack_success) {
       //   if (remote_log) {
       //     rlog->printf("cmd and ack complete for %s",
-      //                  (const char *)cmd->dev_id().c_str());
+      //                  (const char *)cmd->devID().c_str());
       //   }
       //   ESP_LOGV(tagCommand(), "%s", rlog->text());
       //
       // } else {
       //
       //   rlog->printf("%s ack failed set_rc(%s) ack(%s)",
-      //                (const char *)cmd->dev_id().c_str(),
+      //                (const char *)cmd->devID().c_str(),
       //                (set_rc) ? "true" : "false",
       //                (ack_success) ? "true" : "false");
       //   ESP_LOGW(tagCommand(), "%s", rlog->text());
@@ -194,7 +194,7 @@ void mcrDS::command(void *data) {
       ESP_LOGV(tagCommand(), "released bus mutex");
     } else {
       ESP_LOGV(tagCommand(), "device %s not available",
-               (const char *)cmd->dev_id().c_str());
+               (const char *)cmd->devID().c_str());
     }
 
     if (process_cmd > 100000) { // 100ms
@@ -209,7 +209,7 @@ void mcrDS::command(void *data) {
 bool mcrDS::commandAck(mcrCmdSwitch_t &cmd) {
   bool rc = true;
   int64_t start = esp_timer_get_time();
-  dsDev_t *dev = findDevice(cmd.dev_id());
+  dsDev_t *dev = findDevice(cmd.devID());
 
   if (dev != nullptr) {
     rc = readDevice(dev);
