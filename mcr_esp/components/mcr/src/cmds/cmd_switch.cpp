@@ -48,14 +48,13 @@ CmdSwitch::CmdSwitch(JsonDocument &doc) : mcrCmd(mcrCmdType::setswitch, doc) {
   _mask = mask;
   _state = tobe_state;
 
-  int64_t create_us = create_elapsed;
-  recordCreateMetric(create_us);
+  recordCreateMetric(create_elapsed);
 }
 
-bool CmdSwitch::matchDevID(const string_t &match) {
-  _match_pos = _external_dev_id.find(match);
+bool CmdSwitch::matchExternalDevID(const string_t &match) {
+  auto match_pos = _external_dev_id.find(match);
 
-  return (_match_pos == std::string::npos) ? false : true;
+  return (match_pos == std::string::npos) ? false : true;
 }
 
 bool CmdSwitch::matchPrefix(const char *prefix) {
@@ -117,8 +116,10 @@ bool CmdSwitch::sendToQueue(cmdQueue_t &cmd_q) {
 }
 
 void CmdSwitch::translateDevID(const string_t &str, const char *with_str) {
+
   // update the internal dev ID (originally external ID)
-  _internal_dev_id.replace(_match_pos, str.length(), with_str);
+  auto pos = _internal_dev_id.find(str);
+  _internal_dev_id.replace(pos, str.length(), with_str);
 }
 
 const unique_ptr<char[]> CmdSwitch::debug() {

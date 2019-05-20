@@ -50,7 +50,6 @@ private:
   // others don't (e.g. i2c).  this string is provided when translation is
   // necessary.
   string_t _internal_dev_id;
-  size_t _match_pos = std::string::npos;
   cmd_bitset_t _mask;
   cmd_bitset_t _state;
   mcrRefID_t _refid;
@@ -59,19 +58,19 @@ private:
 public:
   CmdSwitch(const CmdSwitch_t *cmd)
       : mcrCmd(mcrCmdType::setswitch), _external_dev_id(cmd->_external_dev_id),
-        _mask(cmd->_mask), _state(cmd->_state), _refid(cmd->_refid),
-        _ack(cmd->_ack){};
+        _internal_dev_id(cmd->_internal_dev_id), _mask(cmd->_mask),
+        _state(cmd->_state), _refid(cmd->_refid), _ack(cmd->_ack){};
   CmdSwitch(JsonDocument &doc);
   CmdSwitch(const string_t &id, cmd_bitset_t mask, cmd_bitset_t state)
-      : mcrCmd(mcrCmdType::setswitch), _external_dev_id(id), _mask(mask),
-        _state(state){};
+      : mcrCmd(mcrCmdType::setswitch), _external_dev_id(id),
+        _internal_dev_id(id), _mask(mask), _state(state){};
 
   void ack(bool ack) { _ack = ack; }
   bool ack() { return _ack; }
   const string_t &externalDevID() const { return _external_dev_id; };
   const string_t &internalDevID() const { return _internal_dev_id; };
   cmd_bitset_t mask() { return _mask; };
-  bool matchDevID(const string_t &);
+  bool matchExternalDevID(const string_t &);
   bool IRAM_ATTR matchPrefix(const char *prefix);
   bool IRAM_ATTR process();
   mcrRefID_t &refID() { return _refid; };

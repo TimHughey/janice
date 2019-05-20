@@ -120,7 +120,7 @@ void mcrI2c::command(void *data) {
 
     const string_t &mcr_name = Net::getName();
 
-    if (cmd->matchDevID(mcr_name) == false) {
+    if (cmd->matchExternalDevID(mcr_name) == false) {
       continue;
     }
 
