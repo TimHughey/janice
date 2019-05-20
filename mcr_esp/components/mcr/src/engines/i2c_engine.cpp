@@ -139,7 +139,8 @@ void mcrI2c::command(void *data) {
       // of the write -- not just the duration on the bus
       dev->startWrite();
 
-      // ACTUAL DEVICE SET OCCURS HERE!
+      ESP_LOGI(tagCommand(), "received cmd for %s", dev->id().c_str());
+      set_rc = true;
 
       // bool ack_success = false;
       if (set_rc) {
