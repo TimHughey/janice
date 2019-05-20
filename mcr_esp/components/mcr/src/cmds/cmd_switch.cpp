@@ -117,7 +117,7 @@ bool mcrCmdSwitch::sendToQueue(cmdQueue_t &cmd_q) {
 
 void mcrCmdSwitch::translateDevID(const string_t &str, const char *with_str) {
   // make a copy of the cmd dev name so we can change it
-  string_t _internal_dev_id = _dev_id;
+  _internal_dev_id = _dev_id;
   _internal_dev_id.replace(_match_pos, str.length(), with_str);
 }
 
