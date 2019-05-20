@@ -103,7 +103,7 @@ bool mcrDS::checkDevicesPowered() {
 void mcrDS::command(void *data) {
   logSubTaskStart(data);
 
-  _cmd_q = xQueueCreate(_max_queue_depth, sizeof(mcrCmdSwitch_t *));
+  _cmd_q = xQueueCreate(_max_queue_depth, sizeof(CmdSwitch_t *));
   cmdQueue_t cmd_q = {"mcrDS", "ds", _cmd_q};
   mcrCmdQueues::registerQ(cmd_q);
 
@@ -111,7 +111,7 @@ void mcrDS::command(void *data) {
 
   for (;;) {
     BaseType_t queue_rc = pdFALSE;
-    mcrCmdSwitch_t *cmd = nullptr;
+    CmdSwitch_t *cmd = nullptr;
 
     clearNeedBus();
     queue_rc = xQueueReceive(_cmd_q, &cmd, portMAX_DELAY);
@@ -124,7 +124,7 @@ void mcrDS::command(void *data) {
 
     ESP_LOGD(tagCommand(), "processing %s", cmd->debug().get());
 
-    dsDev_t *dev = findDevice(cmd->devID());
+    dsDev_t *dev = findDevice(cmd->internalDevID());
 
     if ((dev != nullptr) && dev->isValid()) {
       bool set_rc = false;
@@ -174,14 +174,14 @@ void mcrDS::command(void *data) {
       // if (set_rc && ack_success) {
       //   if (remote_log) {
       //     rlog->printf("cmd and ack complete for %s",
-      //                  (const char *)cmd->devID().c_str());
+      //                  (const char *)cmd->internalDevID().c_str());
       //   }
       //   ESP_LOGV(tagCommand(), "%s", rlog->text());
       //
       // } else {
       //
       //   rlog->printf("%s ack failed set_rc(%s) ack(%s)",
-      //                (const char *)cmd->devID().c_str(),
+      //                (const char *)cmd->internalDevID().c_str(),
       //                (set_rc) ? "true" : "false",
       //                (ack_success) ? "true" : "false");
       //   ESP_LOGW(tagCommand(), "%s", rlog->text());
@@ -194,7 +194,7 @@ void mcrDS::command(void *data) {
       ESP_LOGV(tagCommand(), "released bus mutex");
     } else {
       ESP_LOGV(tagCommand(), "device %s not available",
-               (const char *)cmd->devID().c_str());
+               (const char *)cmd->internalDevID().c_str());
     }
 
     if (process_cmd > 100000) { // 100ms
@@ -206,10 +206,10 @@ void mcrDS::command(void *data) {
   }
 }
 
-bool mcrDS::commandAck(mcrCmdSwitch_t &cmd) {
+bool mcrDS::commandAck(CmdSwitch_t &cmd) {
   bool rc = true;
   int64_t start = esp_timer_get_time();
-  dsDev_t *dev = findDevice(cmd.devID());
+  dsDev_t *dev = findDevice(cmd.internalDevID());
 
   if (dev != nullptr) {
     rc = readDevice(dev);
@@ -905,7 +905,7 @@ void mcrDS::core(void *data) {
   }
 }
 
-bool mcrDS::setDS2406(mcrCmdSwitch_t &cmd, dsDev_t *dev) {
+bool mcrDS::setDS2406(CmdSwitch_t &cmd, dsDev_t *dev) {
   owb_status owb_s;
   bool rc = false;
 
@@ -972,7 +972,7 @@ bool mcrDS::setDS2406(mcrCmdSwitch_t &cmd, dsDev_t *dev) {
   return rc;
 }
 
-bool mcrDS::setDS2408(mcrCmdSwitch_t &cmd, dsDev_t *dev) {
+bool mcrDS::setDS2408(CmdSwitch_t &cmd, dsDev_t *dev) {
   owb_status owb_s;
   bool rc = false;
 
@@ -1079,7 +1079,7 @@ bool mcrDS::setDS2408(mcrCmdSwitch_t &cmd, dsDev_t *dev) {
   return rc;
 }
 
-bool mcrDS::setDS2413(mcrCmdSwitch_t &cmd, dsDev_t *dev) {
+bool mcrDS::setDS2413(CmdSwitch_t &cmd, dsDev_t *dev) {
   owb_status owb_s;
   bool rc = false;
 

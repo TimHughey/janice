@@ -96,17 +96,17 @@ mcrI2c::mcrI2c() {
 void mcrI2c::command(void *data) {
   logSubTaskStart(data);
 
-  _cmd_q = xQueueCreate(_max_queue_depth, sizeof(mcrCmdSwitch_t *));
+  _cmd_q = xQueueCreate(_max_queue_depth, sizeof(CmdSwitch_t *));
   cmdQueue_t cmd_q = {"mcrI2c", "i2c", _cmd_q};
   mcrCmdQueues::registerQ(cmd_q);
 
   while (true) {
     BaseType_t queue_rc = pdFALSE;
-    mcrCmdSwitch_t *cmd = nullptr;
+    CmdSwitch_t *cmd = nullptr;
 
     queue_rc = xQueueReceive(_cmd_q, &cmd, portMAX_DELAY);
     // wrap in a unique_ptr so it is freed when out of scope
-    std::unique_ptr<mcrCmdSwitch> cmd_ptr(cmd);
+    std::unique_ptr<CmdSwitch> cmd_ptr(cmd);
     elapsedMicros process_cmd;
 
     if (queue_rc == pdFALSE) {
@@ -127,7 +127,7 @@ void mcrI2c::command(void *data) {
     cmd->translateDevID(mcr_name, "self");
 
     ESP_LOGI(tagCommand(), "cmd dev_name(%s) local_dev_name(%s)",
-             cmd->devID().c_str(), cmd->internalDevID().c_str());
+             cmd->externalDevID().c_str(), cmd->internalDevID().c_str());
 
     i2cDev_t *dev = findDevice(cmd->internalDevID());
 
@@ -174,14 +174,14 @@ void mcrI2c::command(void *data) {
       // if (set_rc && ack_success) {
       //   if (remote_log) {
       //     rlog->printf("cmd and ack complete for %s",
-      //                  (const char *)cmd->devID().c_str());
+      //                  (const char *)cmd->internalDevID().c_str());
       //   }
       //   ESP_LOGV(tagCommand(), "%s", rlog->text());
       //
       // } else {
       //
       //   rlog->printf("%s ack failed set_rc(%s) ack(%s)",
-      //                (const char *)cmd->devID().c_str(),
+      //                (const char *)cmd->internalDevID().c_str(),
       //                (set_rc) ? "true" : "false",
       //                (ack_success) ? "true" : "false");
       //   ESP_LOGW(tagCommand(), "%s", rlog->text());
@@ -195,7 +195,7 @@ void mcrI2c::command(void *data) {
       ESP_LOGV(tagCommand(), "released bus mutex");
     } else {
       ESP_LOGW(tagCommand(), "device %s not available",
-               (const char *)cmd->devID().c_str());
+               (const char *)cmd->internalDevID().c_str());
     }
 
     if (process_cmd > 100000) { // 100ms
@@ -205,7 +205,7 @@ void mcrI2c::command(void *data) {
   }
 }
 
-bool mcrI2c::commandAck(mcrCmdSwitch_t &cmd) {
+bool mcrI2c::commandAck(CmdSwitch_t &cmd) {
   bool rc = true;
   elapsedMicros elapsed;
   i2cDev_t *dev = findDevice(cmd.internalDevID());

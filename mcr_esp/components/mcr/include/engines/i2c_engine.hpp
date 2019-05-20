@@ -65,7 +65,7 @@ class mcrI2c : public mcrEngine<i2cDev_t> {
 private:
   mcrI2c();
 
-  bool commandAck(mcrCmdSwitch_t &cmd);
+  bool commandAck(CmdSwitch_t &cmd);
 
 public:
   static mcrI2c_t *instance();

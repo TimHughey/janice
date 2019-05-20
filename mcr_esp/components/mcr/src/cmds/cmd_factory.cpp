@@ -60,7 +60,7 @@ mcrCmd_t *mcrCmdFactory::fromJSON(JsonDocument &doc, mcrRawMsg_t *raw) {
     break;
 
   case mcrCmdType::setswitch:
-    cmd = new mcrCmdSwitch(doc);
+    cmd = new CmdSwitch(doc);
     break;
 
   case mcrCmdType::setname:

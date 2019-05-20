@@ -2,10 +2,9 @@
 #include "cmds/cmd_switch.hpp"
 #include "cmds/cmd_queues.hpp"
 
-// const static char *TAG = "mcrCmdSwitch";
+namespace mcr {
 
-mcrCmdSwitch::mcrCmdSwitch(JsonDocument &doc)
-    : mcrCmd(mcrCmdType::setswitch, doc) {
+CmdSwitch::CmdSwitch(JsonDocument &doc) : mcrCmd(mcrCmdType::setswitch, doc) {
   // json format of states command:
   // {"switch":"ds/29463408000000",
   //   "states":[{"state":false,"pio":3}],
@@ -14,7 +13,8 @@ mcrCmdSwitch::mcrCmdSwitch(JsonDocument &doc)
   //   "cmd":"set.switch"}
   elapsedMicros create_elapsed;
 
-  _dev_id = doc["switch"].as<std::string>();
+  _external_dev_id = doc["switch"].as<std::string>();
+  _internal_dev_id = _external_dev_id; // default to external name
   _refid = doc["refid"].as<std::string>();
   const JsonArray states = doc["states"].as<JsonArray>();
   const JsonVariant ack_flag = doc["ack"];
@@ -52,17 +52,17 @@ mcrCmdSwitch::mcrCmdSwitch(JsonDocument &doc)
   recordCreateMetric(create_us);
 }
 
-bool mcrCmdSwitch::matchDevID(const string_t &match) {
-  _match_pos = _dev_id.find(match);
+bool CmdSwitch::matchDevID(const string_t &match) {
+  _match_pos = _external_dev_id.find(match);
 
   return (_match_pos == std::string::npos) ? false : true;
 }
 
-bool mcrCmdSwitch::matchPrefix(const char *prefix) {
-  return ((_dev_id.substr(0, strlen(prefix))) == prefix);
+bool CmdSwitch::matchPrefix(const char *prefix) {
+  return ((_external_dev_id.substr(0, strlen(prefix))) == prefix);
 }
 
-bool mcrCmdSwitch::process() {
+bool CmdSwitch::process() {
   for (auto cmd_q : mcrCmdQueues::all()) {
     sendToQueue(cmd_q);
   }
@@ -70,7 +70,7 @@ bool mcrCmdSwitch::process() {
   return true;
 }
 
-bool mcrCmdSwitch::sendToQueue(cmdQueue_t &cmd_q) {
+bool CmdSwitch::sendToQueue(cmdQueue_t &cmd_q) {
   auto rc = false;
   auto q_rc = pdTRUE;
 
@@ -78,11 +78,11 @@ bool mcrCmdSwitch::sendToQueue(cmdQueue_t &cmd_q) {
     // make a fresh copy of the cmd before pushing to the queue to ensure:
     //   a. each queue receives it's own copy
     //   b. we're certain each cmd is in a clean state
-    mcrCmdSwitch_t *fresh_cmd = new mcrCmdSwitch(this);
+    CmdSwitch_t *fresh_cmd = new CmdSwitch(this);
 
     // pop the oldest cmd (at the front) to make space when the queue is full
     if (uxQueueSpacesAvailable(cmd_q.q) == 0) {
-      mcrCmdSwitch_t *old_cmd = nullptr;
+      CmdSwitch_t *old_cmd = nullptr;
 
       q_rc = xQueueReceive(cmd_q.q, &old_cmd, pdMS_TO_TICKS(10));
 
@@ -90,7 +90,7 @@ bool mcrCmdSwitch::sendToQueue(cmdQueue_t &cmd_q) {
         textReading_t *rlog(new textReading_t);
         textReading_ptr_t rlog_ptr(rlog);
         rlog->printf("[%s] queue FULL, removing oldest cmd (%s)", cmd_q.id,
-                     old_cmd->devID().c_str());
+                     old_cmd->externalDevID().c_str());
         rlog->publish();
         delete old_cmd;
       }
@@ -104,7 +104,8 @@ bool mcrCmdSwitch::sendToQueue(cmdQueue_t &cmd_q) {
       } else {
         textReading_t *rlog(new textReading_t);
         textReading_ptr_t rlog_ptr(rlog);
-        rlog->printf("[%s] queue FAILURE for %s", cmd_q.id, _dev_id.c_str());
+        rlog->printf("[%s] queue FAILURE for %s", cmd_q.id,
+                     _external_dev_id.c_str());
         rlog->publish();
 
         delete fresh_cmd; // delete the fresh cmd since it wasn't queued
@@ -115,19 +116,19 @@ bool mcrCmdSwitch::sendToQueue(cmdQueue_t &cmd_q) {
   return rc;
 }
 
-void mcrCmdSwitch::translateDevID(const string_t &str, const char *with_str) {
-  // make a copy of the cmd dev name so we can change it
-  _internal_dev_id = _dev_id;
+void CmdSwitch::translateDevID(const string_t &str, const char *with_str) {
+  // update the internal dev ID (originally external ID)
   _internal_dev_id.replace(_match_pos, str.length(), with_str);
 }
 
-const unique_ptr<char[]> mcrCmdSwitch::debug() {
+const unique_ptr<char[]> CmdSwitch::debug() {
   const auto max_len = 127;
   unique_ptr<char[]> debug_str(new char[max_len + 1]);
 
-  snprintf(debug_str.get(), max_len, "mcrCmdSwitch(%s m(0b%s) s(0b%s) %s)",
-           _dev_id.c_str(), _mask.to_string().c_str(),
+  snprintf(debug_str.get(), max_len, "CmdSwitch(%s m(0b%s) s(0b%s) %s)",
+           _external_dev_id.c_str(), _mask.to_string().c_str(),
            _state.to_string().c_str(), ((_ack) ? "ACK" : ""));
 
   return move(debug_str);
 }
+} // namespace mcr

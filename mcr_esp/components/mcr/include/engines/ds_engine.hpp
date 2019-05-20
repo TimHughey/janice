@@ -88,7 +88,7 @@ private:
       (1000 * 1000); // one second in microsecs
 
   bool checkDevicesPowered();
-  bool commandAck(mcrCmdSwitch_t &cmd);
+  bool commandAck(CmdSwitch_t &cmd);
 
   bool devicesPowered() { return _devices_powered; }
 
@@ -100,9 +100,9 @@ private:
   bool readDS2406(dsDev_t *dev, positionsReading_t **reading);
   bool readDS2413(dsDev_t *dev, positionsReading_t **reading);
 
-  bool setDS2406(mcrCmdSwitch_t &cmd, dsDev_t *dev);
-  bool setDS2408(mcrCmdSwitch_t &cmd, dsDev_t *dev);
-  bool setDS2413(mcrCmdSwitch_t &cmd, dsDev_t *dev);
+  bool setDS2406(CmdSwitch_t &cmd, dsDev_t *dev);
+  bool setDS2408(CmdSwitch_t &cmd, dsDev_t *dev);
+  bool setDS2413(CmdSwitch_t &cmd, dsDev_t *dev);
 
   // FIXME:  hard code there are always temperature devices
   bool tempDevicesPresent() { return _temp_devices_present; }

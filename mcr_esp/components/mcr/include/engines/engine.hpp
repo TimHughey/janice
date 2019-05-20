@@ -356,13 +356,13 @@ protected:
              task_info->_priority, task_info->_stackSize);
   }
 
-  DEV *getDeviceByCmd(mcrCmdSwitch_t &cmd) {
-    DEV *dev = findDevice(cmd.devID());
+  DEV *getDeviceByCmd(CmdSwitch_t &cmd) {
+    DEV *dev = findDevice(cmd.internalDevID());
     return dev;
   };
 
-  DEV *getDeviceByCmd(mcrCmdSwitch_t *cmd) {
-    DEV *dev = findDevice(cmd->devID());
+  DEV *getDeviceByCmd(CmdSwitch_t *cmd) {
+    DEV *dev = findDevice(cmd->internalDevID());
     return dev;
   };
 
@@ -446,7 +446,7 @@ protected:
     return false;
   }
 
-  bool publish(mcrCmdSwitch_t &cmd) { return publish(cmd.devID()); };
+  bool publish(CmdSwitch_t &cmd) { return publish(cmd.internalDevID()); };
   bool publish(const string_t &dev_id) {
     DEV *search = findDevice(dev_id);
 
@@ -483,14 +483,14 @@ protected:
 
   virtual bool resetBus(bool *additional_status = nullptr) { return true; }
 
-  void setCmdAck(mcrCmdSwitch_t &cmd) {
-    DEV *dev = findDevice(cmd.devID());
+  void setCmdAck(CmdSwitch_t &cmd) {
+    DEV *dev = findDevice(cmd.internalDevID());
 
     if (dev != nullptr) {
       dev->setReadingCmdAck(cmd.latency(), cmd.refID());
     } else {
       ESP_LOGW(tagEngine(), "device %s not found while setting cmd ack",
-               cmd.devID().c_str());
+               cmd.internalDevID().c_str());
     }
   }
 
