@@ -75,6 +75,7 @@ public:
   virtual const char *externalName() const { return _id.c_str(); };
 
   void setReading(Reading_t *reading);
+  void setReadingCmdAck(time_t latency, mcrRefID_t &refid);
   Reading_t *reading();
 
   // metrics functions

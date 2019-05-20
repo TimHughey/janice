@@ -90,12 +90,6 @@ bool dsDev::isDS2438() { return (family() == _family_DS2413) ? true : false; };
 
 bool dsDev::hasTemperature() { return isDS1820(); }
 
-void dsDev::setReadingCmdAck(time_t latency, mcrRefID_t &refid) {
-  if (_reading != nullptr) {
-    _reading->setCmdAck(latency, refid);
-  }
-}
-
 uint8_t *dsDev::parseId(char *name) {
   static uint8_t addr[_addr_len] = {0x00};
   //                 00000000001111111

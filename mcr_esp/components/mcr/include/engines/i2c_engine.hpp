@@ -107,10 +107,14 @@ private:
                                    {mcrDevAddr(0x20)},
                                    {mcrDevAddr(0x36)},
                                    {mcrDevAddr(0x00)}};
+
   mcrDevAddr_t *search_addrs() { return _search_addrs; };
   inline uint32_t search_addrs_count() {
     return sizeof(_search_addrs) / sizeof(mcrDevAddr_t);
   };
+
+  // generic read device that will call the specific methods
+  bool readDevice(i2cDev_t *dev);
 
   // specific methods to read devices
   bool readAM2315(i2cDev_t *dev, bool wake = true);

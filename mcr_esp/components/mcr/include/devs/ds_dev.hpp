@@ -55,7 +55,6 @@ public:
   uint8_t addrLen();
   void copyAddrToCmd(uint8_t *cmd);
   bool isPowered();
-  void setReadingCmdAck(time_t latency, mcrRefID_t &refid);
   Reading_t *reading();
 
   bool hasTemperature();

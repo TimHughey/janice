@@ -192,6 +192,34 @@ void mcrI2c::command(void *data) {
   }
 }
 
+bool mcrI2c::commandAck(mcrCmdSwitch_t &cmd) {
+  bool rc = true;
+  int64_t start = esp_timer_get_time();
+  i2cDev_t *dev = findDevice(cmd.dev_id());
+
+  if (dev != nullptr) {
+    rc = readDevice(dev);
+
+    if (rc && cmd.ack()) {
+      setCmdAck(cmd);
+      publish(cmd);
+    }
+  } else {
+    ESP_LOGW(tagCommand(), "unable to find device for cmd ack %s",
+             cmd.debug().get());
+  }
+
+  ESP_LOGI(tagCommand(), "completed cmd: %s", cmd.debug().get());
+
+  int64_t elapsed_us = esp_timer_get_time() - start;
+  if (elapsed_us > 100000) { // 100ms
+    float elapsed_ms = (float)(elapsed_us / 1000.0);
+    ESP_LOGW(tagCommand(), "ACK took %0.3fms", elapsed_ms);
+  }
+
+  return rc;
+}
+
 void mcrI2c::core(void *task_data) {
   int wait_for_name_ms = 30000;
   bool driver_ready = false;
@@ -284,46 +312,21 @@ void mcrI2c::report(void *data) {
 
     for_each(beginDevices(), endDevices(),
              [this](std::pair<string_t, i2cDev_t *> item) {
-               auto rc = false;
                auto dev = item.second;
 
                if (dev->available()) {
                  takeBus();
 
-                 if (selectBus(dev->bus())) {
-                   switch (dev->devAddr()) {
-                   case 0x5C:
-                     rc = readAM2315(dev);
-                     break;
-
-                   case 0x44:
-                     rc = readSHT31(dev);
-                     break;
-
-                   case 0x20:
-                     rc = readMCP23008(dev);
-                     break;
-
-                   case 0x36: // Seesaw Soil Probe
-                     rc = readSeesawSoil(dev);
-                     break;
-
-                   default:
-                     printUnhandledDev(dev);
-                     rc = true;
-                     break;
-                   }
-
-                   if (rc) {
-                     publish(dev);
-                     ESP_LOGV(tagReport(), "%s success", dev->debug().get());
-                   } else {
-                     ESP_LOGE(tagReport(), "%s failed", dev->debug().get());
-                     // hardReset();
-                   }
+                 if (readDevice(dev)) {
+                   publish(dev);
+                   ESP_LOGV(tagReport(), "%s success", dev->debug().get());
+                 } else {
+                   ESP_LOGE(tagReport(), "%s failed", dev->debug().get());
+                   // hardReset();
                  }
 
                  giveBus();
+
                } else {
                  if (dev->missing()) {
                    ESP_LOGW(tagReport(), "device missing: %s",
@@ -596,6 +599,37 @@ void mcrI2c::printUnhandledDev(i2cDev_t *dev) {
 }
 
 bool mcrI2c::useMultiplexer() { return _use_multiplexer; }
+
+bool mcrI2c::readDevice(i2cDev_t *dev) {
+  auto rc = false;
+
+  if (selectBus(dev->bus())) {
+    switch (dev->devAddr()) {
+    case 0x5C:
+      rc = readAM2315(dev);
+      break;
+
+    case 0x44:
+      rc = readSHT31(dev);
+      break;
+
+    case 0x20:
+      rc = readMCP23008(dev);
+      break;
+
+    case 0x36: // Seesaw Soil Probe
+      rc = readSeesawSoil(dev);
+      break;
+
+    default:
+      printUnhandledDev(dev);
+      rc = true;
+      break;
+    }
+  }
+
+  return rc;
+}
 
 bool mcrI2c::readAM2315(i2cDev_t *dev, bool wake) {
   auto rc = false;

@@ -78,6 +78,12 @@ void mcrDev::setReading(Reading_t *reading) {
   _reading = reading;
 };
 
+void mcrDev::setReadingCmdAck(time_t latency, mcrRefID_t &refid) {
+  if (_reading != nullptr) {
+    _reading->setCmdAck(latency, refid);
+  }
+}
+
 uint8_t mcrDev::firstAddressByte() { return _addr.firstAddressByte(); };
 uint8_t mcrDev::lastAddressByte() { return _addr.lastAddressByte(); };
 mcrDevAddr_t &mcrDev::addr() { return _addr; }
