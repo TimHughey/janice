@@ -332,6 +332,7 @@ void mcrI2c::report(void *data) {
              });
 
     trackReport(false);
+    reportMetrics();
 
     taskDelayUntil(REPORT, _report_frequency);
   }
