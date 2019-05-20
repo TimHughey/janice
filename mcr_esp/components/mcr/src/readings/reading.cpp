@@ -58,6 +58,10 @@ void Reading::commonJSON(JsonDocument &doc) {
     doc["refid"] = _refid;
   }
 
+  if (_mcp_log_reading) {
+    doc["log_reading"] = true;
+  }
+
   if (_crc_mismatches > 0) {
     doc["crc_mismatches"] = _crc_mismatches;
   }

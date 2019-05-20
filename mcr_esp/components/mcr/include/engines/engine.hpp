@@ -488,6 +488,9 @@ protected:
 
     if (dev != nullptr) {
       dev->setReadingCmdAck(cmd.latency(), cmd.refID());
+    } else {
+      ESP_LOGW(tagEngine(), "device %s not found while setting cmd ack",
+               cmd.devID().c_str());
     }
   }
 

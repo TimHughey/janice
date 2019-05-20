@@ -729,6 +729,7 @@ bool mcrI2c::readMCP23008(i2cDev_t *dev) {
     positionsReading_t *reading = new positionsReading(
         dev->externalName(), time(nullptr), positions, (uint8_t)8);
 
+    reading->setLogReading();
     dev->setReading(reading);
     rc = true;
   }

@@ -125,7 +125,7 @@ const unique_ptr<char[]> mcrCmdSwitch::debug() {
   const auto max_len = 127;
   unique_ptr<char[]> debug_str(new char[max_len + 1]);
 
-  snprintf(debug_str.get(), max_len, " mcrCmdSwitch(%s mask=0b%s state=0b%s %s",
+  snprintf(debug_str.get(), max_len, "mcrCmdSwitch(%s m(0b%s) s(0b%s) %s)",
            _dev_id.c_str(), _mask.to_string().c_str(),
            _state.to_string().c_str(), ((_ack) ? "ACK" : ""));
 

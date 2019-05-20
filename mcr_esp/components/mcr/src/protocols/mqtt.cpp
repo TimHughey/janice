@@ -217,7 +217,7 @@ void mcrMQTT::outboundMsg() {
   }
 }
 
-void mcrMQTT::publish(std::string *json) {
+void mcrMQTT::publish(string_t *json) {
   auto q_rc = pdFALSE;
   mqttOutMsg_t *entry = new mqttOutMsg_t;
 

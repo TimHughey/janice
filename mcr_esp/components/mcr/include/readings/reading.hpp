@@ -60,6 +60,7 @@ private:
   mcrRefID_t _refid;
   bool _cmd_ack = false;
   time_t _latency = 0;
+  bool _mcp_log_reading = false;
 
   int64_t _read_us = 0;
   int64_t _write_us = 0;
@@ -89,6 +90,8 @@ public:
   void setCRCMismatches(int crc_mismatches) {
     _crc_mismatches = crc_mismatches;
   }
+
+  void setLogReading() { _mcp_log_reading = true; }
   void setReadErrors(int read_errors) { _read_errors = read_errors; }
   void setReadUS(int64_t read_us) { _read_us = read_us; }
   void setWriteErrors(int write_errors) { _write_errors = write_errors; }
