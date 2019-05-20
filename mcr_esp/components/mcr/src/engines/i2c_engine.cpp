@@ -179,7 +179,7 @@ void mcrI2c::command(void *data) {
 
       ESP_LOGV(tagCommand(), "released bus mutex");
     } else {
-      ESP_LOGD(tagCommand(), "device %s not available",
+      ESP_LOGW(tagCommand(), "device %s not available",
                (const char *)cmd->dev_id().c_str());
     }
 
