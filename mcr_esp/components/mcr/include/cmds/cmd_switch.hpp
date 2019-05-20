@@ -42,7 +42,7 @@ typedef std::bitset<8> cmd_bitset_t;
 typedef class mcrCmdSwitch mcrCmdSwitch_t;
 class mcrCmdSwitch : public mcrCmd {
 private:
-  std::string _dev_id;
+  string_t _dev_id;
   cmd_bitset_t _mask;
   cmd_bitset_t _state;
   mcrRefID_t _refid;
@@ -53,13 +53,13 @@ public:
       : mcrCmd(mcrCmdType::setswitch), _dev_id(cmd->_dev_id), _mask(cmd->_mask),
         _state(cmd->_state), _refid(cmd->_refid), _ack(cmd->_ack){};
   mcrCmdSwitch(JsonDocument &doc);
-  mcrCmdSwitch(const std::string &id, cmd_bitset_t mask, cmd_bitset_t state)
+  mcrCmdSwitch(const string_t &id, cmd_bitset_t mask, cmd_bitset_t state)
       : mcrCmd(mcrCmdType::setswitch), _dev_id(id), _mask(mask),
         _state(state){};
 
   void ack(bool ack) { _ack = ack; }
   bool ack() { return _ack; }
-  const std::string &dev_id() const { return _dev_id; };
+  const string_t &dev_id() const { return _dev_id; };
   cmd_bitset_t mask() { return _mask; };
   bool IRAM_ATTR matchPrefix(const char *prefix);
   bool IRAM_ATTR process();

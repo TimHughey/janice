@@ -100,12 +100,13 @@ void mcrI2c::command(void *data) {
   cmdQueue_t cmd_q = {"mcrI2c", "i2c", _cmd_q};
   mcrCmdQueues::registerQ(cmd_q);
 
-  while (waitForEngine()) {
+  while (true) {
     BaseType_t queue_rc = pdFALSE;
     mcrCmdSwitch_t *cmd = nullptr;
 
-    clearNeedBus();
     queue_rc = xQueueReceive(_cmd_q, &cmd, portMAX_DELAY);
+    // wrap in a unique_ptr so it is freed when out of scope
+    std::unique_ptr<mcrCmdSwitch> cmd_ptr(cmd);
     elapsedMicros process_cmd;
 
     if (queue_rc == pdFALSE) {
@@ -115,7 +116,25 @@ void mcrI2c::command(void *data) {
 
     ESP_LOGD(tagCommand(), "processing %s", cmd->debug().get());
 
-    i2cDev_t *dev = findDevice(cmd->dev_id());
+    // is the command for this mcr?
+
+    const string_t &mcr_name = Net::getName();
+    const size_t name_pos = cmd->dev_id().find(mcr_name);
+
+    if (name_pos == std::string::npos) {
+      ESP_LOGI(tagCommand(), "command is not for this mcr");
+      continue;
+    }
+
+    // make a copy of the cmd dev name so we can change it
+    string_t dev_name = cmd->dev_id();
+    const string_t &local_dev_name =
+        dev_name.replace(name_pos, mcr_name.length(), "self");
+
+    ESP_LOGI(tagCommand(), "cmd dev_name(%s) local_dev_name(%s)",
+             dev_name.c_str(), local_dev_name.c_str());
+
+    i2cDev_t *dev = findDevice(local_dev_name);
 
     if ((dev != nullptr) && dev->isValid()) {
       bool set_rc = false;
@@ -175,6 +194,7 @@ void mcrI2c::command(void *data) {
       //
       // rlog->publish();
 
+      clearNeedBus();
       giveBus();
 
       ESP_LOGV(tagCommand(), "released bus mutex");
@@ -187,8 +207,6 @@ void mcrI2c::command(void *data) {
       ESP_LOGW(tagCommand(), "took %0.3fms for %s",
                (float)(process_cmd / 1000.0), cmd->debug().get());
     }
-
-    delete cmd;
   }
 }
 
