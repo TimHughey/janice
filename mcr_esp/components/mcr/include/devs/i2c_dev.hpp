@@ -42,7 +42,7 @@ private:
   static const uint32_t _i2c_addr_byte = 0;
   bool _use_multiplexer = false; // is the multiplexer is needed to reach device
   uint8_t _bus = 0; // if using multiplexer then this is the bus number
-                    // where the device is hoste
+                    // where the device is hosted
 public:
   // construct a new i2cDev with a known address and compute the id
   i2cDev(mcrDevAddr_t &addr, bool use_multiplexer = false, uint8_t bus = 0);

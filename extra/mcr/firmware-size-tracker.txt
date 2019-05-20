@@ -286,3 +286,25 @@ Used static IRAM:   72792 bytes (  58280 available, 55.5% used)
     Flash rodata:  167844 bytes
 Total image size:~ 914586 bytes (.bin may be padded larger)
 <<<
+>>>
+commit 8c17158
+Author: Tim Hughey <timhughey@mac.com>
+Date:   Sun May 19 00:06:27 2019 -0400
+
+    MCR Cleanup of Log Message Levels
+    
+    It is now safe to set logging to info for Engines
+Toolchain path: /Users/thughey/devel/xtensa-esp32-elf/bin/xtensa-esp32-elf-gcc
+Toolchain version: crosstool-ng-1.22.0-80-g6c4433a
+Compiler version: 5.2.0
+App "mcr_esp" version: janice2.02.03-10-g8c17158-dirty
+Python requirements from /Users/thughey/devel/esp-idf/requirements.txt are satisfied.
+Total sizes:
+ DRAM .data size:   13872 bytes
+ DRAM .bss  size:   24384 bytes
+Used static DRAM:   38256 bytes ( 142480 available, 21.2% used)
+Used static IRAM:   72968 bytes (  58104 available, 55.7% used)
+      Flash code:  661166 bytes
+    Flash rodata:  167368 bytes
+Total image size:~ 915374 bytes (.bin may be padded larger)
+<<<

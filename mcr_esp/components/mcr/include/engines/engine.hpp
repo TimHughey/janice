@@ -30,6 +30,7 @@
 #include <freertos/task.h>
 #include <sdkconfig.h>
 
+#include "cmds/cmd_queues.hpp"
 #include "cmds/cmd_switch.hpp"
 #include "devs/base.hpp"
 #include "engines/types.hpp"
@@ -229,7 +230,7 @@ public:
         ::xTaskCreate(run_subtask, subtask->_name.c_str(), subtask->_stackSize,
                       this, subtask->_priority, &subtask->_handle);
 
-        ESP_LOGV(tagEngine(), "subtask %s priority(%d) stack(%d) handle(%p)",
+        ESP_LOGD(tagEngine(), "subtask %s priority(%d) stack(%d) handle(%p)",
                  subtask->_name.c_str(), subtask->_priority,
                  subtask->_stackSize, subtask->_handle);
       }
@@ -262,7 +263,7 @@ public:
     auto *found_dev = findDevice(dev.id());
 
     if (LOG_LOCAL_LEVEL >= ESP_LOG_DEBUG) {
-      ESP_LOGD(tagEngine(), "just saw: %s", dev.debug().get());
+      ESP_LOGV(tagEngine(), "just saw: %s", dev.debug().get());
     }
 
     if (found_dev) {
@@ -279,8 +280,6 @@ public:
   bool addDevice(DEV *dev) {
     auto rc = false;
     DEV *found = nullptr;
-
-    ESP_LOGD(tagEngine(), "adding: %s", dev->debug().get());
 
     if (numKnownDevices() > maxDevices()) {
       ESP_LOGW(tagEngine(), "attempt to exceed max devices!");
@@ -380,7 +379,7 @@ protected:
   EventBits_t temperatureAvailableBit() { return _event_bits.temp_available; }
 
   // event group
-  void devicesAvailable(bool available) {
+  void devicesAvailable(bool available = true) {
     if (available) {
       xEventGroupSetBits(_evg, _event_bits.devices_available);
     } else {
@@ -420,6 +419,18 @@ protected:
         wait_ticks);
 
     return (set_bits);
+  }
+
+  bool waitForEngine() {
+    EventBits_t b = engineBit();
+    EventBits_t sb;
+
+    sb = xEventGroupWaitBits(_evg, b, // bit to wait for
+                             pdFALSE, // don't clear bit
+                             pdTRUE,  // wait for all bits
+                             portMAX_DELAY);
+
+    return (sb & b);
   }
 
   // semaphore
@@ -534,13 +545,20 @@ protected:
     auto load = _tags.load_factor();
     auto buckets = _tags.bucket_count();
 
-    ESP_LOGD(tag,
+    ESP_LOGV(tag,
              "_tags us(%llu) sizeof(%zu) size(%u) load(%0.2f) "
              "buckets(%u)",
              elapsed, sizeof(_tags), _tags.size(), load, buckets);
   }
 
   void setTags(EngineTagMap_t &map) { _tags = map; }
+
+  //
+  // Command Queue
+  //
+protected:
+  const int _max_queue_depth = CONFIG_MCR_CMD_Q_MAX_DEPTH;
+  QueueHandle_t _cmd_q = nullptr;
 
 public:
   const char *tagCommand() { return tagGeneric("command"); }
@@ -562,7 +580,7 @@ protected:
   int64_t trackPhase(const char *lTAG, EngineMetric_t &phase, bool start) {
     if (start) {
       phase.start_us = esp_timer_get_time();
-      ESP_LOGV(lTAG, "phase started");
+      ESP_LOGD(lTAG, "phase started");
     } else {
       time_t recent_us = esp_timer_get_time() - phase.start_us;
       phase.elapsed_us = (phase.elapsed_us > 0)
@@ -570,7 +588,7 @@ protected:
                              : recent_us;
       phase.start_us = 0;
       phase.last_time = time(nullptr);
-      ESP_LOGV(lTAG, "phase ended, took %lldms", phase.elapsed_us / 1000);
+      ESP_LOGD(lTAG, "phase ended, took %lldms", phase.elapsed_us / 1000);
     }
 
     return phase.elapsed_us;
@@ -652,7 +670,7 @@ protected:
     });
 
     if (str[0] != 0x00) {
-      ESP_LOGV(tagEngine(), "%s", str);
+      ESP_LOGD(tagEngine(), "%s", str);
     }
   };
 };

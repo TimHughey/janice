@@ -61,7 +61,7 @@ mcrDS::mcrDS() {
   // setLoggingLevel(tagCommand(), ESP_LOG_INFO);
   // setLoggingLevel(tagSetDS2408(), ESP_LOG_INFO);
 
-  EngineTask_t core("core", CONFIG_MCR_DS_TASK_INIT_PRIORITY, 5120);
+  EngineTask_t core("core");
   EngineTask_t convert("con", CONFIG_MCR_DS_CONVERT_TASK_PRIORITY);
   EngineTask_t command("cmd", CONFIG_MCR_DS_COMMAND_TASK_PRIORITY, 3072);
   EngineTask_t discover("dis", CONFIG_MCR_DS_DISCOVER_TASK_PRIORITY, 4096);
@@ -103,6 +103,10 @@ bool mcrDS::checkDevicesPowered() {
 void mcrDS::command(void *data) {
   logSubTaskStart(data);
 
+  _cmd_q = xQueueCreate(_max_queue_depth, sizeof(mcrCmdSwitch_t *));
+  cmdQueue_t cmd_q = {"mcrDS", "ds", _cmd_q};
+  mcrCmdQueues::registerQ(cmd_q);
+
   // no setup required before jumping into task loop
 
   for (;;) {
@@ -128,12 +132,12 @@ void mcrDS::command(void *data) {
       trackSwitchCmd(true);
 
       needBus();
-      ESP_LOGD(tagCommand(), "attempting to aquire bux mutex...");
+      ESP_LOGV(tagCommand(), "attempting to aquire bux mutex...");
       elapsedMicros bus_wait;
       takeBus();
 
       if (bus_wait < 500) {
-        ESP_LOGD(tagCommand(), "acquired bus mutex (%lluus)",
+        ESP_LOGV(tagCommand(), "acquired bus mutex (%lluus)",
                  (uint64_t)bus_wait);
       } else {
         ESP_LOGW(tagCommand(), "acquire bus mutex took %0.2fms",
@@ -172,7 +176,7 @@ void mcrDS::command(void *data) {
       //     rlog->printf("cmd and ack complete for %s",
       //                  (const char *)cmd->dev_id().c_str());
       //   }
-      //   ESP_LOGD(tagCommand(), "%s", rlog->text());
+      //   ESP_LOGV(tagCommand(), "%s", rlog->text());
       //
       // } else {
       //
@@ -187,9 +191,9 @@ void mcrDS::command(void *data) {
 
       giveBus();
 
-      ESP_LOGD(tagCommand(), "released bus mutex");
+      ESP_LOGV(tagCommand(), "released bus mutex");
     } else {
-      ESP_LOGD(tagCommand(), "device %s not available",
+      ESP_LOGV(tagCommand(), "device %s not available",
                (const char *)cmd->dev_id().c_str());
     }
 
@@ -200,7 +204,7 @@ void mcrDS::command(void *data) {
 
     delete cmd;
   }
-} // namespace mcr
+}
 
 bool mcrDS::commandAck(mcrCmdSwitch_t &cmd) {
   bool rc = true;
@@ -358,19 +362,14 @@ void mcrDS::convert(void *data) {
 
 void mcrDS::discover(void *data) {
   logSubTaskStart(data);
-
-  waitFor(engineBit());
-  devicesUnavailable(); // ensure the devices available bit is cleared on task
-                        // startup
-
   saveTaskLastWake(DISCOVER);
 
-  for (;;) {
+  while (waitForEngine()) {
     owb_status owb_s;
 
     bool found = false;
     auto device_found = false;
-    auto temp_devices = false;
+    auto have_temperature_devs = false;
     bool bus_needed = false;
     OneWireBus_SearchState search_state;
 
@@ -409,7 +408,7 @@ void mcrDS::discover(void *data) {
       dsDev_t dev(found_addr, true);
 
       if (justSeenDevice(dev)) {
-        ESP_LOGD(tagDiscover(), "previously seen %s", dev.debug().get());
+        ESP_LOGV(tagDiscover(), "previously seen %s", dev.debug().get());
       } else {
         dsDev_t *new_dev = new dsDev(dev);
         ESP_LOGI(tagDiscover(), "%s is new (%p)", dev.debug().get(),
@@ -418,7 +417,7 @@ void mcrDS::discover(void *data) {
       }
 
       if (dev.hasTemperature()) {
-        temp_devices = true;
+        have_temperature_devs = true;
       }
 
       bus_needed = isBusNeeded();
@@ -447,19 +446,18 @@ void mcrDS::discover(void *data) {
 
     _devices_powered = checkDevicesPowered();
 
-    giveBus();
     trackDiscover(false);
+    giveBus();
 
     // must set before setting devices_available
-    _temp_devices_present = temp_devices;
-    temperatureSensors(temp_devices);
+    _temp_devices_present = have_temperature_devs;
+    temperatureSensors(have_temperature_devs);
 
     // signal to other tasks if there are devices available
     devicesAvailable(device_found);
 
     // to avoid including the execution time of the discover phase
     saveTaskLastWake(DISCOVER);
-
     taskDelayUntil(DISCOVER, _discover_frequency);
   }
 }
@@ -474,13 +472,12 @@ mcrDS_t *mcrDS::instance() {
 
 void mcrDS::report(void *data) {
   logSubTaskStart(data);
+  Net::waitForNormalOps();
 
-  for (;;) {
-    // let's wait here for the signal devices are available
-    // important to ensure we don't start reporting before
-    // the rest of the system is fully available (e.g. wifi, mqtt)
-    waitFor(devicesAvailableBit());
-
+  // let's wait here for the signal devices are available
+  // important to ensure we don't start reporting before
+  // the rest of the system is fully available (e.g. wifi, mqtt)
+  while (waitFor(devicesAvailableBit())) {
     // there are two cases of when report should run:
     //  a. wait for a temperature if there are temperature devices
     //  b. wait a preset duration
@@ -490,7 +487,7 @@ void mcrDS::report(void *data) {
       // let's wait here for the temperature available bit
       // once we see it then clear it to ensure we don't run again until
       // it's available again
-      ESP_LOGV(tagReport(), "standing by for temperature");
+      ESP_LOGD(tagReport(), "standing by for temperature");
       waitFor(temperatureAvailableBit(), _report_frequency, true);
     }
 
@@ -764,10 +761,10 @@ bool mcrDS::readDS2408(dsDev_t *dev, positionsReading_t **reading) {
   owb_s = owb_read_bytes(_ds, (dev_cmd + 10), 34);
   dev->stopRead();
 
-  ESP_LOGD(tagReadDS2408(), "dev_cmd after read start of buffer dump");
+  ESP_LOGV(tagReadDS2408(), "dev_cmd after read start of buffer dump");
   ESP_LOG_BUFFER_HEX_LEVEL(tagReadDS2408(), dev_cmd, sizeof(dev_cmd),
                            ESP_LOG_DEBUG);
-  ESP_LOGD(tagReadDS2408(), "dev_cmd after read end of buffer dump");
+  ESP_LOGV(tagReadDS2408(), "dev_cmd after read end of buffer dump");
 
   if (owb_s != OWB_STATUS_OK) {
 
@@ -889,14 +886,7 @@ void mcrDS::core(void *data) {
   owb_rmt_driver_info *rmt_driver = new owb_rmt_driver_info;
   _ds = owb_rmt_initialize(rmt_driver, _pin, RMT_CHANNEL_0, RMT_CHANNEL_1);
 
-  _cmd_q = xQueueCreate(_max_queue_depth, sizeof(mcrCmdSwitch_t *));
-
   owb_use_crc(_ds, true);
-
-  ESP_LOGD(tagEngine(), "created ow_rmt=%p cmd_q=%p", _ds, (void *)_cmd_q);
-
-  cmdQueue_t cmd_q = {"mcrDS", "ds", _cmd_q};
-  mcrCmdQueues::registerQ(cmd_q);
 
   ESP_LOGV(tagEngine(), "waiting for normal ops...");
   mcr::Net::waitForNormalOps();
@@ -1159,7 +1149,7 @@ bool mcrDS::setDS2413(mcrCmdSwitch_t &cmd, dsDev_t *dev) {
   if ((check[0] == 0xaa) || (dev_state == (new_state & 0xff))) {
     cmd_bitset_t b0 = check[0];
     cmd_bitset_t b1 = check[1];
-    ESP_LOGD(tagSetDS2413(), "CONFIRMED check[0]=0b%s check[1]=0b%s for %s",
+    ESP_LOGV(tagSetDS2413(), "CONFIRMED check[0]=0b%s check[1]=0b%s for %s",
              b0.to_string().c_str(), b1.to_string().c_str(),
              dev->debug().get());
     rc = true;

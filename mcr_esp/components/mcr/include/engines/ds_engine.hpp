@@ -51,8 +51,10 @@ private:
 
 public:
   static mcrDS_t *instance();
-  // tasks
 
+  //
+  // Tasks
+  //
   void command(void *data);
   void convert(void *data);
   void core(void *data);
@@ -67,9 +69,6 @@ protected:
 private:
   uint8_t _pin = CONFIG_MCR_W1_PIN;
   OneWireBus *_ds = nullptr;
-
-  const int _max_queue_depth = CONFIG_MCR_CMD_Q_MAX_DEPTH;
-  QueueHandle_t _cmd_q = nullptr;
 
   bool _devices_powered = true;
   bool _temp_devices_present = true;

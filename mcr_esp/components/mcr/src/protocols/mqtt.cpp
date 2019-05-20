@@ -54,9 +54,6 @@ mcrMQTT_t *mcrMQTT::instance() {
 
 // SINGLETON! constructor is private
 mcrMQTT::mcrMQTT() {
-  // convert the port number to a string
-  // std::ostringstream endpoint_ss;
-  // endpoint_ss << _host << ':' << _port;
 
   // create the endpoint URI
   const auto max_endpoint = 127;
@@ -144,7 +141,7 @@ void mcrMQTT::incomingMsg(struct mg_str *in_topic, struct mg_str *in_payload) {
   q_rc = xQueueSendToBack(_q_in, (void *)&entry, _inbound_rb_wait_ticks);
 
   if (q_rc) {
-    ESP_LOGD(tagEngine(),
+    ESP_LOGV(tagEngine(),
              "INCOMING msg SENT to QUEUE (topic=%s,len=%u,json_len=%u)",
              topic->c_str(), sizeof(mqttInMsg_t), in_payload->len);
   } else {
@@ -200,7 +197,7 @@ void mcrMQTT::outboundMsg() {
     const auto *json = entry->data;
     size_t json_len = entry->len;
 
-    ESP_LOGD(tagEngine(), "send msg(len=%u), payload(len=%u)", len, json_len);
+    ESP_LOGV(tagEngine(), "send msg(len=%u), payload(len=%u)", len, json_len);
 
     mg_mqtt_publish(_connection, _rpt_feed, _msg_id++, MG_MQTT_QOS(1),
                     json->data(), json_len);
@@ -213,7 +210,7 @@ void mcrMQTT::outboundMsg() {
       ESP_LOGW(tagOutbound(), "publish msg took %0.2fms",
                ((float)publish_us / 1000.0));
     } else {
-      ESP_LOGD(tagOutbound(), "publish msg took %lluus", publish_us);
+      ESP_LOGV(tagOutbound(), "publish msg took %lluus", publish_us);
     }
 
     q_rc = xQueueReceive(_q_out, &entry, pdMS_TO_TICKS(20));
@@ -256,6 +253,8 @@ void mcrMQTT::publish(std::string *json) {
 void mcrMQTT::run(void *data) {
   struct mg_mgr_init_opts opts = {};
 
+  esp_log_level_set(tagEngine(), ESP_LOG_INFO);
+
   _mqtt_in = new mcrMQTTin(_q_in);
   ESP_LOGI(tagEngine(), "started, created mcrMQTTin task %p", (void *)_mqtt_in);
   _mqtt_in->start();
@@ -295,7 +294,7 @@ void mcrMQTT::run(void *data) {
 }
 
 void mcrMQTT::subACK(struct mg_mqtt_message *msg) {
-  ESP_LOGD(tagEngine(), "suback msg_id=%d", msg->message_id);
+  ESP_LOGV(tagEngine(), "suback msg_id=%d", msg->message_id);
 
   if (msg->message_id == _cmd_feed_msg_id) {
     ESP_LOGI(tagEngine(), "subscribed to CMD feed");
@@ -343,7 +342,7 @@ void mcrMQTT::_ev_handler(struct mg_connection *nc, int ev, void *p) {
       return;
     }
 
-    ESP_LOGD(mcrMQTT::tagEngine(), "MG_EV_MQTT_CONNACK rc=%d",
+    ESP_LOGV(mcrMQTT::tagEngine(), "MG_EV_MQTT_CONNACK rc=%d",
              msg->connack_ret_code);
     mcrMQTT::instance()->subscribeCommandFeed(nc);
 
@@ -372,7 +371,7 @@ void mcrMQTT::_ev_handler(struct mg_connection *nc, int ev, void *p) {
     break;
 
   case MG_EV_MQTT_PINGRESP:
-    ESP_LOGD(mcrMQTT::tagEngine(), "ping response");
+    ESP_LOGV(mcrMQTT::tagEngine(), "ping response");
     break;
 
   case MG_EV_CLOSE:

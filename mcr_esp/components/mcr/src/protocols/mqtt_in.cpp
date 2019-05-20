@@ -42,6 +42,7 @@ static char TAG[] = "mcrMQTTin";
 static mcrMQTTin_t *__singleton = nullptr;
 
 mcrMQTTin::mcrMQTTin(QueueHandle_t q_in) : _q_in(q_in) {
+  esp_log_level_set(TAG, ESP_LOG_INFO);
 
   ESP_LOGI(TAG, "task created, queue(%p)", (void *)_q_in);
   __singleton = this;

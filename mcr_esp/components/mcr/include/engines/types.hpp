@@ -56,7 +56,7 @@ typedef std::pair<TaskTypes_t, EngineTask_t *> TaskMapItem_t;
 class EngineTask {
 public:
   EngineTask(char const *name, UBaseType_t priority = 1,
-             UBaseType_t stacksize = 5120, void *data = nullptr)
+             UBaseType_t stacksize = 2048, void *data = nullptr)
       : _name(name), _priority(priority), _stackSize(stacksize), _data(data){};
 
 public:
@@ -64,7 +64,7 @@ public:
   TaskHandle_t _handle = nullptr;
   TickType_t _lastWake = 0;
   UBaseType_t _priority = 1;
-  UBaseType_t _stackSize = 5 * 1024;
+  UBaseType_t _stackSize = 1024;
   void *_data = nullptr;
 };
 

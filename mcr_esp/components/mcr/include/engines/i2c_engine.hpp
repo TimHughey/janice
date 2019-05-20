@@ -65,14 +65,29 @@ class mcrI2c : public mcrEngine<i2cDev_t> {
 private:
   mcrI2c();
 
+  bool commandAck(mcrCmdSwitch_t &cmd);
+
 public:
   static mcrI2c_t *instance();
+
+  //
+  // Tasks
+  //
+  void command(void *data);
   void core(void *data);
+  void discover(void *data);
+  void report(void *data);
+
+  void stop();
 
 private:
   i2c_config_t _conf;
   const TickType_t _loop_frequency =
       pdMS_TO_TICKS(CONFIG_MCR_I2C_ENGINE_FREQUENCY_SECS * 1000);
+  const TickType_t _discover_frequency =
+      pdMS_TO_TICKS(CONFIG_MCR_I2C_DISCOVER_FREQUENCY_SECS * 1000);
+  const TickType_t _report_frequency =
+      pdMS_TO_TICKS(CONFIG_MCR_I2C_REPORT_FREQUENCY_SECS * 1000);
   static const uint32_t _max_buses = 8;
   bool _use_multiplexer = false;
   i2cLastWakeTime_t _last_wake;
@@ -96,9 +111,6 @@ private:
   inline uint32_t search_addrs_count() {
     return sizeof(_search_addrs) / sizeof(mcrDevAddr_t);
   };
-
-  void discover(void *task_data);
-  void report(void *task_data);
 
   // specific methods to read devices
   bool readAM2315(i2cDev_t *dev, bool wake = true);
