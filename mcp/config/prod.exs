@@ -101,12 +101,7 @@ config :mcp, Janice.Scheduler,
      ]},
     {:germination_heat,
      [
-       schedule: {:cron, "*/2 * 22-7 * *"},
-       task: {Janice.Jobs, :switch_control, ["germination_heat", true]},
-       run_strategy: run_strategy
-     ],
-     [
-       schedule: {:cron, "*/2 * 8-21 * *"},
+       schedule: {:cron, "*/2 * * * *"},
        task: {Janice.Jobs, :switch_control, ["germination_heat", false]},
        run_strategy: run_strategy
      ]}
