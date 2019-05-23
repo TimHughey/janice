@@ -143,6 +143,8 @@ void TimestampTask::reportTaskStacks() {
 
   if (_tasks_ongoing_report) {
     updateTaskData();
+  } else {
+    _tasks_ongoing_report = true;
   }
 
   for_each(_task_map.begin(), _task_map.end(), [rlog](TaskMapItem_t item) {

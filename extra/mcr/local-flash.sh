@@ -1,5 +1,7 @@
 #!/usr/bin/env zsh
 
+make -j12 || exit 1 
+
 ttys=(/dev/tty.SLAB*)
 
 pushd ${HOME}/devel/janice/mcr_esp
