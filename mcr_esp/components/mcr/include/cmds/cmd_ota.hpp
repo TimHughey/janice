@@ -28,7 +28,6 @@
 #include <esp_http_client.h>
 #include <esp_https_ota.h>
 #include <esp_ota_ops.h>
-#include <esp_timer.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
 #include <sys/time.h>
@@ -58,7 +57,7 @@ private:
   static esp_err_t httpEventHandler(esp_http_client_event_t *evt);
 
 public:
-  mcrCmdOTA(mcrCmdType_t type, JsonDocument &doc);
+  mcrCmdOTA(mcrCmdType_t type, JsonDocument &doc, elapsedMicros &parse);
   ~mcrCmdOTA(){};
 
   bool process();

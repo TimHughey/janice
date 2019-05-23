@@ -30,6 +30,7 @@
 #include <freertos/task.h>
 #include <sdkconfig.h>
 
+#include "misc/elapsedMillis.hpp"
 #include "misc/mcr_types.hpp"
 
 namespace mcr {
@@ -69,8 +70,7 @@ public:
 };
 
 typedef struct EngineMetric {
-  int64_t start_us = 0;
-  int64_t elapsed_us = 0;
+  elapsedMicros elapsed;
   time_t last_time = 0;
 } EngineMetric_t;
 

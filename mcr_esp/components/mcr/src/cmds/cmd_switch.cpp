@@ -4,14 +4,15 @@
 
 namespace mcr {
 
-CmdSwitch::CmdSwitch(JsonDocument &doc) : mcrCmd(mcrCmdType::setswitch, doc) {
+CmdSwitch::CmdSwitch(JsonDocument &doc, elapsedMicros &e)
+    : mcrCmd(mcrCmdType::setswitch, doc, e) {
   // json format of states command:
   // {"switch":"ds/29463408000000",
   //   "states":[{"state":false,"pio":3}],
   //   "refid":"0fc4417c-f1bb-11e7-86bd-6cf049e7139f",
   //   "mtime":1515117138,
   //   "cmd":"set.switch"}
-  elapsedMicros create_elapsed;
+  _create_elapsed.reset();
 
   _external_dev_id = doc["switch"].as<std::string>();
   _internal_dev_id = _external_dev_id; // default to external name
@@ -48,7 +49,7 @@ CmdSwitch::CmdSwitch(JsonDocument &doc) : mcrCmd(mcrCmdType::setswitch, doc) {
   _mask = mask;
   _state = tobe_state;
 
-  recordCreateMetric(create_elapsed);
+  _create_elapsed.freeze();
 }
 
 bool CmdSwitch::matchExternalDevID(const string_t &match) {

@@ -25,7 +25,6 @@
 #include <memory>
 #include <string>
 
-#include <esp_timer.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
 #include <sys/time.h>
@@ -40,11 +39,11 @@ using std::unique_ptr;
 typedef class mcrCmdNetwork mcrCmdNetwork_t;
 class mcrCmdNetwork : public mcrCmd {
 private:
-  std::string _host;
-  std::string _name;
+  string_t _host;
+  string_t _name;
 
 public:
-  mcrCmdNetwork(JsonDocument &doc);
+  mcrCmdNetwork(JsonDocument &doc, elapsedMicros &e);
   ~mcrCmdNetwork(){};
 
   bool process();

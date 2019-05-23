@@ -84,8 +84,6 @@ mcrI2c::mcrI2c() {
     rst_pin_cfg.intr_type = GPIO_INTR_DISABLE;
 
     gpio_config(&rst_pin_cfg);
-
-    gpio_set_level(RST_PIN, 1); // set RST pin high}
   }
 }
 
@@ -126,9 +124,6 @@ void mcrI2c::command(void *data) {
 
     cmd->translateDevID(mcr_name, "self");
 
-    ESP_LOGI(tagCommand(), "cmd dev_name(%s) local_dev_name(%s)",
-             cmd->externalDevID().c_str(), cmd->internalDevID().c_str());
-
     i2cDev_t *dev = findDevice(cmd->internalDevID());
 
     if ((dev != nullptr) && dev->isValid()) {
@@ -154,40 +149,13 @@ void mcrI2c::command(void *data) {
       dev->startWrite();
 
       ESP_LOGI(tagCommand(), "received cmd for %s", dev->id().c_str());
-      set_rc = true;
+      set_rc = setMCP23008(*cmd, dev);
 
-      // bool ack_success = false;
       if (set_rc) {
-        // ack_success = commandAck(*cmd);
         commandAck(*cmd);
       }
 
       trackSwitchCmd(false);
-
-      // we create a textReading then wrap in textReading_ptr_t (aka unique_ptr)
-      // to delete when it falls out of scope
-      // bool remote_log = false;
-
-      // textReading_t *rlog(new textReading_t);
-      // textReading_ptr_t rlog_ptr(rlog);
-
-      // if (set_rc && ack_success) {
-      //   if (remote_log) {
-      //     rlog->printf("cmd and ack complete for %s",
-      //                  (const char *)cmd->internalDevID().c_str());
-      //   }
-      //   ESP_LOGV(tagCommand(), "%s", rlog->text());
-      //
-      // } else {
-      //
-      //   rlog->printf("%s ack failed set_rc(%s) ack(%s)",
-      //                (const char *)cmd->internalDevID().c_str(),
-      //                (set_rc) ? "true" : "false",
-      //                (ack_success) ? "true" : "false");
-      //   ESP_LOGW(tagCommand(), "%s", rlog->text());
-      // }
-      //
-      // rlog->publish();
 
       clearNeedBus();
       giveBus();
@@ -242,6 +210,12 @@ void mcrI2c::core(void *task_data) {
     delay(1000); // prevent busy loop if i2c driver fails to install
   }
 
+  ESP_LOGI(tagEngine(), "pulling reset pin low");
+  gpio_set_level(RST_PIN, 0); // pull the pin low to reset i2c devices
+  delay(1000);                // give plenty of time for all devices to reset
+  gpio_set_level(RST_PIN, 1); // bring all devices online
+  ESP_LOGI(tagEngine(), "pulling reset pin high");
+
   ESP_LOGV(tagEngine(), "waiting for normal ops...");
   Net::waitForNormalOps();
 
@@ -269,7 +243,6 @@ void mcrI2c::core(void *task_data) {
 
     // do high-level engine actions here (e.g. general housekeeping)
     taskDelayUntil(CORE, _loop_frequency);
-    runtimeMetricsReport();
   }
 }
 
@@ -716,14 +689,28 @@ bool mcrI2c::readMCP23008(i2cDev_t *dev) {
   auto positions = 0b00000000;
   esp_err_t esp_rc;
 
-  uint8_t gpio_request[] = {0x09}; // GPIO register
-  uint8_t gpio_response[1];        // 8-bits representing gpio positions
+  RawData_t request{0x00}; // IODIR Register (address 0x00)
 
-  esp_rc =
-      requestData(tagReadMCP23008(), dev, gpio_request, sizeof(gpio_request),
-                  gpio_response, sizeof(gpio_request));
+  // register       register      register          register
+  // 0x00 - IODIR   0x01 - IPOL   0x02 - GPINTEN    0x03 - DEFVAL
+  // 0x04 - INTCON  0x05 - IOCON  0x06 - GPPU       0x07 - INTF
+  // 0x08 - INTCAP  0x09 - GPIO   0x0a - OLAT
+
+  // at POR the MCP2x008 operates in sequential mode where continued reads
+  // automatically increment the address (register).  we read all registers
+  // (12 bytes) in one shot.
+  RawData_t all_registers;
+  all_registers.resize(12); // 12 bytes (0x00-0x0a)
+
+  esp_rc = requestData(tagReadMCP23008(), dev, request.data(), request.size(),
+                       all_registers.data(), all_registers.capacity());
 
   if (esp_rc == ESP_OK) {
+    // GPIO register is little endian so no conversion is required
+    positions = all_registers[9]; // GPIO register (address 0x09)
+
+    dev->storeRawData(all_registers);
+
     dev->justSeen();
 
     positionsReading_t *reading = new positionsReading(
@@ -732,6 +719,9 @@ bool mcrI2c::readMCP23008(i2cDev_t *dev) {
     reading->setLogReading();
     dev->setReading(reading);
     rc = true;
+  } else {
+    ESP_LOGW(tagReadMCP23008(), "[%s] %s read", esp_err_to_name(esp_rc),
+             dev->id().c_str());
   }
 
   return rc;
@@ -899,14 +889,16 @@ esp_err_t mcrI2c::requestData(const char *TAG, i2cDev_t *dev, uint8_t *send,
   // to execute the command (e.g. temperature conversion)
   // use timeout to adjust time to wait for clock, if needed
 
-  // start a new command sequence without sending a stop
-  i2c_master_start(cmd);
-  i2c_master_write_byte(cmd, dev->readAddr(),
-                        true); // queue the READ for device and check for ACK
+  if ((recv != nullptr) && (recv_len > 0)) {
+    // start a new command sequence without sending a stop
+    i2c_master_start(cmd);
+    i2c_master_write_byte(cmd, dev->readAddr(),
+                          true); // queue the READ for device and check for ACK
 
-  i2c_master_read(cmd, recv, recv_len,
-                  I2C_MASTER_LAST_NACK); // queue the READ of number of bytes
-  i2c_master_stop(cmd);                  // queue i2c STOP
+    i2c_master_read(cmd, recv, recv_len,
+                    I2C_MASTER_LAST_NACK); // queue the READ of number of bytes
+    i2c_master_stop(cmd);                  // queue i2c STOP
+  }
 
   // execute queued i2c cmd
   esp_rc = i2c_master_cmd_begin(I2C_NUM_0, cmd, _cmd_timeout);
@@ -971,6 +963,71 @@ bool mcrI2c::selectBus(uint32_t bus) {
       mcrRestart::instance()->restart(msg, __PRETTY_FUNCTION__, 3000);
     }
   }
+
+  return rc;
+}
+
+bool mcrI2c::setMCP23008(CmdSwitch_t &cmd, i2cDev_t *dev) {
+  bool rc = false;
+  auto esp_rc = ESP_OK;
+
+  textReading *rlog = new textReading_t;
+  textReading_ptr_t rlog_ptr(rlog);
+  RawData_t tx_data;
+
+  tx_data.reserve(12);
+
+  // read the device to ensure we have the current state
+  // important because setting the new state relies, in part, on the existing
+  // state for the pios not changing
+  if (readDevice(dev) == false) {
+    rlog->reuse();
+    rlog->printf("%s SET FAILED read before set", dev->debug().get());
+    rlog->publish();
+    rlog->consoleWarn(tagSetMCP23008());
+
+    return rc;
+  }
+
+  positionsReading_t *reading = (positionsReading_t *)dev->reading();
+
+  if (dev->rawData().at(0) > 0x00) {
+    tx_data.insert(tx_data.end(), {0x00, 0x00});
+    esp_rc = requestData(tagSetMCP23008(), dev, tx_data.data(), tx_data.size(),
+                         nullptr, 0, esp_rc);
+  }
+
+  auto mask = cmd.mask().to_ulong();
+  auto changes = cmd.state().to_ulong();
+  auto asis_state = reading->state();
+  auto new_state = 0x00;
+
+  // XOR the new state against the as_is state using the mask
+  // it is critical that we use the recently read state to avoid
+  // overwriting the device state that MCP is not aware of
+  new_state = asis_state ^ ((asis_state ^ changes) & mask);
+
+  // to set the GPIO we will write to two registers:
+  // a. IODIR (0x00) - setting all GPIOs to output (0b00000000)
+  // b. GPIO (0x09)  - the new state
+  tx_data.clear();
+  tx_data.insert(tx_data.end(), {0x09, (uint8_t)(new_state & 0xff)});
+
+  esp_rc = requestData(tagSetMCP23008(), dev, tx_data.data(), tx_data.size(),
+                       nullptr, 0, esp_rc);
+
+  if (esp_rc != ESP_OK) {
+    rlog->reuse();
+    rlog->printf("%s SET FAILED cmd esp_rc(%s)", dev->debug().get(),
+                 esp_err_to_name(esp_rc));
+    rlog->publish();
+    rlog->consoleWarn(tagSetMCP23008());
+
+    return rc;
+  }
+
+  rc = true;
+  rlog->publish();
 
   return rc;
 }

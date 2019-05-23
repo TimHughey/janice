@@ -120,6 +120,11 @@ public:
   mcrEngine() {
     _evg = xEventGroupCreate();
     _bus_mutex = xSemaphoreCreateMutex();
+
+    metrics.report.elapsed.freeze(0);
+    metrics.discover.elapsed.freeze(0);
+    metrics.convert.elapsed.freeze(0);
+    metrics.switch_cmd.elapsed.freeze(0);
   };
 
   virtual ~mcrEngine(){};
@@ -580,43 +585,32 @@ public:
 
   // misc metrics tracking
 protected:
-  int64_t trackPhase(const char *lTAG, EngineMetric_t &phase, bool start) {
+  void trackPhase(const char *lTAG, EngineMetric_t &phase, bool start) {
     if (start) {
-      phase.start_us = esp_timer_get_time();
-      ESP_LOGD(lTAG, "phase started");
+      phase.elapsed.reset();
     } else {
-      time_t recent_us = esp_timer_get_time() - phase.start_us;
-      phase.elapsed_us = (phase.elapsed_us > 0)
-                             ? ((phase.elapsed_us + recent_us) / 2)
-                             : recent_us;
-      phase.start_us = 0;
+      ESP_LOGD(lTAG, "phase ended, took %0.1fms",
+               (float)((uint64_t)phase.elapsed / 1000.0));
+      phase.elapsed.freeze();
       phase.last_time = time(nullptr);
-      ESP_LOGD(lTAG, "phase ended, took %lldms", phase.elapsed_us / 1000);
     }
-
-    return phase.elapsed_us;
   };
 
-  int64_t trackConvert(bool start = false) {
-    return trackPhase(tagConvert(), metrics.convert, start);
+  void trackConvert(bool start = false) {
+    trackPhase(tagConvert(), metrics.convert, start);
   };
 
-  int64_t trackDiscover(bool start = false) {
-    return trackPhase(tagDiscover(), metrics.discover, start);
+  void trackDiscover(bool start = false) {
+    trackPhase(tagDiscover(), metrics.discover, start);
   };
 
-  int64_t trackReport(bool start = false) {
-    return trackPhase(tagReport(), metrics.report, start);
+  void trackReport(bool start = false) {
+    trackPhase(tagReport(), metrics.report, start);
   };
 
-  int64_t trackSwitchCmd(bool start = false) {
-    return trackPhase(tagCommand(), metrics.switch_cmd, start);
+  void trackSwitchCmd(bool start = false) {
+    trackPhase(tagCommand(), metrics.switch_cmd, start);
   };
-
-  int64_t convertUS() { return metrics.convert.elapsed_us; };
-  int64_t discoverUS() { return metrics.discover.elapsed_us; };
-  int64_t reportUS() { return metrics.report.elapsed_us; };
-  int64_t switchCmdUS() { return metrics.switch_cmd.elapsed_us; };
 
   time_t lastConvertTimestamp() { return metrics.convert.last_time; };
   time_t lastDiscoverTimestamp() { return metrics.discover.last_time; };
@@ -624,58 +618,14 @@ protected:
   time_t lastSwitchCmdTimestamp() { return metrics.switch_cmd.last_time; };
 
   void reportMetrics() {
-    EngineReading reading(tagEngine(), discoverUS(), convertUS(), reportUS(),
-                          switchCmdUS());
+    EngineReading reading(tagEngine(), metrics.discover.elapsed,
+                          metrics.convert.elapsed, metrics.report.elapsed,
+                          metrics.switch_cmd.elapsed);
 
     if (reading.hasNonZeroValues()) {
       publish(&reading);
-      metrics.convert.elapsed_us = 0LL;
-      metrics.discover.elapsed_us = 0LL;
-      metrics.report.elapsed_us = 0LL;
-      metrics.switch_cmd.elapsed_us = 0LL;
-    } else {
-      ESP_LOGW(tagEngine(), "all metrics are zero");
     }
   }
-
-  void runtimeMetricsReport() {
-    auto const max_len = 319;
-
-    // allocate from the heap to minimize task stack impact
-    unique_ptr<char[]> debug_str(new char[max_len + 1]);
-    unique_ptr<metricMap_t> map_ptr(new metricMap_t);
-
-    // get pointers to increase code readability
-    auto *str = debug_str.get();
-    auto *map = map_ptr.get();
-
-    // null terminate the char array for use as string buffer
-    str[0] = 0x00;
-
-    map->insert({"convert", &(metrics.convert)});
-    map->insert({"discover", &(metrics.discover)});
-    map->insert({"report", &(metrics.report)});
-    map->insert({"switch_cmd", &(metrics.switch_cmd)});
-
-    // append stats that are non-zero
-    for_each(map->begin(), map->end(), [this, str](metricEntry_t item) {
-      string_t &metric = item.first;
-      uint64_t val = (item.second)->elapsed_us;
-
-      if (val > 0) {
-        auto curr_len = strlen(str);
-        auto *s = str + curr_len;
-        auto max = max_len - curr_len;
-
-        snprintf(s, max, "%s(%0.2lfms) ", metric.c_str(),
-                 (float)(val / 1000.0));
-      }
-    });
-
-    if (str[0] != 0x00) {
-      ESP_LOGD(tagEngine(), "%s", str);
-    }
-  };
 };
 } // namespace mcr
 

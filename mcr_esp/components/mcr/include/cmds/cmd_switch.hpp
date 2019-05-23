@@ -26,7 +26,6 @@
 #include <memory>
 #include <string>
 
-#include <esp_timer.h>
 #include <freertos/FreeRTOS.h>
 #include <sys/time.h>
 #include <time.h>
@@ -60,7 +59,7 @@ public:
       : mcrCmd(mcrCmdType::setswitch), _external_dev_id(cmd->_external_dev_id),
         _internal_dev_id(cmd->_internal_dev_id), _mask(cmd->_mask),
         _state(cmd->_state), _refid(cmd->_refid), _ack(cmd->_ack){};
-  CmdSwitch(JsonDocument &doc);
+  CmdSwitch(JsonDocument &doc, elapsedMicros &parse);
   CmdSwitch(const string_t &id, cmd_bitset_t mask, cmd_bitset_t state)
       : mcrCmd(mcrCmdType::setswitch), _external_dev_id(id),
         _internal_dev_id(id), _mask(mask), _state(state){};

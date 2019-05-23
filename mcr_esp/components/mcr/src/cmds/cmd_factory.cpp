@@ -35,9 +35,9 @@ mcrCmd_t *mcrCmdFactory::fromJSON(JsonDocument &doc, mcrRawMsg_t *raw) {
   // ensure the raw data is null terminated
   raw->push_back(0x00);
 
-  int64_t start = esp_timer_get_time();
+  elapsedMicros parse_elapsed;
   auto err = deserializeJson(doc, (const char *)raw->data());
-  int64_t parse_us = esp_timer_get_time() - start;
+  parse_elapsed.freeze();
 
   if (err) { // bail if json parse failed
     ESP_LOGW(TAG, "[%s] JSON parse failure", err.c_str());
@@ -50,34 +50,30 @@ mcrCmd_t *mcrCmdFactory::fromJSON(JsonDocument &doc, mcrRawMsg_t *raw) {
   switch (cmd_type) {
   case mcrCmdType::unknown:
     ESP_LOGW(TAG, "unknown command [%s]", cmd_str.c_str());
-    cmd = new mcrCmd(doc);
+    cmd = new mcrCmd(doc, parse_elapsed);
     break;
 
   case mcrCmdType::none:
   case mcrCmdType::heartbeat:
   case mcrCmdType::timesync:
-    cmd = new mcrCmd(doc);
+    cmd = new mcrCmd(doc, parse_elapsed);
     break;
 
   case mcrCmdType::setswitch:
-    cmd = new CmdSwitch(doc);
+    cmd = new CmdSwitch(doc, parse_elapsed);
     break;
 
   case mcrCmdType::setname:
-    cmd = new mcrCmdNetwork(doc);
+    cmd = new mcrCmdNetwork(doc, parse_elapsed);
     break;
 
   case mcrCmdType::otaHTTPS:
   case mcrCmdType::restart:
-    cmd = new mcrCmdOTA(cmd_type, doc);
+    cmd = new mcrCmdOTA(cmd_type, doc, parse_elapsed);
     break;
 
   case mcrCmdType::enginesSuspend:
     break;
-  }
-
-  if (cmd) {
-    cmd->recordParseMetric(parse_us);
   }
 
   return cmd;

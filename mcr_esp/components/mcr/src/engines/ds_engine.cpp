@@ -901,7 +901,6 @@ void mcrDS::core(void *data) {
 
     // do high-level engine actions here (e.g. general housekeeping)
     taskDelayUntil(CORE, _loop_frequency);
-    runtimeMetricsReport();
   }
 }
 

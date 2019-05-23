@@ -119,6 +119,7 @@ private:
   // specific methods to read devices
   bool readAM2315(i2cDev_t *dev, bool wake = true);
   bool readMCP23008(i2cDev_t *dev);
+  bool setMCP23008(CmdSwitch_t &cmd, i2cDev_t *dev);
   bool readSeesawSoil(i2cDev_t *dev);
   bool readSHT31(i2cDev_t *dev);
 
@@ -148,7 +149,7 @@ private:
   bool wakeAM2315(i2cDev_t *dev);
 
   EngineTagMap_t &localTags() {
-    static std::unordered_map<std::string, std::string> tag_map = {
+    static std::unordered_map<string_t, string_t> tag_map = {
         {"engine", "mcrI2c"},
         {"discover", "mcrI2c discover"},
         {"convert", "mcrI2c convert"},
@@ -157,6 +158,7 @@ private:
         {"detect", "mcrI2c detectDev"},
         {"readAM2315", "mcrI2c readAM2315"},
         {"readMCP23008", "mcrI2c readMCP23008"},
+        {"setMCP23008", "mcrI2c setMCP23008"},
         {"readSHT31", "mcrI2c readSHT31"},
         {"selectbus", "mcrI2c selectBus"}};
 
@@ -192,6 +194,14 @@ private:
     static const char *tag = nullptr;
     if (tag == nullptr) {
       tag = _tags["readMCP23008"].c_str();
+    }
+    return tag;
+  }
+
+  const char *tagSetMCP23008() {
+    static const char *tag = nullptr;
+    if (tag == nullptr) {
+      tag = _tags["setMCP23008"].c_str();
     }
     return tag;
   }

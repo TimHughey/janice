@@ -27,23 +27,33 @@
 
 #include <cstdint>
 
+#include <esp_log.h>
 #include <esp_timer.h>
 
 class elapsedMillis {
 private:
   uint64_t ms;
+  bool _freeze = false;
 
   inline uint64_t millis() const { return (esp_timer_get_time() / 1000); };
 
 public:
-  elapsedMillis(void) { ms = millis() / 1000; }
-  elapsedMillis(uint64_t val) { ms = millis() - val; }
+  elapsedMillis(void) { ms = millis(); }
+  // elapsedMillis(uint64_t val) { ms = millis() - val; }
   elapsedMillis(const elapsedMillis &orig) { ms = orig.ms; }
   float asSeconds() {
-    uint64_t e = millis() - ms;
-    return (float)(e / 1000.0);
+    return (_freeze) ? (float)(ms / 1000.0)
+                     : ((float)((millis() - ms) / 1000.0));
   }
-  operator uint64_t() const { return millis() - ms; }
+  void freeze(uint32_t val = UINT32_MAX) {
+    _freeze = true;
+    ms = (val == UINT32_MAX) ? (millis() - ms) : val;
+  }
+  void reset() {
+    _freeze = false;
+    ms = millis();
+  }
+  operator uint64_t() const { return (_freeze) ? (ms) : (millis() - ms); }
   elapsedMillis &operator=(const elapsedMillis &rhs) {
     ms = rhs.ms;
     return *this;
@@ -105,20 +115,33 @@ public:
 class elapsedMicros {
 private:
   uint64_t us;
+  bool _freeze = false;
 
   inline uint64_t micros() const { return (esp_timer_get_time()); };
 
 public:
   elapsedMicros(void) { us = micros(); }
-  elapsedMicros(uint64_t val) { us = micros() - val; }
-  elapsedMicros(const elapsedMicros &orig) { us = orig.us; }
-  float asSeconds() {
-    uint64_t e = micros() - us;
-    return (float)(e / 1000000.0);
+  // elapsedMicros(uint64_t val) { us = micros() - val; }
+  elapsedMicros(const elapsedMicros &orig) {
+    _freeze = orig._freeze;
+    us = orig.us;
   }
-  operator uint64_t() const { return micros() - us; }
+  float asSeconds() {
+    return (_freeze) ? (float)(us / 1000000.0)
+                     : ((float)((micros() - us) / 1000000.0));
+  }
+  void freeze(uint32_t val = UINT32_MAX) {
+    _freeze = true;
+    us = (val == UINT32_MAX) ? (micros() - us) : val;
+  }
+  void reset() {
+    _freeze = false;
+    us = micros();
+  }
+  operator uint64_t() const { return (_freeze) ? (us) : (micros() - us); }
   elapsedMicros &operator=(const elapsedMicros &rhs) {
     us = rhs.us;
+    _freeze = rhs._freeze;
     return *this;
   }
   elapsedMicros &operator=(uint64_t val) {

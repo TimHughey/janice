@@ -28,7 +28,10 @@
 
 using std::unique_ptr;
 
+namespace mcr {
+
 typedef class i2cDev i2cDev_t;
+typedef class std::vector<uint8_t> RawData_t;
 
 class i2cDev : public mcrDev {
 public:
@@ -36,13 +39,15 @@ public:
   static const char *i2cDevDesc(uint8_t addr);
 
 private:
-  std::string _external_name; // name used to report externally
+  string_t _external_name; // name used to report externally
   static const uint32_t _i2c_max_addr_len = 1;
   static const uint32_t _i2c_max_id_len = 30;
   static const uint32_t _i2c_addr_byte = 0;
   bool _use_multiplexer = false; // is the multiplexer is needed to reach device
   uint8_t _bus = 0; // if using multiplexer then this is the bus number
                     // where the device is hosted
+  RawData_t _raw_data;
+
 public:
   // construct a new i2cDev with a known address and compute the id
   i2cDev(mcrDevAddr_t &addr, bool use_multiplexer = false, uint8_t bus = 0);
@@ -50,7 +55,9 @@ public:
   uint8_t devAddr();
   bool useMultiplexer();
   uint8_t bus() const;
+  const RawData_t &rawData();
   uint8_t readAddr();
+  void storeRawData(RawData_t &data);
   uint8_t writeAddr();
 
   const char *externalName();
@@ -58,5 +65,6 @@ public:
   // info / debug functions
   const unique_ptr<char[]> debug();
 };
+} // namespace mcr
 
 #endif // i2c_dev_h

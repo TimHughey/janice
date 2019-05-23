@@ -35,6 +35,8 @@
 using mcr::Net;
 using std::unique_ptr;
 
+namespace mcr {
+
 const char *i2cDev::i2cDevDesc(uint8_t addr) {
   switch (addr) {
   case 0x5C:
@@ -74,6 +76,8 @@ i2cDev::i2cDev(mcrDevAddr_t &addr, bool use_multiplexer, uint8_t bus)
            description().c_str());
 
   setID(id.get());
+
+  _raw_data.reserve(24);
 };
 
 // externalName implementation for i2cDev
@@ -98,9 +102,13 @@ uint8_t i2cDev::devAddr() { return firstAddressByte(); };
 bool i2cDev::useMultiplexer() { return _use_multiplexer; };
 uint8_t i2cDev::bus() const { return _bus; };
 
+const RawData_t &i2cDev::rawData() { return _raw_data; }
+
 uint8_t i2cDev::readAddr() {
   return (firstAddressByte() << 1) | I2C_MASTER_READ;
 };
+
+void i2cDev::storeRawData(RawData_t &data) { _raw_data = data; }
 
 uint8_t i2cDev::writeAddr() {
   return (firstAddressByte() << 1) | I2C_MASTER_WRITE;
@@ -115,3 +123,4 @@ const unique_ptr<char[]> i2cDev::debug() {
 
   return move(debug_str);
 }
+} // namespace mcr

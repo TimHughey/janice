@@ -8,20 +8,18 @@ using std::unique_ptr;
 static const char *k_mtime = "mtime";
 static const char *k_cmd = "cmd";
 
-mcrCmd::mcrCmd(JsonDocument &doc) { populate(doc); }
+mcrCmd::mcrCmd(JsonDocument &doc, elapsedMicros &e) : _parse_elapsed(e) {
+  populate(doc);
+}
 
 mcrCmd::mcrCmd(mcrCmdType_t type) {
   _mtime = time(nullptr);
   _type = type;
 }
 
-mcrCmd::mcrCmd(mcrCmdType_t type, JsonDocument &doc) : _type(type) {
+mcrCmd::mcrCmd(mcrCmdType_t type, JsonDocument &doc, elapsedMicros &e)
+    : _type(type), _parse_elapsed(e) {
   populate(doc);
-}
-
-time_t mcrCmd::latency() {
-  int64_t latency = esp_timer_get_time() - _latency;
-  return latency;
 }
 
 void mcrCmd::populate(JsonDocument &doc) {
@@ -40,9 +38,9 @@ const unique_ptr<char[]> mcrCmd::debug() {
   unique_ptr<char[]> debug_str(new char[max_buf]);
 
   snprintf(debug_str.get(), max_buf,
-           "mcrCmd(latency=%02fms parse=%02fms create=%02fms",
-           ((float)latency() / 1000.0), ((float)_parse_us / 1000.0),
-           ((float)_create_us / 1000.0));
+           "mcrCmd(latency(%0.3fs) parse(%0.3fs) create(%0.3fs)",
+           latency().asSeconds(), _parse_elapsed.asSeconds(),
+           _create_elapsed.asSeconds());
 
   return move(debug_str);
 }

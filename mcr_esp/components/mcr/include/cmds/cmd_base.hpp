@@ -25,7 +25,6 @@
 #include <memory>
 #include <string>
 
-#include <esp_timer.h>
 #include <external/ArduinoJson.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
@@ -33,10 +32,14 @@
 #include <time.h>
 
 #include "cmds/cmd_types.hpp"
+#include "misc/elapsedMillis.hpp"
 #include "misc/mcr_types.hpp"
 
 using std::unique_ptr;
 using namespace mcr;
+
+enum CmdMetrics { CREATE = 0, PARSE = 1 };
+typedef enum CmdMetrics CmdMetrics_t;
 
 typedef class mcrCmd mcrCmd_t;
 typedef unique_ptr<mcrCmd_t> mcrCmd_t_ptr;
@@ -48,20 +51,20 @@ private:
   void populate(JsonDocument &doc);
 
 protected:
-  uint64_t _parse_us = 0LL;
-  uint64_t _create_us = 0LL;
-  uint64_t _latency = esp_timer_get_time();
+  elapsedMicros _parse_elapsed;
+  elapsedMicros _create_elapsed;
+  elapsedMicros _latency;
 
 public:
   mcrCmd(mcrCmdType_t type);
-  mcrCmd(JsonDocument &doc);
-  mcrCmd(mcrCmdType_t type, JsonDocument &doc);
+  mcrCmd(JsonDocument &doc, elapsedMicros &parse);
+  mcrCmd(mcrCmdType_t type, JsonDocument &doc, elapsedMicros &parse);
   virtual ~mcrCmd(){};
 
-  virtual time_t latency();
+  elapsedMicros &createElapsed() { return _create_elapsed; };
+  virtual elapsedMicros &latency() { return _latency; };
+  elapsedMicros &parseElapsed() { return _parse_elapsed; };
   virtual bool process() { return false; };
-  void recordCreateMetric(int64_t create_us) { _create_us = create_us; };
-  void recordParseMetric(int64_t parse_us) { _parse_us = parse_us; };
   virtual bool sendToQueue(cmdQueue_t &cmd_q) { return false; };
   virtual size_t size() { return sizeof(mcrCmd_t); };
   mcrCmdType_t type() { return _type; };
