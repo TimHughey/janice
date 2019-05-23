@@ -308,3 +308,56 @@ Used static IRAM:   72968 bytes (  58104 available, 55.7% used)
     Flash rodata:  167368 bytes
 Total image size:~ 915374 bytes (.bin may be padded larger)
 <<<
+>>>
+commit d06a360
+Author: Tim Hughey <timhughey@mac.com>
+Date:   Thu May 23 00:38:21 2019 -0400
+
+    MCR Implemented MCP23008 Set and Other Refactoring
+    
+    Continued roll-out of:
+     -elapsedMillis/Micros
+     -string_t
+Toolchain path: /Users/thughey/devel/xtensa-esp32-elf/bin/xtensa-esp32-elf-gcc
+Toolchain version: crosstool-ng-1.22.0-80-g6c4433a
+Compiler version: 5.2.0
+App "mcr_esp" version: janice2.02.03-24-gd06a360-dirty
+CC build/app_update/esp_app_desc.o
+AR build/app_update/libapp_update.a
+Generating libapp_update.a.sections_info
+Generating esp32.project.ld
+LD build/mcr_esp.elf
+Python requirements from /Users/thughey/devel/esp-idf/requirements.txt are satisfied.
+Total sizes:
+ DRAM .data size:   13872 bytes
+ DRAM .bss  size:   24392 bytes
+Used static DRAM:   38264 bytes ( 142472 available, 21.2% used)
+Used static IRAM:   73000 bytes (  58072 available, 55.7% used)
+      Flash code:  663898 bytes
+    Flash rodata:  168300 bytes
+Total image size:~ 919070 bytes (.bin may be padded larger)
+<<<
+>>>
+commit d06a360
+Author: Tim Hughey <timhughey@mac.com>
+Date:   Thu May 23 00:38:21 2019 -0400
+
+    MCR Implemented MCP23008 Set and Other Refactoring
+    
+    Continued roll-out of:
+     -elapsedMillis/Micros
+     -string_t
+Toolchain path: /Users/thughey/devel/xtensa-esp32-elf/bin/xtensa-esp32-elf-gcc
+Toolchain version: crosstool-ng-1.22.0-80-g6c4433a
+Compiler version: 5.2.0
+App "mcr_esp" version: janice2.02.03-24-gd06a360-dirty
+Python requirements from /Users/thughey/devel/esp-idf/requirements.txt are satisfied.
+Total sizes:
+ DRAM .data size:   13872 bytes
+ DRAM .bss  size:   24392 bytes
+Used static DRAM:   38264 bytes ( 142472 available, 21.2% used)
+Used static IRAM:   73000 bytes (  58072 available, 55.7% used)
+      Flash code:  665402 bytes
+    Flash rodata:  168712 bytes
+Total image size:~ 920986 bytes (.bin may be padded larger)
+<<<

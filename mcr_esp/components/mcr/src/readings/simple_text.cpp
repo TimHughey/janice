@@ -60,7 +60,7 @@ void textReading::printf(const char *format, ...) {
   size_t bytes;
 
   va_start(arglist, format);
-  bytes = vsnprintf(_actual, availableBytes(), format, arglist);
+  bytes = vsnprintf(_append_text, availableBytes(), format, arglist);
   va_end(arglist);
 
   use(bytes);

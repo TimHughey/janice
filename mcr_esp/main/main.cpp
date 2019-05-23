@@ -46,7 +46,7 @@ extern const uint8_t ca_end[] asm("_binary_ca_pem_end");
 static const char *TAG = "mcrESP";
 
 static mcr::Net *network = nullptr;
-static mcrTimestampTask *timestampTask = nullptr;
+static TimestampTask *timestampTask = nullptr;
 static mcrMQTT *mqttTask = nullptr;
 static mcrDS *dsEngineTask = nullptr;
 static mcrI2c *i2cEngineTask = nullptr;
@@ -76,7 +76,7 @@ void app_main() {
 
   // must create network first!
   network = mcr::Net::instance(); // singleton
-  timestampTask = new mcrTimestampTask();
+  timestampTask = new TimestampTask();
   mqttTask = mcrMQTT::instance();     // singleton
   dsEngineTask = mcrDS::instance();   // singleton
   i2cEngineTask = mcrI2c::instance(); // singleton
@@ -91,11 +91,8 @@ void app_main() {
 
   network->start();
 
-  // request TimestampTask to watch the stack high water mark for a task
-  xTaskHandle watch_task = i2cEngineTask->taskHandle();
-  const char *watch_tag = i2cEngineTask->tagEngine();
-
-  timestampTask->watchStack(watch_tag, watch_task);
+  // now that all tasks are started signal to begin watching task stacks
+  timestampTask->watchTaskStacks();
 
   network->waitForNormalOps();
   mcr::Net::waitForName(30000);

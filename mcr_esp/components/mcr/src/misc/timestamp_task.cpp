@@ -32,18 +32,20 @@ using std::move;
 
 using mcr::Net;
 
-mcrTimestampTask::mcrTimestampTask() {
+TimestampTask::TimestampTask() {
   _engTAG = tTAG;
   _engine_task_name = tTAG;
 
   _firstHeap = heap_caps_get_free_size(MALLOC_CAP_8BIT);
   _availHeap = heap_caps_get_free_size(MALLOC_CAP_8BIT);
+
+  _task_map.reserve(25);
 }
 
-mcrTimestampTask::~mcrTimestampTask() {}
+TimestampTask::~TimestampTask() {}
 
 // NOTE:  Use .get() to access the underlying char array
-unique_ptr<char[]> mcrTimestampTask::dateTimeString(time_t t) {
+unique_ptr<char[]> TimestampTask::dateTimeString(time_t t) {
 
   const auto buf_size = 28;
   unique_ptr<char[]> buf(new char[buf_size + 1]);
@@ -59,7 +61,7 @@ unique_ptr<char[]> mcrTimestampTask::dateTimeString(time_t t) {
   return move(buf);
 }
 
-void mcrTimestampTask::run(void *data) {
+void TimestampTask::core(void *data) {
   // initialize to zero so there is a timestamp report at
   // startup
   time_t last_timestamp = 0;
@@ -98,16 +100,7 @@ void mcrTimestampTask::run(void *data) {
                (_maxHeap / 1024), delta_str, (max_alloc / 1024),
                (float)(batt_mv / 1024.0));
 
-      if (_watch_task_name && _watch_task_handle) {
-        UBaseType_t stack_high_water;
-
-        stack_high_water = uxTaskGetStackHighWaterMark(_watch_task_handle);
-        _watch_task_stack_min = min(_watch_task_stack_min, stack_high_water);
-        _watch_task_stack_max = max(_watch_task_stack_max, stack_high_water);
-
-        ESP_LOGI(_watch_task_name, "stack max(%d) min(%d)",
-                 _watch_task_stack_max, _watch_task_stack_min);
-      }
+      reportTaskStacks();
 
       if ((last_timestamp == 0) && (_timestamp_freq_secs > 300)) {
         ESP_LOGI(name, "--> next timestamp report in %0.2f minutes",
@@ -138,5 +131,59 @@ void mcrTimestampTask::run(void *data) {
     mqtt->publish(move(remote));
 
     vTaskDelayUntil(&_last_wake, _loop_frequency);
+  }
+}
+
+void TimestampTask::reportTaskStacks() {
+  if (_task_map.size() == 0)
+    return;
+
+  textReading *rlog = new textReading();
+  textReading_ptr_t rlog_ptr(rlog);
+
+  if (_tasks_ongoing_report) {
+    updateTaskData();
+  }
+
+  for_each(_task_map.begin(), _task_map.end(), [rlog](TaskMapItem_t item) {
+    string_t name = item.first;
+    TaskStat_ptr_t stat = item.second;
+
+    rlog->printf("%s(%d) ", name.c_str(), stat->stack_high_water);
+  });
+
+  rlog->consoleInfo(tTAG);
+  rlog->publish();
+}
+
+void TimestampTask::updateTaskData() {
+  for_each(_task_map.begin(), _task_map.end(), [this](TaskMapItem_t item) {
+    auto stat = item.second;
+
+    stat->stack_high_water = uxTaskGetStackHighWaterMark(stat->handle);
+  });
+}
+
+void TimestampTask::watchTaskStacks() {
+  uint32_t num_tasks = uxTaskGetNumberOfTasks();
+  TaskStatus_t *buff = new TaskStatus_t[num_tasks];
+  unique_ptr<TaskStatus_t> buff_ptr(buff);
+  uint32_t run_time;
+
+  uxTaskGetSystemState(buff, num_tasks, &run_time);
+
+  for (uint32_t i = 0; i < num_tasks; i++) {
+    TaskStatus_t task = buff[i];
+
+    if (task.pcTaskName != nullptr) {
+      string_t name = task.pcTaskName;
+
+      TaskStat_ptr_t stat = new TaskStat_t;
+
+      stat->handle = task.xHandle;
+      stat->stack_high_water = task.usStackHighWaterMark;
+
+      _task_map[name] = stat;
+    }
   }
 }

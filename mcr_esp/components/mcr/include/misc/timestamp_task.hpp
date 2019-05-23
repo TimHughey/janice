@@ -4,6 +4,7 @@
 
 #include <memory>
 #include <string>
+#include <unordered_map>
 
 #include <esp_log.h>
 #include <freertos/FreeRTOS.h>
@@ -11,17 +12,20 @@
 #include <freertos/task.h>
 #include <sdkconfig.h>
 
+#include "misc/mcr_types.hpp"
+
 using std::unique_ptr;
+using std::unordered_map;
 
 namespace mcr {
-class mcrTimestampTask {
+class TimestampTask {
 
 public:
-  mcrTimestampTask();
-  ~mcrTimestampTask();
+  TimestampTask();
+  ~TimestampTask();
   static unique_ptr<char[]> dateTimeString(time_t t = 0);
 
-  void run(void *data);
+  void core(void *data);
   void start(void *task_data = nullptr) {
     if (_engine_task != nullptr) {
       ESP_LOGW(_engTAG, "there may already be a task running %p",
@@ -34,13 +38,8 @@ public:
     ::xTaskCreate(&runEngine, _engine_task_name.c_str(), _engine_stack_size,
                   this, _engine_priority, &_engine_task);
   }
-  void watchStack(const char *task_name, TaskHandle_t handle) {
-    ESP_LOGI(_engTAG, "watch stack requested [%s] [%p]",
-             ((task_name == nullptr) ? "nullptr" : task_name), handle);
 
-    _watch_task_name = task_name;
-    _watch_task_handle = handle;
-  }
+  void watchTaskStacks();
 
 private:
   uint32_t vref_voltage();
@@ -63,17 +62,30 @@ private:
   bool _task_report = false;
   time_t _timestamp_freq_secs = (15 * 60);
 
-  const char *_watch_task_name = nullptr;
-  TaskHandle_t _watch_task_handle = nullptr;
-  size_t _watch_task_stack_max = 0;
-  size_t _watch_task_stack_min = UINT32_MAX;
+  typedef struct {
+    xTaskHandle handle;
+    uint32_t stack_high_water;
+    uint32_t stack_depth = 0;
+    bool mcr_task = false;
+  } TaskStat_t;
+
+  typedef TaskStat_t *TaskStat_ptr_t;
+
+  typedef std::pair<string_t, TaskStat_ptr_t> TaskMapItem_t;
+
+  // key(task name) entry(task stack high water)
+  unordered_map<string_t, TaskStat_ptr_t> _task_map;
+  bool _tasks_ongoing_report = false;
 
   // Task implementation
   void delay(int ms) { ::vTaskDelay(pdMS_TO_TICKS(ms)); }
   static void runEngine(void *task_instance) {
-    mcrTimestampTask *task = (mcrTimestampTask *)task_instance;
-    task->run(task->_engine_task_data);
+    TimestampTask *task = (TimestampTask *)task_instance;
+    task->core(task->_engine_task_data);
   }
+
+  void reportTaskStacks();
+  void updateTaskData();
 
   void stop() {
     if (_engine_task == nullptr) {
