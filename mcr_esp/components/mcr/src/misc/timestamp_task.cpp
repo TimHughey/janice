@@ -151,7 +151,9 @@ void TimestampTask::reportTaskStacks() {
     string_t name = item.first;
     TaskStat_ptr_t stat = item.second;
 
-    rlog->printf("%s(%d) ", name.c_str(), stat->stack_high_water);
+    if (stat->stack_high_water > 1024) {
+      rlog->printf("%s(%d) ", name.c_str(), stat->stack_high_water);
+    }
   });
 
   rlog->consoleInfo(tTAG);

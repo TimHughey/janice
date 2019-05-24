@@ -361,3 +361,23 @@ Used static IRAM:   73000 bytes (  58072 available, 55.7% used)
     Flash rodata:  168712 bytes
 Total image size:~ 920986 bytes (.bin may be padded larger)
 <<<
+>>>
+commit 4dd26ec
+Author: Tim Hughey <timhughey@mac.com>
+Date:   Thu May 23 14:22:32 2019 -0400
+
+    MCR Corrected Ongoing Task Stack Watch
+Toolchain path: /Users/thughey/devel/xtensa-esp32-elf/bin/xtensa-esp32-elf-gcc
+Toolchain version: crosstool-ng-1.22.0-80-g6c4433a
+Compiler version: 5.2.0
+App "mcr_esp" version: janice2.02.03-26-g4dd26ec-dirty
+Python requirements from /Users/thughey/devel/esp-idf/requirements.txt are satisfied.
+Total sizes:
+ DRAM .data size:   13872 bytes
+ DRAM .bss  size:   24392 bytes
+Used static DRAM:   38264 bytes ( 142472 available, 21.2% used)
+Used static IRAM:   73000 bytes (  58072 available, 55.7% used)
+      Flash code:  665414 bytes
+    Flash rodata:  168712 bytes
+Total image size:~ 920998 bytes (.bin may be padded larger)
+<<<
