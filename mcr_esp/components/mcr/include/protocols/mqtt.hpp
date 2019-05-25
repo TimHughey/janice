@@ -56,7 +56,7 @@ public:
   void publish(Reading_t *reading);
   void publish(Reading_t &reading);
   void publish(std::unique_ptr<Reading_t> reading);
-  void run(void *data);
+  void core(void *data);
   void setSubscribedOTA() { _ota_subscribed = true; };
   void subACK(struct mg_mqtt_message *msg);
   void subscribeCommandFeed(struct mg_connection *nc);
@@ -97,7 +97,7 @@ private:
                      .data = nullptr,
                      .lastWake = 0,
                      .priority = CONFIG_MCR_MQTT_TASK_PRIORITY,
-                     .stackSize = (5 * 1024)};
+                     .stackSize = (4 * 1024)};
 
   struct mg_mgr _mgr;
   struct mg_connection *_connection = nullptr;
@@ -145,7 +145,7 @@ private:
   // Task implementation
   static void runEngine(void *task_instance) {
     mcrMQTT_t *task = (mcrMQTT_t *)task_instance;
-    task->run(task->_task.data);
+    task->core(task->_task.data);
   }
 };
 

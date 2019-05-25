@@ -50,7 +50,7 @@ private:
                      .data = nullptr,
                      .lastWake = 0,
                      .priority = CONFIG_MCR_MQTT_INBOUND_TASK_PRIORITY,
-                     .stackSize = (5 * 1024)};
+                     .stackSize = (3 * 1024)};
   QueueHandle_t _q_in;
   void *_task_data = nullptr;
 
@@ -60,7 +60,7 @@ private:
   // Task implementation
   static void runEngine(void *task_instance) {
     mcrMQTTin_t *task = (mcrMQTTin_t *)task_instance;
-    task->run(task->_task_data);
+    task->core(task->_task_data);
   }
 
 public:
@@ -69,7 +69,7 @@ public:
 
   UBaseType_t changePriority(UBaseType_t priority);
   void restorePriority();
-  void run(void *data);
+  void core(void *data);
 
   void delay(int ms) { ::vTaskDelay(pdMS_TO_TICKS(ms)); }
   void start(void *task_data = nullptr) {

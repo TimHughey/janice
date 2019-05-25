@@ -178,7 +178,7 @@ void mcrMQTT::publish(Reading_t &reading) {
   publish(json);
 }
 
-void mcrMQTT::publish(std::unique_ptr<Reading_t> reading) {
+void mcrMQTT::publish(Reading_ptr_t reading) {
   auto *json = reading->json();
 
   publish(json);
@@ -250,7 +250,7 @@ void mcrMQTT::publish(string_t *json) {
   }
 }
 
-void mcrMQTT::run(void *data) {
+void mcrMQTT::core(void *data) {
   struct mg_mgr_init_opts opts = {};
 
   esp_log_level_set(tagEngine(), ESP_LOG_INFO);

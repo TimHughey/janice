@@ -50,6 +50,8 @@ typedef enum {
 } ReadingType_t;
 
 typedef class Reading Reading_t;
+typedef std::unique_ptr<Reading_t> Reading_ptr_t;
+
 class Reading {
 private:
   // reading metadata (id, measured time and type)
@@ -84,6 +86,7 @@ public:
   virtual ~Reading();
 
   std::string *json(char *buffer = nullptr, size_t len = 0);
+  virtual void publish();
   virtual void refresh() { time(&_mtime); }
   void setCmdAck(time_t latency, mcrRefID_t &refid);
 

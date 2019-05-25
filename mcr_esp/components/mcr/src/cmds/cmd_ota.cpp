@@ -54,9 +54,9 @@ void mcrCmdOTA::doUpdate() {
   }
 
   _ota_in_progress = true;
-  mcrI2c::instance()->suspend();
-  mcrDS::instance()->suspend();
-  mcr::Net::suspendNormalOps();
+  // mcrI2c::instance()->suspend();
+  // mcrDS::instance()->suspend();
+  // mcr::Net::suspendNormalOps();
 
   mcrMQTT::otaPrep();
 

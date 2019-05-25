@@ -31,8 +31,11 @@
 
 #include "readings/reading.hpp"
 
+using std::unique_ptr;
+
 namespace mcr {
 typedef class remoteReading remoteReading_t;
+typedef unique_ptr<remoteReading_t> remoteReading_ptr_t;
 
 class remoteReading : public Reading {
 private:

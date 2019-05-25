@@ -26,6 +26,7 @@
 #include <time.h>
 
 #include "net/mcr_net.hpp"
+#include "protocols/mqtt.hpp"
 #include "readings/reading.hpp"
 
 namespace mcr {
@@ -98,6 +99,11 @@ std::string *Reading::json(char *buffer, size_t len) {
   serializeJson(doc, *json_string);
 
   return json_string;
+}
+
+void Reading::publish() {
+  mcrMQTT_t *mqtt = mcrMQTT::instance();
+  mqtt->publish(this);
 }
 
 void Reading::setCmdAck(time_t latency, mcrRefID_t &refid) {

@@ -7,9 +7,6 @@
 #include <memory>
 #include <string>
 
-#include "driver/adc.h"
-#include "driver/gpio.h"
-#include "esp_adc_cal.h"
 #include "esp_system.h"
 #include <esp_log.h>
 #include <freertos/FreeRTOS.h>
@@ -30,7 +27,7 @@ using std::max;
 using std::min;
 using std::move;
 
-using mcr::Net;
+namespace mcr {
 
 TimestampTask::TimestampTask() {
   _engTAG = tTAG;
@@ -38,8 +35,6 @@ TimestampTask::TimestampTask() {
 
   _firstHeap = heap_caps_get_free_size(MALLOC_CAP_8BIT);
   _availHeap = heap_caps_get_free_size(MALLOC_CAP_8BIT);
-
-  _task_map.reserve(25);
 }
 
 TimestampTask::~TimestampTask() {}
@@ -54,7 +49,6 @@ unique_ptr<char[]> TimestampTask::dateTimeString(time_t t) {
   struct tm timeinfo = {};
 
   localtime_r(&now, &timeinfo);
-
   strftime(buf.get(), buf_size, "%c", &timeinfo);
   // strftime(buf.get(), buf_size, "%b-%d %R", &timeinfo);
 
@@ -110,25 +104,12 @@ void TimestampTask::core(void *data) {
       last_timestamp = time(nullptr);
     }
 
-    if (_task_report) {
-      const unique_ptr<char[]> tasks(new char[1024]);
-      const unique_ptr<char[]> out(new char[1200]);
-      vTaskList(tasks.get());
-      const char *head1 = "Task          State  Priority   Stack   Num";
-      const char *head2 = "------------- -----  --------   -----   ---";
-      sprintf(out.get(), "%s\n%s\n%s", head1, head2, tasks.get());
-
-      ESP_LOGW(tTAG, "\n%s", out.get());
-    }
-
-    mcrMQTT_t *mqtt = mcrMQTT::instance();
-
     ramUtilReading_t_ptr ram(new ramUtilReading());
     ram->publish();
 
     // ramUtilReading_t replacement
-    unique_ptr<remoteReading_t> remote(new remoteReading(batt_mv));
-    mqtt->publish(move(remote));
+    remoteReading_ptr_t remote(new remoteReading(batt_mv));
+    remote->publish();
 
     vTaskDelayUntil(&_last_wake, _loop_frequency);
   }
@@ -141,12 +122,6 @@ void TimestampTask::reportTaskStacks() {
   textReading *rlog = new textReading();
   textReading_ptr_t rlog_ptr(rlog);
 
-  if (_tasks_ongoing_report) {
-    updateTaskData();
-  } else {
-    _tasks_ongoing_report = true;
-  }
-
   for_each(_task_map.begin(), _task_map.end(), [rlog](TaskMapItem_t item) {
     string_t name = item.first;
     TaskStat_ptr_t stat = item.second;
@@ -158,6 +133,8 @@ void TimestampTask::reportTaskStacks() {
 
   rlog->consoleInfo(tTAG);
   rlog->publish();
+
+  updateTaskData();
 }
 
 void TimestampTask::updateTaskData() {
@@ -170,6 +147,8 @@ void TimestampTask::updateTaskData() {
 
 void TimestampTask::watchTaskStacks() {
   uint32_t num_tasks = uxTaskGetNumberOfTasks();
+  _task_map.reserve(num_tasks);
+
   TaskStatus_t *buff = new TaskStatus_t[num_tasks];
   unique_ptr<TaskStatus_t> buff_ptr(buff);
   uint32_t run_time;
@@ -191,3 +170,4 @@ void TimestampTask::watchTaskStacks() {
     }
   }
 }
+} // namespace mcr

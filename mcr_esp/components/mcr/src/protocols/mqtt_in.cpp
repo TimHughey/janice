@@ -59,7 +59,7 @@ void mcrMQTTin::restorePriority() {
   vTaskPrioritySet(_task.handle, _task.priority);
 }
 
-void mcrMQTTin::run(void *data) {
+void mcrMQTTin::core(void *data) {
   mqttInMsg_t *msg;
   mcrCmdFactory_t factory;
   DynamicJsonDocument doc(1024); // allocate the json buffer here

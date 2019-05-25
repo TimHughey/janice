@@ -1,8 +1,6 @@
-#!/bin/zsh
+#/usr/bin/env zsh
 
-host=$(hostname)
-
-[[ $host -ne "jophiel" ]] && echo "please run on jophiel" && exit 255
+host=$(hostname -s)
 
 function run_cmd {
     "$@"
@@ -41,20 +39,24 @@ pushd $mcr
 git pull || exit 1
 run_cmd make ${MAKEOPTS}
 
-popd
-
-pushd $htdocs
 # echo "deploying mcr_esp.{bin,elf} to $htdocs"
 for suffix in $fw_suffixes; do
   src=${mcr_build}/mcr_esp.${suffix}
   dest=${vsn}-mcr_esp.${suffix}
   latest=latest-mcr_esp.${suffix}
 
-  sudo_cmd cp $src $dest
+  if [[ "${host}" != "jophiel" ]]; then
+    run_cmd scp ${src} jophiel:${latest}/${dest} || exit 1
+    ssh jophiel sudo -u janice --login rm -f ${lastest} || exit 1
+    ssh jophiel sudo -u janice --login "cd ${htdocs} ; ln -s ./${dest} ${lastest}" || exit 1
+  else
+    pushd $htdocs
+    run_cmd cp $src $dest || exit 1
 
-  # point the well known name latest-mcr_esp.* to the new file
-  sudo_cmd rm -f $latest
-  sudo_cmd ln -s ./${dest} $latest
+    # point the well known name latest-mcr_esp.* to the new file
+    sudo_cmd rm -f $latest
+    sudo_cmd ln -s ./${dest} $latest
+  fi
 done
 
 popd

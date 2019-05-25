@@ -49,7 +49,7 @@ private:
   xTaskHandle _engine_task = nullptr;
   void *_engine_task_data;
   std::string _engine_task_name;
-  uint16_t _engine_stack_size = 3 * 1024;
+  uint16_t _engine_stack_size = 2048;
   uint16_t _engine_priority = 0;
 
   size_t _firstHeap = 0;
@@ -58,8 +58,7 @@ private:
   size_t _maxHeap = 0;
 
   TickType_t _last_wake;
-  const TickType_t _loop_frequency = pdMS_TO_TICKS(3 * 1000); // 13 seconds
-  bool _task_report = false;
+  const TickType_t _loop_frequency = pdMS_TO_TICKS(3000);
   time_t _timestamp_freq_secs = (15 * 60);
 
   typedef struct {
