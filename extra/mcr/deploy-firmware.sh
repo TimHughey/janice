@@ -36,19 +36,23 @@ else
 fi
 
 pushd $mcr
-git pull || exit 1
+
+if [[ "${host}" = "jophiel" ]]; then
+  git pull || exit 1
+fi
+
 run_cmd make ${MAKEOPTS}
 
 # echo "deploying mcr_esp.{bin,elf} to $htdocs"
-for suffix in $fw_suffixes; do
+for suffix in "${fw_suffixes[@]}"; do
   src=${mcr_build}/mcr_esp.${suffix}
   dest=${vsn}-mcr_esp.${suffix}
   latest=latest-mcr_esp.${suffix}
 
   if [[ "${host}" != "jophiel" ]]; then
-    run_cmd scp ${src} jophiel:${latest}/${dest} || exit 1
-    ssh jophiel sudo -u janice --login rm -f ${lastest} || exit 1
-    ssh jophiel sudo -u janice --login "cd ${htdocs} ; ln -s ./${dest} ${lastest}" || exit 1
+    run_cmd scp ${src} jophiel:${htdocs}/${dest}
+    ssh jophiel "pushd ${htdocs} ; rm -f ${latest}"
+    ssh jophiel "pushd ${htdocs} ; ln -s ./${dest} ${latest}"
   else
     pushd $htdocs
     run_cmd cp $src $dest || exit 1
