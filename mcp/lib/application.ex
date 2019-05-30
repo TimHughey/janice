@@ -99,11 +99,11 @@ defmodule Mcp.Application do
   defp server(Dutycycle.Supervisor, _other_env),
     do: {Dutycycle.Supervisor, %{autostart: false, start_children: false}}
 
-  defp server(Thermostat.Supervisor, "prod"),
-    do: {Dutycycle.Supervisor, %{autostart: true, start_servers: true}}
+  defp server(Thermostat.Supervisor = m, "prod"),
+    do: {m, %{autostart: true, start_servers: true}}
 
-  defp server(Thermostat.Supervisor, _other_env),
-    do: {Dutycycle.Supervisor, %{autostart: false, start_servers: false}}
+  defp server(Thermostat.Supervisor = m, _other_env),
+    do: {m, %{autostart: false, start_servers: false}}
 
   defp support(build_env) do
     case build_env do
