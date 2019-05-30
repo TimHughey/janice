@@ -98,13 +98,13 @@ config :mcp, Janice.Scheduler,
        schedule: {:cron, "*/2 22-7 * * *"},
        task: {Janice.Jobs, :switch_control, ["germination_light", false]},
        run_strategy: run_strategy
-     ]},
-    {:germination_heat,
-     [
-       schedule: {:cron, "*/2 * * * *"},
-       task: {Janice.Jobs, :switch_control, ["germination_heat", false]},
-       run_strategy: run_strategy
      ]}
+    # {:germination_heat,
+    #  [
+    #    schedule: {:cron, "*/2 * * * *"},
+    #    task: {Janice.Jobs, :switch_control, ["germination_heat", false]},
+    #    run_strategy: run_strategy
+    #  ]}
     # control germination light and heat
     # {"*/2 8-19 * * *", {Janice.Jobs, :switch_control, ["germination_light", true]}},
     # {"*/2 20-7 * * *", {Janice.Jobs, :switch_control, ["germination_light", false]}},
