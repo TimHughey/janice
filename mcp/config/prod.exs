@@ -86,19 +86,19 @@ config :mcp, Janice.Scheduler,
        schedule: {:cron, "* * * * *"},
        task: {Janice.Jobs, :touch_file, ["/tmp/janice-prod.touch"]},
        run_strategy: run_strategy
-     ]},
-    {:germination_on,
-     [
-       schedule: {:cron, "*/2 8-21 * * *"},
-       task: {Janice.Jobs, :switch_control, ["germination_light", true]},
-       run_strategy: run_strategy
-     ]},
-    {:germination_off,
-     [
-       schedule: {:cron, "*/2 22-7 * * *"},
-       task: {Janice.Jobs, :switch_control, ["germination_light", false]},
-       run_strategy: run_strategy
      ]}
+    # {:germination_on,
+    #  [
+    #    schedule: {:cron, "*/2 8-21 * * *"},
+    #    task: {Janice.Jobs, :switch_control, ["germination_light", true]},
+    #    run_strategy: run_strategy
+    #  ]},
+    # {:germination_off,
+    #  [
+    #    schedule: {:cron, "*/2 22-7 * * *"},
+    #    task: {Janice.Jobs, :switch_control, ["germination_light", false]},
+    #    run_strategy: run_strategy
+    #  ]}
     # {:germination_heat,
     #  [
     #    schedule: {:cron, "*/2 * * * *"},
