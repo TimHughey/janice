@@ -211,7 +211,7 @@ void Net::disconnected(void *event_data) {
   xEventGroupClearBits(evg_, clear_bits);
   // sntp_stop();
 
-  ::esp_wifi_start();
+  ::esp_wifi_connect();
 }
 
 const char *Net::dnsIP() { return dns_str_; }
@@ -249,6 +249,7 @@ void Net::wifi_events(void *ctx, esp_event_base_t base, int32_t id,
 
   switch (id) {
   case WIFI_EVENT_STA_START:
+    ::tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, "mcr");
     ::esp_wifi_connect();
     break;
 
@@ -405,6 +406,11 @@ void Net::setName(const std::string name) {
   instance()->_name = name;
   ESP_LOGI(tagEngine(), "mcp assigned name [%s]", instance()->_name.c_str());
 
+  tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, name.c_str());
+
+  // tcpip_adapter_dhcpc_stop(TCPIP_ADAPTER_IF_STA);
+  // tcpip_adapter_dhcpc_start(TCPIP_ADAPTER_IF_STA);
+
   xEventGroupSetBits(instance()->eventGroup(), nameBit());
 }
 
@@ -415,10 +421,9 @@ bool Net::start() {
   rc = ::esp_wifi_set_mode(WIFI_MODE_STA);
   checkError(__PRETTY_FUNCTION__, rc);
 
-  // rc = ::esp_wifi_set_ps(WIFI_PS_NONE);
-  // checkError(__PRETTY_FUNCTION__, rc);
-  // ESP_LOGI(tagEngine(), "[%s] wifi powersave set to none",
-  // esp_err_to_name(rc));
+  rc = ::esp_wifi_set_ps(WIFI_PS_NONE);
+  checkError(__PRETTY_FUNCTION__, rc);
+  ESP_LOGI(tagEngine(), "[%s] wifi powersave set to none", esp_err_to_name(rc));
 
   rc = ::esp_wifi_set_protocol(
       WIFI_IF_STA, WIFI_PROTOCOL_11B | WIFI_PROTOCOL_11G | WIFI_PROTOCOL_11N);
