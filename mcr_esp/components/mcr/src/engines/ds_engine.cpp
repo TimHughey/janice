@@ -478,6 +478,8 @@ void mcrDS::report(void *data) {
   // important to ensure we don't start reporting before
   // the rest of the system is fully available (e.g. wifi, mqtt)
   while (waitFor(devicesAvailableBit())) {
+    Net::waitForNormalOps();
+
     // there are two cases of when report should run:
     //  a. wait for a temperature if there are temperature devices
     //  b. wait a preset duration

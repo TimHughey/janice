@@ -270,7 +270,7 @@ void mcrI2c::discover(void *data) {
 
     // signal to other tasks if there are devices available
     // after delaying a bit (to improve i2c bus stability)
-    delay(50);
+    delay(100);
     trackDiscover(false);
 
     if (numKnownDevices() > 0) {
@@ -292,6 +292,8 @@ void mcrI2c::report(void *data) {
       taskDelayUntil(REPORT, _report_frequency);
       continue;
     }
+
+    Net::waitForNormalOps();
 
     trackReport(true);
 
@@ -520,7 +522,7 @@ bool mcrI2c::detectMultiplexer(const int max_attempts) {
     break;
 
   case I2C_MULTIPLEXER:
-    ESP_LOGI(tagDetectDev(), "hardware configured for multiplexer");
+    ESP_LOGD(tagDetectDev(), "hardware configured for multiplexer");
     _use_multiplexer = true;
     break;
   }
