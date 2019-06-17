@@ -28,13 +28,14 @@ public:
   void ensureTimeIsSet();
   bool start();
 
+  static void deinit();
   static EventGroupHandle_t eventGroup();
   static mcrHardwareConfig_t hardwareConfig();
-  static const std::string &getName();
-  static const std::string &hostID();
+  static const string_t &getName();
+  static const string_t &hostID();
   static Net_t *instance();
-  static const std::string &macAddress();
-  static void setName(const std::string name);
+  static const string_t &macAddress();
+  static void setName(const string_t name);
   static void statusLED(bool on);
   static void resumeNormalOps();
   static void suspendNormalOps();
@@ -47,6 +48,11 @@ public:
   static bool waitForReady(uint32_t wait_ms = UINT32_MAX);
   static bool waitForTimeset(uint32_t wait_ms = UINT32_MAX);
   static void setTransportReady(bool val = true);
+
+  static inline bool clearBits() { return true; };
+  static inline bool noClearBits() { return false; };
+  static inline bool waitAllBits() { return true; };
+  static inline bool waitAnyBits() { return false; };
 
   static EventBits_t connectedBit() { return BIT0; };
   static EventBits_t ipBit() { return BIT1; };
@@ -94,6 +100,7 @@ private:
   const gpio_num_t hw_gpio_[3] = {GPIO_NUM_36, GPIO_NUM_39, GPIO_NUM_34};
   mcrHardwareConfig_t hw_conf_ = LEGACY;
 
-  std::string _name;
+  string_t name_;
+  bool reconnect_ = true;
 };
 } // namespace mcr

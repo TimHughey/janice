@@ -24,6 +24,7 @@
 #include <time.h>
 
 #include "misc/mcr_restart.hpp"
+#include "net/mcr_net.hpp"
 #include "protocols/mqtt.hpp"
 
 static mcrRestart_t *__singleton__ = nullptr;
@@ -67,6 +68,8 @@ void mcrRestart::restart(const char *text, const char *func,
     //          rather than wait a hardcoded duration
     vTaskDelay(pdMS_TO_TICKS(1500));
   }
+
+  Net::deinit();
 
   ESP_LOGW("mcrRestart", "spooling ftl for jump in %dms...", reboot_delay_ms);
   vTaskDelay(pdMS_TO_TICKS(reboot_delay_ms));
