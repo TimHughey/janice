@@ -24,7 +24,10 @@
 #include <time.h>
 
 #include "misc/mcr_restart.hpp"
+#include "net/mcr_net.hpp"
 #include "protocols/mqtt.hpp"
+
+namespace mcr {
 
 static mcrRestart_t *__singleton__ = nullptr;
 
@@ -68,9 +71,12 @@ void mcrRestart::restart(const char *text, const char *func,
     vTaskDelay(pdMS_TO_TICKS(1500));
   }
 
+  Net::deinit();
+
   ESP_LOGW("mcrRestart", "spooling ftl for jump in %dms...", reboot_delay_ms);
   vTaskDelay(pdMS_TO_TICKS(reboot_delay_ms));
   ESP_LOGW("mcrRestart", "JUMP!");
 
   esp_restart();
 }
+} // namespace mcr

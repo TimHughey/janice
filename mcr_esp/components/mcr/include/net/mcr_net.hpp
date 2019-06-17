@@ -28,25 +28,47 @@ public:
   void ensureTimeIsSet();
   bool start();
 
+  static void deinit();
   static EventGroupHandle_t eventGroup();
   static mcrHardwareConfig_t hardwareConfig();
-  static const std::string &getName();
-  static const std::string &hostID();
+  static const string_t &getName();
+  static const string_t &hostID();
   static Net_t *instance();
-  static const std::string &macAddress();
-  static void setName(const std::string name);
+  static const string_t &macAddress();
+  static void setName(const string_t name);
   static void statusLED(bool on);
   static void resumeNormalOps();
   static void suspendNormalOps();
-  static bool waitForConnection(uint32_t wait_ms = UINT32_MAX);
-  static bool waitForInitialization(uint32_t wait_ms = UINT32_MAX);
-  static bool waitForIP(uint32_t wait_ms = 60000);
-  static bool waitForName(uint32_t wait_ms = 0);
-  static bool waitForNormalOps(uint32_t wait_ms = UINT32_MAX);
-  static bool isTimeSet();
-  static bool waitForReady(uint32_t wait_ms = UINT32_MAX);
-  static bool waitForTimeset(uint32_t wait_ms = UINT32_MAX);
-  static void setTransportReady(bool val = true);
+  static bool waitFor(EventBits_t wait_bits, uint32_t wait_ms);
+
+  static inline bool waitForConnection(uint32_t wait_ms = UINT32_MAX) {
+    return waitFor(connectedBit(), wait_ms);
+  }
+
+  static inline bool waitForInitialization(uint32_t wait_ms = UINT32_MAX) {
+    return waitFor(initializedBit(), wait_ms);
+  };
+
+  static inline bool waitForIP(uint32_t wait_ms = 60000) {
+    return waitFor(ipBit(), wait_ms);
+  };
+
+  static inline bool waitForName(uint32_t wait_ms = 0) {
+    return waitFor(nameBit(), wait_ms);
+  };
+
+  static inline bool waitForNormalOps(uint32_t wait_ms = UINT32_MAX) {
+    return waitFor(normalOpsBit(), wait_ms);
+  };
+  static inline bool isTimeSet() { return waitFor(timeSetBit(), 0); };
+
+  static inline bool waitForReady(uint32_t wait_ms = UINT32_MAX) {
+    return waitFor(connectedBit() | ipBit() | readyBit(), wait_ms);
+  };
+
+  static inline bool waitForTimeset(uint32_t wait_ms = UINT32_MAX) {
+    return waitFor(timeSetBit(), wait_ms);
+  };
 
   static EventBits_t connectedBit() { return BIT0; };
   static EventBits_t ipBit() { return BIT1; };
@@ -54,9 +76,7 @@ public:
   static EventBits_t normalOpsBit() { return BIT3; };
   static EventBits_t readyBit() { return BIT4; };
   static EventBits_t timeSetBit() { return BIT5; };
-  static EventBits_t mqttReadyBit() { return BIT6; };
-  static EventBits_t initializedBit() { return BIT7; };
-  static EventBits_t transportBit() { return BIT8; };
+  static EventBits_t initializedBit() { return BIT6; };
 
   static const char *tagEngine() { return (const char *)"mcrNet"; };
 
@@ -94,6 +114,7 @@ private:
   const gpio_num_t hw_gpio_[3] = {GPIO_NUM_36, GPIO_NUM_39, GPIO_NUM_34};
   mcrHardwareConfig_t hw_conf_ = LEGACY;
 
-  std::string _name;
+  string_t name_;
+  bool reconnect_ = true;
 };
 } // namespace mcr

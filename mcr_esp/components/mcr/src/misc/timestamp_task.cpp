@@ -65,9 +65,9 @@ void TimestampTask::core(void *data) {
     size_t curr_heap, max_alloc = 0;
     uint32_t batt_mv = Net::instance()->batt_mv();
 
-    ESP_LOGD(tTAG, "standing by for name and normal ops...");
+    ESP_LOGD(tTAG, "standing by for name and wifi connection...");
     Net::waitForName(15000);
-    Net::waitForNormalOps();
+    Net::waitForConnection();
 
     _last_wake = xTaskGetTickCount();
 
