@@ -1,4 +1,4 @@
-#/usr/bin/env zsh
+#!/usr/bin/env zsh
 
 host=$(hostname -s)
 
@@ -35,7 +35,7 @@ else
 	MAKEOPTS="-j9"
 fi
 
-pushd $mcr
+pushd -q $mcr
 
 if [[ "${host}" = "jophiel" ]]; then
   git pull || exit 1
@@ -51,16 +51,19 @@ for suffix in "${fw_suffixes[@]}"; do
 
   if [[ "${host}" != "jophiel" ]]; then
     run_cmd scp ${src} jophiel:${htdocs}/${dest}
-    ssh jophiel "pushd ${htdocs} ; rm -f ${latest}"
-    ssh jophiel "pushd ${htdocs} ; ln -s ./${dest} ${latest}"
+    ssh jophiel "pushd -q ${htdocs} ; rm -f ${latest}"
+    ssh jophiel "pushd -q ${htdocs} ; ln -s ./${dest} ${latest}"
   else
-    pushd $htdocs
+    pushd -q $htdocs
     run_cmd cp $src $dest || exit 1
 
     # point the well known name latest-mcr_esp.* to the new file
     sudo_cmd rm -f $latest
     sudo_cmd ln -s ./${dest} $latest
+
+		ls -l $latest
+		popd -q
   fi
 done
 
-popd
+popd -q
