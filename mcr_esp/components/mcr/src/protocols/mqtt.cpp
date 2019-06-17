@@ -299,6 +299,7 @@ void mcrMQTT::subACK(struct mg_mqtt_message *msg) {
   if (msg->message_id == _cmd_feed_msg_id) {
     ESP_LOGI(tagEngine(), "subscribed to CMD feed");
     _mqtt_ready = true;
+    mcr::Net::setTransportReady();
     // NOTE: do not announce startup here.  doing so creates a race condition
     // that results in occasionally using epoch as the startup time
 

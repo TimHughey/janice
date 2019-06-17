@@ -28,7 +28,6 @@
 
 #include "readings/readings.hpp"
 
-namespace mcr {
 typedef class mcrRestart mcrRestart_t;
 #define DEFAULT_WAIT_MS 4000
 
@@ -43,5 +42,5 @@ public:
   void restart(const char *text = nullptr, const char *func = nullptr,
                uint32_t reboot_delay_ms = DEFAULT_WAIT_MS);
 };
-} // namespace mcr
+
 #endif // mcr_restart_hpp
