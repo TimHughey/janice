@@ -206,10 +206,7 @@ void Net::connected(void *event_data) {
 }
 
 void Net::disconnected(void *event_data) {
-  EventBits_t clear_bits = connectedBit();
-
-  xEventGroupClearBits(evg_, clear_bits);
-  // sntp_stop();
+  xEventGroupClearBits(evg_, connectedBit());
 
   if (reconnect_) {
     ::esp_wifi_connect();
@@ -273,13 +270,17 @@ void Net::wifi_events(void *ctx, esp_event_base_t base, int32_t id,
 void Net::deinit() {
   instance()->reconnect_ = false;
 
-  auto rc = ::esp_wifi_deinit();
+  auto rc = ::esp_wifi_disconnect();
+  ESP_LOGI(tagEngine(), "[%s] esp_wifi_disconnect()", esp_err_to_name(rc));
+  vTaskDelay(pdMS_TO_TICKS(500));
 
+  rc = ::esp_wifi_stop();
+  ESP_LOGI(tagEngine(), "[%s] esp_wifi_stop()", esp_err_to_name(rc));
+  vTaskDelay(pdMS_TO_TICKS(500));
+
+  rc = ::esp_wifi_deinit();
   ESP_LOGI(tagEngine(), "[%s] esp_wifi_deinit()", esp_err_to_name(rc));
-
-  vTaskDelay(pdMS_TO_TICKS(5000));
-  periph_module_disable(PERIPH_WIFI_MODULE);
-  periph_module_enable(PERIPH_WIFI_MODULE);
+  vTaskDelay(pdMS_TO_TICKS(1000));
 }
 
 EventGroupHandle_t Net::eventGroup() { return instance()->evg_; }

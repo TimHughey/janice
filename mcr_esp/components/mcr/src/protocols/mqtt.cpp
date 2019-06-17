@@ -40,6 +40,7 @@
 #include "readings/readings.hpp"
 
 using std::unique_ptr;
+namespace mcr {
 
 static mcrMQTT *__singleton = nullptr;
 
@@ -72,23 +73,23 @@ mcrMQTT::mcrMQTT() {
 }
 
 void mcrMQTT::announceStartup() {
-  uint32_t batt_mv = mcr::Net::instance()->batt_mv();
+  uint32_t batt_mv = Net::instance()->batt_mv();
   startupReading_t startup(batt_mv);
 
   publish(&startup);
-  mcr::Net::statusLED(false);
+  Net::statusLED(false);
 }
 
 void mcrMQTT::connect(int wait_ms) {
 
   // establish the client id
   if (_client_id.length() == 0) {
-    _client_id = "esp-" + mcr::Net::macAddress();
+    _client_id = "esp-" + Net::macAddress();
   }
 
   TickType_t last_wake = xTaskGetTickCount();
 
-  mcr::Net::waitForConnection();
+  Net::waitForConnection();
 
   if (wait_ms > 0) {
     vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(wait_ms));
@@ -261,10 +262,10 @@ void mcrMQTT::core(void *data) {
 
   // wait for network to be ready to ensure dns resolver is available
   ESP_LOGI(tagEngine(), "waiting for network...");
-  mcr::Net::waitForReady();
+  Net::waitForReady();
 
   // mongoose uses it's own dns resolver so set the namserver from dhcp
-  opts.nameserver = mcr::Net::instance()->dnsIP();
+  opts.nameserver = Net::instance()->dnsIP();
 
   mg_mgr_init_opt(&_mgr, NULL, opts);
 
@@ -277,7 +278,7 @@ void mcrMQTT::core(void *data) {
     // this solves a race condition when mqtt connection and subscription
     // to the commend feed completes before the time is set and avoids
     // mcp receiving the announced statup time as epoch
-    if ((startup_announced == false) && (mcr::Net::isTimeSet())) {
+    if ((startup_announced == false) && (Net::isTimeSet())) {
       announceStartup();
       startup_announced = true;
     }
@@ -299,7 +300,7 @@ void mcrMQTT::subACK(struct mg_mqtt_message *msg) {
   if (msg->message_id == _cmd_feed_msg_id) {
     ESP_LOGI(tagEngine(), "subscribed to CMD feed");
     _mqtt_ready = true;
-    mcr::Net::setTransportReady();
+    Net::setTransportReady();
     // NOTE: do not announce startup here.  doing so creates a race condition
     // that results in occasionally using epoch as the startup time
 
@@ -390,3 +391,4 @@ void mcrMQTT::_ev_handler(struct mg_connection *nc, int ev, void *p) {
     break;
   }
 }
+} // namespace mcr

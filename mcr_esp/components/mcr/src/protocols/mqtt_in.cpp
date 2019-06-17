@@ -87,7 +87,7 @@ void mcrMQTTin::core(void *data) {
         mcrCmd_t *cmd = factory.fromRaw(doc, msg->data);
         mcrCmd_t_ptr cmd_ptr(cmd);
 
-        if (cmd != nullptr) {
+        if ((cmd != nullptr) && cmd->recent()) {
           cmd->process();
         }
       } else {

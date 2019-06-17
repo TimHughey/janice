@@ -62,6 +62,7 @@ public:
   virtual ~mcrCmd(){};
 
   elapsedMicros &createElapsed() { return _create_elapsed; };
+  bool recent() { return ((time(nullptr) - _mtime) <= 60) ? true : false; }
   virtual elapsedMicros &latency() { return _latency; };
   elapsedMicros &parseElapsed() { return _parse_elapsed; };
   virtual bool process() { return false; };

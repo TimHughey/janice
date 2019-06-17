@@ -36,6 +36,8 @@
 #include "protocols/mqtt_in.hpp"
 #include "readings/readings.hpp"
 
+namespace mcr {
+
 typedef struct {
   size_t len = 0;
   std::string *data = nullptr;
@@ -148,5 +150,6 @@ private:
     task->core(task->_task.data);
   }
 };
+} // namespace mcr
 
 #endif // mcp_mqtt_h
