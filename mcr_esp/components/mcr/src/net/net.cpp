@@ -206,9 +206,15 @@ void Net::connected(void *event_data) {
 }
 
 void Net::disconnected(void *event_data) {
+  wifi_event_sta_disconnected_t *data =
+      (wifi_event_sta_disconnected_t *)event_data;
+
   xEventGroupClearBits(evg_, connectedBit());
 
+  ESP_LOGW(tagEngine(), "wifi DISCONNECT reason(%d)", data->reason);
+
   if (reconnect_) {
+    ESP_LOGI(tagEngine(), "wifi ATTEMPTING connect");
     ::esp_wifi_connect();
   }
 }
