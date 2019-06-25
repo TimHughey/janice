@@ -89,11 +89,11 @@ void mcrMQTT::connect(int wait_ms) {
 
   TickType_t last_wake = xTaskGetTickCount();
 
-  Net::waitForIP();
-
   if (wait_ms > 0) {
     vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(wait_ms));
   }
+
+  Net::waitForReady();
 
   _connection = mg_connect(&_mgr, _endpoint.c_str(), _ev_handler);
 
