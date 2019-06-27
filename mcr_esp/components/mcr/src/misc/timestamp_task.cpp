@@ -16,6 +16,7 @@
 #include <sys/time.h>
 #include <time.h>
 
+#include "misc/mcr_restart.hpp"
 #include "misc/timestamp_task.hpp"
 #include "net/mcr_net.hpp"
 #include "protocols/mqtt.hpp"
@@ -104,12 +105,19 @@ void TimestampTask::core(void *data) {
       last_timestamp = time(nullptr);
     }
 
-    ramUtilReading_t_ptr ram(new ramUtilReading());
-    ram->publish();
+    if (max_alloc < (75 * 1024)) {
+      mcrRestart::instance()->restart("heap fragmentation", __PRETTY_FUNCTION__,
+                                      3000);
+    }
 
-    // ramUtilReading_t replacement
-    remoteReading_ptr_t remote(new remoteReading(batt_mv));
-    remote->publish();
+    if (Net::waitForReady(0) == true) {
+      ramUtilReading_t_ptr ram(new ramUtilReading());
+      ram->publish();
+
+      // ramUtilReading_t replacement
+      remoteReading_ptr_t remote(new remoteReading(batt_mv));
+      remote->publish();
+    }
 
     vTaskDelayUntil(&_last_wake, _loop_frequency);
   }
