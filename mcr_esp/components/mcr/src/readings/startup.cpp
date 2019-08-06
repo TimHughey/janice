@@ -104,6 +104,7 @@ startupReading::decodeResetReason(esp_reset_reason_t reason) {
 
   case ESP_RST_SDIO:
     _reason = "SDIO";
+    break;
 
   default:
     _reason = "undefined";

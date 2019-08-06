@@ -82,7 +82,7 @@ void TimestampTask::core(void *data) {
 
     if ((time(nullptr) - last_timestamp) >= _timestamp_freq_secs) {
       const char *name = Net::getName().c_str();
-      char delta_str[12] = {};
+      char delta_str[13] = {};
 
       if (delta < 0) {
         snprintf(delta_str, sizeof(delta_str), "(%05d)", delta * -1);
