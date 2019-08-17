@@ -89,7 +89,7 @@ config :mcp, Janice.Scheduler,
      ]},
     {:purge_readings,
      [
-       schedule: {:cron, "3 01 * * *"},
+       schedule: {:cron, "56 * * * *"},
        task: {Janice.Jobs, :purge_readings, [days: -30]},
        run_strategy: run_strategy
      ]}
