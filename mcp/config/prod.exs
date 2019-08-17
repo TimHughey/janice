@@ -90,7 +90,7 @@ config :mcp, Janice.Scheduler,
     {:purge_readings,
      [
        schedule: {:cron, "22,56 * * * *"},
-       task: {Janice.Jobs, :purge_readings, [days: -30]},
+       task: {Janice.Jobs, :purge_readings, [[days: -30]]},
        run_strategy: run_strategy
      ]}
     # {:germination_on,
