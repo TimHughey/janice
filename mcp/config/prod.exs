@@ -86,6 +86,12 @@ config :mcp, Janice.Scheduler,
        schedule: {:cron, "* * * * *"},
        task: {Janice.Jobs, :touch_file, ["/tmp/janice-prod.touch"]},
        run_strategy: run_strategy
+     ]},
+    {:purge_readings,
+     [
+       schedule: {:cron, "3 01 * * *"},
+       task: {Janice.Jobs, :purge_readings, [days: -30]},
+       run_strategy: run_strategy
      ]}
     # {:germination_on,
     #  [

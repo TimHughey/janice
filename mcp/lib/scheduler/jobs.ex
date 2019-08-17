@@ -9,7 +9,10 @@ defmodule Janice.Jobs do
     if Thermostat.Server.profiles(thermo, active: true) === profile do
       true
     else
-      Logger.info(fn -> "thermostat #{inspect(thermo)} set to #{inspect(profile)}" end)
+      Logger.info(fn ->
+        "thermostat #{inspect(thermo)} set to #{inspect(profile)}"
+      end)
+
       Thermostat.Server.activate_profile(thermo, profile)
     end
   end
@@ -33,10 +36,15 @@ defmodule Janice.Jobs do
     if Thermostat.Server.profiles(thermo, active: true) === profile do
       true
     else
-      Logger.info(fn -> "thermostat #{inspect(thermo)} set to #{inspect(profile)}" end)
+      Logger.info(fn ->
+        "thermostat #{inspect(thermo)} set to #{inspect(profile)}"
+      end)
+
       Thermostat.Server.activate_profile(thermo, profile)
     end
   end
+
+  def purge_readings(opts) when is_list(opts), do: Sensor.purge_readings(opts)
 
   def switch_control(sw, pos) when is_binary(sw) and is_boolean(pos) do
     curr = Switch.state(sw)
@@ -62,7 +70,9 @@ defmodule Janice.Jobs do
   end
 
   def switch_control(a, b) do
-    Logger.warn(fn -> "switch_control invalid arguments: #{inspect(a)} #{inspect(b)}" end)
+    Logger.warn(fn ->
+      "switch_control invalid arguments: #{inspect(a)} #{inspect(b)}"
+    end)
   end
 
   def touch_file do

@@ -55,14 +55,26 @@ defmodule Sensor do
         relhum = %SensorRelHum{rh: rh}
         temp = %SensorTemperature{tc: tc, tf: tf}
 
-        %Sensor{device: device, name: device, type: type, temperature: [temp], relhum: [relhum]}
+        %Sensor{
+          device: device,
+          name: device,
+          type: type,
+          temperature: [temp],
+          relhum: [relhum]
+        }
         |> insert!()
 
       %{found: nil, cap: cap, tc: tc, tf: tf, type: type} ->
         soil = %SensorSoil{moisture: cap}
         temp = %SensorTemperature{tc: tc, tf: tf}
 
-        %Sensor{device: device, name: device, type: type, temperature: [temp], soil: [soil]}
+        %Sensor{
+          device: device,
+          name: device,
+          type: type,
+          temperature: [temp],
+          soil: [soil]
+        }
         |> insert!()
 
       %{found: nil, tc: tc, tf: tf, type: type} ->
@@ -73,7 +85,11 @@ defmodule Sensor do
 
       %{found: nil} ->
         type = Map.get(r, :type, nil)
-        Logger.warn(fn -> "#{device} unknown type #{type}, defaulting to unknown" end)
+
+        Logger.warn(fn ->
+          "#{device} unknown type #{type}, defaulting to unknown"
+        end)
+
         %Sensor{device: device, name: device, type: "unknown"} |> insert!()
     end
   end
@@ -117,7 +133,8 @@ defmodule Sensor do
 
   def celsius(nil), do: nil
 
-  def change_description(id, comment) when is_integer(id) and is_binary(comment) do
+  def change_description(id, comment)
+      when is_integer(id) and is_binary(comment) do
     s = get_by(id: id)
 
     if is_nil(s) do
@@ -164,15 +181,18 @@ defmodule Sensor do
   end
 
   def delete(id) when is_integer(id) do
-    from(s in Sensor, where: s.id == ^id) |> Repo.delete_all(timeout: @delete_timeout_ms)
+    from(s in Sensor, where: s.id == ^id)
+    |> Repo.delete_all(timeout: @delete_timeout_ms)
   end
 
   def delete(name) when is_binary(name) do
-    from(s in Sensor, where: s.name == ^name) |> Repo.delete_all(timeout: @delete_timeout_ms)
+    from(s in Sensor, where: s.name == ^name)
+    |> Repo.delete_all(timeout: @delete_timeout_ms)
   end
 
   def delete_all(:dangerous) do
-    from(s in Sensor, where: s.id >= 0) |> Repo.delete_all(timeout: @delete_timeout_ms)
+    from(s in Sensor, where: s.id >= 0)
+    |> Repo.delete_all(timeout: @delete_timeout_ms)
   end
 
   def deprecate(id) when is_integer(id) do
@@ -198,7 +218,9 @@ defmodule Sensor do
     IO.puts("\tSensor.deprecate(id)")
   end
 
-  def external_update(%{device: device, host: host, mtime: mtime, type: type} = r) do
+  def external_update(
+        %{device: device, host: host, mtime: mtime, type: type} = r
+      ) do
     hostname = Remote.mark_as_seen(host, mtime)
     r = normalize_readings(r) |> Map.put(:hostname, hostname)
 
@@ -226,7 +248,9 @@ defmodule Sensor do
 
   def get_by(opts) when is_list(opts) do
     filter = Keyword.take(opts, [:id, :device, :name, :type])
-    select = Keyword.take(opts, [:only]) |> Keyword.get_values(:only) |> List.flatten()
+
+    select =
+      Keyword.take(opts, [:only]) |> Keyword.get_values(:only) |> List.flatten()
 
     if Enum.empty?(filter) do
       Logger.warn(fn -> "get_by bad args: #{inspect(opts)}" end)
@@ -237,6 +261,16 @@ defmodule Sensor do
       if is_nil(s) or Enum.empty?(select), do: s, else: Map.take(s, select)
     end
   end
+
+  def purge_readings([days: days] = opts) when days < 0 do
+    temp = SensorTemperature.purge_readings(opts)
+    soil = SensorSoil.purge_readings(opts)
+    relhum = SensorRelHum.purge_readings(opts)
+
+    [temp, soil, relhum]
+  end
+
+  def purge_readings(_), do: :bad_opts
 
   def relhum(name) when is_binary(name), do: relhum(name: name)
 
@@ -289,7 +323,9 @@ defmodule Sensor do
     end
   end
 
-  def soil_moisture(%Sensor{soil: %SensorSoil{moisture: moisture}}), do: moisture
+  def soil_moisture(%Sensor{soil: %SensorSoil{moisture: moisture}}),
+    do: moisture
+
   def soil_moisture(_anything), do: nil
 
   def temperature(opts) when is_list(opts) do
@@ -326,7 +362,11 @@ defmodule Sensor do
     has_tc = Map.has_key?(r, :tc)
     has_tf = Map.has_key?(r, :tf)
 
-    r = if Map.has_key?(r, :rh), do: Map.put(r, :rh, Float.round(r.rh * 1.0, 3)), else: r
+    r =
+      if Map.has_key?(r, :rh),
+        do: Map.put(r, :rh, Float.round(r.rh * 1.0, 3)),
+        else: r
+
     r = if has_tc, do: Map.put(r, :tc, Float.round(r.tc * 1.0, 3)), else: r
     r = if has_tf, do: Map.put(r, :tf, Float.round(r.tf * 1.0, 3)), else: r
 
@@ -339,10 +379,13 @@ defmodule Sensor do
   end
 
   defp record_metrics(
-         {%Sensor{type: "temp", name: name} = s, %{hostname: hostname, tc: 85.0} = r}
+         {%Sensor{type: "temp", name: name} = s,
+          %{hostname: hostname, tc: 85.0} = r}
        ) do
     Logger.warn(fn ->
-      "dropping invalid temperature for #{inspect(name)} from #{inspect(hostname)}"
+      "dropping invalid temperature for #{inspect(name)} from #{
+        inspect(hostname)
+      }"
     end)
 
     {s, r}
@@ -469,7 +512,11 @@ defmodule Sensor do
        last_seen_at: TimeSupport.from_unix(r.mtime),
        reading_at: TimeSupport.utc_now(),
        dev_latency:
-         Map.get(r, :read_us, Timex.diff(r.msg_recv_dt, TimeSupport.from_unix(r.mtime)))
+         Map.get(
+           r,
+           :read_us,
+           Timex.diff(r.msg_recv_dt, TimeSupport.from_unix(r.mtime))
+         )
      })
      |> update!(), r}
   end
@@ -483,7 +530,11 @@ defmodule Sensor do
        last_seen_at: TimeSupport.from_unix(r.mtime),
        reading_at: TimeSupport.utc_now(),
        dev_latency:
-         Map.get(r, :read_us, Timex.diff(r.msg_recv_dt, TimeSupport.from_unix(r.mtime)))
+         Map.get(
+           r,
+           :read_us,
+           Timex.diff(r.msg_recv_dt, TimeSupport.from_unix(r.mtime))
+         )
      })
      |> update!(), r}
   end
@@ -496,7 +547,11 @@ defmodule Sensor do
        last_seen_at: TimeSupport.from_unix(r.mtime),
        reading_at: TimeSupport.utc_now(),
        dev_latency:
-         Map.get(r, :read_us, Timex.diff(r.msg_recv_dt, TimeSupport.from_unix(r.mtime)))
+         Map.get(
+           r,
+           :read_us,
+           Timex.diff(r.msg_recv_dt, TimeSupport.from_unix(r.mtime))
+         )
      })
      |> update!(), r}
   end
