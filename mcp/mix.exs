@@ -25,7 +25,7 @@ defmodule Mcp.Mixfile do
   def project do
     [
       app: :mcp,
-      version: "0.1.11",
+      version: "0.1.12",
       elixir: "~> 1.7",
       deps: deps(),
       start_permanent: Mix.env() == :prod,
@@ -76,7 +76,7 @@ defmodule Mcp.Mixfile do
       {:hackney, "~> 1.1"},
       {:poolboy, "~> 1.5"},
       {:httpoison, "~> 1.0"},
-      {:postgrex, "~> 0.13"},
+      {:postgrex, ">= 0.0.0"},
       {:ecto_sql, "~> 3.0"},
       {:emqttc, github: "emqtt/emqttc"},
       # {:emqttc, github: "rabbitmq/emqttc", tag: "remove-logging"},
@@ -84,7 +84,7 @@ defmodule Mcp.Mixfile do
       {:gettext, "~> 0.11"},
       {:distillery, "~> 2.0"},
       {:quantum, "~> 2.2"},
-      {:scribe, "~> 0.8.2"},
+      {:scribe, "~> 0.10"},
       {:msgpax, "~> 2.0"},
       {:credo, "> 0.0.0", only: [:dev, :test], runtime: false},
       {:coverex, "~> 1.0", only: :test}
