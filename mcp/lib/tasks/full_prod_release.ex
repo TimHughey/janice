@@ -13,7 +13,7 @@ defmodule Mix.Tasks.Mcp.Prod.Full.Release do
     confirm_prod_env()
 
     Mix.shell().info(build_msg())
-    Mix.Task.run("release", ["--profile=mcp:prod", "--quiet"])
+    Mix.Task.run("release", ["--quiet"])
 
     stage_release()
   end

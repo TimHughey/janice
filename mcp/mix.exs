@@ -26,7 +26,7 @@ defmodule Mcp.Mixfile do
     [
       app: :mcp,
       version: "0.1.13",
-      elixir: "~> 1.7",
+      elixir: "~> 1.9",
       deps: deps(),
       start_permanent: Mix.env() == :prod,
       elixirc_paths: elixirc_paths(Mix.env()),
@@ -37,7 +37,8 @@ defmodule Mcp.Mixfile do
       escript: escript_config(),
       test_coverage: test_coverage(),
       deploy_paths: deploy_paths(),
-      stage_paths: stage_paths()
+      stage_paths: stage_paths(),
+      releases: releases()
     ]
   end
 
@@ -82,7 +83,7 @@ defmodule Mcp.Mixfile do
       # {:emqttc, github: "rabbitmq/emqttc", tag: "remove-logging"},
       {:uuid, "~> 1.1"},
       {:gettext, "~> 0.11"},
-      {:distillery, "~> 2.0"},
+      # {:distillery, "~> 2.0"},
       {:quantum, "~> 2.2"},
       {:scribe, "~> 0.10"},
       {:msgpax, "~> 2.0"},
@@ -183,4 +184,16 @@ defmodule Mcp.Mixfile do
       ]
     ]
   end
+
+  defp releases do
+  [
+    prod: [
+        include_executables_for: [:unix],
+        applications: [runtime_tools: :permanent],
+        cookie: :"augury-kinship-swain-circus",
+
+      ]
+  ]
+  end
+
 end
