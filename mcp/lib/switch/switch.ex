@@ -38,7 +38,7 @@ defmodule Switch do
       update_all: 2
     ]
 
-  alias Fact.RunMetric
+  # alias Fact.RunMetric
 
   alias Janice.TimeSupport
 
@@ -141,7 +141,8 @@ defmodule Switch do
   end
 
   def delete_all(:dangerous) do
-    from(sw in Switch, where: sw.id >= 0) |> Repo.delete_all(timeout: @delete_timeout_ms)
+    from(sw in Switch, where: sw.id >= 0)
+    |> Repo.delete_all(timeout: @delete_timeout_ms)
   end
 
   def deprecate(id), do: SwitchState.deprecate(id)
@@ -154,7 +155,11 @@ defmodule Switch do
         sw = get_by_device(device)
 
         if sw == nil do
-          %Switch{device: device, states: create_states(r), cmds: create_cmds(r)}
+          %Switch{
+            device: device,
+            states: create_states(r),
+            cmds: create_cmds(r)
+          }
           |> insert()
         else
           %{r: r, sw: sw}
@@ -164,12 +169,12 @@ defmodule Switch do
 
     case result do
       {t, {:ok, sw}} ->
-        RunMetric.record(
-          module: "#{__MODULE__}",
-          metric: "external_update",
-          device: sw.device,
-          val: t
-        )
+        # RunMetric.record(
+        #   module: "#{__MODULE__}",
+        #   metric: "external_update",
+        #   device: sw.device,
+        #   val: t
+        # )
 
         :ok
 
@@ -241,7 +246,9 @@ defmodule Switch do
 
   def get_by(opts) when is_list(opts) do
     filter = Keyword.take(opts, [:name, :device])
-    select = Keyword.take(opts, [:only]) |> Keyword.get_values(:only) |> List.flatten()
+
+    select =
+      Keyword.take(opts, [:only]) |> Keyword.get_values(:only) |> List.flatten()
 
     if Enum.empty?(filter) do
       Logger.warn(fn -> "get_by bad args: #{inspect(opts)}" end)

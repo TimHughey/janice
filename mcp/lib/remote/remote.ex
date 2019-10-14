@@ -12,7 +12,7 @@ defmodule Remote do
   import Ecto.Query, only: [from: 2]
   import Repo, only: [insert!: 1, one: 1, update: 1]
 
-  alias Fact.RunMetric
+  # alias Fact.RunMetric
   alias Fact.StartupAnnouncement
 
   import Janice.Common.DB, only: [name_regex: 0]
@@ -228,13 +228,13 @@ defmodule Remote do
 
     case result do
       {t, {:ok, rem}} ->
-        RunMetric.record(
-          module: "#{__MODULE__}",
-          metric: "external_update",
-          # use the local name
-          device: rem.name,
-          val: t
-        )
+        # RunMetric.record(
+        #   module: "#{__MODULE__}",
+        #   metric: "external_update",
+        #   # use the local name
+        #   device: rem.name,
+        #   val: t
+        # )
 
         :ok
 

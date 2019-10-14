@@ -5,7 +5,7 @@ defmodule Mqtt.Client do
   use GenServer
 
   import Application, only: [get_env: 2, get_env: 3]
-  alias Fact.RunMetric
+  # alias Fact.RunMetric
   alias Mqtt.Timesync
 
   #  def child_spec(opts) do
@@ -134,12 +134,12 @@ defmodule Mqtt.Client do
         publish(opts)
       end)
 
-    RunMetric.record(
-      module: "#{__MODULE__}",
-      metric: "publish_switch_cmd_us",
-      device: "none",
-      val: elapsed_us
-    )
+    # RunMetric.record(
+    #   module: "#{__MODULE__}",
+    #   metric: "publish_switch_cmd_us",
+    #   device: "none",
+    #   val: elapsed_us
+    # )
   end
 
   def handle_call(
@@ -153,12 +153,12 @@ defmodule Mqtt.Client do
         :emqttc.publish(s.mqtt_pid, feed, payload, pub_opts)
       end)
 
-    RunMetric.record(
-      module: "#{__MODULE__}",
-      metric: "mqtt_pub_msg_us",
-      device: "none",
-      val: elapsed_us
-    )
+    # RunMetric.record(
+    #   module: "#{__MODULE__}",
+    #   metric: "mqtt_pub_msg_us",
+    #   device: "none",
+    #   val: elapsed_us
+    # )
 
     {:reply, res, s}
   end
@@ -234,12 +234,12 @@ defmodule Mqtt.Client do
         Mqtt.InboundMessage.process(message)
       end)
 
-    RunMetric.record(
-      module: "#{__MODULE__}",
-      metric: "mqtt_recv_msg_us",
-      device: "none",
-      val: elapsed_us
-    )
+    # RunMetric.record(
+    #   module: "#{__MODULE__}",
+    #   metric: "mqtt_recv_msg_us",
+    #   device: "none",
+    #   val: elapsed_us
+    # )
 
     {:noreply, s}
   end

@@ -47,6 +47,9 @@ config :mcp, Mqtt.Client,
   timesync: [frequency: {:secs, 5}, loops: 5, forever: false, log: false]
 
 config :mcp, Mqtt.InboundMessage,
+  log: [
+    engine_metrics: false
+  ],
   periodic_log: [enable: false, first: {:secs, 10}, repeat: {:mins, 5}]
 
 config :mcp, Fact.Influx,
@@ -65,7 +68,7 @@ config :mcp, Repo,
   username: "jan_test",
   password: "jan_test",
   database: "jan_test",
-  hostname: "standby.db.wisslanding.com",
+  hostname: "live.db.wisslanding.com",
   pool_size: 10
 
 config :mcp, Janice.Scheduler,

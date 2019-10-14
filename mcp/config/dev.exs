@@ -48,6 +48,9 @@ config :mcp, Mqtt.Client,
   timesync: [frequency: {:mins, 1}, loops: 5, forever: true, log: false]
 
 config :mcp, Mqtt.InboundMessage,
+  log: [
+    engine_metrics: false
+  ],
   periodic_log: [
     enable: false,
     first: {:mins, 5},
@@ -70,7 +73,7 @@ config :mcp, Repo,
   username: "jan_dev",
   password: "jan_dev",
   # hostname: "127.0.0.1",
-  hostname: "gabriel.wisslanding.com",
+  hostname: "live.db.wisslanding.com",
   pool_size: 10
 
 # run_strategy = {Quantum.RunStrategy.All, [:"mcp-dev@jophiel.wisslanding.com"]}

@@ -24,7 +24,7 @@ defmodule SwitchCmd do
   import Janice.TimeSupport, only: [before_time: 2, ms: 1, utc_now: 0]
   import Mqtt.Client, only: [publish_switch_cmd: 1]
 
-  alias Fact.RunMetric
+  # alias Fact.RunMetric
   alias Mqtt.SetSwitch
 
   schema "switch_cmd" do
@@ -92,12 +92,12 @@ defmodule SwitchCmd do
           ack_at: utc_now()
         }
 
-        RunMetric.record(
-          module: "#{__MODULE__}",
-          metric: "rt_latency",
-          device: cmd.name,
-          val: opts.rt_latency
-        )
+        # RunMetric.record(
+        #   module: "#{__MODULE__}",
+        #   metric: "rt_latency",
+        #   device: cmd.name,
+        #   val: opts.rt_latency
+        # )
 
         change(cmd, opts) |> update
     end
@@ -292,12 +292,12 @@ defmodule SwitchCmd do
         refid
       end)
 
-    RunMetric.record(
-      module: "#{__MODULE__}",
-      metric: "record_cmd_us",
-      device: name,
-      val: elapsed_us
-    )
+    # RunMetric.record(
+    #   module: "#{__MODULE__}",
+    #   metric: "record_cmd_us",
+    #   device: name,
+    #   val: elapsed_us
+    # )
 
     {:ok, refid}
   end
