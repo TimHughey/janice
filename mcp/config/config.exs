@@ -2,9 +2,6 @@
 # and its dependencies with the aid of the Mix.Config module.
 use Mix.Config
 
-# external app configuration
-config :distillery, no_warn_missing: [:distillery]
-
 # Configures Elixir's Logger
 config :logger,
   console: [metadata: [:module], format: "$time $metadata$message\n"],

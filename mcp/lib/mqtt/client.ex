@@ -29,16 +29,16 @@ defmodule Mqtt.Client do
     Logger.info(fn -> "init()" end)
 
     if Map.get(s, :autostart, false) do
-      # prepare the opts that will be passed to emqttc (erlang) including logger config and
+      # prepare the opts that will be passed to emqtt (erlang) including logger config and
       # start it up
       opts = config(:broker)
       # opts = Keyword.merge([logger: :error], opts)
-      {:ok, mqtt_pid} = :emqttc.start_link(:emqttc, opts)
+      {:ok, mqtt_pid} = :emqtt.start_link(opts)
 
       # populate the state and construct init() return
       s = Map.put_new(s, :mqtt_pid, mqtt_pid)
 
-      Logger.info(fn -> "emqttc #{inspect(mqtt_pid)}" end)
+      Logger.info(fn -> "emqtt #{inspect(mqtt_pid)}" end)
 
       {:ok, s}
     else
@@ -150,7 +150,7 @@ defmodule Mqtt.Client do
       when is_binary(feed) and is_binary(payload) and is_list(pub_opts) do
     {elapsed_us, res} =
       :timer.tc(fn ->
-        :emqttc.publish(s.mqtt_pid, feed, payload, pub_opts)
+        :emqtt.publish(s.mqtt_pid, feed, payload, pub_opts)
       end)
 
     # RunMetric.record(
@@ -177,7 +177,7 @@ defmodule Mqtt.Client do
       when is_tuple(feed) do
     Logger.info(fn -> "subscribing to #{inspect(feed)}" end)
 
-    res = :emqttc.subscribe(s.mqtt_pid, feed)
+    res = :emqtt.subscribe(s.mqtt_pid, feed)
     {:reply, res, s}
   end
 
@@ -191,7 +191,7 @@ defmodule Mqtt.Client do
       payload = Timesync.new_cmd() |> Timesync.json()
       pub_opts = [qos]
 
-      res = :emqttc.publish(s.mqtt_pid, feed, payload, pub_opts)
+      res = :emqtt.publish(s.mqtt_pid, feed, payload, pub_opts)
       {:reply, {res}, s}
     end
   end
@@ -212,7 +212,7 @@ defmodule Mqtt.Client do
 
     # subscribe to the report feed
     feed = get_env(:mcp, :feeds, []) |> Keyword.get(:rpt, nil)
-    res = :emqttc.subscribe(s.mqtt_pid, feed)
+    res = :emqtt.subscribe(s.mqtt_pid, feed)
 
     s = Map.put(s, :rpt_feed_subscribed, res)
 

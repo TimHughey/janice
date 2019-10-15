@@ -25,9 +25,10 @@ defmodule Mcp.Mixfile do
   def project do
     [
       app: :mcp,
-      version: "0.1.13",
+      version: "0.1.14",
       elixir: "~> 1.9",
       deps: deps(),
+      releases: releases(),
       start_permanent: Mix.env() == :prod,
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: [:gettext] ++ Mix.compilers(),
@@ -37,8 +38,7 @@ defmodule Mcp.Mixfile do
       escript: escript_config(),
       test_coverage: test_coverage(),
       deploy_paths: deploy_paths(),
-      stage_paths: stage_paths(),
-      releases: releases()
+      stage_paths: stage_paths()
     ]
   end
 
@@ -78,8 +78,10 @@ defmodule Mcp.Mixfile do
       {:poolboy, "~> 1.5"},
       {:httpoison, "~> 1.0"},
       {:postgrex, ">= 0.0.0"},
-      {:ecto_sql, "~> 3.0"},
-      {:emqttc, github: "emqtt/emqttc"},
+      {:ecto_sql, "~> 3.1"},
+      # {:tortoise, "~> 0.9"},
+      {:emqtt, github: "emqx/emqtt"},
+      # {:emqtt, github: "emqtt/emqttc"},
       # {:emqttc, github: "rabbitmq/emqttc", tag: "remove-logging"},
       {:uuid, "~> 1.1"},
       {:gettext, "~> 0.11"},
@@ -186,14 +188,12 @@ defmodule Mcp.Mixfile do
   end
 
   defp releases do
-  [
-    prod: [
+    [
+      prod: [
         include_executables_for: [:unix],
         applications: [runtime_tools: :permanent],
-        cookie: :"augury-kinship-swain-circus",
-
+        cookie: "augury-kinship-swain-circus"
       ]
-  ]
+    ]
   end
-
 end
