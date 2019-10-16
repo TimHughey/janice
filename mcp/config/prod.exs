@@ -9,9 +9,9 @@ config :logger,
 
 config :mcp,
   feeds: [
-    cmd: {"prod/mcr/f/command", :qos1},
-    rpt: {"prod/mcr/f/report", :qos0},
-    ota: {"prod/mcr/f/ota", :qos0}
+    cmd: {"prod/mcr/f/command", 1},
+    rpt: {"prod/mcr/f/report", 0},
+    ota: {"prod/mcr/f/ota", 0}
   ]
 
 config :mcp, Janitor,
@@ -30,17 +30,13 @@ config :mcp, MessageSave,
 
 config :mcp, Mqtt.Client,
   log_dropped_msgs: true,
-  broker: [
-    # must be a char string (not binary) for emqttc
-    host: '** set in prod.secret.exs **',
-    port: 1883,
+  tort_opts: [
     client_id: "janice-prod",
-    clean_sess: false,
-    username: "** set in prod.secret.exs",
+    user_name: "** set in prod.secret.exs",
     password: "** set in prod.secret.exs",
-    auto_resub: true,
-    logger: :warning,
-    reconnect: {3, 60, 30}
+    server:
+      {Tortoise.Transport.Tcp, host: "** set in prod.secret.exs", port: 1883},
+    keep_alive: 15
   ],
   # timesync also keeps the MQTT client connection alive
   # the MQTT spec requires both sending and receiving to prevent disconnects

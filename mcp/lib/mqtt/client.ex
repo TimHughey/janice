@@ -4,8 +4,10 @@ defmodule Mqtt.Client do
   require Logger
   use GenServer
 
+  alias Tortoise.Connection
+
   import Application, only: [get_env: 2, get_env: 3]
-  # alias Fact.RunMetric
+  alias Fact.RunMetric
   alias Mqtt.Timesync
 
   #  def child_spec(opts) do
@@ -25,32 +27,48 @@ defmodule Mqtt.Client do
 
   ## Callbacks
 
+  def connected do
+    GenServer.cast(__MODULE__, {:connected})
+  end
+
+  def disconnected do
+    GenServer.cast(__MODULE__, {:disconnected})
+  end
+
+  def inbound_msg(topic, payload) do
+    GenServer.cast(__MODULE__, {:inbound_msg, topic, payload})
+  end
+
   def init(s) when is_map(s) do
     Logger.info(fn -> "init()" end)
 
     if Map.get(s, :autostart, false) do
-      # prepare the opts that will be passed to emqtt (erlang) including logger config and
-      # start it up
-      opts = config(:broker)
-      # opts = Keyword.merge([logger: :error], opts)
-      {:ok, mqtt_pid} = :emqtt.start_link(opts)
+      # prepare the opts that will be passed to Tortoise and start it
+
+      opts = config(:tort_opts) ++ [handler: {Mqtt.Handler, []}]
+      {:ok, mqtt_pid} = Connection.start_link(opts)
 
       # populate the state and construct init() return
-      s = Map.put_new(s, :mqtt_pid, mqtt_pid)
+      new_state = %{
+        mqtt_pid: mqtt_pid,
+        client_id: Keyword.get(opts, :client_id)
+      }
 
-      Logger.info(fn -> "emqtt #{inspect(mqtt_pid)}" end)
+      s = Map.merge(s, new_state)
+
+      Logger.info(fn -> "tortoise pid(#{inspect(mqtt_pid)})" end)
 
       {:ok, s}
     else
       # when we don't autostart the mqtt pid will be nil
-      s = Map.put_new(s, :mqtt_pid, nil)
+      s = Map.put_new(s, :mqtt_pid, nil) |> Map.put_new(:client_id, nil)
 
       {:ok, s}
     end
 
     # init() return is calculated above in if block
     # at the conclusion of init() we have a running InboundMessage GenServer and
-    # potentially a running emqttc (actual connection to MQTT)
+    # potentially a connection to MQTT
   end
 
   def report_subscribe do
@@ -134,12 +152,12 @@ defmodule Mqtt.Client do
         publish(opts)
       end)
 
-    # RunMetric.record(
-    #   module: "#{__MODULE__}",
-    #   metric: "publish_switch_cmd_us",
-    #   device: "none",
-    #   val: elapsed_us
-    # )
+    RunMetric.record(
+      module: "#{__MODULE__}",
+      metric: "publish_switch_cmd_us",
+      device: "none",
+      val: elapsed_us
+    )
   end
 
   def handle_call(
@@ -150,15 +168,15 @@ defmodule Mqtt.Client do
       when is_binary(feed) and is_binary(payload) and is_list(pub_opts) do
     {elapsed_us, res} =
       :timer.tc(fn ->
-        :emqtt.publish(s.mqtt_pid, feed, payload, pub_opts)
+        Tortoise.publish(s.client_id, feed, payload, pub_opts)
       end)
 
-    # RunMetric.record(
-    #   module: "#{__MODULE__}",
-    #   metric: "mqtt_pub_msg_us",
-    #   device: "none",
-    #   val: elapsed_us
-    # )
+    RunMetric.record(
+      module: "#{__MODULE__}",
+      metric: "mqtt_pub_msg_us",
+      device: "none",
+      val: elapsed_us
+    )
 
     {:reply, res, s}
   end
@@ -175,10 +193,11 @@ defmodule Mqtt.Client do
 
   def handle_call({:subscribe, feed}, _from, s)
       when is_tuple(feed) do
-    Logger.info(fn -> "subscribing to #{inspect(feed)}" end)
+    {:ok, ref} = Connection.subscribe(s.client_id, feed)
 
-    res = :emqtt.subscribe(s.mqtt_pid, feed)
-    {:reply, res, s}
+    Logger.info(fn -> "subscribing to #{inspect(feed)} ref: #{inspect(ref)}" end)
+
+    {:reply, ref, s}
   end
 
   def handle_call({:timesync_msg}, _from, s) do
@@ -191,7 +210,7 @@ defmodule Mqtt.Client do
       payload = Timesync.new_cmd() |> Timesync.json()
       pub_opts = [qos]
 
-      res = :emqtt.publish(s.mqtt_pid, feed, payload, pub_opts)
+      res = Tortoise.publish(s.client_id, feed, payload, pub_opts)
       {:reply, {res}, s}
     end
   end
@@ -201,18 +220,13 @@ defmodule Mqtt.Client do
     {:reply, :ok, s}
   end
 
-  def handle_cast(unhandled_msg, _from, s) do
-    log_unhandled("cast", unhandled_msg)
-    {:noreply, s}
-  end
-
-  def handle_info({:mqttc, _pid, :connected}, s) do
+  def handle_cast({:connected}, s) do
     s = Map.put(s, :connected, true)
     Logger.info(fn -> "mqtt endpoint connected" end)
 
     # subscribe to the report feed
     feed = get_env(:mcp, :feeds, []) |> Keyword.get(:rpt, nil)
-    res = :emqtt.subscribe(s.mqtt_pid, feed)
+    res = Connection.subscribe(s.client_id, [feed])
 
     s = Map.put(s, :rpt_feed_subscribed, res)
 
@@ -221,25 +235,36 @@ defmodule Mqtt.Client do
     {:noreply, s}
   end
 
-  def handle_info({:mqttc, _pid, :disconnected}, s) do
+  def handle_cast({:disconnected}, s) do
     Logger.warn(fn -> "mqtt endpoint disconnected" end)
     s = Map.put(s, :connected, false)
     {:noreply, s}
   end
 
-  def handle_info({:publish, _topic, message}, s) do
+  def handle_cast({:inbound_msg, _topic, message}, s) do
     {elapsed_us, _res} =
       :timer.tc(fn ->
         MessageSave.save(:in, message)
         Mqtt.InboundMessage.process(message)
       end)
 
-    # RunMetric.record(
-    #   module: "#{__MODULE__}",
-    #   metric: "mqtt_recv_msg_us",
-    #   device: "none",
-    #   val: elapsed_us
-    # )
+    RunMetric.record(
+      module: "#{__MODULE__}",
+      metric: "mqtt_recv_msg_us",
+      device: "none",
+      val: elapsed_us
+    )
+
+    {:noreply, s}
+  end
+
+  def handle_cast(unhandled_msg, s) do
+    log_unhandled("cast", unhandled_msg)
+    {:noreply, s}
+  end
+
+  def handle_info({{Tortoise, _client_id}, ref, res}, s) do
+    Logger.warn("subscription ref: #{inspect(ref)} #{inspect(res)}")
 
     {:noreply, s}
   end

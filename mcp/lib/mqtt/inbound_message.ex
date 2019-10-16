@@ -9,7 +9,7 @@ defmodule Mqtt.InboundMessage do
 
   alias Fact.EngineMetric
   alias Fact.FreeRamStat
-  # alias Fact.RunMetric
+  alias Fact.RunMetric
 
   alias Mqtt.Reading
 
@@ -254,19 +254,19 @@ defmodule Mqtt.InboundMessage do
 
     s = %{s | messages_dispatched: s.messages_dispatched + 1}
 
-    # RunMetric.record(
-    #   module: "#{__MODULE__}",
-    #   application: "janice",
-    #   metric: "msgs_dispatched",
-    #   val: s.messages_dispatched
-    # )
-    #
-    # RunMetric.record(
-    #   module: "#{__MODULE__}",
-    #   metric: "mqtt_process_inbound_msg_us",
-    #   device: "none",
-    #   val: elapsed_us
-    # )
+    RunMetric.record(
+      module: "#{__MODULE__}",
+      application: "janice",
+      metric: "msgs_dispatched",
+      val: s.messages_dispatched
+    )
+
+    RunMetric.record(
+      module: "#{__MODULE__}",
+      metric: "mqtt_process_inbound_msg_us",
+      device: "none",
+      val: elapsed_us
+    )
 
     if log_task, do: Task.await(log_task)
 

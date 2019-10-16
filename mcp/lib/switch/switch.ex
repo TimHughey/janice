@@ -38,7 +38,7 @@ defmodule Switch do
       update_all: 2
     ]
 
-  # alias Fact.RunMetric
+  alias Fact.RunMetric
 
   alias Janice.TimeSupport
 
@@ -169,12 +169,12 @@ defmodule Switch do
 
     case result do
       {t, {:ok, sw}} ->
-        # RunMetric.record(
-        #   module: "#{__MODULE__}",
-        #   metric: "external_update",
-        #   device: sw.device,
-        #   val: t
-        # )
+        RunMetric.record(
+          module: "#{__MODULE__}",
+          metric: "external_update",
+          device: sw.device,
+          val: t
+        )
 
         :ok
 

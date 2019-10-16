@@ -13,8 +13,8 @@ config :logger, level: :info
 
 config :mcp,
   feeds: [
-    cmd: {"test/mcr/f/command", :qos0},
-    rpt: {"test/mcr/f/report", :qos0}
+    cmd: {"test/mcr/f/command", 0},
+    rpt: {"test/mcr/f/report", 0}
   ]
 
 config(:mcp, Janitor,
@@ -33,16 +33,13 @@ config :mcp, MessageSave,
 
 config :mcp, Mqtt.Client,
   log_dropped_msg: true,
-  broker: [
-    host: 'jophiel.wisslanding.com',
-    port: 1883,
+  tort_opts: [
     client_id: "janice-test",
-    clean_sess: true,
-    username: "mqtt",
+    user_name: "mqtt",
     password: "mqtt",
-    auto_resub: true,
-    logger: :warning,
-    reconnect: {3, 60, 30}
+    server:
+      {Tortoise.Transport.Tcp, host: "jophiel.wisslanding.com", port: 1883},
+    keep_alive: 15
   ],
   timesync: [frequency: {:secs, 5}, loops: 5, forever: false, log: false]
 

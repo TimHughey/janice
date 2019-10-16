@@ -79,8 +79,8 @@ defmodule Mcp.Mixfile do
       {:httpoison, "~> 1.0"},
       {:postgrex, ">= 0.0.0"},
       {:ecto_sql, "~> 3.1"},
-      # {:tortoise, "~> 0.9"},
-      {:emqtt, github: "emqx/emqtt"},
+      {:tortoise, "~> 0.9"},
+      # {:emqtt, github: "emqx/emqtt"},
       # {:emqtt, github: "emqtt/emqttc"},
       # {:emqttc, github: "rabbitmq/emqttc", tag: "remove-logging"},
       {:uuid, "~> 1.1"},
@@ -189,7 +189,8 @@ defmodule Mcp.Mixfile do
 
   defp releases do
     [
-      prod: [
+      mcp_prod: [
+        include_erts: true,
         include_executables_for: [:unix],
         applications: [runtime_tools: :permanent],
         cookie: "augury-kinship-swain-circus"
