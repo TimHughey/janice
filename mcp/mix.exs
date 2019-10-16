@@ -25,7 +25,7 @@ defmodule Mcp.Mixfile do
   def project do
     [
       app: :mcp,
-      version: "0.1.14",
+      version: "0.1.15",
       elixir: "~> 1.9",
       deps: deps(),
       releases: releases(),
@@ -85,7 +85,6 @@ defmodule Mcp.Mixfile do
       # {:emqttc, github: "rabbitmq/emqttc", tag: "remove-logging"},
       {:uuid, "~> 1.1"},
       {:gettext, "~> 0.11"},
-      # {:distillery, "~> 2.0"},
       {:quantum, "~> 2.2"},
       {:scribe, "~> 0.10"},
       {:msgpax, "~> 2.0"},
@@ -114,11 +113,6 @@ defmodule Mcp.Mixfile do
         "local.hex --if-missing --force",
         "deps.get",
         "deps.clean --unused"
-      ],
-      "mcp.upgrade.release": [
-        "release.gen.appup --app=mcp --env=#{Mix.env()}",
-        "release --env=#{Mix.env()} --upgrade --quiet",
-        "mcp.deploy.upgrade"
       ]
       # test: ["ecto.create --quiet", "ecto.load", "ecto.migrate", "test"]
     ]
@@ -189,7 +183,7 @@ defmodule Mcp.Mixfile do
 
   defp releases do
     [
-      mcp_prod: [
+      mcp: [
         include_erts: true,
         include_executables_for: [:unix],
         applications: [runtime_tools: :permanent],

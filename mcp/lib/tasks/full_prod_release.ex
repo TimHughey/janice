@@ -1,4 +1,4 @@
-defmodule Mix.Tasks.Mcp.Prod.Full.Release do
+defmodule Mix.Tasks.Mcp.Deploy.Prod do
   @moduledoc """
   Build a fullproduction release and stage for deployment
   """
