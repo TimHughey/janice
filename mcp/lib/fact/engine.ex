@@ -70,10 +70,12 @@ defmodule Fact.EngineMetric do
     %{}
   end
 
-  def record(%{} = r) do
+  def record(%{record: true} = r) do
     db = Application.get_env(:mcp, Fact.Influx) |> Keyword.get(:database)
     make_point(r) |> write(database: db, async: true, precision: :second)
   end
+
+  def record(%{record: false}), do: {:not_recorded}
 
   defp field?({k, _v}), do: k in @metric_fields
 

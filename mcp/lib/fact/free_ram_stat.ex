@@ -32,9 +32,13 @@ defmodule Fact.FreeRamStat do
      ...> |> Fact.FreeRamStat.record()
      :ok
   """
-  def record(%{host: host, name: name, mtime: mtime, freeram: freeram},
-        record: true
-      ) do
+  def record(%{
+        host: host,
+        name: name,
+        mtime: mtime,
+        freeram: freeram,
+        record: false
+      }) do
     tags = %{
       remote_host: host,
       remote_name: name,
