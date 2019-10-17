@@ -3,7 +3,7 @@
 --
 
 -- Dumped from database version 11.4
--- Dumped by pg_dump version 11.5
+-- Dumped by pg_dump version 11.4
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;

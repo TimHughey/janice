@@ -37,7 +37,7 @@
 	mcr_esp_elf=${mcr_esp_prefix}-mcr_esp.elf
 	mcr_esp_elf_deploy=${mcr_esp_fw_loc}/${mcr_esp_elf}
 
-	release=/tmp/mcp.tar.gz
+	release=/var/tmp/mcp.tar.bz2
 
 	if [[ ! -f $release ]]; then
 		print "deploy tar $release doesn't exist, doing nothing."
