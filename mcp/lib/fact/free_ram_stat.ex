@@ -32,8 +32,14 @@ defmodule Fact.FreeRamStat do
      ...> |> Fact.FreeRamStat.record()
      :ok
   """
-  def record(%{host: host, name: name, mtime: mtime, freeram: freeram}) do
-    tags = %{remote_host: host, remote_name: name, mcr_stat: "freeram"}
+  def record(%{host: host, name: name, mtime: mtime, freeram: freeram},
+        record: true
+      ) do
+    tags = %{
+      remote_host: host,
+      remote_name: name,
+      mcr_stat: "freeram"
+    }
 
     write(
       %FreeRamStat{
@@ -45,6 +51,8 @@ defmodule Fact.FreeRamStat do
       async: true
     )
   end
+
+  def record(%{record: false}), do: {:not_recorded}
 
   @doc ~S"""
   Record a FreeRamStat metric that is missing the mcr name

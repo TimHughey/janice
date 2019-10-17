@@ -193,7 +193,7 @@ defmodule Mqtt.InboundMessage do
           Map.get(s, :switch_msgs, {:missing, :missing})
 
         Reading.free_ram_stat?(r) ->
-          FreeRamStat.record(r)
+          Map.put_new(r, :record, false) |> FreeRamStat.record(r)
           {nil, nil}
 
         Reading.engine_metric?(r) ->
