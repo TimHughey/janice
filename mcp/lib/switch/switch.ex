@@ -39,7 +39,6 @@ defmodule Switch do
     ]
 
   alias Fact.RunMetric
-
   alias Janice.TimeSupport
 
   schema "switch" do

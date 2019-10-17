@@ -14,7 +14,7 @@ defmodule Sensor do
   import Janice.Common.DB, only: [name_regex: 0]
   alias Janice.TimeSupport
 
-  alias Fact.Celsius
+  # alias Fact.Celsius
   alias Fact.Fahrenheit
   alias Fact.RelativeHumidity
   alias Fact.SoilMoisture
@@ -409,13 +409,13 @@ defmodule Sensor do
       val: tf
     )
 
-    Celsius.record(
-      remote_host: hostname,
-      device: device,
-      name: name,
-      mtime: mtime,
-      val: tc
-    )
+    # Celsius.record(
+    #   remote_host: hostname,
+    #   device: device,
+    #   name: name,
+    #   mtime: mtime,
+    #   val: tc
+    # )
 
     {s, r}
   end
@@ -439,13 +439,13 @@ defmodule Sensor do
       val: tf
     )
 
-    Celsius.record(
-      remote_host: hostname,
-      device: device,
-      name: name,
-      mtime: mtime,
-      val: tc
-    )
+    # Celsius.record(
+    #   remote_host: hostname,
+    #   device: device,
+    #   name: name,
+    #   mtime: mtime,
+    #   val: tc
+    # )
 
     RelativeHumidity.record(
       remote_host: hostname,
@@ -477,13 +477,13 @@ defmodule Sensor do
       val: tf
     )
 
-    Celsius.record(
-      remote_host: hostname,
-      device: device,
-      name: name,
-      mtime: mtime,
-      val: tc
-    )
+    # Celsius.record(
+    #   remote_host: hostname,
+    #   device: device,
+    #   name: name,
+    #   mtime: mtime,
+    #   val: tc
+    # )
 
     SoilMoisture.record(
       remote_host: hostname,
