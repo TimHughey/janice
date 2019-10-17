@@ -23,17 +23,23 @@ defmodule Fact.RunMetric do
 
   def record(opts)
       when is_list(opts) do
-    def_mtime = TimeSupport.unix_now(:second)
-    f = %RunMetric{}
+    record = Keyword.get(opts, :record, true)
 
-    f = set_tag(f, opts, :application)
-    f = set_tag(f, opts, :module)
-    f = set_tag(f, opts, :metric)
-    f = set_tag(f, opts, :device)
-    f = set_field(f, opts, :val)
+    if record do
+      def_mtime = TimeSupport.unix_now(:second)
+      f = %RunMetric{}
 
-    f = %{f | timestamp: Keyword.get(opts, :mtime, def_mtime)}
-    write(f, precision: :second, async: true)
+      f = set_tag(f, opts, :application)
+      f = set_tag(f, opts, :module)
+      f = set_tag(f, opts, :metric)
+      f = set_tag(f, opts, :device)
+      f = set_field(f, opts, :val)
+
+      f = %{f | timestamp: Keyword.get(opts, :mtime, def_mtime)}
+      write(f, precision: :second, async: true)
+    else
+      :did_not_record
+    end
   end
 
   defp set_tag(map, opts, key)

@@ -37,6 +37,7 @@ defmodule Mqtt.InboundMessage do
       |> Map.put_new(:switch_msgs, config(:switch_msgs))
       |> Map.put_new(:remote_msgs, config(:remote_msgs))
       |> Map.put_new(:periodic_log, config(:periodic_log, periodic_log_default))
+      |> Map.put_new(:runtime_metrics, config(:runtime_metrics, false))
 
     if Map.get(s, :autostart, false) do
       first = s.periodic_log |> Keyword.get(:first)
@@ -61,6 +62,10 @@ defmodule Mqtt.InboundMessage do
     if async,
       do: GenServer.cast(Mqtt.InboundMessage, {:incoming_message, msg, opts}),
       else: GenServer.call(Mqtt.InboundMessage, {:incoming_message, msg, opts})
+  end
+
+  def runtime_metrics(flag) when is_boolean(flag) do
+    GenServer.call(__MODULE__, {:runtime_metrics, flag})
   end
 
   # GenServer callbacks
@@ -103,6 +108,13 @@ defmodule Mqtt.InboundMessage do
     s = %{s | json_log: json_log}
 
     {:reply, json_log, s}
+  end
+
+  def handle_call({:runtime_metrics, flag}, _from, %{runtime_metrics: was} = s)
+      when is_boolean(flag) do
+    s = Map.put(s, :runtime_metrics, flag)
+
+    {:reply, %{was: was, is: flag}, s}
   end
 
   def handle_call(catch_all, _from, s) do
@@ -258,14 +270,16 @@ defmodule Mqtt.InboundMessage do
       module: "#{__MODULE__}",
       application: "janice",
       metric: "msgs_dispatched",
-      val: s.messages_dispatched
+      val: s.messages_dispatched,
+      record: s.runtime_metrics
     )
 
     RunMetric.record(
       module: "#{__MODULE__}",
       metric: "mqtt_process_inbound_msg_us",
       device: "none",
-      val: elapsed_us
+      val: elapsed_us,
+      record: s.runtime_metrics
     )
 
     if log_task, do: Task.await(log_task)

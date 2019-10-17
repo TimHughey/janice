@@ -77,7 +77,7 @@
 
 	# sudo chmod go+w /run
 	# run_cmd sudo -u janice --login $jan_bin/mcp start && print " done."
-	sudo -u janice --login  $jan_bin/mcp start
+	sudo -u janice --login  $jan_bin/mcp daemon
 	# sudo -u janice env PORT=4009 $jan_bin/mcp start && print " done."
 	# sleep 5 ; sudo chmod go+w /run
 
@@ -90,4 +90,4 @@
 	fi
 
 	print "tailing janice log file. (use CTRL+C to stop)"
-	exec tail --lines=100 -f $jan_base/var/log/erlang.*(om[1])
+	exec tail --lines=100 -f $jan_base/tmp/log/erlang.*(om[1])

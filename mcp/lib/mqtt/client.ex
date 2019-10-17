@@ -42,6 +42,8 @@ defmodule Mqtt.Client do
   def init(s) when is_map(s) do
     Logger.info(fn -> "init()" end)
 
+    s = Map.put_new(s, :runtime_metrics, false)
+
     if Map.get(s, :autostart, false) do
       # prepare the opts that will be passed to Tortoise and start it
 
@@ -74,6 +76,10 @@ defmodule Mqtt.Client do
   def report_subscribe do
     feed = get_env(:mcp, :feeds, []) |> Keyword.get(:rpt, nil)
     subscribe(feed)
+  end
+
+  def runtime_metrics(flag) when is_boolean(flag) do
+    GenServer.call(__MODULE__, {:runtime_metrics, flag})
   end
 
   def send_timesync do
@@ -175,7 +181,8 @@ defmodule Mqtt.Client do
       module: "#{__MODULE__}",
       metric: "mqtt_pub_msg_us",
       device: "none",
-      val: elapsed_us
+      val: elapsed_us,
+      record: s.runtime_metrics
     )
 
     {:reply, res, s}
@@ -198,6 +205,13 @@ defmodule Mqtt.Client do
     Logger.info(fn -> "subscribing to #{inspect(feed)} ref: #{inspect(ref)}" end)
 
     {:reply, ref, s}
+  end
+
+  def handle_call({:runtime_metrics, flag}, _from, %{runtime_metrics: was} = s)
+      when is_boolean(flag) do
+    s = Map.put(s, :runtime_metrics, flag)
+
+    {:reply, %{was: was, is: flag}, s}
   end
 
   def handle_call({:timesync_msg}, _from, s) do
@@ -252,7 +266,8 @@ defmodule Mqtt.Client do
       module: "#{__MODULE__}",
       metric: "mqtt_recv_msg_us",
       device: "none",
-      val: elapsed_us
+      val: elapsed_us,
+      record: s.runtime_metrics
     )
 
     {:noreply, s}
