@@ -96,7 +96,8 @@ defmodule SwitchCmd do
           module: "#{__MODULE__}",
           metric: "rt_latency",
           device: cmd.name,
-          val: opts.rt_latency
+          val: opts.rt_latency,
+          record: false
         )
 
         change(cmd, opts) |> update
@@ -296,7 +297,8 @@ defmodule SwitchCmd do
       module: "#{__MODULE__}",
       metric: "record_cmd_us",
       device: name,
-      val: elapsed_us
+      val: elapsed_us,
+      record: false
     )
 
     {:ok, refid}

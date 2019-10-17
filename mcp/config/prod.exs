@@ -43,9 +43,6 @@ config :mcp, Mqtt.Client,
   timesync: [frequency: {:mins, 2}, loops: 0, forever: true, log: false]
 
 config :mcp, Mqtt.InboundMessage,
-  log: [
-    engine_metrics: false
-  ],
   periodic_log: [
     enable: false,
     first: {:mins, 5},

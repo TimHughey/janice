@@ -233,7 +233,8 @@ defmodule Remote do
           metric: "external_update",
           # use the local name
           device: rem.name,
-          val: t
+          val: t,
+          record: false
         )
 
         :ok

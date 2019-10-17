@@ -173,7 +173,8 @@ defmodule Switch do
           module: "#{__MODULE__}",
           metric: "external_update",
           device: sw.device,
-          val: t
+          val: t,
+          record: false
         )
 
         :ok
