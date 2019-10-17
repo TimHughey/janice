@@ -197,7 +197,7 @@ defmodule Mqtt.InboundMessage do
           {nil, nil}
 
         Reading.engine_metric?(r) ->
-          EngineMetric.record(r)
+          # EngineMetric.record(r)
           {nil, nil}
 
         Reading.simple_text?(r) ->
