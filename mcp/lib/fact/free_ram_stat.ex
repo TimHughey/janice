@@ -37,7 +37,7 @@ defmodule Fact.FreeRamStat do
         name: name,
         mtime: mtime,
         freeram: freeram,
-        record: false
+        record: true
       }) do
     tags = %{
       remote_host: host,

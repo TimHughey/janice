@@ -59,7 +59,7 @@ defmodule FactEngineMetricTest do
     pt = ext(0, "dsTest")
     res = Fact.EngineMetric.record(pt)
 
-    assert res === :ok
+    assert res === :ok or res == {:not_recorded}
   end
 
   test "reading with convert_us > 0" do
@@ -67,7 +67,7 @@ defmodule FactEngineMetricTest do
     pt = Fact.EngineMetric.make_point(raw)
     res = Fact.EngineMetric.record(raw)
 
-    assert pt.fields.convert_us > 0 and res == :ok
+    assert pt.fields.convert_us > 0 and (res == :ok or res == {:not_recorded})
   end
 
   test "reading with discover_us > 0" do
@@ -75,7 +75,7 @@ defmodule FactEngineMetricTest do
     pt = Fact.EngineMetric.make_point(raw)
     res = Fact.EngineMetric.record(raw)
 
-    assert pt.fields.discover_us > 0 and res == :ok
+    assert pt.fields.discover_us > 0 and (res == :ok or res == {:not_recorded})
   end
 
   test "reading with report_us > 0" do
@@ -83,7 +83,7 @@ defmodule FactEngineMetricTest do
     pt = Fact.EngineMetric.make_point(raw)
     res = Fact.EngineMetric.record(raw)
 
-    assert pt.fields.report_us > 0 and res == :ok
+    assert pt.fields.report_us > 0 and (res == :ok or res == {:not_recorded})
   end
 
   test "reading with switch_cmd_us > 0" do
@@ -91,7 +91,8 @@ defmodule FactEngineMetricTest do
     pt = Fact.EngineMetric.make_point(raw)
     res = Fact.EngineMetric.record(raw)
 
-    assert pt.fields.switch_cmd_us > 0 and res == :ok
+    assert pt.fields.switch_cmd_us > 0 and
+             (res == :ok or res == {:not_recorded})
   end
 
   test "reading with all fields > 0" do
@@ -103,9 +104,10 @@ defmodule FactEngineMetricTest do
       |> Map.put(:switch_cmd_us, 2_000_000)
 
     pt = Fact.EngineMetric.make_point(raw)
-    res = Fact.EngineMetric.record(raw)
+    res = Map.put_new(raw, :record, true) |> Fact.EngineMetric.record()
 
-    assert pt.fields.convert_us > 0 and pt.fields.discover_us > 0 and pt.fields.report_us > 0 and
+    assert pt.fields.convert_us > 0 and pt.fields.discover_us > 0 and
+             pt.fields.report_us > 0 and
              res == :ok
   end
 end

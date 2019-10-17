@@ -75,7 +75,7 @@ defmodule Fact.EngineMetric do
     make_point(r) |> write(database: db, async: true, precision: :second)
   end
 
-  def record(%{record: false}), do: {:not_recorded}
+  def record(%{}), do: {:not_recorded}
 
   defp field?({k, _v}), do: k in @metric_fields
 
