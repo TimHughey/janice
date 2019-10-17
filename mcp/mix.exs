@@ -21,6 +21,7 @@ defmodule Mcp.Mixfile do
   """
 
   use Mix.Project
+  alias IO.ANSI
 
   def project do
     [
@@ -181,13 +182,57 @@ defmodule Mcp.Mixfile do
     ]
   end
 
+  defp package_release(release) do
+    tarball = "#{release.name}.tar.bz2"
+    stage_path = Path.join("/var/tmp", tarball)
+
+    msg =
+      ANSI.format([
+        :bright,
+        :white,
+        "[MCP] ",
+        "creating ",
+        :green,
+        tarball
+      ])
+
+    Mix.shell().info(msg)
+
+    System.cmd("tar", ["-caf", stage_path, "."], cd: release.path)
+
+    msg =
+      ANSI.format([
+        :bright,
+        :white,
+        "[MCP] ",
+        "staged ",
+        :green,
+        tarball,
+        :white,
+        " to ",
+        :yellow,
+        stage_path,
+        :white,
+        " for ",
+        :cyan,
+        "prod ",
+        :white,
+        "deployment"
+      ])
+
+    Mix.shell().info(msg)
+
+    release
+  end
+
   defp releases do
     [
       mcp: [
         include_erts: true,
         include_executables_for: [:unix],
         applications: [runtime_tools: :permanent],
-        cookie: "augury-kinship-swain-circus"
+        cookie: "augury-kinship-swain-circus",
+        steps: [:assemble, &package_release/1]
       ]
     ]
   end
