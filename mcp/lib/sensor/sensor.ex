@@ -225,8 +225,9 @@ defmodule Sensor do
     r = normalize_readings(r) |> Map.put(:hostname, hostname)
 
     sensor = add(%Sensor{device: device, type: type}, r)
+    last_reading = sensor.reading_at
 
-    {sensor, r} |> update_reading() |> record_metrics()
+    {sensor, r} |> update_reading() |> record_metrics(last_reading)
   end
 
   def external_update(%{} = eu) do
@@ -375,6 +376,18 @@ defmodule Sensor do
       has_tc -> Map.put_new(r, :tf, Float.round(r.tc * (9.0 / 5.0) + 32.0, 3))
       has_tf -> Map.put_new(r, :tc, Float.round(r.tf - 32 * (5.0 / 9.0), 3))
       true -> r
+    end
+  end
+
+  # special case:
+  # last_reading is nil for brand new sensors
+  defp record_metrics({%Sensor{} = s, %{} = r}, nil), do: record_metrics({s, r})
+
+  defp record_metrics({%Sensor{} = s, %{} = r}, last_reading) do
+    if Timex.diff(s.reading_at, last_reading, :seconds) >= 59 do
+      record_metrics({s, r})
+    else
+      {s, r}
     end
   end
 

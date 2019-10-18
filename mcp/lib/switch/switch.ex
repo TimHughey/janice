@@ -22,7 +22,6 @@ defmodule Switch do
   require Logger
   use Ecto.Schema
 
-  # import Application, only: [get_env: 2]
   import UUID, only: [uuid1: 0]
   import Ecto.Changeset, only: [change: 2]
   import Ecto.Query, only: [from: 2]
