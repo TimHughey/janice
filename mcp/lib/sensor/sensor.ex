@@ -27,7 +27,7 @@ defmodule Sensor do
     field(:dev_latency, :integer)
     field(:reading_at, :utc_datetime_usec)
     field(:last_seen_at, :utc_datetime_usec)
-    field(:metric_at, :utc_datetime_usec)
+    field(:metric_at, :utc_datetime_usec, default: nil)
     field(:metric_freq_secs, :integer, default: 60)
     has_many(:temperature, SensorTemperature)
     has_many(:relhum, SensorRelHum)
