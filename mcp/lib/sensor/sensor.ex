@@ -386,7 +386,7 @@ defmodule Sensor do
   defp record_metrics({%Sensor{} = s, %{} = r}, last_reading) do
     new_reading_at = TimeSupport.from_unix(r.mtime)
 
-    if Timex.diff(last_reading, new_reading_at, :seconds) >= 59 do
+    if Timex.diff(last_reading, new_reading_at, :seconds) >= 5 do
       record_metrics({s, r})
     else
       {s, r}
