@@ -380,11 +380,6 @@ defmodule Sensor do
     end
   end
 
-  # special case:
-  # last_reading is nil for brand new sensors
-  defp record_metrics({%Sensor{metric_at: nil} = s, %{} = r}, :limit),
-    do: record_metrics({s, r})
-
   defp record_metrics(
          {%Sensor{metric_at: last_metric, metric_freq_secs: freq_secs} = s,
           %{} = r},
@@ -392,7 +387,8 @@ defmodule Sensor do
        ) do
     new_reading_at = TimeSupport.from_unix(r.mtime)
 
-    if Timex.diff(new_reading_at, last_metric, :seconds) >= freq_secs do
+    if is_nil(last_metric) or
+         Timex.diff(new_reading_at, last_metric, :seconds) >= freq_secs do
       {change(s, %{
          metric_at: TimeSupport.from_unix(r.mtime)
        })
