@@ -301,6 +301,21 @@ defmodule Sensor do
   def relhum(%Sensor{relhum: %SensorRelHum{rh: rh}}), do: rh
   def relhum(_anything), do: nil
 
+  def replace(name, new_id) when is_binary(name) and is_integer(new_id) do
+    old = get_by(name: name)
+    new = get_by(id: new_id)
+
+    if is_nil(old) or is_nil(new) do
+      Logger.warn(fn ->
+        "error finding sensors: old(#{inspect(old)}) new(#{inspect(new)})"
+      end)
+
+      {:failed, old, new}
+    else
+      {:ok, deprecate(old.id), change_name(new.id, name, "replacement")}
+    end
+  end
+
   def soil_moisture(name) when is_binary(name), do: soil_moisture(name: name)
 
   def soil_moisture(opts) when is_list(opts) do

@@ -119,4 +119,13 @@ defmodule SensorTest do
 
     assert count >= 0 and is_nil(returned)
   end
+
+  @tag num: 2
+  test "can replace sensor", context do
+    old = context[:sensor]
+    new = Sensor.get_by(device: sen_dev(context[:num]))
+    res = Sensor.replace(old.name, new.id)
+
+    assert {:ok, {:ok, %Sensor{}}, {:ok, %Sensor{}}} = res
+  end
 end
