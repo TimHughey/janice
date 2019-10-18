@@ -27,6 +27,8 @@ defmodule Sensor do
     field(:dev_latency, :integer)
     field(:reading_at, :utc_datetime_usec)
     field(:last_seen_at, :utc_datetime_usec)
+    field(:metric_at, :utc_datetime_usec)
+    field(:metric_freq_secs, :integer, default: 60)
     has_many(:temperature, SensorTemperature)
     has_many(:relhum, SensorRelHum)
     has_many(:soil, SensorSoil)
@@ -225,9 +227,8 @@ defmodule Sensor do
     r = normalize_readings(r) |> Map.put(:hostname, hostname)
 
     sensor = add(%Sensor{device: device, type: type}, r)
-    last_reading = sensor.reading_at
 
-    {sensor, r} |> update_reading() |> record_metrics(last_reading)
+    {sensor, r} |> update_reading() |> record_metrics(:limit)
   end
 
   def external_update(%{} = eu) do
@@ -381,13 +382,22 @@ defmodule Sensor do
 
   # special case:
   # last_reading is nil for brand new sensors
-  defp record_metrics({%Sensor{} = s, %{} = r}, nil), do: record_metrics({s, r})
+  defp record_metrics({%Sensor{metric_at: nil} = s, %{} = r}, :limit),
+    do: record_metrics({s, r})
 
-  defp record_metrics({%Sensor{} = s, %{} = r}, last_reading) do
+  defp record_metrics(
+         {%Sensor{metric_at: last_metric, metric_freq_secs: freq_secs} = s,
+          %{} = r},
+         :limit
+       ) do
     new_reading_at = TimeSupport.from_unix(r.mtime)
 
-    if Timex.diff(last_reading, new_reading_at, :seconds) <= 0 do
-      record_metrics({s, r})
+    if Timex.diff(new_reading_at, last_metric, :seconds) >= freq_secs do
+      {change(s, %{
+         metric_at: TimeSupport.from_unix(r.mtime)
+       })
+       |> update!(), r}
+      |> record_metrics()
     else
       {s, r}
     end
@@ -395,8 +405,9 @@ defmodule Sensor do
 
   defp record_metrics(
          {%Sensor{type: "temp", name: name} = s,
-          %{hostname: hostname, tc: 85.0} = r}
-       ) do
+          %{hostname: hostname, tc: tc} = r}
+       )
+       when tc > 80.0 do
     Logger.warn(fn ->
       "dropping invalid temperature for #{inspect(name)} from #{
         inspect(hostname)

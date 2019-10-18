@@ -3,7 +3,7 @@
 --
 
 -- Dumped from database version 11.4
--- Dumped by pg_dump version 11.4
+-- Dumped by pg_dump version 11.5
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -193,7 +193,9 @@ CREATE TABLE public.remote (
     build_time character varying(16),
     magic_word character varying(255),
     secure_vsn integer,
-    bssid character varying(255) DEFAULT 'xx:xx:xx:xx:xx:xx'::character varying
+    bssid character varying(255) DEFAULT 'xx:xx:xx:xx:xx:xx'::character varying,
+    metric_freq_secs integer DEFAULT 60,
+    metric_at timestamp(0) without time zone DEFAULT NULL::timestamp without time zone
 );
 
 
@@ -240,7 +242,9 @@ CREATE TABLE public.sensor (
     reading_at timestamp without time zone DEFAULT (timezone('utc'::text, now()) - '03:00:00'::interval),
     last_seen_at timestamp without time zone DEFAULT timezone('utc'::text, now()),
     inserted_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
+    updated_at timestamp without time zone NOT NULL,
+    metric_freq_secs integer DEFAULT 60,
+    metric_at timestamp(0) without time zone DEFAULT NULL::timestamp without time zone
 );
 
 
@@ -1081,5 +1085,5 @@ ALTER TABLE ONLY public.thermostat_profile
 -- PostgreSQL database dump complete
 --
 
-INSERT INTO public."schema_migrations" (version) VALUES (20171217150128), (20171224164529), (20171224225113), (20171228191703), (20171229001359), (20171231182344), (20180101153253), (20180102171624), (20180102175335), (20180217212153), (20180218021213), (20180222165118), (20180222184042), (20180305193804), (20180307143400), (20180517201719), (20180708221600), (20180709181021), (20190308124055), (20190316032007), (20190317155502), (20190320124824), (20190416130912), (20190417011910);
+INSERT INTO public."schema_migrations" (version) VALUES (20171217150128), (20171224164529), (20171224225113), (20171228191703), (20171229001359), (20171231182344), (20180101153253), (20180102171624), (20180102175335), (20180217212153), (20180218021213), (20180222165118), (20180222184042), (20180305193804), (20180307143400), (20180517201719), (20180708221600), (20180709181021), (20190308124055), (20190316032007), (20190317155502), (20190320124824), (20190416130912), (20190417011910), (20191018110319);
 
