@@ -210,11 +210,7 @@ void mcrI2c::core(void *task_data) {
     delay(1000); // prevent busy loop if i2c driver fails to install
   }
 
-  ESP_LOGI(tagEngine(), "pulling reset pin low");
-  gpio_set_level(RST_PIN, 0); // pull the pin low to reset i2c devices
-  delay(1000);                // give plenty of time for all devices to reset
-  gpio_set_level(RST_PIN, 1); // bring all devices online
-  ESP_LOGI(tagEngine(), "pulling reset pin high");
+  pinReset();
 
   ESP_LOGV(tagEngine(), "waiting for normal ops...");
   Net::waitForNormalOps();
@@ -580,6 +576,16 @@ mcrI2c_t *mcrI2c::instance() {
 }
 
 uint32_t mcrI2c::maxBuses() { return _max_buses; }
+bool mcrI2c::pinReset() {
+
+  ESP_LOGI(tagEngine(), "pulling reset pin low");
+  gpio_set_level(RST_PIN, 0); // pull the pin low to reset i2c devices
+  delay(1000);                // give plenty of time for all devices to reset
+  gpio_set_level(RST_PIN, 1); // bring all devices online
+  ESP_LOGI(tagEngine(), "pulling reset pin high");
+
+  return true;
+}
 
 void mcrI2c::printUnhandledDev(i2cDev_t *dev) {
   ESP_LOGW(tagEngine(), "unhandled dev %s", dev->debug().get());

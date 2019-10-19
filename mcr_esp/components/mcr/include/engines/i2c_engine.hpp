@@ -139,6 +139,7 @@ private:
   bool detectDevicesOnBus(int bus);
 
   bool detectMultiplexer(const int max_attempts = 1);
+  bool pinReset();
   bool hardReset();
   bool installDriver();
   uint32_t maxBuses();
