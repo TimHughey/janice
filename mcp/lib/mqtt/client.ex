@@ -259,7 +259,8 @@ defmodule Mqtt.Client do
     {elapsed_us, _res} =
       :timer.tc(fn ->
         MessageSave.save(:in, message)
-        Mqtt.InboundMessage.process(message)
+
+        Mqtt.InboundMessage.process(message, runtime_metrics: s.runtime_metrics)
       end)
 
     RunMetric.record(

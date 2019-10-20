@@ -97,7 +97,7 @@ defmodule SwitchCmd do
           metric: "rt_latency",
           device: cmd.name,
           val: opts.rt_latency,
-          record: false
+          record: Map.get(m, :runtime_metrics, false)
         )
 
         change(cmd, opts) |> update
@@ -298,7 +298,7 @@ defmodule SwitchCmd do
       metric: "record_cmd_us",
       device: name,
       val: elapsed_us,
-      record: false
+      record: true
     )
 
     {:ok, refid}

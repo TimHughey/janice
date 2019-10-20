@@ -236,7 +236,7 @@ defmodule Remote do
           # use the local name
           device: rem.name,
           val: t,
-          record: false
+          record: Map.get(eu, :runtime_metrics, false)
         )
 
         :ok

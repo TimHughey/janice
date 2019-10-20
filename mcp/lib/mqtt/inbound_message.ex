@@ -37,7 +37,6 @@ defmodule Mqtt.InboundMessage do
       |> Map.put_new(:switch_msgs, config(:switch_msgs))
       |> Map.put_new(:remote_msgs, config(:remote_msgs))
       |> Map.put_new(:periodic_log, config(:periodic_log, periodic_log_default))
-      |> Map.put_new(:runtime_metrics, config(:runtime_metrics, false))
 
     if Map.get(s, :autostart, false) do
       first = s.periodic_log |> Keyword.get(:first)
@@ -62,10 +61,6 @@ defmodule Mqtt.InboundMessage do
     if async,
       do: GenServer.cast(Mqtt.InboundMessage, {:incoming_message, msg, opts}),
       else: GenServer.call(Mqtt.InboundMessage, {:incoming_message, msg, opts})
-  end
-
-  def runtime_metrics(flag) when is_boolean(flag) do
-    GenServer.call(__MODULE__, {:runtime_metrics, flag})
   end
 
   # GenServer callbacks
@@ -108,13 +103,6 @@ defmodule Mqtt.InboundMessage do
     s = %{s | json_log: json_log}
 
     {:reply, json_log, s}
-  end
-
-  def handle_call({:runtime_metrics, flag}, _from, %{runtime_metrics: was} = s)
-      when is_boolean(flag) do
-    s = Map.put(s, :runtime_metrics, flag)
-
-    {:reply, %{was: was, is: flag}, s}
   end
 
   def handle_call(catch_all, _from, s) do
@@ -166,7 +154,12 @@ defmodule Mqtt.InboundMessage do
   defp decoded_msg({:ok, %{metadata: :ok} = r}, s, opts) when is_list(opts) do
     async = Keyword.get(opts, :async, true)
 
-    r = Map.put_new(r, :log_reading, Map.get(r, :log, s.log_reading))
+    r =
+      Map.put_new(r, :log_reading, Map.get(r, :log, s.log_reading))
+      |> Map.put_new(
+        :runtime_metrics,
+        Keyword.get(opts, :runtime_metrics, false)
+      )
 
     # NOTE: we invoke the module / functions defined in the config
     #       to process incoming messages.  we also spin up a Task
@@ -193,11 +186,11 @@ defmodule Mqtt.InboundMessage do
           Map.get(s, :switch_msgs, {:missing, :missing})
 
         Reading.free_ram_stat?(r) ->
-          Map.put_new(r, :record, false) |> FreeRamStat.record()
+          Map.put_new(r, :record, r.runtime_metrics) |> FreeRamStat.record()
           {nil, nil}
 
         Reading.engine_metric?(r) ->
-          Map.put_new(r, :record, false) |> EngineMetric.record()
+          Map.put_new(r, :record, r.runtime_metrics) |> EngineMetric.record()
           {nil, nil}
 
         Reading.simple_text?(r) ->
@@ -271,7 +264,7 @@ defmodule Mqtt.InboundMessage do
       application: "janice",
       metric: "msgs_dispatched",
       val: s.messages_dispatched,
-      record: s.runtime_metrics
+      record: Keyword.get(opts, :runtime_metrics, false)
     )
 
     RunMetric.record(
@@ -279,7 +272,7 @@ defmodule Mqtt.InboundMessage do
       metric: "mqtt_process_inbound_msg_us",
       device: "none",
       val: elapsed_us,
-      record: s.runtime_metrics
+      record: Keyword.get(opts, :runtime_metrics, false)
     )
 
     if log_task, do: Task.await(log_task)

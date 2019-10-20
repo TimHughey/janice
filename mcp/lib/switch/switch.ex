@@ -172,7 +172,7 @@ defmodule Switch do
           metric: "external_update",
           device: sw.device,
           val: t,
-          record: false
+          record: Map.get(r, :runtime_metrics, false)
         )
 
         :ok
