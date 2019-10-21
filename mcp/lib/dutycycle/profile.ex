@@ -71,18 +71,22 @@ defmodule Dutycycle.Profile do
   def change(nil, _, _), do: %Dutycycle.Profile{}
 
   def change(%Dutycycle{} = dc, profile, opts)
-      when is_binary(profile) and is_map(opts) do
+      when is_binary(profile) and is_list(opts) do
+    set = Keyword.take(opts, [:run_ms, :idle_ms])
+
     {rows_updated, _} =
       from(
         dp in Dutycycle.Profile,
         where: dp.dutycycle_id == ^dc.id,
         where: dp.name == ^profile,
-        update: [set: [run_ms: ^opts.run_ms, idle_ms: ^opts.idle_ms]]
+        update: [set: ^set]
       )
       |> update_all([])
 
     rows_updated > 0 &&
-      Logger.info(fn -> "dutycycle [#{dc.name}] profile [#{profile}] updated" end)
+      Logger.info(fn ->
+        "dutycycle [#{dc.name}] profile [#{profile}] updated"
+      end)
 
     from(
       dp in Dutycycle.Profile,

@@ -17,7 +17,8 @@ defmodule Dutycycle.Server do
     call_server(name, msg)
   end
 
-  def add_profile(name, %Profile{} = p, opts \\ []) when is_binary(name) and is_list(opts) do
+  def add_profile(name, %Profile{} = p, opts \\ [])
+      when is_binary(name) and is_list(opts) do
     msg = %{:msg => :add_profile, profile: p, opts: opts}
     call_server(name, msg)
   end
@@ -103,6 +104,21 @@ defmodule Dutycycle.Server do
   def switch_state(name, opts \\ []) when is_binary(name) do
     msg = %{:msg => :switch_state, opts: opts}
     call_server(name, msg)
+  end
+
+  def update_profile(name, profile, opts)
+      when is_binary(name) and is_binary(profile) and is_list(opts) do
+    msg = %{:msg => :update_profile, profile: profile, opts: opts}
+    p = call_server(name, msg)
+
+    # default is to reload the dutycycle
+    reload = Keyword.get(opts, :reload, true)
+
+    if reload do
+      reload(name, opts)
+    end
+
+    %{profile: p, reload: reload}
   end
 
   ####
@@ -203,6 +219,16 @@ defmodule Dutycycle.Server do
     {:reply, state, s}
   end
 
+  def handle_call(
+        %{:msg => :update_profile, :profile => profile, :opts => opts},
+        _from,
+        %{dutycycle: dc} = s
+      ) do
+    rc = Profile.change(dc, profile, opts)
+
+    {:reply, rc, s}
+  end
+
   # handle case when we receive a message that we don't understand
   def handle_call(%{:msg => _unhandled}, _from, s) when is_map(s) do
     {:reply, false, s}
@@ -224,7 +250,9 @@ defmodule Dutycycle.Server do
   end
 
   def handle_info({:EXIT, pid, reason}, state) do
-    Logger.debug(fn -> ":EXIT message " <> "pid: #{inspect(pid)} reason: #{inspect(reason)}" end)
+    Logger.debug(fn ->
+      ":EXIT message " <> "pid: #{inspect(pid)} reason: #{inspect(reason)}"
+    end)
 
     {:noreply, state}
   end
@@ -274,7 +302,8 @@ defmodule Dutycycle.Server do
   end
 
   def terminate(_reason, s) do
-    if s.dutycycle.standalone, do: State.set(mode: "stop", dutycycle: s.dutycycle)
+    if s.dutycycle.standalone,
+      do: State.set(mode: "stop", dutycycle: s.dutycycle)
   end
 
   ####
@@ -288,7 +317,10 @@ defmodule Dutycycle.Server do
     if is_tuple(rc) and elem(rc, 0) == 1 do
       d = Dutycycle.get_by(id: s.dutycycle_id) |> Repo.preload([:profiles])
       rc = State.set(mode: "run", dutycycle: d)
-      d = Dutycycle.get_by(id: s.dutycycle_id) |> Repo.preload([:profiles, :state])
+
+      d =
+        Dutycycle.get_by(id: s.dutycycle_id)
+        |> Repo.preload([:profiles, :state])
 
       {rc, d}
     else
@@ -350,7 +382,10 @@ defmodule Dutycycle.Server do
 
   defp handle_stop(_msg, s) do
     rc = State.set(mode: "stop", dutycycle: s.dutycycle)
-    d = Dutycycle.get_by(id: s.dutycycle_id) |> Repo.preload([:profiles, :state])
+
+    d =
+      Dutycycle.get_by(id: s.dutycycle_id) |> Repo.preload([:profiles, :state])
+
     {rc, d}
   end
 
@@ -361,7 +396,11 @@ defmodule Dutycycle.Server do
     {Dutycycle.get_by(id: s.dutycycle.id), timer}
   end
 
-  defp next_phase(%Dutycycle{state: %State{state: "running"}} = d, %Profile{} = p, s) do
+  defp next_phase(
+         %Dutycycle{state: %State{state: "running"}} = d,
+         %Profile{} = p,
+         s
+       ) do
     # if the idle phase has actual run ms then use it
     if p.idle_ms > 0 do
       if State.set(mode: "idle", dutycycle: d) == :ok,
@@ -375,7 +414,11 @@ defmodule Dutycycle.Server do
     end
   end
 
-  defp next_phase(%Dutycycle{state: %State{state: "idling"}} = d, %Profile{} = p, s) do
+  defp next_phase(
+         %Dutycycle{state: %State{state: "idling"}} = d,
+         %Profile{} = p,
+         s
+       ) do
     if p.run_ms > 0 do
       if State.set(mode: "run", dutycycle: d) == :ok,
         do: phase_end_timer(s, Profile.phase_ms(p, :run)),
@@ -422,9 +465,15 @@ defmodule Dutycycle.Server do
   end
 
   defp start_standalone(%{dutycycle: %Dutycycle{standalone: false}} = s), do: s
-  defp start_standalone(%{dutycycle: %Dutycycle{standalone: true, enable: false}} = s), do: s
 
-  defp start_standalone(%{dutycycle: %Dutycycle{standalone: true, enable: true} = d} = s) do
+  defp start_standalone(
+         %{dutycycle: %Dutycycle{standalone: true, enable: false}} = s
+       ),
+       do: s
+
+  defp start_standalone(
+         %{dutycycle: %Dutycycle{standalone: true, enable: true} = d} = s
+       ) do
     p = Profile.active(d)
 
     {d, timer} =
@@ -432,7 +481,11 @@ defmodule Dutycycle.Server do
         {d, nil}
       else
         State.set(mode: "run", dutycycle: d)
-        d = Dutycycle.get_by(id: s.dutycycle_id) |> Repo.preload([:profiles, :state])
+
+        d =
+          Dutycycle.get_by(id: s.dutycycle_id)
+          |> Repo.preload([:profiles, :state])
+
         timer = phase_end_timer(s, Profile.phase_ms(p, :run))
         {d, timer}
       end

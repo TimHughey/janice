@@ -33,6 +33,7 @@ config :mcp, MessageSave,
 
 config :mcp, Mqtt.Client,
   log_dropped_msg: true,
+  runtime_metrics: true,
   tort_opts: [
     client_id: "janice-test",
     user_name: "mqtt",

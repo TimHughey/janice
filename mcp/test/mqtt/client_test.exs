@@ -25,4 +25,28 @@ defmodule MqttClientTest do
 
     assert rc == {:ok}
   end
+
+  test "toggle runtime metrics" do
+    rc = Mqtt.Client.runtime_metrics(:toggle)
+
+    assert %{is: _, was: _} = rc
+  end
+
+  test "turn runtime metrics off" do
+    rc = Mqtt.Client.runtime_metrics(false)
+
+    assert %{is: false, was: _} = rc
+  end
+
+  test "turn runtime metrics on" do
+    rc = Mqtt.Client.runtime_metrics(true)
+
+    assert %{is: true, was: _} = rc
+  end
+
+  test "can get current runtime metrics flag" do
+    rc = Mqtt.Client.runtime_metrics()
+
+    assert is_boolean(rc)
+  end
 end

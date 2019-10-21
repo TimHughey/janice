@@ -25,7 +25,8 @@ defmodule DutycycleTest do
 
   def get_an_id, do: Dutycycle.get_by(name: fixed_name()) |> Map.get(:id)
 
-  def name_str(n), do: "dutycycle" <> String.pad_leading(Integer.to_string(n), 3, "0")
+  def name_str(n),
+    do: "dutycycle" <> String.pad_leading(Integer.to_string(n), 3, "0")
 
   def new_dutycycle(n) do
     num_str = String.pad_leading(Integer.to_string(n), 3, "0")
@@ -131,7 +132,9 @@ defmodule DutycycleTest do
 
     profiles = Server.profiles(dc.name)
     profile = for p <- profiles, p.profile === "fast", do: p
-    fast = if Enum.empty?(profile), do: false, else: hd(profile) |> Map.get(:active)
+
+    fast =
+      if Enum.empty?(profile), do: false, else: hd(profile) |> Map.get(:active)
 
     refute Enum.empty?(profiles)
     refute fast
@@ -244,7 +247,9 @@ defmodule DutycycleTest do
 
     profiles = Server.profiles(dc.name)
     fast = for p <- profiles, p.profile === "fast", do: p
-    active = if Enum.empty?(fast), do: false, else: hd(fast) |> Map.get(:active, false)
+
+    active =
+      if Enum.empty?(fast), do: false, else: hd(fast) |> Map.get(:active, false)
 
     assert rc1 === :ok
     assert rc2 === :ok
@@ -266,10 +271,32 @@ defmodule DutycycleTest do
     assert active === "fast"
   end
 
+  # NEW!
+  @tag num: 13
+  test "can change an existing profile", context do
+    dc = Dutycycle.get_by(name: name_str(context[:num]))
+    rc1 = Server.enable(dc.name)
+    rc2 = Server.activate_profile(dc.name, "fast")
+
+    rc3 = Server.update_profile(name_str(context[:num]), "fast", run_ms: 49_152)
+
+    assert rc1 === :ok
+    assert rc2 === :ok
+    assert Map.has_key?(rc3, :profile)
+    assert Map.has_key?(rc3, :reload)
+  end
+
   @tag num: 14
   test "can add a new profile", context do
     dc = Dutycycle.get_by(name: name_str(context[:num]))
-    p = %Profile{name: "new profile", active: false, run_ms: 1000, idle_ms: 1000}
+
+    p = %Profile{
+      name: "new profile",
+      active: false,
+      run_ms: 1000,
+      idle_ms: 1000
+    }
+
     np = Server.add_profile(dc.name, p)
 
     assert is_map(np)
