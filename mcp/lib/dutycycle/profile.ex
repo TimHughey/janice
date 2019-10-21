@@ -73,6 +73,7 @@ defmodule Dutycycle.Profile do
   def change(%Dutycycle{} = dc, profile, opts)
       when is_binary(profile) and is_list(opts) do
     set = Keyword.take(opts, [:run_ms, :idle_ms])
+    log = Keyword.get(opts, :log, false)
 
     {rows_updated, _} =
       from(
@@ -83,7 +84,7 @@ defmodule Dutycycle.Profile do
       )
       |> update_all([])
 
-    rows_updated > 0 &&
+    rows_updated > 0 && log &&
       Logger.info(fn ->
         "dutycycle [#{dc.name}] profile [#{profile}] updated"
       end)
