@@ -149,91 +149,6 @@ defmodule Mqtt.InboundMessage do
     get_env(:mcp, Mqtt.InboundMessage) |> Keyword.get(key, default)
   end
 
-  defp decoded_msg({:ok, %{metadata: :fail}}, _s, _opts), do: nil
-
-  defp decoded_msg({:ok, %{metadata: :ok} = r}, s, opts) when is_list(opts) do
-    async = Keyword.get(opts, :async, true)
-
-    r =
-      Map.put_new(r, :log_reading, Map.get(r, :log, s.log_reading))
-      |> Map.put_new(
-        :runtime_metrics,
-        Keyword.get(opts, :runtime_metrics, false)
-      )
-
-    # NOTE: we invoke the module / functions defined in the config
-    #       to process incoming messages.  we also spin up a Task
-    #       for the benefits of parallel processing.
-
-    {mod, func} =
-      cond do
-        Reading.boot?(r) ->
-          Map.get(s, :remote_msgs, {:missing, :missing})
-
-        Reading.startup?(r) ->
-          Map.get(s, :remote_msgs, {:missing, :missing})
-
-        Reading.remote_runtime?(r) ->
-          Map.get(s, :remote_msgs, {:missing, :missing})
-
-        Reading.relhum?(r) ->
-          Map.get(s, :temperature_msgs, {:missing, :missing})
-
-        Reading.temperature?(r) ->
-          Map.get(s, :temperature_msgs, {:missing, :missing})
-
-        Reading.switch?(r) ->
-          Map.get(s, :switch_msgs, {:missing, :missing})
-
-        Reading.free_ram_stat?(r) ->
-          Map.put_new(r, :record, r.runtime_metrics) |> FreeRamStat.record()
-          {nil, nil}
-
-        Reading.engine_metric?(r) ->
-          Map.put_new(r, :record, r.runtime_metrics) |> EngineMetric.record()
-          {nil, nil}
-
-        Reading.simple_text?(r) ->
-          log = Map.get(r, :log, true)
-          log && Logger.warn(fn -> "#{r.name} --> #{r.text}" end)
-          {nil, nil}
-
-        true ->
-          Logger.warn(fn ->
-            "#{r.name} unhandled reading #{inspect(r, pretty: true)}"
-          end)
-
-          {nil, nil}
-      end
-
-    cond do
-      # either the above cond didn't detect a valid reading OR
-      # the reading was processed
-      # in either case, do nothing
-      is_nil(mod) or is_nil(func) ->
-        nil
-
-      :missing == mod ->
-        Logger.warn(fn ->
-          "missing configuration for reading type: #{r.type}"
-        end)
-
-      # reading needs to be processed, sould we do it async?
-      async ->
-        Task.start(mod, func, [r])
-
-      # process msg inline
-      true ->
-        apply(mod, func, [r])
-    end
-
-    nil
-  end
-
-  defp decoded_msg({:error, e}, _s, _opts) do
-    Logger.warn(fn -> e end)
-  end
-
   defp incoming_msg(msg, s, opts) do
     {elapsed_us, log_task} =
       :timer.tc(fn ->
@@ -253,7 +168,7 @@ defmodule Mqtt.InboundMessage do
             nil
           end
 
-        Reading.decode(msg) |> decoded_msg(s, opts)
+        Reading.decode(msg) |> msg_decode(s, opts)
         task
       end)
 
@@ -278,5 +193,104 @@ defmodule Mqtt.InboundMessage do
     if log_task, do: Task.await(log_task)
 
     s
+  end
+
+  defp msg_ensure_flags(%{} = s, %{} = r, opts) when is_list(opts) do
+    # downstream modules and functions use these flags (as part of the reading)
+    # for logging and to control if expensive runtime metrics are collected
+
+    Map.put_new(r, :log_reading, Map.get(r, :log, s.log_reading))
+    |> Map.put_new(
+      :runtime_metrics,
+      Keyword.get(opts, :runtime_metrics, false)
+    )
+  end
+
+  defp msg_decode({:ok, %{metadata: :fail}}, _s, _opts), do: nil
+
+  defp msg_decode({:ok, %{metadata: :ok} = r}, s, opts) when is_list(opts) do
+    # NOTE: we invoke the module / functions defined in the config
+    #       to process incoming messages.  if the async opt is present we'll
+    #       also spin up a task to take advantage of parallel processing
+
+    r = msg_ensure_flags(s, r, opts)
+
+    {mod, func} = msg_handler(s, r)
+
+    async = Keyword.get(opts, :async, true)
+
+    cond do
+      # if msg_handler does not find a mod and function configured to
+      # process the msg then try to process it locally
+
+      is_nil(mod) or is_nil(func) ->
+        msg_process_locally(r)
+        nil
+
+      :missing == mod ->
+        Logger.warn(fn ->
+          "missing configuration for reading type: #{r.type}"
+        end)
+
+      # reading needs to be processed, sould we do it async?
+      async ->
+        Task.start(mod, func, [r])
+
+      # process msg inline
+      true ->
+        apply(mod, func, [r])
+    end
+
+    nil
+  end
+
+  defp msg_decode({:error, e}, _s, _opts) do
+    Logger.warn(fn -> e end)
+  end
+
+  defp msg_handler(%{} = s, %{} = r) do
+    cond do
+      Reading.boot?(r) ->
+        Map.get(s, :remote_msgs, {:missing, :missing})
+
+      Reading.startup?(r) ->
+        Map.get(s, :remote_msgs, {:missing, :missing})
+
+      Reading.remote_runtime?(r) ->
+        Map.get(s, :remote_msgs, {:missing, :missing})
+
+      Reading.relhum?(r) ->
+        Map.get(s, :temperature_msgs, {:missing, :missing})
+
+      Reading.temperature?(r) ->
+        Map.get(s, :temperature_msgs, {:missing, :missing})
+
+      Reading.switch?(r) ->
+        Map.get(s, :switch_msgs, {:missing, :missing})
+
+      true ->
+        {nil, nil}
+    end
+  end
+
+  defp msg_process_locally(%{} = r) do
+    cond do
+      Reading.free_ram_stat?(r) ->
+        Map.put_new(r, :record, r.runtime_metrics) |> FreeRamStat.record()
+
+      Reading.engine_metric?(r) ->
+        Map.put_new(r, :record, r.runtime_metrics) |> EngineMetric.record()
+
+      Reading.simple_text?(r) ->
+        log = Map.get(r, :log, true)
+        log && Logger.warn(fn -> "#{r.name} --> #{r.text}" end)
+
+      true ->
+        Logger.warn(fn ->
+          "#{r.name} unhandled reading #{inspect(r, pretty: true)}"
+        end)
+    end
+
+    nil
   end
 end

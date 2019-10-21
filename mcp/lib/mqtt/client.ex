@@ -78,7 +78,7 @@ defmodule Mqtt.Client do
     subscribe(feed)
   end
 
-  def runtime_metrics(flag) when is_boolean(flag) do
+  def runtime_metrics(flag) when is_boolean(flag) or flag == :toggle do
     GenServer.call(__MODULE__, {:runtime_metrics, flag})
   end
 
@@ -208,10 +208,17 @@ defmodule Mqtt.Client do
   end
 
   def handle_call({:runtime_metrics, flag}, _from, %{runtime_metrics: was} = s)
-      when is_boolean(flag) do
-    s = Map.put(s, :runtime_metrics, flag)
+      when is_boolean(flag) or flag == :toggle do
+    new_flag =
+      if flag == :toggle do
+        not s.runtime_metrics
+      else
+        flag
+      end
 
-    {:reply, %{was: was, is: flag}, s}
+    s = Map.put(s, :runtime_metrics, new_flag)
+
+    {:reply, %{was: was, is: s.runtime_metrics}, s}
   end
 
   def handle_call({:timesync_msg}, _from, s) do
