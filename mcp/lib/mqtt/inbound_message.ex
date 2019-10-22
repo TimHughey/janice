@@ -196,14 +196,17 @@ defmodule Mqtt.InboundMessage do
   end
 
   defp msg_ensure_flags(%{} = s, %{} = r, opts) when is_list(opts) do
+    # merge additional message flags into the decoded message (if available)
+    additional_flags = config(:additional_message_flags) |> Enum.into(%{})
+
     # downstream modules and functions use these flags (as part of the reading)
     # for logging and to control if expensive runtime metrics are collected
-
     Map.put_new(r, :log_reading, Map.get(r, :log, s.log_reading))
     |> Map.put_new(
       :runtime_metrics,
       Keyword.get(opts, :runtime_metrics, false)
     )
+    |> Map.merge(additional_flags)
   end
 
   defp msg_decode({:ok, %{metadata: :fail}}, _s, _opts), do: nil

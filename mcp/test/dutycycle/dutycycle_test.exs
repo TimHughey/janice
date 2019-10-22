@@ -14,7 +14,9 @@ defmodule DutycycleTest do
 
   @moduletag :dutycycle
   setup_all do
-    new_dcs = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 99]
+    ids = 0..18
+    new_dcs = Enum.to_list(ids) ++ [99]
+
     for n <- new_dcs, do: new_dutycycle(n) |> Dutycycle.add()
     :ok
   end
@@ -273,17 +275,26 @@ defmodule DutycycleTest do
 
   # NEW!
   @tag num: 13
-  test "can change an existing profile", context do
+  test "can change properties of an existing profile", context do
     dc = Dutycycle.get_by(name: name_str(context[:num]))
     rc1 = Server.enable(dc.name)
     rc2 = Server.activate_profile(dc.name, "fast")
 
-    rc3 = Server.update_profile(name_str(context[:num]), "fast", run_ms: 49_152)
+    %{profile: profile, reload: reload} =
+      Server.update_profile(name_str(context[:num]), "fast", run_ms: 49_152)
 
     assert rc1 === :ok
     assert rc2 === :ok
-    assert Map.has_key?(rc3, :profile)
-    assert Map.has_key?(rc3, :reload)
+    assert {:ok, %Dutycycle.Profile{}} = profile
+    assert reload === true
+  end
+
+  @tag num: 13
+  test "can handle unknown profile when changing profile properties", context do
+    rc =
+      Server.update_profile(name_str(context[:num]), "foobar", run_ms: 49_152)
+
+    assert rc === %{profile: {:error, :not_found}, reload: true}
   end
 
   @tag num: 14
@@ -310,6 +321,56 @@ defmodule DutycycleTest do
 
     assert is_atom(rc)
     assert rc === :reload_queued
+  end
+
+  @tag num: 16
+  test "can handle invalid properties when changing profile properties",
+       context do
+    %{profile: profile, reload: _} =
+      Server.update_profile(name_str(context[:num]), "fast",
+        run_ms: -1,
+        idle_ms: -1,
+        name: "high"
+      )
+
+    {rc, cs} = profile
+
+    assert :invalid_changes === rc
+    refute cs.valid?()
+  end
+
+  @tag num: 17
+  test "can handle duplicate name when changing profile properties",
+       context do
+    %{profile: profile, reload: _} =
+      Server.update_profile(name_str(context[:num]), "fast",
+        run_ms: 1,
+        idle_ms: 1,
+        name: "high"
+      )
+
+    {rc, cs} = profile
+
+    assert :error === rc
+    refute cs.valid?()
+  end
+
+  @tag num: 18
+  test "can change the name when changing profile properties",
+       context do
+    %{profile: res, reload: reload} =
+      Server.update_profile(name_str(context[:num]), "fast",
+        run_ms: 1,
+        idle_ms: 1,
+        name: "new_profile"
+      )
+
+    {rc, p} = res
+
+    assert :ok === rc
+    assert reload
+    assert %Dutycycle.Profile{} = p
+    assert Dutycycle.Profile.name(p) === "new_profile"
   end
 
   test "all dutycycle ids (with empty opts)" do

@@ -419,11 +419,14 @@ defmodule Sensor do
           %{hostname: hostname, tc: tc} = r}
        )
        when tc > 80.0 do
-    Logger.warn(fn ->
-      "dropping invalid temperature for #{inspect(name)} from #{
-        inspect(hostname)
-      }"
-    end)
+    log = Map.get(r, :log_invalid_readings, false)
+
+    log &&
+      Logger.warn(fn ->
+        "dropping invalid temperature for #{inspect(name)} from #{
+          inspect(hostname)
+        }"
+      end)
 
     {s, r}
   end

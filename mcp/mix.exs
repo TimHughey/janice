@@ -26,7 +26,7 @@ defmodule Mcp.Mixfile do
   def project do
     [
       app: :mcp,
-      version: "0.1.17",
+      version: "0.1.18",
       elixir: "~> 1.9",
       deps: deps(),
       releases: releases(),
@@ -81,9 +81,6 @@ defmodule Mcp.Mixfile do
       {:postgrex, ">= 0.0.0"},
       {:ecto_sql, "~> 3.1"},
       {:tortoise, "~> 0.9"},
-      # {:emqtt, github: "emqx/emqtt"},
-      # {:emqtt, github: "emqtt/emqttc"},
-      # {:emqttc, github: "rabbitmq/emqttc", tag: "remove-logging"},
       {:uuid, "~> 1.1"},
       {:gettext, "~> 0.11"},
       {:quantum, "~> 2.2"},
@@ -109,7 +106,13 @@ defmodule Mcp.Mixfile do
     [
       "ecto.migrate": ["ecto.migrate", "ecto.dump"],
       "ecto.setup": ["ecto.create", "ecto.load", "ecto.migrate"],
-      "ecto.reset": ["ecto.drop", "ecto.setup"],
+      "ecto.reset": [
+        "ecto.drop",
+        "ecto.create",
+        "ecto.load",
+        "ecto.migrate",
+        "ecto.dump"
+      ],
       "mcp.deps.update": [
         "local.hex --if-missing --force",
         "deps.get",

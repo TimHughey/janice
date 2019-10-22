@@ -70,7 +70,7 @@ defmodule Dutycycle.Server do
     call_server(name, msg)
   end
 
-  def profiles(name, opts \\ []) when is_binary(name) do
+  def profiles(name, opts \\ []) when is_binary(name) and is_list(opts) do
     msg = %{:msg => :profiles, opts: opts}
     call_server(name, msg)
   end
@@ -109,16 +109,16 @@ defmodule Dutycycle.Server do
   def update_profile(name, profile, opts)
       when is_binary(name) and is_binary(profile) and is_list(opts) do
     msg = %{:msg => :update_profile, profile: profile, opts: opts}
-    p = call_server(name, msg)
 
-    # default is to reload the dutycycle
-    reload = Keyword.get(opts, :reload, true)
+    %{profile: {rc, res}, reload: reload} = call_server(name, msg)
 
-    if reload do
-      reload(name, opts)
-    end
+    # if the change was successful and it was to the active profile then
+    # stop the dutycycle and then re-activate the profile to effectuate the
+    # changes made
+    reload && :ok === rc && Profile.active?(res) &&
+      activate_profile(name, Profile.name(res))
 
-    %{profile: p, reload: reload}
+    %{profile: {rc, res}, reload: reload}
   end
 
   ####
@@ -224,9 +224,19 @@ defmodule Dutycycle.Server do
         _from,
         %{dutycycle: dc} = s
       ) do
-    rc = Profile.change(dc, profile, opts)
+    # default reload to true
+    reload = Keyword.get(opts, :reload, true)
+    # process the actual changes to the profile
+    {rc, res} = Profile.change_properties(dc, profile, opts)
 
-    {:reply, rc, s}
+    s =
+      if reload do
+        reload_dutycycle(s)
+      else
+        s
+      end
+
+    {:reply, %{profile: {rc, res}, reload: reload}, s}
   end
 
   # handle case when we receive a message that we don't understand

@@ -1,4 +1,6 @@
 defmodule Repo.Migrations.ChangeDutycycle do
+  @moduledoc false
+
   use Ecto.Migration
 
   def change do
@@ -7,7 +9,11 @@ defmodule Repo.Migrations.ChangeDutycycle do
     drop_if_exists(index(:dutycycle, [:name]))
     drop_if_exists(index(:dutycycle_state, [:dutycycle_id]))
     drop_if_exists(index(:dutycycle_mode, [:dutycycle_id, :name]))
-    drop_if_exists(index(:dutycycle_profile, [:dutycycle_id, :name], unique: true))
+
+    drop_if_exists(
+      index(:dutycycle_profile, [:dutycycle_id, :name], unique: true)
+    )
+
     drop_if_exists(index(:dutycycle_profile, [:dutycycle_id]))
 
     drop_if_exists(table(:dutycycle_state))
@@ -58,6 +64,9 @@ defmodule Repo.Migrations.ChangeDutycycle do
 
     create_if_not_exists(index(:dutycycle, [:name], unique: true))
     create_if_not_exists(index(:dutycycle_state, [:dutycycle_id]))
-    create_if_not_exists(index(:dutycycle_profile, [:dutycycle_id, :name], unique: true))
+
+    create_if_not_exists(
+      index(:dutycycle_profile, [:dutycycle_id, :name], unique: true)
+    )
   end
 end

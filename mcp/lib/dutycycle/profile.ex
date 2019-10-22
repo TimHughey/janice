@@ -4,8 +4,11 @@ defmodule Dutycycle.Profile do
   require Logger
   use Ecto.Schema
 
-  import Repo, only: [one: 1, update_all: 2]
+  import Ecto.Changeset
   import Ecto.Query, only: [from: 2]
+  import Repo, only: [one: 1, update: 1, update_all: 2]
+
+  import Janice.Common.DB, only: [name_regex: 0]
 
   alias Dutycycle.Profile
 
@@ -47,6 +50,8 @@ defmodule Dutycycle.Profile do
     if Enum.empty?(active), do: :none, else: hd(active)
   end
 
+  def active?(%Profile{active: active}), do: active
+
   def add(%Dutycycle{} = d, %Profile{} = p) do
     Ecto.build_assoc(d, :profiles, p) |> Repo.insert!()
   end
@@ -68,34 +73,46 @@ defmodule Dutycycle.Profile do
     Map.take(dcp, keys)
   end
 
-  def change(nil, _, _), do: %Dutycycle.Profile{}
+  def change_properties(nil, _, _), do: %Dutycycle.Profile{}
 
-  def change(%Dutycycle{} = dc, profile, opts)
-      when is_binary(profile) and is_list(opts) do
-    set = Keyword.take(opts, [:run_ms, :idle_ms])
-    log = Keyword.get(opts, :log, false)
-
-    {rows_updated, _} =
-      from(
-        dp in Dutycycle.Profile,
-        where: dp.dutycycle_id == ^dc.id,
-        where: dp.name == ^profile,
-        update: [set: ^set]
-      )
-      |> update_all([])
-
-    rows_updated > 0 && log &&
-      Logger.info(fn ->
-        "dutycycle [#{dc.name}] profile [#{profile}] updated"
-      end)
-
+  def change_properties(%Dutycycle{} = dc, profile_name, opts)
+      when is_binary(profile_name) and is_list(opts) do
     from(
       dp in Dutycycle.Profile,
       where: dp.dutycycle_id == ^dc.id,
-      where: dp.name == ^profile
+      where: dp.name == ^profile_name
     )
-    |> one
+    |> one()
+    |> change_properties(opts)
   end
+
+  def change_properties(%Profile{} = p, opts) when is_list(opts) do
+    set = Keyword.take(opts, [:run_ms, :idle_ms, :name]) |> Enum.into(%{})
+
+    cs = changeset(p, set)
+
+    if cs.valid? do
+      update(cs)
+    else
+      {:invalid_changes, cs}
+    end
+  end
+
+  def change_properties(nil, _opts), do: {:error, :not_found}
+
+  def changeset(profile, params \\ %{}) do
+    profile
+    |> cast(params, [:name, :run_ms, :idle_ms])
+    |> validate_required([:name, :run_ms, :idle_ms])
+    |> validate_number(:run_ms, greater_than_or_equal_to: 0)
+    |> validate_number(:idle_ms, greater_than_or_equal_to: 0)
+    |> validate_format(:name, name_regex())
+    |> unique_constraint(:name,
+      name: :dutycycle_profile_name_dutycycle_id_index
+    )
+  end
+
+  def name(%Profile{name: name}), do: name
 
   def phase_ms(%Dutycycle.Profile{idle_ms: ms}, :idle), do: ms
   def phase_ms(%Dutycycle.Profile{run_ms: ms}, :run), do: ms

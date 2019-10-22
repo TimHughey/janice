@@ -292,7 +292,10 @@ defmodule Mqtt.Client do
   end
 
   def handle_info({{Tortoise, _client_id}, ref, res}, s) do
-    Logger.warn("subscription ref: #{inspect(ref)} #{inspect(res)}")
+    log = Map.get(s, :log_subscriptions, false)
+
+    log &&
+      Logger.warn(fn -> "subscription ref: #{inspect(ref)} #{inspect(res)}" end)
 
     {:noreply, s}
   end
