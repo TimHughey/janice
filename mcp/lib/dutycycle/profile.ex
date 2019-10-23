@@ -9,6 +9,7 @@ defmodule Dutycycle.Profile do
   import Repo, only: [one: 1, update: 1, update_all: 2]
 
   import Janice.Common.DB, only: [name_regex: 0]
+  import Janice.TimeSupport, only: [ms: 1]
 
   alias Dutycycle.Profile
 
@@ -87,6 +88,7 @@ defmodule Dutycycle.Profile do
   end
 
   def change_properties(%Profile{} = p, opts) when is_list(opts) do
+    opts = convert_change_properties_opts(opts)
     set = Keyword.take(opts, [:run_ms, :idle_ms, :name]) |> Enum.into(%{})
 
     cs = changeset(p, set)
@@ -116,4 +118,16 @@ defmodule Dutycycle.Profile do
 
   def phase_ms(%Dutycycle.Profile{idle_ms: ms}, :idle), do: ms
   def phase_ms(%Dutycycle.Profile{run_ms: ms}, :run), do: ms
+
+  defp convert_change_properties_opts(opts) when is_list(opts) do
+    for opt <- opts do
+      case opt do
+        {:run, val} when is_tuple(val) -> {:run_ms, ms(val)}
+        {:run, _} -> nil
+        {:idle, val} when is_tuple(val) -> {:idle_ms, ms(val)}
+        {:idle, _} -> nil
+        _anything -> opt
+      end
+    end
+  end
 end

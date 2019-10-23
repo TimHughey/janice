@@ -35,7 +35,10 @@ config :mcp, Janice.Scheduler,
   timezone: "America/New_York"
 
 config :mcp, Mqtt.InboundMessage,
-  additional_message_flags: [log_invalid_readings: false],
+  additional_message_flags: [
+    log_invalid_readings: false,
+    log_roundtrip_times: false
+  ],
   log_reading: false,
   temperature_msgs: {Sensor, :external_update},
   switch_msgs: {Switch, :external_update},

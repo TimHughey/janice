@@ -14,7 +14,7 @@ defmodule DutycycleTest do
 
   @moduletag :dutycycle
   setup_all do
-    ids = 0..18
+    ids = 0..19
     new_dcs = Enum.to_list(ids) ++ [99]
 
     for n <- new_dcs, do: new_dutycycle(n) |> Dutycycle.add()
@@ -371,6 +371,22 @@ defmodule DutycycleTest do
     assert reload
     assert %Dutycycle.Profile{} = p
     assert Dutycycle.Profile.name(p) === "new_profile"
+  end
+
+  @tag num: 19
+  test "can properties of an existing profile with human friendly times",
+       context do
+    %{profile: res, reload: reload} =
+      Server.update_profile(name_str(context[:num]), "fast",
+        run: {:mins, 11},
+        idle: {:hrs, 1}
+      )
+
+    {rc, p} = res
+
+    assert :ok === rc
+    assert reload
+    assert %Dutycycle.Profile{} = p
   end
 
   test "all dutycycle ids (with empty opts)" do
