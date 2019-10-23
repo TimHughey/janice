@@ -175,6 +175,40 @@ defmodule MqttInboundMessageTest do
     assert msg =~ "bad_msg"
   end
 
+  test "can get additional message flags" do
+    rc = Mqtt.InboundMessage.additional_message_flags()
+
+    assert is_map(rc)
+  end
+
+  test "can set additional message flags" do
+    {rc, new_flags} =
+      Mqtt.InboundMessage.additional_message_flags(set: [foobar: true])
+
+    assert rc == :ok
+    assert is_map(new_flags)
+    assert Map.has_key?(new_flags, :foobar)
+  end
+
+  test "can merge additional message flags" do
+    initial_flag_count =
+      Mqtt.InboundMessage.additional_message_flags() |> Enum.count()
+
+    {rc, new_flags} =
+      Mqtt.InboundMessage.additional_message_flags(merge: [another_flag: true])
+
+    assert rc == :ok
+    assert is_map(new_flags)
+    assert Map.has_key?(new_flags, :another_flag)
+    assert Enum.count(new_flags) >= initial_flag_count + 1
+  end
+
+  test "setting additional message flags detects bad opts" do
+    rc = Mqtt.InboundMessage.additional_message_flags(foobar: [hello: true])
+
+    assert rc == :bad_opts
+  end
+
   # test "inbound message logging" do
   #   start = Mqtt.InboundMessage.log_json(log: true)
   #   switch_ext_msg(1)

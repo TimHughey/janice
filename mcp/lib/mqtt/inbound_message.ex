@@ -19,6 +19,10 @@ defmodule Mqtt.InboundMessage do
 
   ## Callbacks
 
+  def additional_message_flags(opts \\ []) when is_list(opts) do
+    GenServer.call(__MODULE__, {:additional_message_flags, opts})
+  end
+
   def init(s)
       when is_map(s) do
     Logger.debug("init()")
@@ -37,6 +41,10 @@ defmodule Mqtt.InboundMessage do
       |> Map.put_new(:switch_msgs, config(:switch_msgs))
       |> Map.put_new(:remote_msgs, config(:remote_msgs))
       |> Map.put_new(:periodic_log, config(:periodic_log, periodic_log_default))
+      |> Map.put_new(
+        :additional_message_flags,
+        config(:additional_message_flags) |> Enum.into(%{})
+      )
 
     if Map.get(s, :autostart, false) do
       first = s.periodic_log |> Keyword.get(:first)
@@ -64,6 +72,30 @@ defmodule Mqtt.InboundMessage do
   end
 
   # GenServer callbacks
+  def handle_call({:additional_message_flags, opts}, _from, s) do
+    set_flags = Keyword.get(opts, :set, nil)
+    merge_flags = Keyword.get(opts, :merge, nil)
+
+    cond do
+      opts == [] ->
+        {:reply, s.additional_message_flags, s}
+
+      is_list(set_flags) ->
+        s = Map.put(s, :additional_flags, Enum.into(set_flags, %{}))
+        {:reply, {:ok, s.additional_flags}, s}
+
+      is_list(merge_flags) ->
+        flags =
+          Map.merge(s.additional_message_flags, Enum.into(merge_flags, %{}))
+
+        s = Map.put(s, :additional_flags, flags)
+        {:reply, {:ok, s.additional_flags}, s}
+
+      true ->
+        {:reply, :bad_opts, s}
+    end
+  end
+
   def handle_call({:incoming_message, msg, opts}, _from, s) do
     {:reply, :ok, incoming_msg(msg, s, opts)}
   end
@@ -196,17 +228,14 @@ defmodule Mqtt.InboundMessage do
   end
 
   defp msg_ensure_flags(%{} = s, %{} = r, opts) when is_list(opts) do
-    # merge additional message flags into the decoded message (if available)
-    additional_flags = config(:additional_message_flags) |> Enum.into(%{})
-
-    # downstream modules and functions use these flags (as part of the reading)
+    # downstream modules and functions use flags (as part of the reading)
     # for logging and to control if expensive runtime metrics are collected
     Map.put_new(r, :log_reading, Map.get(r, :log, s.log_reading))
     |> Map.put_new(
       :runtime_metrics,
       Keyword.get(opts, :runtime_metrics, false)
     )
-    |> Map.merge(additional_flags)
+    |> Map.merge(s.additional_message_flags)
   end
 
   defp msg_decode({:ok, %{metadata: :fail}}, _s, _opts), do: nil
@@ -218,7 +247,7 @@ defmodule Mqtt.InboundMessage do
 
     r = msg_ensure_flags(s, r, opts)
 
-    {mod, func} = msg_handler(s, r)
+    {mod, func} = msg_process_external(s, r)
 
     async = Keyword.get(opts, :async, true)
 
@@ -251,25 +280,27 @@ defmodule Mqtt.InboundMessage do
     Logger.warn(fn -> e end)
   end
 
-  defp msg_handler(%{} = s, %{} = r) do
+  defp msg_process_external(%{} = s, %{} = r) do
+    missing = {:missing, :missing}
+
     cond do
       Reading.boot?(r) ->
-        Map.get(s, :remote_msgs, {:missing, :missing})
+        Map.get(s, :remote_msgs, missing)
 
       Reading.startup?(r) ->
-        Map.get(s, :remote_msgs, {:missing, :missing})
+        Map.get(s, :remote_msgs, missing)
 
       Reading.remote_runtime?(r) ->
-        Map.get(s, :remote_msgs, {:missing, :missing})
+        Map.get(s, :remote_msgs, missing)
 
       Reading.relhum?(r) ->
-        Map.get(s, :temperature_msgs, {:missing, :missing})
+        Map.get(s, :temperature_msgs, missing)
 
       Reading.temperature?(r) ->
-        Map.get(s, :temperature_msgs, {:missing, :missing})
+        Map.get(s, :temperature_msgs, missing)
 
       Reading.switch?(r) ->
-        Map.get(s, :switch_msgs, {:missing, :missing})
+        Map.get(s, :switch_msgs, missing)
 
       true ->
         {nil, nil}

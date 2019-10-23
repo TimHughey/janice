@@ -6,7 +6,6 @@ defmodule SwitchState do
   require Logger
   use Ecto.Schema
 
-  # import Ecto.Changeset, only: [cast: 2, change: 2]
   import Ecto.Changeset
   import Ecto.Query, only: [from: 2]
   import Repo, only: [all: 2, get: 2, update!: 1, update: 1, one: 1]
@@ -41,7 +40,8 @@ defmodule SwitchState do
 
   def as_map(%SwitchState{} = ss), do: %{pio: ss.pio, state: ss.state}
 
-  def as_list_of_maps(list) when is_list(list), do: for(ss <- list, do: as_map(ss))
+  def as_list_of_maps(list) when is_list(list),
+    do: for(ss <- list, do: as_map(ss))
 
   def browse do
     sorted = all(:everything) |> Enum.sort(fn a, b -> a.name <= b.name end)
@@ -51,7 +51,8 @@ defmodule SwitchState do
         {"ID", :id},
         {"Name", :name},
         {"Device", fn x -> x.switch.device end},
-        {"Last Seen", fn x -> Timex.format!(x.switch.last_seen_at, "{RFC3339z}") end}
+        {"Last Seen",
+         fn x -> Timex.format!(x.switch.last_seen_at, "{RFC3339z}") end}
       ]
     )
   end
@@ -132,17 +133,11 @@ defmodule SwitchState do
     if is_nil(get_by(name: name)), do: false, else: true
   end
 
-  # def delete(id) when is_integer(id) do
-  #   from(ss in SwitchState, where: ss.id == ^id) |> delete_all()
-  # end
-  #
-  # def delete(name) when is_binary(name) do
-  #   from(ss in SwitchState, where: ss.name == ^name) |> delete_all()
-  # end
-
   def get_by(opts) when is_list(opts) do
     filter = Keyword.take(opts, [:name, :id])
-    select = Keyword.take(opts, [:only]) |> Keyword.get_values(:only) |> List.flatten()
+
+    select =
+      Keyword.take(opts, [:only]) |> Keyword.get_values(:only) |> List.flatten()
 
     if Enum.empty?(filter) do
       Logger.warn(fn -> "get_by bad args: #{inspect(opts)}" end)
@@ -154,7 +149,8 @@ defmodule SwitchState do
     end
   end
 
-  def get_by(bad), do: Logger.warn(fn -> "get_by() bad args: #{inspect(bad)}" end)
+  def get_by(bad),
+    do: Logger.warn(fn -> "get_by() bad args: #{inspect(bad)}" end)
 
   # def get_by_name(name) when is_binary(name) do
   #   from(ss in SwitchState, where: ss.name == ^name) |> one()
@@ -204,7 +200,8 @@ defmodule SwitchState do
     end
   end
 
-  def state(%SwitchState{name: name} = ss, opts) when is_binary(name) and is_list(opts) do
+  def state(%SwitchState{name: name} = ss, opts)
+      when is_binary(name) and is_list(opts) do
     position = Keyword.get(opts, :position)
 
     new_ss = change(ss, state: position) |> update!()
@@ -221,8 +218,11 @@ defmodule SwitchState do
   # toggle() header
   def toggle(name, opts \\ [])
 
-  def toggle(id, opts) when is_integer(id), do: get(SwitchState, id) |> toggle(opts)
-  def toggle(name, opts) when is_binary(name), do: get_by(name: name) |> toggle(opts)
+  def toggle(id, opts) when is_integer(id),
+    do: get(SwitchState, id) |> toggle(opts)
+
+  def toggle(name, opts) when is_binary(name),
+    do: get_by(name: name) |> toggle(opts)
 
   def toggle(%SwitchState{} = ss, opts) do
     state(ss, lazy: true, position: not ss.state)

@@ -94,7 +94,7 @@ defmodule SwitchCmd do
 
         RunMetric.record(
           module: "#{__MODULE__}",
-          metric: "rt_latency",
+          metric: "switch_cmd_rt_latency_ms",
           device: cmd.name,
           val: opts.rt_latency,
           record: Map.get(m, :log_roundtrip_times, false)
@@ -295,7 +295,7 @@ defmodule SwitchCmd do
 
     RunMetric.record(
       module: "#{__MODULE__}",
-      metric: "record_cmd_us",
+      metric: "switch_cmd_db_persist_us",
       device: name,
       val: elapsed_us,
       record: true
