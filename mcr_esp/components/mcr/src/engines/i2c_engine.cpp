@@ -201,7 +201,7 @@ bool mcrI2c::commandAck(CmdSwitch_t &cmd) {
 }
 
 void mcrI2c::core(void *task_data) {
-  int wait_for_name_ms = 30000;
+  int wait_for_name_ms = 60000;
   bool driver_ready = false;
   bool net_name = false;
 
