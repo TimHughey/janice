@@ -29,19 +29,17 @@ fw_suffixes=(bin elf)
 vsn=$(git describe)
 htdocs=/dar/www/wisslanding/htdocs/janice/mcr_esp/firmware
 
-if [[ -x /usr/bin/portageq ]]; then
-	MAKEOPTS=$(portageq envvar MAKEOPTS)
-else
-	MAKEOPTS="-j9"
-fi
-
 pushd -q $mcr
 
 if [[ "${host}" = "jophiel" ]]; then
   git pull || exit 1
 fi
 
-run_cmd make ${MAKEOPTS}
+if [[ -x ${IDF_PATH}/add-path.sh ]]; then
+	${IDF_PATH}/add-path.sh 1> /dev/null
+fi
+
+run_cmd idf.py build 
 
 # echo "deploying mcr_esp.{bin,elf} to $htdocs"
 for suffix in "${fw_suffixes[@]}"; do
