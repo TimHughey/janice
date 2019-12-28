@@ -6,6 +6,7 @@
 // "mtime":1517029685,"cmd":"set.switch"}
 
 static const char *TAG = "mcrCmdFactory";
+
 static const int _jsonBufferCapacity =
     JSON_OBJECT_SIZE(10) + JSON_ARRAY_SIZE(8) + JSON_OBJECT_SIZE(2) * 8;
 

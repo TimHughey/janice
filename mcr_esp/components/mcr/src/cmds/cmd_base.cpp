@@ -1,4 +1,3 @@
-
 #include "cmds/cmd_base.hpp"
 
 using std::move;

@@ -301,6 +301,12 @@ defmodule Sensor do
   def relhum(%Sensor{relhum: %SensorRelHum{rh: rh}}), do: rh
   def relhum(_anything), do: nil
 
+  def replace(:help) do
+    IO.puts("Sensor.replace(name, new_id)")
+    IO.puts("  name  : sensor name to replace")
+    IO.puts("  new_id: sensor id of replacement")
+  end
+
   def replace(name, new_id) when is_binary(name) and is_integer(new_id) do
     old = get_by(name: name)
     new = get_by(id: new_id)
