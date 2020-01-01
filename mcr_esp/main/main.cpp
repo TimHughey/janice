@@ -62,16 +62,6 @@ void app_main() {
   setenv("TZ", "EST5EDT,M3.2.0/2,M11.1.0", 1);
   tzset();
 
-  // ensure all peripherals have been completely reset
-  // important after OTA and if an internal error occured that forced a restart
-  // periph_module_disable(PERIPH_WIFI_MODULE);
-  // periph_module_disable(PERIPH_I2C0_MODULE);
-  // periph_module_disable(PERIPH_RMT_MODULE);
-  //
-  // periph_module_enable(PERIPH_WIFI_MODULE);
-  // periph_module_enable(PERIPH_I2C0_MODULE);
-  // periph_module_enable(PERIPH_RMT_MODULE);
-
   mcrNVS::init();
 
   // must create network first!

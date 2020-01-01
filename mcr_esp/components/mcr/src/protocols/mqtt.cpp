@@ -77,7 +77,7 @@ void mcrMQTT::announceStartup() {
   startupReading_t startup(batt_mv);
 
   publish(&startup);
-  Net::statusLED(false);
+  Net::statusLED(0);
 }
 
 void mcrMQTT::connect(int wait_ms) {

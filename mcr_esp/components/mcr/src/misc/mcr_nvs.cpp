@@ -207,7 +207,8 @@ void mcrNVS::publishMsg(const char *key, mcrNVSMessage_t *blob) {
 
 void mcrNVS::zeroBuffers() {
   if (_blob != nullptr) {
-    _blob = {};
+    _blob->time = 0;
+    _blob->msg[0] = 0;
   }
 
   if (_time_str != nullptr)

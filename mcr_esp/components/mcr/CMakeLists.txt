@@ -2,3 +2,5 @@ idf_component_register(SRCS "src/misc/mcr_restart" "src/misc/mcr_nvs" "src/misc/
                        INCLUDE_DIRS "include" "include/external"
                        REQUIRES esp_http_client esp_https_ota nvs_flash app_update esp_adc_cal
                        EMBED_FILES ca.pem)
+
+target_compile_options(${COMPONENT_LIB} PRIVATE -DMG_LOCALS -DMG_ENABLE_HTTP=0 -DARDUINOJSON_ENABLE_STD_STREAM -DARDUINOJSON_USE_LONG_LONG)
