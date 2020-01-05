@@ -6,7 +6,7 @@ defmodule Thermostat.Control do
   alias Thermostat.Profile
 
   def current_val(%Thermostat{sensor: sensor}) do
-    Sensor.celsius(name: sensor, since_secs: 30)
+    Sensor.fahrenheit(name: sensor, since_secs: 30)
   end
 
   # handle the case when a thermostat is disabled
@@ -21,7 +21,12 @@ defmodule Thermostat.Control do
   def next_state(%{name: "standby"}, _state, _set_pt, _val), do: "off"
 
   # handle typical operational case of enabled thermostat controlling a device
-  def next_state(%{low_offset: low_offset, high_offset: high_offset}, state, set_pt, val) do
+  def next_state(
+        %{low_offset: low_offset, high_offset: high_offset},
+        state,
+        set_pt,
+        val
+      ) do
     cond do
       val > set_pt + high_offset and state in ["on", "started", "disabled"] ->
         "off"
@@ -44,8 +49,11 @@ defmodule Thermostat.Control do
   def state_to_position("on"), do: true
   def state_to_position(_other), do: false
 
-  def temperature(%Thermostat{name: name, active_profile: profile} = t) when is_nil(profile) do
-    Thermostat.log?(t) && Logger.warn(fn -> "active profile is nil for thermostat [#{name}]" end)
+  def temperature(%Thermostat{name: name, active_profile: profile} = t)
+      when is_nil(profile) do
+    Thermostat.log?(t) &&
+      Logger.warn(fn -> "active profile is nil for thermostat [#{name}]" end)
+
     {:nil_active_profile, t}
   end
 
@@ -56,7 +64,8 @@ defmodule Thermostat.Control do
     {:no_active_profile, t}
   end
 
-  def temperature(%Thermostat{enable: false} = t), do: Thermostat.state(t, "off")
+  def temperature(%Thermostat{enable: false} = t),
+    do: Thermostat.state(t, "off")
 
   def temperature(%Thermostat{enable: true} = t) do
     profile = Profile.active(t)
@@ -70,7 +79,11 @@ defmodule Thermostat.Control do
       # handle no change in state
       {:ok, t}
     else
-      Switch.state(Thermostat.switch(t), position: state_to_position(next_state), lazy: true)
+      Switch.state(Thermostat.switch(t),
+        position: state_to_position(next_state),
+        lazy: true
+      )
+
       Thermostat.state(t, next_state)
     end
   end

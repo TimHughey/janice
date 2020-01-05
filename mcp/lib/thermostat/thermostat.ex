@@ -71,12 +71,17 @@ defmodule Thermostat do
     [add(th)] ++ add(rest)
   end
 
-  def add(%Thermostat{name: name} = th) do
+  def add(%Thermostat{name: name} = th, opts \\ []) do
     q = from(t in Thermostat, where: t.name == ^name, select: {t})
 
     case one(q) do
       nil ->
-        th |> change([]) |> insert_or_update!() |> Thermostat.Server.start_server()
+        standby = %Profile{name: "standby"}
+
+        %{th | active_profile: "standby", profiles: th.profiles ++ [standby]}
+        |> change([])
+        |> insert_or_update!()
+        |> Thermostat.Server.start_server()
 
       found ->
         Logger.warn(fn -> "add() [#{th.name}] already exists" end)
@@ -92,7 +97,9 @@ defmodule Thermostat do
   end
 
   def delete_all(:dangerous) do
-    names = from(t in Thermostat, select: t.name) |> Repo.all(timeout: @delete_timeout_ms)
+    names =
+      from(t in Thermostat, select: t.name)
+      |> Repo.all(timeout: @delete_timeout_ms)
 
     for name <- names do
       rc = Thermostat.Server.shutdown(name)
@@ -112,7 +119,9 @@ defmodule Thermostat do
 
   def get_by(opts) when is_list(opts) do
     filter = Keyword.take(opts, [:id, :device, :name])
-    select = Keyword.take(opts, [:only]) |> Keyword.get_values(:only) |> List.flatten()
+
+    select =
+      Keyword.take(opts, [:only]) |> Keyword.get_values(:only) |> List.flatten()
 
     if Enum.empty?(filter) do
       Logger.warn(fn -> "get_by bad args: #{inspect(opts)}" end)
@@ -164,7 +173,9 @@ defmodule Thermostat do
   def state(%Thermostat{state: curr_state}), do: curr_state
 
   def state(%Thermostat{} = t, new_state) when is_binary(new_state) do
-    {rc, ct} = change(t, state: new_state, state_at: TimeSupport.utc_now()) |> Repo.update()
+    {rc, ct} =
+      change(t, state: new_state, state_at: TimeSupport.utc_now())
+      |> Repo.update()
 
     if rc === :ok, do: {rc, Repo.preload(ct, :profiles)}, else: {rc, t}
   end

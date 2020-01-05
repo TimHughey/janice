@@ -21,7 +21,8 @@ defmodule ThermostatTest do
     :ok
   end
 
-  def name_str(n), do: "thermostat" <> String.pad_leading(Integer.to_string(n), 3, "0")
+  def name_str(n),
+    do: "thermostat" <> String.pad_leading(Integer.to_string(n), 3, "0")
 
   def new_thermostat(n) do
     num_str = String.pad_leading(Integer.to_string(n), 3, "0")
@@ -45,7 +46,12 @@ defmodule ThermostatTest do
       profiles: [
         %Profile{name: "follow", ref_sensor: follow_sensor},
         %Profile{name: "fixed_25", fixed_setpt: 25.0},
-        %Profile{name: "fixed_26", fixed_setpt: 26.0, low_offset: -0.6, high_offset: 0.4}
+        %Profile{
+          name: "fixed_26",
+          fixed_setpt: 26.0,
+          low_offset: -0.6,
+          high_offset: 0.4
+        }
       ]
     }
   end
@@ -63,12 +69,7 @@ defmodule ThermostatTest do
     assert "follow" in profiles
     assert "fixed_25" in profiles
     assert "fixed_26" in profiles
-  end
-
-  test "can get active profile (when not set) by thermostat name" do
-    active = Server.profiles(name_str(0), active: true)
-
-    assert active == :none
+    assert "standby" in profiles
   end
 
   test "can get full profiles by thermostat name" do
@@ -126,7 +127,7 @@ defmodule ThermostatTest do
   test "can get the state of a new thermostat" do
     state = Server.state(name_str(0))
 
-    assert state in ["new", "started"]
+    assert state in ["new", "started", "off"]
   end
 
   test "can get all known thermostats" do

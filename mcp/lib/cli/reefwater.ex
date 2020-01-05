@@ -1,4 +1,6 @@
 defmodule Reef do
+  @moduledoc false
+
   require Logger
   import IO.ANSI
 
@@ -6,25 +8,43 @@ defmodule Reef do
     IO.puts("mix(:atom) -> control reefwater mix system")
     IO.puts("sump(:atom)-> control display tank replenish")
     IO.puts(" ")
-    IO.puts(yellow() <> ":help displays the various options for each" <> reset())
+
+    IO.puts(
+      yellow() <> ":help displays the various options for each" <> reset()
+    )
   end
 
   def mix(:help) do
     IO.puts(":standby        -> all subsystems on standby\n")
 
-    IO.puts(":fill_initial   -> pump=standby, replenish=fast, fill=fast, heat=standby\n")
+    IO.puts(
+      ":fill_initial   -> pump=standby, replenish=fast, fill=fast, heat=standby\n"
+    )
 
-    IO.puts(":fill_final     -> pump=easy stir, replenish=slow, fill=fast, heat=standby\n")
+    IO.puts(
+      ":fill_final     -> pump=easy stir, replenish=slow, fill=fast, heat=standby\n"
+    )
 
-    IO.puts(":mix            -> pump=constant, replenish=fast, fill=standby, heat=standby\n")
+    IO.puts(
+      ":mix            -> pump=constant, replenish=fast, fill=standby, heat=standby\n"
+    )
 
-    IO.puts(":change_prep    -> pump=easy stir, replenish=fast, fill=standby, heat=match\n")
+    IO.puts(
+      ":change_prep    -> pump=easy stir, replenish=fast, fill=standby, heat=match\n"
+    )
 
-    IO.puts(":change         -> pump=on, replenish=standby, fill=standby, heat=standby\n")
+    IO.puts(
+      ":change         -> pump=on, replenish=standby, fill=standby, heat=standby\n"
+    )
 
-    IO.puts(":stir           -> pump=low stir, replenish=fast, fill=standby, heat=standby\n")
+    IO.puts(
+      ":stir           -> pump=low stir, replenish=fast, fill=standby, heat=standby\n"
+    )
 
-    :ok = IO.puts(":eco            -> pump=low, replenish=fast, fill=standby, heat=low\n")
+    :ok =
+      IO.puts(
+        ":eco            -> pump=low, replenish=fast, fill=standby, heat=low\n"
+      )
   end
 
   def mix(:standby) do
@@ -33,7 +53,8 @@ defmodule Reef do
       {"reefwater rodi fill", "standby"}
     ]
 
-    for {dc, p} <- dcs, do: Dutycycle.Server.activate_profile(dc, p, enable: true)
+    for {dc, p} <- dcs,
+        do: Dutycycle.Server.activate_profile(dc, p, enable: true)
 
     Thermostat.Server.activate_profile("reefwater mix heat", "standby")
   end
@@ -45,7 +66,8 @@ defmodule Reef do
       {"reefwater rodi fill", "fast"}
     ]
 
-    for {dc, p} <- dcs, do: Dutycycle.Server.activate_profile(dc, p, enable: true)
+    for {dc, p} <- dcs,
+        do: Dutycycle.Server.activate_profile(dc, p, enable: true)
 
     Thermostat.Server.activate_profile("reefwater mix heat", "standby")
   end
@@ -57,7 +79,8 @@ defmodule Reef do
       {"reefwater rodi fill", "slow"}
     ]
 
-    for {dc, p} <- dcs, do: Dutycycle.Server.activate_profile(dc, p, enable: true)
+    for {dc, p} <- dcs,
+        do: Dutycycle.Server.activate_profile(dc, p, enable: true)
 
     Thermostat.Server.activate_profile("reefwater mix heat", "standby")
   end
@@ -69,7 +92,8 @@ defmodule Reef do
       {"reefwater rodi fill", "standby"}
     ]
 
-    for {dc, p} <- dcs, do: Dutycycle.Server.activate_profile(dc, p, enable: true)
+    for {dc, p} <- dcs,
+        do: Dutycycle.Server.activate_profile(dc, p, enable: true)
 
     Thermostat.Server.activate_profile("reefwater mix heat", "standby")
   end
@@ -85,7 +109,10 @@ defmodule Reef do
       Dutycycle.Server.activate_profile(dc, p, enable: true)
     end
 
-    Thermostat.Server.activate_profile("reefwater mix heat", "match display tank")
+    Thermostat.Server.activate_profile(
+      "reefwater mix heat",
+      "match display tank"
+    )
   end
 
   def mix(:change) do
@@ -109,9 +136,13 @@ defmodule Reef do
       {"reefwater rodi fill", "standby"}
     ]
 
-    for {dc, p} <- dcs, do: Dutycycle.Server.activate_profile(dc, p, enable: true)
+    for {dc, p} <- dcs,
+        do: Dutycycle.Server.activate_profile(dc, p, enable: true)
 
-    Thermostat.Server.activate_profile("reefwater mix heat", "match display tank")
+    Thermostat.Server.activate_profile(
+      "reefwater mix heat",
+      "match display tank"
+    )
   end
 
   def mix(:eco) do
@@ -121,7 +152,8 @@ defmodule Reef do
       {"reefwater rodi fill", "standby"}
     ]
 
-    for {dc, p} <- dcs, do: Dutycycle.Server.activate_profile(dc, p, enable: true)
+    for {dc, p} <- dcs,
+        do: Dutycycle.Server.activate_profile(dc, p, enable: true)
 
     Thermostat.Server.activate_profile("reefwater mix heat", "standby")
   end
@@ -146,10 +178,13 @@ defmodule Reef do
   end
 
   def sump(:toggle) do
-    curr = Dutycycle.Server.profiles("display tank replenish", only_active: true)
+    curr =
+      Dutycycle.Server.profiles("display tank replenish", only_active: true)
+
     next = sump_next(curr)
 
-    with :ok <- Dutycycle.Server.activate_profile("display tank replenish", next) do
+    with :ok <-
+           Dutycycle.Server.activate_profile("display tank replenish", next) do
       _discard = IO.puts("sump toggled:  #{curr} --> #{next}")
     else
       err ->
