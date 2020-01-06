@@ -381,3 +381,47 @@ Used static IRAM:   73000 bytes (  58072 available, 55.7% used)
     Flash rodata:  168712 bytes
 Total image size:~ 920998 bytes (.bin may be padded larger)
 <<<
+>>>
+commit 2a67a03
+Author: Tim Hughey <timhughey@mac.com>
+Date:   Wed Jan 1 10:18:00 2020 -0500
+
+    Janice Version Bump for ESP-IDF Upgrade
+<<<
+>>>
+commit 2a67a03
+Author: Tim Hughey <timhughey@mac.com>
+Date:   Wed Jan 1 10:18:00 2020 -0500
+
+    Janice Version Bump for ESP-IDF Upgrade
+<<<
+>>>
+commit 2a67a03
+Author: Tim Hughey <timhughey@mac.com>
+Date:   Wed Jan 1 10:18:00 2020 -0500
+
+    Janice Version Bump for ESP-IDF Upgrade
+Python requirements from /home/thughey/devel/esp-idf/requirements.txt are satisfied.
+ninja: no work to do.
+[1/1] cd /home/thughey/devel/janice/mcr_esp/build && /usr/lib/python-exec/python2.7/python /home/thughey/devel/esp-idf/tools/idf_size.py /home/thughey/devel/janice/mcr_esp/build/mcr_esp.map
+Total sizes:
+ DRAM .data size:   13352 bytes
+ DRAM .bss  size:   25984 bytes
+Used static DRAM:   39336 bytes ( 141400 available, 21.8% used)
+Used static IRAM:   75809 bytes (  55263 available, 57.8% used)
+      Flash code:  667497 bytes
+    Flash rodata:  151340 bytes
+Total image size:~ 907998 bytes (.bin may be padded larger)
+Checking Python dependencies...
+Adding size's dependency "app" to list of actions
+Executing action: app
+Running ninja in directory /home/thughey/devel/janice/mcr_esp/build
+Executing "ninja app"...
+Executing action: size
+Running ninja in directory /home/thughey/devel/janice/mcr_esp/build
+Executing "ninja size"...
+
+App build complete. To flash, run this command:
+../../esp-idf/components/esptool_py/esptool/esptool.py -p (PORT) -b 460800 --after hard_reset write_flash 0x10000 build/mcr_esp.bin
+or run 'idf.py -p (PORT) app-flash'
+<<<
