@@ -78,7 +78,15 @@ defmodule Thermostat do
       nil ->
         standby = %Profile{name: "standby"}
 
-        %{th | active_profile: "standby", profiles: th.profiles ++ [standby]}
+        profiles =
+          if Enum.empty?(th.profiles) do
+            [standby]
+          else
+            th.profiles ++ [standby]
+          end
+
+        th
+        |> struct(active_profile: "standby", profiles: profiles)
         |> change([])
         |> insert_or_update!()
         |> Thermostat.Server.start_server()

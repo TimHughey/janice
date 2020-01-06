@@ -3,7 +3,7 @@
 --
 
 -- Dumped from database version 11.4
--- Dumped by pg_dump version 11.4
+-- Dumped by pg_dump version 12.1
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -17,8 +17,6 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 SET default_tablespace = '';
-
-SET default_with_oids = false;
 
 --
 -- Name: dutycycle; Type: TABLE; Schema: public; Owner: -
@@ -558,9 +556,9 @@ CREATE TABLE public.thermostat_profile (
     id bigint NOT NULL,
     thermostat_id bigint,
     name character varying(25) NOT NULL,
-    low_offset double precision DEFAULT 0.0 NOT NULL,
+    low_offset double precision DEFAULT '-0.2'::numeric NOT NULL,
     high_offset double precision DEFAULT 0.0 NOT NULL,
-    check_ms integer DEFAULT 60000 NOT NULL,
+    check_ms integer DEFAULT 300 NOT NULL,
     ref_sensor character varying(40),
     ref_offset double precision,
     fixed_setpt double precision,
@@ -1085,5 +1083,5 @@ ALTER TABLE ONLY public.thermostat_profile
 -- PostgreSQL database dump complete
 --
 
-INSERT INTO public."schema_migrations" (version) VALUES (20171217150128), (20171224164529), (20171224225113), (20171228191703), (20171229001359), (20171231182344), (20180101153253), (20180102171624), (20180102175335), (20180217212153), (20180218021213), (20180222165118), (20180222184042), (20180305193804), (20180307143400), (20180517201719), (20180708221600), (20180709181021), (20190308124055), (20190316032007), (20190317155502), (20190320124824), (20190416130912), (20190417011910), (20191018110319), (20191022013914);
+INSERT INTO public."schema_migrations" (version) VALUES (20171217150128), (20171224164529), (20171224225113), (20171228191703), (20171229001359), (20171231182344), (20180101153253), (20180102171624), (20180102175335), (20180217212153), (20180218021213), (20180222165118), (20180222184042), (20180305193804), (20180307143400), (20180517201719), (20180708221600), (20180709181021), (20190308124055), (20190316032007), (20190317155502), (20190320124824), (20190416130912), (20190417011910), (20191018110319), (20191022013914), (20191022014659), (20200105131440);
 
