@@ -62,7 +62,7 @@ defmodule Thermostat.Profile do
       else: :unknown_profile
   end
 
-  def known?(%Thermostat{profiles: profiles} = t, profile)
+  def known?(%Thermostat{profiles: profiles}, profile)
       when is_binary(profile) do
     if Ecto.assoc_loaded?(profiles) do
       known = for p <- profiles, do: p.name

@@ -14,7 +14,7 @@ defmodule DutycycleTest do
 
   @moduletag :dutycycle
   setup_all do
-    ids = 0..19
+    ids = 0..20
     new_dcs = Enum.to_list(ids) ++ [99]
 
     for n <- new_dcs, do: new_dutycycle(n) |> Dutycycle.add()
@@ -42,7 +42,8 @@ defmodule DutycycleTest do
         %Dutycycle.Profile{name: "fast", run_ms: 1, idle_ms: 1},
         %Dutycycle.Profile{name: "high", run_ms: 120_000, idle_ms: 60_000},
         %Dutycycle.Profile{name: "low", run_ms: 20_000, idle_ms: 20_000},
-        %Dutycycle.Profile{name: "off", run_ms: 0, idle_ms: 60_000}
+        %Dutycycle.Profile{name: "off", run_ms: 0, idle_ms: 60_000},
+        %Dutycycle.Profile{name: "standby", run_ms: 0, idle_ms: 60_000}
       ],
       state: %Dutycycle.State{},
       standalone: true
@@ -374,7 +375,7 @@ defmodule DutycycleTest do
   end
 
   @tag num: 19
-  test "can properties of an existing profile with human friendly times",
+  test "can update properties of an existing profile with human friendly times",
        context do
     %{profile: res, reload: reload} =
       Server.update_profile(name_str(context[:num]), "fast",
@@ -431,5 +432,12 @@ defmodule DutycycleTest do
     m = Dutycycle.as_map(nil)
 
     assert is_map(m)
+  end
+
+  @tag num: 19
+  test "can set Dutycycle to standby", context do
+    rc = Server.standby(name_str(context[:num]), enable: true)
+
+    assert :ok === rc
   end
 end

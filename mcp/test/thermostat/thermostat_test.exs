@@ -296,4 +296,10 @@ defmodule ThermostatTest do
     assert :pong === alive
     assert "standby" in profiles
   end
+
+  test "can set Thermostat to standby" do
+    rc = Server.standby(name_str(0))
+
+    assert :ok === rc
+  end
 end

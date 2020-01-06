@@ -85,6 +85,12 @@ defmodule Thermostat.Server do
     call_server(name, msg)
   end
 
+  def standby(name, opts \\ [])
+      when is_binary(name) and is_list(opts) do
+    msg = %{:msg => :activate_profile, profile: "standby", opts: opts}
+    call_server(name, msg)
+  end
+
   def start_server(%Thermostat{} = t) do
     args = %{id: t.id, added: true}
     Supervisor.start_child(Thermostat.Supervisor, child_spec(args))

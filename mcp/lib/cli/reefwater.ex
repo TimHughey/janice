@@ -20,6 +20,8 @@ defmodule Reef do
     IO.puts("utility_pump_off() -> switch off utility pump")
   end
 
+  def dcs_standby(dc) when is_binary(dc), do: DCS.standby(dc)
+
   def mix_air(profile) when is_binary(profile) do
     DCS.activate_profile(@rma, profile)
   end
@@ -39,6 +41,15 @@ defmodule Reef do
   def mix_heat(_) do
     IO.puts("mix_heat(:standby | profile)")
   end
+
+  def mix_standby do
+    DCS.standby(@rma)
+    DCS.standby(@rmp)
+    THS.standby(@swmt)
+    :ok
+  end
+
+  def ths_standby(th) when is_binary(th), do: THS.standby(th)
 
   def utility_pump(profile) when is_binary(profile) do
     DCS.activate_profile(@rmp, profile)

@@ -85,6 +85,11 @@ defmodule Dutycycle.Server do
     call_server(name, msg)
   end
 
+  def standby(name, opts \\ []) when is_binary(name) do
+    msg = %{:msg => :activate_profile, profile: "standby", opts: opts}
+    call_server(name, msg)
+  end
+
   def standalone(name, opts \\ []) when is_binary(name) do
     msg = %{:msg => :standalone, opts: opts}
     call_server(name, msg)
