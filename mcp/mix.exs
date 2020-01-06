@@ -26,7 +26,7 @@ defmodule Mcp.Mixfile do
   def project do
     [
       app: :mcp,
-      version: "0.1.26",
+      version: "0.1.27",
       elixir: "~> 1.9",
       deps: deps(),
       releases: releases(),
