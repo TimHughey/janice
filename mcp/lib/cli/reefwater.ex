@@ -4,8 +4,11 @@ defmodule Reef do
   require Logger
   import IO.ANSI
 
+  alias Dutycycle.Server, as: DCS
+  alias Thermostat.Server, as: THS
+
   @rma "reefwater mix air"
-  @swmh "salt water mix heat"
+  @swmt "salt water mix tank"
   @rmp "reefwater mix pump"
 
   def help do
@@ -14,11 +17,11 @@ defmodule Reef do
     IO.puts("mix_air(profile) -> control reefwater mix air")
     IO.puts("mix_heat(:standby | profile ) -> control reefwater mix heat")
     IO.puts("utility_pump(profile) -> control utility pump")
-    IO.puts("utilitu_pump_off() -> switch off utility pump")
+    IO.puts("utility_pump_off() -> switch off utility pump")
   end
 
   def mix_air(profile) when is_binary(profile) do
-    Dutycycle.Server.activate_profile(@rma, profile)
+    DCS.activate_profile(@rma, profile)
   end
 
   def mix_air(_) do
@@ -26,11 +29,11 @@ defmodule Reef do
   end
 
   def mix_heat(:standby) do
-    Thermostat.Server.activate_profile(@swmh, "standby")
+    THS.activate_profile(@swmt, "standby")
   end
 
   def mix_heat(profile) when is_binary(profile) do
-    Thermostat.Server.activate_profile(@swmh, "standby")
+    THS.activate_profile(@swmt, "standby")
   end
 
   def mix_heat(_) do
@@ -38,7 +41,7 @@ defmodule Reef do
   end
 
   def utility_pump(profile) when is_binary(profile) do
-    Dutycycle.Server.activate_profile(@rmp, profile)
+    DCS.activate_profile(@rmp, profile)
   end
 
   def utility_pump(_) do
@@ -46,6 +49,6 @@ defmodule Reef do
   end
 
   def utility_pump_off do
-    Dutycycle.Server.activate_profile(@rmp, "standby")
+    DCS.activate_profile(@rmp, "standby")
   end
 end

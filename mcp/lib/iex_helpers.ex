@@ -3,7 +3,19 @@ defmodule Mcp.IExHelpers do
 
   require Logger
 
+  alias Dutycycle.Server, as: DCS
   alias Janice.TimeSupport
+  alias Thermostat.Server, as: THS
+
+  def dcs_activate_profile(dc, profile),
+    do: DCS.activate_profile(dc, profile)
+
+  def dcs_standby(dc), do: DCS.activate_profile(dc, "standby")
+
+  def th_activate_profile(th, profile),
+    do: THS.activate_profile(th, profile)
+
+  def th_standby(th), do: THS.activate_profile(th, "standby")
 
   def server_state(mod), do: :sys.get_state(mod)
   def server_status(mod), do: :sys.get_status(mod)

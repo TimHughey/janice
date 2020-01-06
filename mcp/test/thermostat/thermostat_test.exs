@@ -134,7 +134,7 @@ defmodule ThermostatTest do
     res = Server.all(:thermostats)
     all_maps = Enum.all?(res, fn x -> is_map(x) end)
 
-    assert length(res) == 15
+    assert length(res) >= 15
     assert all_maps
   end
 
@@ -143,7 +143,7 @@ defmodule ThermostatTest do
 
     all_bin = Enum.all?(res, fn x -> is_binary(x) end)
 
-    assert length(res) == 15
+    assert length(res) >= 15
     assert all_bin
   end
 
@@ -278,5 +278,22 @@ defmodule ThermostatTest do
 
     assert rc === :ok
     assert state === "stopped"
+  end
+
+  test "can create default Thermostat" do
+    t = %Thermostat{
+      name: "defaults",
+      switch: "default_sw",
+      sensor: "default_sensor",
+      description: "default description"
+    }
+
+    rc = Thermostat.add(t)
+    alive = Thermostat.Server.ping("defaults")
+    profiles = Thermostat.Server.profiles("defaults", names: true)
+
+    assert :ok === rc
+    assert :pong === alive
+    assert "standby" in profiles
   end
 end
