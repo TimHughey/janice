@@ -74,27 +74,23 @@ defmodule Thermostat do
   def add(%Thermostat{name: name} = th, opts \\ []) do
     q = from(t in Thermostat, where: t.name == ^name, select: {t})
 
-    case one(q) do
-      nil ->
-        standby = %Profile{name: "standby"}
+    one(q) |> add(th, opts)
+  end
 
-        profiles =
-          if Enum.empty?(th.profiles) do
-            [standby]
-          else
-            th.profiles ++ [standby]
-          end
+  def add(nil, %Thermostat{name: name} = th, _opts) do
+    th
+    |> change([])
+    |> insert_or_update!()
+    |> Profile.ensure_standby_profile_exists()
+    |> Thermostat.Server.start_server()
 
-        th
-        |> struct(active_profile: "standby", profiles: profiles)
-        |> change([])
-        |> insert_or_update!()
-        |> Thermostat.Server.start_server()
+    Thermostat.Server.enable(name)
+    Thermostat.Server.activate_profile(name, "standby")
+  end
 
-      found ->
-        Logger.warn(fn -> "add() [#{th.name}] already exists" end)
-        found
-    end
+  def add(%Thermostat{name: name}, %Thermostat{}, _opts) do
+    Logger.warn(fn -> "add() [#{name}] already exists" end)
+    :already_exists
   end
 
   # all() function header

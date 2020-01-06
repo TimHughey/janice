@@ -36,7 +36,19 @@ defmodule Thermostat.Profile do
 
   def check_ms(%Profile{} = p), do: p.check_ms
 
-  def find_profile(%Thermostat{active_profile: active_profile, profiles: profiles}) do
+  def ensure_standby_profile_exists(%Thermostat{} = t) do
+    if known?(t, "standby") do
+      t
+    else
+      Ecto.build_assoc(t, :profiles, name: "standby") |> Repo.insert!()
+      Repo.preload(t, :profiles)
+    end
+  end
+
+  def find_profile(%Thermostat{
+        active_profile: active_profile,
+        profiles: profiles
+      }) do
     found = for p <- profiles, active_profile === p.name, do: p
 
     if is_list(found), do: hd(found), else: :none
@@ -45,7 +57,9 @@ defmodule Thermostat.Profile do
   def get_profile(%Thermostat{profiles: profiles}, name) when is_binary(name) do
     found = for p <- profiles, p.name === name, do: p
 
-    if is_list(found) and not Enum.empty?(found), do: hd(found), else: :unknown_profile
+    if is_list(found) and not Enum.empty?(found),
+      do: hd(found),
+      else: :unknown_profile
   end
 
   def known?(%Thermostat{} = t, profile) when is_binary(profile) do
@@ -63,11 +77,12 @@ defmodule Thermostat.Profile do
     if is_nil(profile.ref_sensor) do
       profile.fixed_setpt
     else
-      Sensor.celsius(name: profile.ref_sensor, since_secs: 90)
+      Sensor.fahrenheit(name: profile.ref_sensor, since_secs: 90)
     end
   end
 
-  def update(%Thermostat{} = t, %{name: name} = data, _opts) when is_map(data) do
+  def update(%Thermostat{} = t, %{name: name} = data, _opts)
+      when is_map(data) do
     profile = get_profile(t, name)
 
     if profile == :unknown_profile do

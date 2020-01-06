@@ -17,7 +17,8 @@ defmodule Thermostat.Server do
     call_server(name, msg)
   end
 
-  def add_profile(name, %Profile{} = p, opts \\ []) when is_binary(name) and is_list(opts) do
+  def add_profile(name, %Profile{} = p, opts \\ [])
+      when is_binary(name) and is_list(opts) do
     msg = %{:msg => :add_profile, profile: p, opts: opts}
     call_server(name, msg)
   end
@@ -113,7 +114,8 @@ defmodule Thermostat.Server do
     if is_pid(pid), do: GenServer.call(server_name, msg), else: :no_server
   end
 
-  def update_profile(name, %{name: profile} = map, opts \\ []) when is_binary(profile) do
+  def update_profile(name, %{name: profile} = map, opts \\ [])
+      when is_binary(profile) do
     msg = %{:msg => :update_profile, :profile => map, opts: opts}
     call_server(name, msg)
   end
@@ -189,7 +191,7 @@ defmodule Thermostat.Server do
   end
 
   def handle_call(%{:msg => :restart, :opts => _opts}, _from, s) do
-    {:stop, :restart_requested, :restart_queued, s}
+    {:stop, :normal, :restart_queued, s}
   end
 
   def handle_call(%{:msg => :shutdown}, _from, s) do
@@ -208,7 +210,11 @@ defmodule Thermostat.Server do
     {:reply, :ok, s}
   end
 
-  def handle_call(%{:msg => :take_ownership, :owner => owner, :opts => opts}, _from, s) do
+  def handle_call(
+        %{:msg => :take_ownership, :owner => owner, :opts => opts},
+        _from,
+        s
+      ) do
     {res, t} = Thermostat.take_ownership(s.thermostat, owner, opts)
     s = Map.put(s, :thermostat, t)
 
@@ -219,7 +225,11 @@ defmodule Thermostat.Server do
     {:reply, s.thermostat, s}
   end
 
-  def handle_call(%{:msg => :update_profile, :profile => profile, :opts => opts}, _from, s) do
+  def handle_call(
+        %{:msg => :update_profile, :profile => profile, :opts => opts},
+        _from,
+        s
+      ) do
     reload = Keyword.get(opts, :reload, false)
     log_reload = Keyword.get(opts, :log_reload, false)
     {res, t} = handle_update_profile(s.thermostat, profile, opts)
@@ -247,7 +257,9 @@ defmodule Thermostat.Server do
   end
 
   def handle_info({:EXIT, pid, reason}, state) do
-    Logger.debug(fn -> ":EXIT message " <> "pid: #{inspect(pid)} reason: #{inspect(reason)}" end)
+    Logger.debug(fn ->
+      ":EXIT message " <> "pid: #{inspect(pid)} reason: #{inspect(reason)}"
+    end)
 
     {:noreply, state}
   end
@@ -286,7 +298,9 @@ defmodule Thermostat.Server do
 
       s = Map.put(s, :timer, timer)
 
-      if rc2 === :nil_active_profile or rc2 === :ok, do: {:ok, s}, else: {rc2, s}
+      if rc2 === :nil_active_profile or rc2 === :ok,
+        do: {:ok, s},
+        else: {rc2, s}
     else
       {rc1, s}
     end
@@ -314,7 +328,9 @@ defmodule Thermostat.Server do
     log = Map.get(s, :log_terminate, false)
 
     log &&
-      Logger.info(fn -> "#{inspect(t.name)} terminate(#{inspect(reason)}) #{inspect(rc)}" end)
+      Logger.info(fn ->
+        "#{inspect(t.name)} terminate(#{inspect(reason)}) #{inspect(rc)}"
+      end)
 
     Switch.state(t.switch, position: false, lazy: true, ack: false)
     :ok
@@ -418,7 +434,8 @@ defmodule Thermostat.Server do
     if rc === :ok, do: {:ok, nt}, else: {:failed, t}
   end
 
-  defp handle_update_profile(%Thermostat{} = t, profile, opts) when is_map(profile) do
+  defp handle_update_profile(%Thermostat{} = t, profile, opts)
+       when is_map(profile) do
     Profile.update(t, profile, opts)
   end
 
@@ -463,7 +480,8 @@ defmodule Thermostat.Server do
   end
 
   # start a __standalone__ thermostat (owner is nil)
-  defp start(%{thermostat: %Thermostat{owned_by: owner}} = s) when is_nil(owner) do
+  defp start(%{thermostat: %Thermostat{owned_by: owner}} = s)
+       when is_nil(owner) do
     Switch.state(Thermostat.switch(s.thermostat), position: false, lazy: true)
 
     timer = next_check_timer(s)

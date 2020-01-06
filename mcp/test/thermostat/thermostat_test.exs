@@ -81,7 +81,7 @@ defmodule ThermostatTest do
   test "can get enabled for a thermostat name" do
     enabled = Server.enabled?(name_str(0))
 
-    refute enabled
+    assert enabled
   end
 
   test "can detect no ownership of thermostat" do
