@@ -11,16 +11,34 @@ defmodule Reef do
   @swmt "salt water mix tank"
   @rmp "reefwater mix pump"
 
-  def help do
-    IO.puts(yellow() <> "Reef Control CLI" <> reset())
+  @add_salt "add salt"
+  @standby "standby"
 
-    IO.puts("mix_air(profile) -> control reefwater mix air")
-    IO.puts("mix_heat(:standby | profile ) -> control reefwater mix heat")
-    IO.puts("utility_pump(profile) -> control utility pump")
-    IO.puts("utility_pump_off() -> switch off utility pump")
+  def help do
+    IO.puts(yellow() <> underline() <> "Reef Control CLI" <> reset())
+    IO.puts(" ")
+
+    print_standby("dcs_standby(dutycycle_name)")
+    print_standby("ths_standby(thermostat_name)")
+    IO.puts(" ")
+
+    print_mix("mix_air(profile) -> control reefwater mix air")
+    print_mix("mix_heat(:standby | profile ) -> control reefwater mix heat")
+    print_mix("utility_pump(profile) -> control utility pump")
+    print_mix("utility_pump_off() -> switch off utility pump")
+    IO.puts(" ")
+
+    print_water("water_change_begin() -> setup for water change")
+    print_water("water_change_end() -> stop everything after water change")
   end
 
   def dcs_standby(dc) when is_binary(dc), do: DCS.standby(dc)
+
+  def mix_add_salt do
+    DCS.activate_profile(@rmp, @add_salt)
+    DCS.activate_profile(@rma, @add_salt)
+    THS.activate_profile(@swmt, @standby)
+  end
 
   def mix_air(profile) when is_binary(profile) do
     DCS.activate_profile(@rma, profile)
@@ -40,6 +58,13 @@ defmodule Reef do
 
   def mix_heat(_) do
     IO.puts("mix_heat(:standby | profile)")
+  end
+
+  def mix_match_display_tank do
+    THS.activate_profile(@swmt, "prep for change")
+    DCS.activate_profile(@rma, "keep fresh")
+    DCS.activate_profile(@rmp, "eco")
+    :ok
   end
 
   def mix_standby do
@@ -62,4 +87,20 @@ defmodule Reef do
   def utility_pump_off do
     DCS.activate_profile(@rmp, "standby")
   end
+
+  def water_change_begin do
+    DCS.activate_profile(@rmp, @constant)
+    DCS.activate_profile(@rma, @standby)
+    THS.activate_profile(@swmt, @standby)
+  end
+
+  def water_change_end do
+    DCS.activate_profile(@rmp, @standby)
+    DCS.activate_profile(@rma, @standby)
+    THS.activate_profile(@swmt, @standby)
+  end
+
+  def print_mix(text), do: IO.puts(light_blue() <> text <> reset())
+  def print_standby(text), do: IO.puts(cyan() <> text <> reset())
+  def print_water_change(text), do: IO.puts(light_green() <> text <> reset())
 end
