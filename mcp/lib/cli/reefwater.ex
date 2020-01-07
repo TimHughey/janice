@@ -13,6 +13,7 @@ defmodule Reef do
 
   @add_salt "add salt"
   @standby "standby"
+  @standby "constant"
 
   def help do
     IO.puts(yellow() <> underline() <> "Reef Control CLI" <> reset())
