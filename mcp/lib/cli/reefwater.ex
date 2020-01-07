@@ -102,5 +102,5 @@ defmodule Reef do
 
   def print_mix(text), do: IO.puts(light_blue() <> text <> reset())
   def print_standby(text), do: IO.puts(cyan() <> text <> reset())
-  def print_water_change(text), do: IO.puts(light_green() <> text <> reset())
+  def print_water(text), do: IO.puts(light_green() <> text <> reset())
 end
