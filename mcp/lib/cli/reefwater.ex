@@ -113,7 +113,7 @@ defmodule Reef do
 
       IO.puts(
         light_blue() <>
-          String.pad_trailing(subsystem, " ", 25) <> light_green() <> profile
+          String.pad_trailing(subsystem, 25, " ") <> light_green() <> profile
       )
     end
   end
