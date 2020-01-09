@@ -28,7 +28,7 @@ defmodule Sensor do
     field(:reading_at, :utc_datetime_usec)
     field(:last_seen_at, :utc_datetime_usec)
     field(:metric_at, :utc_datetime_usec, default: nil)
-    field(:metric_freq_secs, :integer, default: 60)
+    field(:metric_freq_secs, :integer, default: 29)
     has_many(:temperature, SensorTemperature)
     has_many(:relhum, SensorRelHum)
     has_many(:soil, SensorSoil)
