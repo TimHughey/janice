@@ -75,6 +75,7 @@ defmodule Reef do
       {swmt(), swmt() |> THS.profiles(ths_opts)},
       {display_tank(), display_tank() |> THS.profiles(ths_opts)}
     ]
+    |> print_status()
   end
 
   def ths_standby(th) when is_binary(th), do: THS.standby(th)
