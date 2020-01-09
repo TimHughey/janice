@@ -43,9 +43,7 @@ defmodule Reef do
 
   def mix_heat_standby, do: THS.activate_profile(swmt(), standby())
 
-  def mix_heat(profile) when is_binary(profile) do
-    THS.activate_profile(swmt(), standby())
-  end
+  def mix_heat(p) when is_binary(p), do: THS.activate_profile(swmt(), p)
 
   def mix_heat(_), do: print_usage("mix_heat", "profile")
 
@@ -67,7 +65,7 @@ defmodule Reef do
       {swmt(), swmt() |> THS.standby()}
     ]
 
-  def mix_status do
+  def status do
     dcs_opts = [only_active: true]
     ths_opts = [active: true]
 
@@ -107,6 +105,17 @@ defmodule Reef do
 
   defp print_mix(text), do: IO.puts(light_blue() <> text <> reset())
   defp print_standby(text), do: IO.puts(cyan() <> text <> reset())
+
+  defp print_status(l) when is_list(l) do
+    for(i <- l) do
+      {subsystem, profile} = i
+
+      IO.puts(
+        light_blue() <>
+          String.pad_trailing(subsystem, " ", 25) <> light_green() <> profile
+      )
+    end
+  end
 
   defp print_usage(f, p),
     do:
