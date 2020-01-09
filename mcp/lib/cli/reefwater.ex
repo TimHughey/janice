@@ -106,7 +106,7 @@ defmodule Reef do
 
   defp print_heading(text) when is_binary(text) do
     IO.puts(" ")
-    IO.puts(yellow() <> underline() <> text <> reset())
+    IO.puts(light_yellow() <> underline() <> text <> reset())
     IO.puts(" ")
   end
 
