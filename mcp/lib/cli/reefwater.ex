@@ -104,10 +104,18 @@ defmodule Reef do
     [{rmp(), a}, {rma(), b}, {swmt(), c}, {display_tank(), d}]
   end
 
+  defp print_heading(text) when is_binary(text) do
+    IO.puts(" ")
+    IO.puts(yellow() <> underline() <> text <> reset())
+    IO.puts(" ")
+  end
+
   defp print_mix(text), do: IO.puts(light_blue() <> text <> reset())
   defp print_standby(text), do: IO.puts(cyan() <> text <> reset())
 
   defp print_status(l) when is_list(l) do
+    print_heading("Reef Subsystem Status")
+
     for(i <- l) do
       {subsystem, profile} = i
 
@@ -116,6 +124,8 @@ defmodule Reef do
           String.pad_trailing(subsystem, 25, " ") <> light_green() <> profile
       )
     end
+
+    IO.puts(reset())
   end
 
   defp print_usage(f, p),
