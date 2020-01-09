@@ -139,7 +139,7 @@ defmodule Dutycycle.Server do
 
     timer =
       if rc == :ok and profile != :none,
-        do: phase_end_timer(s, profile.run_ms),
+        do: phase_end_timer(s, profile, profile.run_ms),
         else: nil
 
     s = Map.put(s, :dutycycle, d) |> Map.put(:phase_timer, timer)
@@ -249,12 +249,27 @@ defmodule Dutycycle.Server do
     {:reply, false, s}
   end
 
-  def handle_info(%{:msg => :phase_end, :ms => _ms}, %{dutycycle: dc} = s) do
-    {d, timer} = next_phase(dc, s)
+  def handle_info(
+        %{:msg => :phase_end, :profile => profile, :ms => _ms},
+        %{dutycycle: dc} = s
+      )
+      when is_binary(profile) do
+    active_profile = Profile.active(dc) |> Profile.name()
 
-    s = Map.put(s, :timer, timer) |> Map.put(:dutycycle, d)
+    if active_profile == profile do
+      {d, timer} = next_phase(dc, s)
 
-    {:noreply, s}
+      {:noreply, Map.put(s, :timer, timer) |> Map.put(:dutycycle, d)}
+    else
+      Logger.warn(fn ->
+        "phase end msg profile mismatch [#{inspect(profile)} != #{
+          inspect(active_profile)
+        }]"
+      end)
+
+      Logger.warn(fn -> "stopping dutycycle server" end)
+      {:stop, :profile_mismatch, s}
+    end
   end
 
   def handle_info(%{:msg => :scheduled_work}, %{server_name: server_name} = s) do
@@ -416,15 +431,17 @@ defmodule Dutycycle.Server do
          %Profile{} = p,
          s
        ) do
+    active_profile = Profile.active(d) |> Profile.name()
+
     # if the idle phase has actual run ms then use it
     if p.idle_ms > 0 do
       if State.set(mode: "idle", dutycycle: d) == :ok,
-        do: phase_end_timer(s, Profile.phase_ms(p, :idle)),
+        do: phase_end_timer(s, active_profile, Profile.phase_ms(p, :idle)),
         else: nil
     else
       # otherwise, just continue with the run phase
       if State.set(mode: "run", dutycycle: d) == :ok,
-        do: phase_end_timer(s, Profile.phase_ms(p, :run)),
+        do: phase_end_timer(s, active_profile, Profile.phase_ms(p, :run)),
         else: nil
     end
   end
@@ -434,21 +451,26 @@ defmodule Dutycycle.Server do
          %Profile{} = p,
          s
        ) do
+    active_profile = Profile.active(d) |> Profile.name()
+
     if p.run_ms > 0 do
       if State.set(mode: "run", dutycycle: d) == :ok,
-        do: phase_end_timer(s, Profile.phase_ms(p, :run)),
+        do: phase_end_timer(s, active_profile, Profile.phase_ms(p, :run)),
         else: nil
     else
       if State.set(mode: "idle", dutycycle: d) == :ok,
-        do: phase_end_timer(s, Profile.phase_ms(p, :idle)),
+        do: phase_end_timer(s, active_profile, Profile.phase_ms(p, :idle)),
         else: nil
     end
   end
 
   defp next_phase(%Dutycycle{}, %Profile{}, _s), do: nil
 
-  defp phase_end_timer(s, ms) do
-    msg = %{:msg => :phase_end, :ms => ms}
+  defp phase_end_timer(s, %Profile{} = active_profile, ms),
+    do: phase_end_timer(s, Profile.name(active_profile), ms)
+
+  defp phase_end_timer(s, active_profile, ms) when is_binary(active_profile) do
+    msg = %{:msg => :phase_end, :profile => active_profile, :ms => ms}
     Process.send_after(s.server_name, msg, ms)
   end
 
@@ -501,7 +523,13 @@ defmodule Dutycycle.Server do
           Dutycycle.get_by(id: s.dutycycle_id)
           |> Repo.preload([:profiles, :state])
 
-        timer = phase_end_timer(s, Profile.phase_ms(p, :run))
+        timer =
+          phase_end_timer(
+            s,
+            Profile.active(d) |> Profile.name(),
+            Profile.phase_ms(p, :run)
+          )
+
         {d, timer}
       end
 
