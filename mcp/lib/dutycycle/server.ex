@@ -345,12 +345,15 @@ defmodule Dutycycle.Server do
     rc = Profile.activate(s.dutycycle, new)
 
     if is_tuple(rc) and elem(rc, 0) == 1 do
-      d = Dutycycle.get_by(id: s.dutycycle_id) |> Repo.preload([:profiles])
+      d =
+        Dutycycle.get_by(id: s.dutycycle_id)
+        |> Repo.preload([:profiles], force: true)
+
       rc = State.set(mode: "run", dutycycle: d)
 
       d =
         Dutycycle.get_by(id: s.dutycycle_id)
-        |> Repo.preload([:profiles, :state])
+        |> Repo.preload([:profiles, :state], force: true)
 
       {rc, d}
     else
@@ -414,7 +417,8 @@ defmodule Dutycycle.Server do
     rc = State.set(mode: "stop", dutycycle: s.dutycycle)
 
     d =
-      Dutycycle.get_by(id: s.dutycycle_id) |> Repo.preload([:profiles, :state])
+      Dutycycle.get_by(id: s.dutycycle_id)
+      |> Repo.preload([:profiles, :state], force: true)
 
     {rc, d}
   end
@@ -521,7 +525,7 @@ defmodule Dutycycle.Server do
 
         d =
           Dutycycle.get_by(id: s.dutycycle_id)
-          |> Repo.preload([:profiles, :state])
+          |> Repo.preload([:profiles, :state], force: true)
 
         timer =
           phase_end_timer(
