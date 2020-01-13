@@ -115,7 +115,9 @@ defmodule Dutycycle do
   end
 
   def delete_all(:dangerous) do
-    names = from(d in Dutycycle, select: d.name) |> Repo.all(timeout: @delete_timeout_ms)
+    names =
+      from(d in Dutycycle, select: d.name)
+      |> Repo.all(timeout: @delete_timeout_ms)
 
     for name <- names do
       rc = Dutycycle.Server.shutdown(name)
@@ -132,7 +134,9 @@ defmodule Dutycycle do
 
   def get_by(opts) when is_list(opts) do
     filter = Keyword.take(opts, [:id, :device, :name])
-    select = Keyword.take(opts, [:only]) |> Keyword.get_values(:only) |> List.flatten()
+
+    select =
+      Keyword.take(opts, [:only]) |> Keyword.get_values(:only) |> List.flatten()
 
     if Enum.empty?(filter) do
       Logger.warn(fn -> "get_by bad args: #{inspect(opts)}" end)

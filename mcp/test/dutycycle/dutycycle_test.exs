@@ -14,7 +14,7 @@ defmodule DutycycleTest do
 
   @moduletag :dutycycle
   setup_all do
-    ids = 0..20
+    ids = 0..21
     new_dcs = Enum.to_list(ids) ++ [99]
 
     for n <- new_dcs, do: new_dutycycle(n) |> Dutycycle.add()
@@ -388,6 +388,27 @@ defmodule DutycycleTest do
     assert :ok === rc
     assert reload
     assert %Dutycycle.Profile{} = p
+  end
+
+  @tag num: 21
+  test "can stop and resume a known dutycycle",
+       context do
+    name = name_str(context[:num])
+    rc1 = Server.activate_profile(name, "fast", enable: true)
+    rc2 = Server.stop(name)
+    rc3 = Server.resume(name)
+
+    assert :ok === rc1
+    assert :ok === rc2
+    assert :ok === rc3
+  end
+
+  test "server handles resuming an unkown dutycycle" do
+    name = "foo"
+
+    rc1 = Server.resume(name)
+
+    assert :not_found === rc1
   end
 
   test "all dutycycle ids (with empty opts)" do

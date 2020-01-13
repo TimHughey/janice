@@ -80,6 +80,30 @@ defmodule Dutycycle.Server do
     call_server(name, msg)
   end
 
+  def resume(name, opts \\ []) when is_binary(name) do
+    log = Keyword.get(opts, :log, false)
+
+    found = ping(name)
+
+    if found == :pong do
+      profile = profiles(name, only_active: true)
+      rc = activate_profile(name, profile)
+
+      log &&
+        Logger.info(fn ->
+          "#{inspect(rc)} #{inspect(name)} resuming " <>
+            "profile #{inspect(profile)}"
+        end)
+
+      rc
+    else
+      log &&
+        Logger.warn(fn -> "#{inspect(name)} does not exist, can't resume" end)
+
+      found
+    end
+  end
+
   def shutdown(name, opts \\ []) when is_binary(name) do
     msg = %{:msg => :shutdown, opts: opts}
     call_server(name, msg)
@@ -258,7 +282,7 @@ defmodule Dutycycle.Server do
       when is_binary(profile) do
     dc = Dutycycle.get_by(id: dc_id)
 
-    active_profile = Profile.active(dc) |> Profile.name()
+    active_profile = Dutycycle.profiles(dc, only_active: true)
 
     if active_profile == profile do
       {d, timer} = next_phase(dc, s)
@@ -266,22 +290,19 @@ defmodule Dutycycle.Server do
       {:noreply, Map.put(s, :timer, timer) |> Map.put(:dutycycle, d)}
     else
       Logger.warn(fn ->
-        "phase end msg profile mismatch [#{inspect(profile)} != #{
-          inspect(active_profile)
-        }]"
+        "#{inspect(dc.name)}" <>
+          " phase end timer for #{inspect(profile)} does not" <>
+          " match active profile #{inspect(active_profile)}, ignored"
       end)
 
-      Logger.warn(fn -> "will not create timer for next phase" end)
-      Logger.warn(fn -> "device switch set to false" end)
-      Switch.state(dc.device, position: false, lazy: true, log: false)
-      {:noreply, Map.put(s, :timer, nil) |> Map.put(:dutycycle, dc)}
+      {:noreply, Map.put(s, :dutycycle, dc)}
     end
   end
 
   def handle_info(%{:msg => :scheduled_work}, %{server_name: server_name} = s) do
     s = reload_dutycycle(s)
 
-    Process.send_after(server_name, %{:msg => :scheduled_work}, 1000)
+    Process.send_after(server_name, %{:msg => :scheduled_work}, 100)
     {:noreply, s}
   end
 
