@@ -42,6 +42,9 @@ defmodule Reef do
 
   def mix_air(_), do: print_usage("mix_air", "profile)")
 
+  def mix_air_pause, do: DCS.stop(rma())
+  def mix_air_resume, do: DCS.resume(rma())
+
   def mix_heat_standby, do: THS.activate_profile(swmt(), standby())
 
   def mix_heat(p) when is_binary(p), do: THS.activate_profile(swmt(), p)
@@ -64,6 +67,9 @@ defmodule Reef do
   def mix_pump(p) when is_binary(p), do: utility_pump(p)
   def mix_pump(_), do: print_usage("mix_pump", "profile")
   def mix_pump_off, do: utility_pump_off()
+
+  def mix_pump_pause, do: DCS.stop(rmp())
+  def mix_pump_resume, do: DCS.resume(rmp())
 
   def mix_standby,
     do: [
