@@ -22,9 +22,11 @@ defmodule Dutycycle do
   require Logger
   use Ecto.Schema
 
-  import Repo, only: [one: 1, insert_or_update!: 1]
-  import Ecto.Changeset, only: [change: 2]
+  import Repo, only: [one: 1, insert_or_update!: 1, update: 1]
+  import Ecto.Changeset
   import Ecto.Query, only: [from: 2]
+
+  import Janice.Common.DB, only: [name_regex: 0]
 
   alias Dutycycle.Profile
   alias Dutycycle.State
@@ -128,6 +130,29 @@ defmodule Dutycycle do
     |> Repo.delete_all()
   end
 
+  def device_change(%Dutycycle{} = d, new_device) when is_binary(new_device) do
+    # reload the Dutycycle to be safe
+    dc = reload(d)
+
+    update(dc, device: new_device)
+  end
+
+  def device_change(d, device) do
+    Logger.warn(fn ->
+      "invalid args: device_change(#{inspect(d)}, #{inspect(device)}"
+    end)
+
+    {:error, :invalid_args}
+  end
+
+  def changeset(dc, params \\ %{}) do
+    dc
+    |> cast(params, possible_changes())
+    |> validate_required(possible_changes())
+    |> validate_format(:name, name_regex())
+    |> validate_format(:standalone, &is_boolean/1)
+  end
+
   def enable(%Dutycycle{} = dc, val) when is_boolean(val) do
     change(dc, enable: val) |> Repo.update()
   end
@@ -156,6 +181,8 @@ defmodule Dutycycle do
     end
   end
 
+  defp possible_changes, do: [:name, :comment, :device, :standalone]
+
   def profiles(%Dutycycle{} = d, opts \\ []) when is_list(opts) do
     only_active = Keyword.get(opts, :only_active, false)
 
@@ -167,9 +194,27 @@ defmodule Dutycycle do
     end
   end
 
-  def standalone(%Dutycycle{} = dc, val) when is_boolean(val) do
-    change(dc, standalone: val) |> Repo.update()
-  end
+  def reload(%Dutycycle{id: id}), do: Repo.get(Dutycycle, id)
+
+  def standalone(%Dutycycle{} = dc, val) when is_boolean(val),
+    do: update(dc, standalone: val)
 
   def standalone?(%Dutycycle{} = d), do: d.standalone
+
+  def update(name, opts) when is_binary(name) and is_list(opts),
+    do: get_by(name: name) |> update(opts)
+
+  def update(%Dutycycle{} = dc, opts) when is_list(opts) do
+    set = Keyword.take(opts, possible_changes()) |> Enum.into(%{})
+
+    cs = changeset(dc, set)
+
+    if cs.valid? do
+      update(cs)
+    else
+      {:invalid_changes, cs}
+    end
+  end
+
+  def update(nil, _opts), do: {:error, :not_found}
 end

@@ -40,6 +40,12 @@ defmodule Dutycycle.Server do
     for d <- dcs, do: Dutycycle.as_map(d)
   end
 
+  def change_device(name, new_device)
+      when is_binary(name) and is_binary(new_device) do
+    msg = %{:msg => :change_device, new_device: new_device}
+    call_server(name, msg)
+  end
+
   def disable(name, opts \\ [])
       when is_binary(name) do
     msg = %{:msg => :disable, opts: opts}
@@ -177,6 +183,30 @@ defmodule Dutycycle.Server do
     s = Map.put(s, :need_reload, true) |> reload_dutycycle()
 
     {:reply, rc, s}
+  end
+
+  def handle_call(
+        %{:msg => :change_device, new_device: new_device},
+        _from,
+        %{dutycycle: dc} = s
+      ) do
+    rc = Dutycycle.device_change(dc, new_device)
+
+    case rc do
+      {:error, _} ->
+        {:reply, rc, s}
+
+      {:invalid_changes} ->
+        {:reply, rc, s}
+
+      {:ok, dc} ->
+        {:reply, :ok, Map.put(s, :dutycycle, dc)}
+
+      rc ->
+        Logger.warn(fn -> "unmatched change_device result" end)
+        Logger.warn(fn -> "#{inspect(rc)}" end)
+        {:reply, :internal_error, s}
+    end
   end
 
   def handle_call(%{:msg => :disable} = msg, _from, s) do

@@ -14,7 +14,7 @@ defmodule DutycycleTest do
 
   @moduletag :dutycycle
   setup_all do
-    ids = 0..21
+    ids = 0..23
     new_dcs = Enum.to_list(ids) ++ [99]
 
     for n <- new_dcs, do: new_dutycycle(n) |> Dutycycle.add()
@@ -401,6 +401,32 @@ defmodule DutycycleTest do
     assert :ok === rc1
     assert :ok === rc2
     assert :ok === rc3
+  end
+
+  @tag num: 22
+  test "server can update Dutycycle device",
+       context do
+    name = name_str(context[:num])
+    rc = Server.change_device(name, "diff_device")
+
+    assert :ok === rc
+  end
+
+  @tag num: 23
+  test "can do general updates to Dutycycle",
+       context do
+    name = name_str(context[:num])
+
+    {rc, dc} =
+      Dutycycle.update(name, comment: "new comment", name: "updated name")
+
+    rc2 = Server.ping("updated name")
+
+    assert :ok == rc
+    assert %Dutycycle{} = dc
+    assert rc2 == :pong
+    assert dc.name == "updated name"
+    assert dc.comment == "new comment"
   end
 
   test "server handles resuming an unkown dutycycle" do
