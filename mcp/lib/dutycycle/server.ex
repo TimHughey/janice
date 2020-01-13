@@ -190,8 +190,10 @@ defmodule Dutycycle.Server do
     {:reply, profiles, s}
   end
 
-  def handle_call(%{:msg => :reload, :opts => _opts}, _from, s) do
-    s = Map.put(s, :need_reload, true) |> Map.put_new(:log_reload, false)
+  def handle_call(%{:msg => :reload, :opts => opts}, _from, s) do
+    log_reload = Keyword.get(opts, :log_reload, false)
+
+    s = Map.put(s, :need_reload, true) |> Map.put_new(:log_reload, log_reload)
 
     {:reply, :reload_queued, s}
   end
@@ -209,7 +211,7 @@ defmodule Dutycycle.Server do
   def handle_call(%{:msg => :stop, :opts => _opts} = msg, _from, s) do
     {rc, d} = handle_stop(msg, s)
 
-    s = Map.put(s, :dutycycle, d)
+    s = Map.put(s, :dutycycle, d) |> Map.put(:timer, nil)
 
     {:reply, rc, s}
   end
@@ -251,9 +253,11 @@ defmodule Dutycycle.Server do
 
   def handle_info(
         %{:msg => :phase_end, :profile => profile, :ms => _ms},
-        %{dutycycle: dc} = s
+        %{dutycycle_id: dc_id} = s
       )
       when is_binary(profile) do
+    dc = Dutycycle.get_by(id: dc_id)
+
     active_profile = Profile.active(dc) |> Profile.name()
 
     if active_profile == profile do
@@ -267,8 +271,10 @@ defmodule Dutycycle.Server do
         }]"
       end)
 
-      Logger.warn(fn -> "stopping dutycycle server" end)
-      {:stop, :profile_mismatch, s}
+      Logger.warn(fn -> "will not create timer for next phase" end)
+      Logger.warn(fn -> "device switch set to false" end)
+      Switch.state(dc.device, position: false, lazy: true, log: false)
+      {:noreply, Map.put(s, :timer, nil) |> Map.put(:dutycycle, dc)}
     end
   end
 
@@ -415,6 +421,9 @@ defmodule Dutycycle.Server do
 
   defp handle_stop(_msg, s) do
     rc = State.set(mode: "stop", dutycycle: s.dutycycle)
+
+    timer = Map.get(s, :timer, nil)
+    if is_reference(timer), do: Process.cancel_timer(timer)
 
     d =
       Dutycycle.get_by(id: s.dutycycle_id)
