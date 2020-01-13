@@ -91,8 +91,8 @@ defmodule Dutycycle.Server do
 
       log &&
         Logger.info(fn ->
-          "#{inspect(rc)} #{inspect(name)} resuming " <>
-            "profile #{inspect(profile)}"
+          "#{inspect(name)} resuming profile #{inspect(profile)}" <>
+            " [#{inspect(rc)}]"
         end)
 
       rc
