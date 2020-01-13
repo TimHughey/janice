@@ -18,6 +18,7 @@ defmodule Reef do
 
     print_mix("mix_air(profile) -> control reefwater mix air")
     print_mix("mix_heat(:standby | profile ) -> control reefwater mix heat")
+    print_mix("mix_keep_fresh() -> set mix air and pump to keep water fresh")
     print_mix("utility_pump(profile) -> control utility pump")
     print_mix("utility_pump_off() -> switch off utility pump")
     IO.puts(" ")
@@ -46,6 +47,12 @@ defmodule Reef do
   def mix_heat(p) when is_binary(p), do: THS.activate_profile(swmt(), p)
 
   def mix_heat(_), do: print_usage("mix_heat", "profile")
+
+  def mix_keep_fresh,
+    do: [
+      {rmp(), rmp() |> DCS.activate_profile("keep_fresh")},
+      {rma(), rma() |> DCS.activate_profile("keep_fresh")}
+    ]
 
   def mix_match_display_tank do
     THS.activate_profile(swmt(), "prep for change")
@@ -77,6 +84,10 @@ defmodule Reef do
     ]
     |> print_status()
   end
+
+  def ths_activate(th, profile)
+      when is_binary(th) and is_binary(profile),
+      do: THS.activate_profile(th, profile)
 
   def ths_standby(th) when is_binary(th), do: THS.standby(th)
 
