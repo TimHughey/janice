@@ -22,7 +22,7 @@ defmodule Dutycycle do
   require Logger
   use Ecto.Schema
 
-  import Repo, only: [one: 1, insert_or_update!: 1, update: 1]
+  import Repo, only: [one: 1, insert_or_update!: 1, update!: 1, preload: 3]
   import Ecto.Changeset
   import Ecto.Query, only: [from: 2]
 
@@ -194,15 +194,19 @@ defmodule Dutycycle do
     end
   end
 
-  def reload(%Dutycycle{id: id}), do: Repo.get(Dutycycle, id)
+  def reload(%Dutycycle{id: id}),
+    do:
+      Repo.get!(Dutycycle, id)
+      |> preload([:state, :profiles], force: true)
 
   def standalone(%Dutycycle{} = dc, val) when is_boolean(val),
     do: update(dc, standalone: val)
 
   def standalone?(%Dutycycle{} = d), do: d.standalone
 
-  def update(name, opts) when is_binary(name) and is_list(opts),
-    do: get_by(name: name) |> update(opts)
+  def update(name, opts) when is_binary(name) and is_list(opts) do
+    get_by(name: name) |> update(opts)
+  end
 
   def update(%Dutycycle{} = dc, opts) when is_list(opts) do
     set = Keyword.take(opts, possible_changes()) |> Enum.into(%{})
@@ -210,7 +214,8 @@ defmodule Dutycycle do
     cs = changeset(dc, set)
 
     if cs.valid? do
-      update(cs)
+      dc = update!(cs) |> preload([:state, :profiles], force: true)
+      {:ok, dc}
     else
       {:invalid_changes, cs}
     end
