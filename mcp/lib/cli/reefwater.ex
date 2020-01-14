@@ -78,6 +78,10 @@ defmodule Reef do
       {swmt(), swmt() |> THS.standby()}
     ]
 
+  def resume(name) when is_binary(name), do: DCS.resume(name)
+  def resume_air, do: DCS.resume(rma())
+  def resume_pump, do: DCS.resume(rmp())
+
   def status do
     dcs_opts = [only_active: true]
     ths_opts = [active: true]
@@ -90,6 +94,10 @@ defmodule Reef do
     ]
     |> print_status()
   end
+
+  def stop(name) when is_binary(name), do: DCS.stop(name)
+  def stop_air, do: DCS.stop(rma())
+  def stop_pump, do: DCS.stop(rmp())
 
   def ths_activate(th, profile)
       when is_binary(th) and is_binary(profile),

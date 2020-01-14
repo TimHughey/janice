@@ -71,6 +71,8 @@ defmodule Dutycycle.Server do
     call_server(name, msg)
   end
 
+  def pause(name, opts \\ []) when is_binary(name), do: stop(name, opts)
+
   def ping(name, opts \\ []) when is_binary(name) do
     msg = %{:msg => :ping, opts: opts}
     call_server(name, msg)
@@ -115,10 +117,7 @@ defmodule Dutycycle.Server do
     call_server(name, msg)
   end
 
-  def standby(name, opts \\ []) when is_binary(name) do
-    msg = %{:msg => :activate_profile, profile: "standby", opts: opts}
-    call_server(name, msg)
-  end
+  def standby(name, opts \\ []) when is_binary(name), do: stop(name, opts)
 
   def standalone(name, opts \\ []) when is_binary(name) do
     msg = %{:msg => :standalone, opts: opts}
@@ -578,7 +577,7 @@ defmodule Dutycycle.Server do
     p = Profile.active(d)
 
     {d, timer} =
-      if p == :none do
+      if p == :none or State.stopped?(d) do
         {d, nil}
       else
         State.set(mode: "run", dutycycle: d)
