@@ -380,17 +380,21 @@ defmodule Dutycycle.Server do
   end
 
   defp handle_activate_profile(%{profile: new_profile}, %{dutycycle: dc}) do
-    with false <- Profile.active?(dc, new_profile),
-         {1, _} <- Profile.activate(dc, new_profile),
+    with {1, _} <- Profile.activate(dc, new_profile),
          dc <- Dutycycle.reload(dc),
          :ok <- State.set(mode: "run", dutycycle: dc),
          {:ok, dc} <- Dutycycle.stopped(dc, false) do
+      dc = Dutycycle.reload(dc)
       {:ok, dc}
     else
       true ->
         {:ok, dc}
 
-      _anything ->
+      error ->
+        Logger.warn(fn ->
+          "handle_activate_profile returned #{inspect(error)}"
+        end)
+
         {:failed, dc}
     end
   end
