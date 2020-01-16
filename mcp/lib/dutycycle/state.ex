@@ -86,6 +86,29 @@ defmodule Dutycycle.State do
         )
         |> Repo.update_all([])
 
+      mode === "stop" ->
+        Switch.state(dc.device,
+          position: false,
+          lazy: true,
+          ack: false,
+          log: false
+        )
+
+        query
+        |> update(
+          set: [
+            state: "stopped",
+            dev_state: false,
+            idle_at: nil,
+            idle_end_at: nil,
+            run_at: nil,
+            run_end_at: nil,
+            started_at: nil,
+            state_at: ^now
+          ]
+        )
+        |> Repo.update_all([])
+
       mode === "idle" ->
         Switch.state(dc.device, position: false, lazy: true, log: false)
 

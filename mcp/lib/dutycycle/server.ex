@@ -67,6 +67,8 @@ defmodule Dutycycle.Server do
 
   def pause(name, opts \\ []) when is_binary(name), do: stop(name, opts)
 
+  def pause(name, opts \\ []) when is_binary(name), do: stop(name, opts)
+
   def ping(name, opts \\ []) when is_binary(name) do
     msg = %{:msg => :ping, opts: opts}
     call_server(name, msg)
