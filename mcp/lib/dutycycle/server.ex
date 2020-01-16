@@ -65,9 +65,10 @@ defmodule Dutycycle.Server do
     if is_pid(pid), do: GenServer.call(server_name, msg), else: :no_server
   end
 
-  def pause(name, opts \\ []) when is_binary(name), do: stop(name, opts)
+  def pause(name, opts \\ [])
+  def pause(name, opts) when is_binary(name), do: stop(name, opts)
 
-  def pause(name, opts \\ []) when is_binary(name), do: stop(name, opts)
+  def pause(name, opts) when is_binary(name), do: stop(name, opts)
 
   def ping(name, opts \\ []) when is_binary(name) do
     msg = %{:msg => :ping, opts: opts}
