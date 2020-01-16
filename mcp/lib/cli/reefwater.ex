@@ -28,7 +28,16 @@ defmodule Reef do
     IO.puts(" ")
   end
 
+  def display_tank_pause, do: ths_standby(dt())
+  def display_tank_resume, do: ths_activate(dt(), "75F")
+
   def dcs_standby(dc) when is_binary(dc), do: DCS.standby(dc)
+
+  def keep_fresh,
+    do: [
+      {rmp(), DCS.activate_profile(rmp(), "keep fresh")},
+      {rma(), DCS.activate_profile(rma(), "keep fresh")}
+    ]
 
   def mix_add_salt do
     rmp() |> DCS.activate_profile(add_salt())
@@ -50,12 +59,6 @@ defmodule Reef do
   def mix_heat(p) when is_binary(p), do: THS.activate_profile(swmt(), p)
 
   def mix_heat(_), do: print_usage("mix_heat", "profile")
-
-  def mix_keep_fresh,
-    do: [
-      {rmp(), rmp() |> DCS.activate_profile("keep_fresh")},
-      {rma(), rma() |> DCS.activate_profile("keep_fresh")}
-    ]
 
   def mix_match_display_tank do
     THS.activate_profile(swmt(), "prep for change")
@@ -146,9 +149,22 @@ defmodule Reef do
 
       IO.puts(
         light_blue() <>
+          "   " <>
           String.pad_trailing(subsystem, 25, " ") <> light_green() <> profile
       )
     end
+
+    IO.puts(" ")
+
+    dt_temp =
+      Sensor.fahrenheit(name: dt_sensor(), since_secs: 30) |> Float.round(1)
+
+    IO.puts(
+      light_blue() <>
+        "   " <>
+        String.pad_trailing("Display Tank", 25, " ") <>
+        light_green() <> "#{dt_temp}"
+    )
 
     IO.puts(reset())
   end
@@ -167,6 +183,8 @@ defmodule Reef do
   defp add_salt, do: "add salt"
   defp constant, do: "constant"
   defp display_tank, do: "display tank"
+  defp dt, do: display_tank()
+  defp dt_sensor, do: "display_tank"
   defp rma, do: "reefwater mix air"
   defp rmp, do: "reefwater mix pump"
   defp standby, do: "standby"
