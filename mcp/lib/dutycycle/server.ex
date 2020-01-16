@@ -11,7 +11,18 @@ defmodule Dutycycle.Server do
   #### API
   ####
 
+  # function header for optional "opts" parameter
   def activate_profile(name, profile_name, opts \\ [])
+
+  # the "none" profile can never be activated, instead activate the
+  # server stopped functionality
+  def activate_profile(name, profile_name, opts)
+      when profile_name === "none" do
+    msg = %{:msg => :stop, opts: opts}
+    call_server(name, msg)
+  end
+
+  def activate_profile(name, profile_name, opts)
       when is_binary(name) and is_binary(profile_name) do
     msg = %{:msg => :activate_profile, profile: profile_name, opts: opts}
     call_server(name, msg)
@@ -46,12 +57,6 @@ defmodule Dutycycle.Server do
     call_server(name, msg)
   end
 
-  def disable(name, opts \\ [])
-      when is_binary(name) do
-    msg = %{:msg => :disable, opts: opts}
-    call_server(name, msg)
-  end
-
   def dutycycle(server_name, opts \\ []) when is_atom(server_name) do
     msg = %{:msg => :dutycycle, opts: opts}
 
@@ -60,16 +65,7 @@ defmodule Dutycycle.Server do
     if is_pid(pid), do: GenServer.call(server_name, msg), else: :no_server
   end
 
-  def enable(name, opts \\ [])
-      when is_binary(name) do
-    msg = %{:msg => :enable, opts: opts}
-    call_server(name, msg)
-  end
-
-  def enabled?(name, opts \\ []) when is_binary(name) do
-    msg = %{:msg => :enabled?, opts: opts}
-    call_server(name, msg)
-  end
+  def pause(name, opts \\ []) when is_binary(name), do: stop(name, opts)
 
   def ping(name, opts \\ []) when is_binary(name) do
     msg = %{:msg => :ping, opts: opts}
@@ -115,15 +111,7 @@ defmodule Dutycycle.Server do
     call_server(name, msg)
   end
 
-  def standby(name, opts \\ []) when is_binary(name) do
-    msg = %{:msg => :activate_profile, profile: "standby", opts: opts}
-    call_server(name, msg)
-  end
-
-  def standalone(name, opts \\ []) when is_binary(name) do
-    msg = %{:msg => :standalone, opts: opts}
-    call_server(name, msg)
-  end
+  def standby(name, opts \\ []) when is_binary(name), do: stop(name, opts)
 
   def start_server(%Dutycycle{} = d) do
     args = %{id: d.id, added: true}
@@ -168,7 +156,7 @@ defmodule Dutycycle.Server do
     if is_reference(timer), do: Process.cancel_timer(timer)
 
     timer =
-      if rc == :ok and profile != :none,
+      if rc == :ok,
         do: phase_end_timer(s, profile, profile.run_ms),
         else: nil
 
@@ -209,30 +197,8 @@ defmodule Dutycycle.Server do
     end
   end
 
-  def handle_call(%{:msg => :disable} = msg, _from, s) do
-    msg = Map.put(msg, :set, false)
-    {rc, d} = handle_enable(msg, s)
-
-    s = Map.put(s, :dutycycle, d)
-
-    {:reply, rc, s}
-  end
-
   def handle_call(%{:msg => :dutycycle}, _from, %{dutycycle: d} = s) do
     {:reply, d, s}
-  end
-
-  def handle_call(%{:msg => :enable} = msg, _from, s) do
-    msg = Map.put(msg, :set, true)
-    {rc, d} = handle_enable(msg, s)
-
-    s = Map.put(s, :dutycycle, d)
-
-    {:reply, rc, s}
-  end
-
-  def handle_call(%{:msg => :enabled?}, _from, s) do
-    {:reply, s.dutycycle.enable, s}
   end
 
   def handle_call(%{:msg => :ping}, _from, s) do
@@ -252,16 +218,6 @@ defmodule Dutycycle.Server do
     {:reply, :reload_queued, s}
   end
 
-  def handle_call(%{:msg => :standalone, :opts => opts}, _from, s) do
-    val = Keyword.get(opts, :set, true)
-
-    {rc, d} = Dutycycle.standalone(s.dutycycle, val)
-
-    s = Map.put(s, :dutycycle, d) |> start_standalone()
-
-    {:reply, rc, s}
-  end
-
   def handle_call(%{:msg => :stop, :opts => _opts} = msg, _from, s) do
     {rc, d} = handle_stop(msg, s)
 
@@ -270,7 +226,7 @@ defmodule Dutycycle.Server do
     {:reply, rc, s}
   end
 
-  def handle_call(%{:msg => :shutdown}, _from, s) do
+  def handle_call(%{:msg => :shutdown}, _from, %{dutycycle: _dc} = s) do
     {:stop, :shutdown, :ok, s}
   end
 
@@ -336,12 +292,18 @@ defmodule Dutycycle.Server do
     {:noreply, s}
   end
 
-  def handle_info({:EXIT, pid, reason}, state) do
-    Logger.debug(fn ->
-      ":EXIT message " <> "pid: #{inspect(pid)} reason: #{inspect(reason)}"
-    end)
+  def handle_info({:EXIT, pid, reason}, %{dutycycle: dc} = s) do
+    if reason == :normal do
+      {{:stop, :normal}, s}
+    else
+      Logger.warn(fn ->
+        ":EXIT #{inspect(dc.name)} message pid: #{inspect(pid)} reason: #{
+          inspect(reason)
+        }"
+      end)
 
-    {:noreply, state}
+      {{:stop, reason}, s}
+    end
   end
 
   ####
@@ -367,7 +329,10 @@ defmodule Dutycycle.Server do
 
     opts = Application.get_env(:mcp, Dutycycle.Server, [])
     {_, name_atom} = server_name(id: args.id)
-    d = Dutycycle.get_by(id: args.id)
+
+    d =
+      Dutycycle.get_by(id: args.id)
+      |> Repo.preload([:state, :profiles], force: true)
 
     s =
       args
@@ -383,40 +348,20 @@ defmodule Dutycycle.Server do
     Process.flag(:trap_exit, true)
     Process.send_after(server_name, %{:msg => :scheduled_work}, 100)
 
-    s = start_standalone(s)
+    s = server_start(s)
 
     {:ok, s}
   end
 
-  def terminate(_reason, s) do
-    if s.dutycycle.standalone,
-      do: State.set(mode: "stop", dutycycle: s.dutycycle)
+  def terminate(reason, %{dutycycle: dc}) do
+    Logger.debug(fn -> "terminating with reason #{inspect(reason)}" end)
+
+    if not State.stopped?(dc), do: State.set(mode: "offline", dutycycle: dc)
   end
 
   ####
   #### PRIVATE FUNCTIONS
   ####
-
-  defp actual_activate_profile(msg, s) do
-    new = msg.profile
-    rc = Profile.activate(s.dutycycle, new)
-
-    if is_tuple(rc) and elem(rc, 0) == 1 do
-      d =
-        Dutycycle.get_by(id: s.dutycycle_id)
-        |> Repo.preload([:profiles], force: true)
-
-      rc = State.set(mode: "run", dutycycle: d)
-
-      d =
-        Dutycycle.get_by(id: s.dutycycle_id)
-        |> Repo.preload([:profiles, :state], force: true)
-
-      {rc, d}
-    else
-      {:failed, s.dutycycle}
-    end
-  end
 
   defp call_server(name, msg) when is_binary(name) and is_map(msg) do
     {d, server_name} = server_name(name: name)
@@ -431,56 +376,35 @@ defmodule Dutycycle.Server do
     end
   end
 
-  defp handle_activate_profile(msg, s) do
-    enable = Keyword.get(msg.opts, :enable, false)
-
-    {d, enabled} =
-      if enable do
-        {rc, d} = Dutycycle.enable(s.dutycycle, true)
-        e = if rc == :ok, do: Map.get(d, :enable), else: false
-        {d, e}
-      else
-        {s.dutycycle, Map.get(s.dutycycle, :enable)}
-      end
-
-    new = msg.profile
-    curr = Profile.active(s.dutycycle)
-
-    cond do
-      not enabled ->
-        {:disabled, s.dutycycle}
-
-      # handle the case when enable requested
-      enable ->
-        s = Map.put(s, :dutycycle, d)
-        actual_activate_profile(msg, s)
-
-      new === curr ->
-        {:no_change, s.dutycyle}
-
-      # handle the case when new and current don't match
+  defp handle_activate_profile(%{profile: new_profile}, %{dutycycle: dc}) do
+    with false <- Profile.active?(dc, new_profile),
+         {1, _} <- Profile.activate(dc, new_profile),
+         dc <- Dutycycle.reload(dc),
+         :ok <- State.set(mode: "run", dutycycle: dc),
+         {:ok, dc} <- Dutycycle.stopped(dc, false) do
+      {:ok, dc}
+    else
       true ->
-        actual_activate_profile(msg, s)
+        {:ok, dc}
+
+      _anything ->
+        {:failed, dc}
     end
   end
 
-  defp handle_enable(msg, s) do
-    {rc, d} = Dutycycle.enable(s.dutycycle, msg.set)
+  defp handle_stop(_msg, %{dutycycle: dc} = s) do
+    rc = State.set(mode: "stop", dutycycle: dc)
 
-    if rc === :ok, do: {:ok, d}, else: {:failed, s.dutycycle}
-  end
+    if rc === :ok do
+      timer = Map.get(s, :timer, nil)
+      if is_reference(timer), do: Process.cancel_timer(timer)
 
-  defp handle_stop(_msg, s) do
-    rc = State.set(mode: "stop", dutycycle: s.dutycycle)
-
-    timer = Map.get(s, :timer, nil)
-    if is_reference(timer), do: Process.cancel_timer(timer)
-
-    d =
-      Dutycycle.get_by(id: s.dutycycle_id)
-      |> Repo.preload([:profiles, :state], force: true)
-
-    {rc, d}
+      # returns tuple {rc, dutycycle} which is what the caller is expecting
+      Dutycycle.stopped(dc, true)
+    else
+      # State.set failed, return it's rc and original dutycycle
+      {rc, dc}
+    end
   end
 
   defp next_phase(%Dutycycle{} = d, s) do
@@ -565,38 +489,35 @@ defmodule Dutycycle.Server do
     end
   end
 
-  defp start_standalone(%{dutycycle: %Dutycycle{standalone: false}} = s), do: s
+  defp server_start(%{dutycycle: d, server_name: server_name} = s) do
+    d = Dutycycle.ensure_profile_none_exists(d)
 
-  defp start_standalone(
-         %{dutycycle: %Dutycycle{standalone: true, enable: false}} = s
-       ),
-       do: s
+    cond do
+      Dutycycle.stopped?(d) ->
+        d.log &&
+          Logger.warn(fn ->
+            "Dutycycle #{inspect(d.name)} marked as stopped --" <>
+              " no profile started"
+          end)
 
-  defp start_standalone(
-         %{dutycycle: %Dutycycle{standalone: true, enable: true} = d} = s
-       ) do
-    p = Profile.active(d)
+      Profile.none?(d) ->
+        State.set(mode: "stopped", dutycycle: d)
 
-    {d, timer} =
-      if p == :none do
-        {d, nil}
-      else
-        State.set(mode: "run", dutycycle: d)
+      true ->
+        Process.send_after(
+          server_name,
+          %{:msg => :activate_profile, profile: Profile.active(d), opts: []},
+          100
+        )
 
-        d =
-          Dutycycle.get_by(id: s.dutycycle_id)
-          |> Repo.preload([:profiles, :state], force: true)
+        d.log &&
+          Logger.info(fn ->
+            "#{inspect(d.name)} queued start with profile #{
+              inspect(Profile.active(d))
+            }"
+          end)
+    end
 
-        timer =
-          phase_end_timer(
-            s,
-            Profile.active(d) |> Profile.name(),
-            Profile.phase_ms(p, :run)
-          )
-
-        {d, timer}
-      end
-
-    Map.put(s, :timer, timer) |> Map.put(:dutycycle, d)
+    Map.put(s, :dutycycle, d)
   end
 end

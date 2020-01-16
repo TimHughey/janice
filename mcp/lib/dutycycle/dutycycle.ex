@@ -34,10 +34,10 @@ defmodule Dutycycle do
   schema "dutycycle" do
     field(:name)
     field(:comment)
-    field(:enable, :boolean)
-    field(:standalone, :boolean)
     field(:log, :boolean)
+    field(:last_profile)
     field(:device)
+    field(:stopped, :boolean)
     has_one(:state, State)
     has_many(:profiles, Profile)
 
@@ -108,12 +108,18 @@ defmodule Dutycycle do
       id: dc.id,
       name: dc.name,
       comment: dc.comment,
-      enable: dc.enable,
-      standalone: dc.standalone,
+      last_profile: dc.last_profile,
       device: dc.device,
       profiles: Profile.as_map(dc.profiles),
       state: State.as_map(dc.state)
     }
+  end
+
+  def changeset(dc, params \\ %{}) do
+    dc
+    |> cast(params, possible_changes())
+    |> validate_required(possible_changes())
+    |> validate_format(:name, name_regex())
   end
 
   def delete_all(:dangerous) do
@@ -145,16 +151,18 @@ defmodule Dutycycle do
     {:error, :invalid_args}
   end
 
-  def changeset(dc, params \\ %{}) do
-    dc
-    |> cast(params, possible_changes())
-    |> validate_required(possible_changes())
-    |> validate_format(:name, name_regex())
-    |> validate_format(:standalone, &is_boolean/1)
-  end
+  def ensure_profile_none_exists(%Dutycycle{} = dc) do
+    if Profile.exists?(dc, "none") do
+      dc
+    else
+      Profile.add(dc, %Profile{
+        name: "none",
+        run_ms: 0,
+        idle_ms: 0
+      })
 
-  def enable(%Dutycycle{} = dc, val) when is_boolean(val) do
-    change(dc, enable: val) |> Repo.update()
+      reload(dc)
+    end
   end
 
   def get_by(opts) when is_list(opts) do
@@ -181,14 +189,14 @@ defmodule Dutycycle do
     end
   end
 
-  defp possible_changes, do: [:name, :comment, :device, :standalone]
+  defp possible_changes, do: [:name, :comment, :device, :last_profile, :stopped]
 
   def profiles(%Dutycycle{} = d, opts \\ []) when is_list(opts) do
     only_active = Keyword.get(opts, :only_active, false)
 
     if only_active do
       list = for p <- d.profiles, p.active, do: p.name
-      if Enum.empty?(list), do: :none, else: hd(list)
+      if Enum.empty?(list), do: "none", else: hd(list)
     else
       for p <- d.profiles, do: %{profile: p.name, active: p.active}
     end
@@ -199,10 +207,10 @@ defmodule Dutycycle do
       Repo.get!(Dutycycle, id)
       |> preload([:state, :profiles], force: true)
 
-  def standalone(%Dutycycle{} = dc, val) when is_boolean(val),
-    do: update(dc, standalone: val)
+  def stopped(%Dutycycle{} = dc, stop) when is_boolean(stop),
+    do: update(dc, stopped: stop)
 
-  def standalone?(%Dutycycle{} = d), do: d.standalone
+  def stopped?(%Dutycycle{stopped: val}), do: val
 
   def update(name, opts) when is_binary(name) and is_list(opts) do
     get_by(name: name) |> update(opts)
@@ -214,7 +222,7 @@ defmodule Dutycycle do
     cs = changeset(dc, set)
 
     if cs.valid? do
-      dc = update!(cs) |> preload([:state, :profiles], force: true)
+      dc = update!(cs) |> reload()
       {:ok, dc}
     else
       {:invalid_changes, cs}

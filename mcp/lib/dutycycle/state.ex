@@ -40,6 +40,8 @@ defmodule Dutycycle.State do
     Map.take(dcs, keys)
   end
 
+  def get(%Dutycycle{state: state}), do: Map.get(state, :state, "stopped")
+
   def set(opts) when is_list(opts) do
     rc = set(:raw_result, opts)
 
@@ -59,13 +61,36 @@ defmodule Dutycycle.State do
       is_nil(mode) or dc_id == false ->
         :bad_args
 
-      profile === :none ->
-        :no_active_profile
+      mode in ["stop", "offline"] ->
+        Switch.state(dc.device,
+          position: false,
+          lazy: true,
+          ack: false,
+          log: false
+        )
+
+        new_state = if(mode === "stop", do: "stopped", else: mode)
+
+        query
+        |> update(
+          set: [
+            state: ^new_state,
+            dev_state: false,
+            idle_at: nil,
+            idle_end_at: nil,
+            run_at: nil,
+            run_end_at: nil,
+            started_at: nil,
+            state_at: ^now
+          ]
+        )
+        |> Repo.update_all([])
 
       mode === "idle" ->
         Switch.state(dc.device, position: false, lazy: true, log: false)
 
-        idle_end_at = TimeSupport.utc_now() |> Timex.shift(milliseconds: profile.idle_ms)
+        idle_end_at =
+          TimeSupport.utc_now() |> Timex.shift(milliseconds: profile.idle_ms)
 
         query
         |> update(
@@ -84,7 +109,8 @@ defmodule Dutycycle.State do
       mode === "run" ->
         Switch.state(dc.device, position: true, lazy: true, log: false)
 
-        run_end_at = TimeSupport.utc_now() |> Timex.shift(milliseconds: profile.run_ms)
+        run_end_at =
+          TimeSupport.utc_now() |> Timex.shift(milliseconds: profile.run_ms)
 
         query
         |> update(
@@ -100,26 +126,14 @@ defmodule Dutycycle.State do
         )
         |> Repo.update_all([])
 
-      mode === "stop" ->
-        Switch.state(dc.device, position: false, lazy: true, ack: false, log: false)
-
-        query
-        |> update(
-          set: [
-            state: "stopped",
-            dev_state: false,
-            idle_at: nil,
-            idle_end_at: nil,
-            run_at: nil,
-            run_end_at: nil,
-            started_at: nil,
-            state_at: ^now
-          ]
-        )
-        |> Repo.update_all([])
-
       true ->
         :bad_args
     end
+  end
+
+  def stopped?(%Dutycycle{state: state}) do
+    state = Map.get(state, :state, "stopped")
+
+    if state === "stopped", do: true, else: false
   end
 end

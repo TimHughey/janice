@@ -48,7 +48,19 @@ defmodule Dutycycle.Profile do
   def active([%Profile{} | _rest] = profiles) do
     active = for p <- profiles, p.active, do: p
 
-    if Enum.empty?(active), do: :none, else: hd(active)
+    if Enum.empty?(active),
+      do: %Profile{name: "none", run_ms: 0, idle_ms: 0, active: true},
+      else: hd(active)
+  end
+
+  def active?(%Dutycycle{} = dc, profile) when is_binary(profile) do
+    active_name = active(dc) |> name()
+    if active_name == profile, do: true, else: false
+  end
+
+  def active?(%Dutycycle{} = dc, %Profile{name: name}) do
+    active_name = active(dc) |> name()
+    if name == active_name, do: true, else: false
   end
 
   def active?(%Profile{active: active}), do: active
@@ -114,7 +126,17 @@ defmodule Dutycycle.Profile do
     )
   end
 
+  def exists?(%Dutycycle{profiles: profiles}, name) when is_binary(name) do
+    Enum.find_value(profiles, fn p -> name(p) === name end)
+  end
+
+  def name(name) when is_binary(name), do: name
   def name(%Profile{name: name}), do: name
+
+  def none?(%Dutycycle{} = dc), do: active(dc)
+  def none?(%Profile{name: "none"}), do: true
+  def none?(%Profile{}), do: false
+  def none?(name) when name === "none", do: true
 
   def phase_ms(%Dutycycle.Profile{idle_ms: ms}, :idle), do: ms
   def phase_ms(%Dutycycle.Profile{run_ms: ms}, :run), do: ms
