@@ -359,7 +359,7 @@ defmodule Dutycycle.Server do
   def terminate(reason, %{dutycycle: dc}) do
     Logger.debug(fn -> "terminating with reason #{inspect(reason)}" end)
 
-    if not State.stopped?(dc), do: State.set(mode: "offline", dutycycle: dc)
+    # if not State.stopped?(dc), do: State.set(mode: "offline", dutycycle: dc)
   end
 
   ####
