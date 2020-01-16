@@ -136,6 +136,26 @@ defmodule DutycycleTest do
     refute fast
   end
 
+  @tag num: 1
+  test "can detect non-existant profile", context do
+    dc = Dutycycle.get_by(name: name_str(context[:num]))
+
+    profile_exists = Profile.exists?(dc, "foobar")
+
+    assert is_nil(profile_exists)
+  end
+
+  @tag num: 1
+  test "can find a profile", context do
+    dc = Dutycycle.get_by(name: name_str(context[:num]))
+
+    profile_found = Profile.find(dc, "fast")
+    profile_not_found = Profile.find(dc, "foobar")
+
+    assert %Profile{} = profile_found
+    assert profile_not_found === {:profile_not_found}
+  end
+
   @tag num: 2
   test "can get Dutycycle 'stopped' and it defaults to true", context do
     dc = Dutycycle.get_by(name: name_str(context[:num]))
@@ -160,12 +180,12 @@ defmodule DutycycleTest do
   @tag num: 5
   test "set state idle", context do
     dc = Dutycycle.get_by(name: name_str(context[:num]))
-    Profile.activate(dc, "fast")
+    {activate_profile_rc, dc} = Dutycycle.activate_profile(dc, "fast")
 
-    dc = Dutycycle.get_by(name: name_str(context[:num]))
-    rc = State.set(mode: "idle", dutycycle: dc)
+    state_set_rc = State.set(mode: "idle", dutycycle: dc)
 
-    assert rc === :ok
+    assert activate_profile_rc === :ok
+    assert state_set_rc === :ok
   end
 
   @tag num: 6

@@ -6,7 +6,7 @@ defmodule Dutycycle.Profile do
 
   import Ecto.Changeset
   import Ecto.Query, only: [from: 2]
-  import Repo, only: [one: 1, update: 1, update_all: 2]
+  import Repo, only: [one: 1, update: 1]
 
   import Janice.Common.DB, only: [name_regex: 0]
   import Janice.TimeSupport, only: [ms: 1]
@@ -24,22 +24,20 @@ defmodule Dutycycle.Profile do
   end
 
   def activate(%Dutycycle{} = dc, name) when is_binary(name) do
-    from(
-      dp in Dutycycle.Profile,
-      where: dp.dutycycle_id == ^dc.id,
-      where: dp.active == true,
-      update: [set: [active: false]]
-    )
-    |> update_all([])
-
-    from(
-      dp in Dutycycle.Profile,
-      where: dp.dutycycle_id == ^dc.id,
-      where: dp.name == ^name,
-      update: [set: [active: true]]
-    )
-    |> update_all([])
+    with next_profile <- find(dc, name),
+         %Profile{} <- next_profile,
+         active_profile <- active(dc),
+         {:ok, _old} <- deactivate(active_profile),
+         {:ok, next} <- activate(next_profile) do
+      {:ok, next}
+    else
+      error -> error
+    end
   end
+
+  def activate(%Profile{name: "none"} = p), do: {:ok, p}
+  def activate(name) when name === "none", do: {:ok, %Profile{name: "none"}}
+  def activate(%Profile{} = p), do: update_profile(p, active: true)
 
   def active(nil), do: nil
 
@@ -101,7 +99,7 @@ defmodule Dutycycle.Profile do
 
   def change_properties(%Profile{} = p, opts) when is_list(opts) do
     opts = convert_change_properties_opts(opts)
-    set = Keyword.take(opts, [:run_ms, :idle_ms, :name]) |> Enum.into(%{})
+    set = Keyword.take(opts, possible_changes()) |> Enum.into(%{})
 
     cs = changeset(p, set)
 
@@ -116,8 +114,8 @@ defmodule Dutycycle.Profile do
 
   def changeset(profile, params \\ %{}) do
     profile
-    |> cast(params, [:name, :run_ms, :idle_ms])
-    |> validate_required([:name, :run_ms, :idle_ms])
+    |> cast(params, possible_changes())
+    |> validate_required(possible_changes())
     |> validate_number(:run_ms, greater_than_or_equal_to: 0)
     |> validate_number(:idle_ms, greater_than_or_equal_to: 0)
     |> validate_format(:name, name_regex())
@@ -126,8 +124,18 @@ defmodule Dutycycle.Profile do
     )
   end
 
+  def deactivate(%Profile{name: "none"} = p), do: {:ok, p}
+  def deactivate(name) when name === "none", do: {:ok, %Profile{name: "none"}}
+  def deactivate(%Profile{} = p), do: update_profile(p, active: false)
+
   def exists?(%Dutycycle{profiles: profiles}, name) when is_binary(name) do
     Enum.find_value(profiles, fn p -> name(p) === name end)
+  end
+
+  def find(%Dutycycle{profiles: profiles}, name) when is_binary(name) do
+    found = Enum.find(profiles, fn p -> name(p) === name end)
+
+    if is_nil(found), do: {:profile_not_found}, else: found
   end
 
   def name(name) when is_binary(name), do: name
@@ -140,6 +148,14 @@ defmodule Dutycycle.Profile do
 
   def phase_ms(%Dutycycle.Profile{idle_ms: ms}, :idle), do: ms
   def phase_ms(%Dutycycle.Profile{run_ms: ms}, :run), do: ms
+
+  def update_profile(%Profile{} = p, opts) when is_list(opts) do
+    cs = changeset(p, Keyword.take(opts, possible_changes()) |> Enum.into(%{}))
+
+    if cs.valid?, do: update(cs), else: {:invalid_changes, cs}
+  end
+
+  defp possible_changes, do: [:name, :active, :run_ms, :idle_ms]
 
   defp convert_change_properties_opts(opts) when is_list(opts) do
     for opt <- opts do

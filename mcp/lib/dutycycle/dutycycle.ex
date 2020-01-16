@@ -47,14 +47,10 @@ defmodule Dutycycle do
   # 15 minutes (as millesconds)
   @delete_timeout_ms 15 * 60 * 1000
 
-  def activate(opts) when is_list(opts) do
-    name = Keyword.get(opts, :name)
-    profile = Keyword.get(opts, :profile)
+  def activate_profile(%Dutycycle{} = dc, profile) when is_binary(profile) do
+    {rc, p} = Profile.activate(dc, profile)
 
-    if is_nil(name) or is_nil(profile) do
-      :not_found
-    else
-    end
+    if rc === :ok, do: {:ok, reload(dc)}, else: {rc, p}
   end
 
   def add([]), do: []
