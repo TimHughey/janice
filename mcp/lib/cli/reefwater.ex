@@ -74,6 +74,9 @@ defmodule Reef do
   def mix_pump_pause, do: DCS.stop(rmp())
   def mix_pump_resume, do: DCS.resume(rmp())
 
+  def mix_rodi_fast, do: DCS.activate_profile(rmrf(), "fast")
+  def mix_rodi_stop, do: DCS.stop(rmrf())
+
   def mix_standby,
     do: [
       {rma(), rma() |> DCS.standby()},
@@ -92,6 +95,7 @@ defmodule Reef do
     [
       {rmp(), rmp() |> DCS.profiles(dcs_opts)},
       {rma(), rma() |> DCS.profiles(dcs_opts)},
+      {rmrf(), rmrf()} |> DCS.profiles(dcs_opts),
       {swmt(), swmt() |> THS.profiles(ths_opts)},
       {display_tank(), display_tank() |> THS.profiles(ths_opts)}
     ]
@@ -185,6 +189,7 @@ defmodule Reef do
   defp display_tank, do: "display tank"
   defp dt, do: display_tank()
   defp dt_sensor, do: "display_tank"
+  defp rmrf, do: "reefwater rodi fill"
   defp rma, do: "reefwater mix air"
   defp rmp, do: "reefwater mix pump"
   defp standby, do: "standby"
