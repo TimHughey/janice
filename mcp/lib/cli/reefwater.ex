@@ -95,7 +95,7 @@ defmodule Reef do
     [
       {rmp(), rmp() |> DCS.profiles(dcs_opts)},
       {rma(), rma() |> DCS.profiles(dcs_opts)},
-      {rmrf(), rmrf()} |> DCS.profiles(dcs_opts),
+      {rmrf(), rmrf() |> DCS.profiles(dcs_opts)},
       {swmt(), swmt() |> THS.profiles(ths_opts)},
       {display_tank(), display_tank() |> THS.profiles(ths_opts)}
     ]
