@@ -6,7 +6,7 @@ defmodule Dutycycle.Profile do
 
   import Ecto.Changeset
   import Ecto.Query, only: [from: 2]
-  import Repo, only: [one: 1, update: 1]
+  import Repo, only: [get_by: 2, one: 1, update: 1]
 
   import Janice.Common.DB, only: [name_regex: 0]
   import Janice.TimeSupport, only: [ms: 1]
@@ -24,31 +24,39 @@ defmodule Dutycycle.Profile do
   end
 
   def activate(%Dutycycle{} = dc, name) when is_binary(name) do
-    with next_profile <- find(dc, name),
-         %Profile{} <- next_profile,
-         active_profile <- active(dc),
+    with %Profile{} = next_profile <- find(dc, name),
+         %Profile{} = active_profile <- active(dc),
          {:ok, _old} <- deactivate(active_profile),
          {:ok, next} <- activate(next_profile) do
       {:ok, next}
     else
-      error -> error
+      error ->
+        Logger.warn(fn -> "activate failed: #{inspect(error, pretty: true)}" end)
+
+        {:activate_profile_failed, error}
     end
   end
 
-  def activate(%Profile{name: "none"} = p), do: {:ok, p}
-  def activate(name) when name === "none", do: {:ok, %Profile{name: "none"}}
+  def activate(%Profile{name: "none"} = p), do: {:none, p}
+  def activate(name) when name === "none", do: {:none, %Profile{name: "none"}}
   def activate(%Profile{} = p), do: update_profile(p, active: true)
 
   def active(nil), do: nil
 
-  def active(%Dutycycle{} = d), do: active(d.profiles)
+  def active(%Dutycycle{profiles: profiles}), do: active(profiles)
 
   def active([%Profile{} | _rest] = profiles) do
-    active = for p <- profiles, p.active, do: p
+    active_profiles =
+      for %Profile{active: active} = p <- profiles, active === true, do: p
 
-    if Enum.empty?(active),
-      do: %Profile{name: "none", run_ms: 0, idle_ms: 0, active: true},
-      else: hd(active)
+    if Enum.empty?(active_profiles),
+      do: %Profile{
+        name: "none",
+        run_ms: 0,
+        idle_ms: 0,
+        active: true
+      },
+      else: hd(active_profiles)
   end
 
   def active?(%Dutycycle{} = dc, profile) when is_binary(profile) do
@@ -125,7 +133,10 @@ defmodule Dutycycle.Profile do
   end
 
   def deactivate(%Profile{name: "none"} = p), do: {:ok, p}
-  def deactivate(name) when name === "none", do: {:ok, %Profile{name: "none"}}
+
+  def deactivate(name) when name === "none",
+    do: {:ok, %Profile{name: "none"}}
+
   def deactivate(%Profile{} = p), do: update_profile(p, active: false)
 
   def exists?(%Dutycycle{profiles: profiles}, name) when is_binary(name) do
@@ -141,18 +152,32 @@ defmodule Dutycycle.Profile do
   def name(name) when is_binary(name), do: name
   def name(%Profile{name: name}), do: name
 
-  def none?(%Dutycycle{} = dc), do: active(dc)
+  def none?(%Dutycycle{} = dc), do: active(dc) |> none?()
   def none?(%Profile{name: "none"}), do: true
   def none?(%Profile{}), do: false
-  def none?(name) when name === "none", do: true
+  def none?("none"), do: true
 
   def phase_ms(%Dutycycle.Profile{idle_ms: ms}, :idle), do: ms
   def phase_ms(%Dutycycle.Profile{run_ms: ms}, :run), do: ms
 
-  def update_profile(%Profile{} = p, opts) when is_list(opts) do
+  def update_profile(%Profile{id: id} = p, opts) when is_list(opts) do
     cs = changeset(p, Keyword.take(opts, possible_changes()) |> Enum.into(%{}))
 
-    if cs.valid?, do: update(cs), else: {:invalid_changes, cs}
+    with {:cs_valid, true} <- {:cs_valid, cs.valid?()},
+         {:ok, _profile} <- update(cs),
+         %Profile{} = p <- get_by(Profile, id: id) do
+      {:ok, p}
+    else
+      {:cs_valid, false} ->
+        {:invalid_changes, cs}
+
+      error ->
+        Logger.warn(fn ->
+          "update_profiles() failure: #{inspect(error, pretty: true)}"
+        end)
+
+        {:failed, error}
+    end
   end
 
   defp possible_changes, do: [:name, :active, :run_ms, :idle_ms]

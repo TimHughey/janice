@@ -7,6 +7,7 @@ defmodule DutycycleTest do
   alias Dutycycle.Profile
   alias Dutycycle.Server
   alias Dutycycle.State
+  alias Dutycycle.Supervisor
 
   setup do
     :ok
@@ -20,6 +21,13 @@ defmodule DutycycleTest do
     for n <- new_dcs, do: new_dutycycle(n) |> Dutycycle.add()
     :ok
   end
+
+  def name_from_db(num) when is_integer(num) do
+    dc = load_dc(name_str(num))
+    {dc, dc.name}
+  end
+
+  def load_dc(name) when is_binary(name), do: Dutycycle.get_by(name: name)
 
   def shared_dc, do: Dutycycle.get_by(name: fixed_name())
 
@@ -38,12 +46,13 @@ defmodule DutycycleTest do
       name: name_str(n),
       comment: "test dutycycle " <> num_str,
       device: dev_str,
+      last_profile: "none",
+      stopped: true,
+      log: false,
       profiles: [
-        %Dutycycle.Profile{name: "fast", run_ms: 1, idle_ms: 1},
-        %Dutycycle.Profile{name: "high", run_ms: 120_000, idle_ms: 60_000},
-        %Dutycycle.Profile{name: "low", run_ms: 20_000, idle_ms: 20_000},
-        %Dutycycle.Profile{name: "off", run_ms: 0, idle_ms: 60_000},
-        %Dutycycle.Profile{name: "standby", run_ms: 0, idle_ms: 60_000}
+        %Dutycycle.Profile{name: "fast", run_ms: 3_000, idle_ms: 3_000},
+        %Dutycycle.Profile{name: "slow", run_ms: 120_000, idle_ms: 60_000},
+        %Dutycycle.Profile{name: "low", run_ms: 20_000, idle_ms: 20_000}
       ],
       state: %Dutycycle.State{}
     }
@@ -56,21 +65,19 @@ defmodule DutycycleTest do
     assert Dutycycle.__schema__(:source) == "dutycycle"
   end
 
-  # test "all dutycycles" do
-  #   all_dc = Dutycycle.all()
-  #
-  #   refute Enum.empty?(all_dc)
-  # end
+  test "can ping Dutycycle.Supervisor" do
+    assert Supervisor.ping() === :pong
+  end
 
-  test "all server names from supervisor" do
-    server_names = Dutycycle.Supervisor.known_servers()
+  test "can get server names and pids from supervisor" do
+    servers = Dutycycle.Supervisor.known_servers()
+    first = List.first(servers)
 
-    empty = Enum.empty?(server_names)
+    {_name, pid} = if is_nil(first), do: {nil, nil}, else: first
 
-    atom = if empty, do: nil, else: is_atom(hd(server_names))
-
-    refute empty
-    assert atom
+    refute Enum.empty?(servers)
+    assert is_tuple(first)
+    assert is_pid(pid)
   end
 
   test "can get all Dutycycle names from server" do
@@ -93,6 +100,40 @@ defmodule DutycycleTest do
 
     refute Enum.empty?(names)
     assert all_binary
+  end
+
+  test "all dutycycle ids (with empty opts)" do
+    all_dc = Dutycycle.all(:ids, [])
+
+    empty = Enum.empty?(all_dc)
+    has_id = if empty, do: false, else: is_integer(hd(all_dc))
+
+    refute empty
+    assert has_id
+  end
+
+  test "all dutycycle ids (with active: true)" do
+    all_dc = Dutycycle.all(:ids, active: true)
+
+    empty = Enum.empty?(all_dc)
+    has_id = if empty, do: false, else: is_integer(hd(all_dc))
+
+    refute empty
+    assert has_id
+  end
+
+  test "ping detects a non existance dutycycle server" do
+    rc1 = Server.ping("foobar")
+
+    assert rc1 == :not_found
+  end
+
+  test "get dutycycle by id" do
+    id = get_an_id()
+
+    dc = Dutycycle.get_by(id: id)
+
+    assert dc.id === id
   end
 
   @tag num: 1000
@@ -146,6 +187,16 @@ defmodule DutycycleTest do
   end
 
   @tag num: 1
+  test "can get a Dutycycle id by name", context do
+    dc = Dutycycle.get_by(name: name_str(context[:num]))
+
+    id = Dutycycle.lookup_id(name_str(context[:num]))
+
+    assert is_number(id)
+    assert id == dc.id
+  end
+
+  @tag num: 1
   test "can find a profile", context do
     dc = Dutycycle.get_by(name: name_str(context[:num]))
 
@@ -154,6 +205,16 @@ defmodule DutycycleTest do
 
     assert %Profile{} = profile_found
     assert profile_not_found === {:profile_not_found}
+  end
+
+  @tag num: 1
+  test "can get Dutycycle State (cached and reloaded)", context do
+    st1 = Server.dutycycle_state(name_str(context[:num]))
+    st2 = Server.dutycycle_state(name_str(context[:num]), reload: true)
+
+    assert is_map(st1)
+    assert is_map(st2)
+    assert st1 == st2
   end
 
   @tag num: 2
@@ -177,34 +238,52 @@ defmodule DutycycleTest do
     assert stopped === false
   end
 
-  @tag num: 5
-  test "set state idle", context do
+  @tag num: 4
+  test "can delete an existing Dutycycle ", context do
     dc = Dutycycle.get_by(name: name_str(context[:num]))
-    {activate_profile_rc, dc} = Dutycycle.activate_profile(dc, "fast")
+    rc = Dutycycle.delete(dc)
 
-    state_set_rc = State.set(mode: "idle", dutycycle: dc)
-
-    assert activate_profile_rc === :ok
-    assert state_set_rc === :ok
+    assert is_list(rc)
+    assert [server: :ok, db: :ok] == rc
   end
 
-  @tag num: 6
+  test "can detect an unknown Dutycycle when deleting" do
+    dc = %Dutycycle{id: 0}
+    rc = Dutycycle.delete(dc)
+
+    assert is_list(rc)
+    assert [server: :not_found, db: :not_found] == rc
+  end
+
+  @tag num: 5
   test "can get only active profile from server and check it is active",
        context do
     dc = Dutycycle.get_by(name: name_str(context[:num]))
-    rc1 = Server.activate_profile(dc.name, "fast")
 
-    active = Server.profiles(dc.name, only_active: true)
+    {rc1, _profile} = Server.activate_profile(dc.name, "fast")
 
     dc = Dutycycle.reload(dc)
+
+    active = Server.profiles(dc.name, active: true)
+
     rc2 = Profile.active?(dc, active)
 
-    assert rc1 === :ok
-    assert active === "fast"
+    assert :ok === rc1
+    assert Profile.name(active) === "fast"
     assert rc2 === true
   end
 
   @tag num: 6
+  test "can restart a dutycycle server",
+       context do
+    dc = Dutycycle.get_by(name: name_str(context[:num]))
+
+    {rc, _child} = Server.restart(dc.name)
+
+    assert rc == :ok
+  end
+
+  @tag num: 7
   test "can check existance of profile",
        context do
     dc = Dutycycle.get_by(name: name_str(context[:num]))
@@ -215,63 +294,30 @@ defmodule DutycycleTest do
     refute does_not_exist
   end
 
-  @tag num: 6
-  test "the none profile is created if it doesn't exist",
+  @tag num: 8
+  test "dutycycle server state changes from running to idling",
        context do
     dc = Dutycycle.get_by(name: name_str(context[:num]))
-    none_exists = Profile.exists?(dc, "none")
 
-    assert none_exists
-  end
+    {rc1, _profile} = Server.activate_profile(dc.name, "fast")
 
-  test "set state handles bad args" do
-    rc1 = State.set(mode: "bad mode")
-    rc2 = State.set(dutycycle: %{})
+    dc = Dutycycle.reload(dc)
 
-    assert rc1 == :bad_args
-    assert rc2 == :bad_args
-  end
+    %State{state: first_state} = Server.dutycycle_state(dc.name)
 
-  @tag num: 10
-  test "server shuts down when asked", context do
-    dc = Dutycycle.get_by(name: name_str(context[:num]))
+    Process.sleep(3200)
 
-    rc = Server.shutdown(dc.name)
+    %State{state: second_state} = Server.dutycycle_state(dc.name)
 
-    assert rc == :ok
-  end
-
-  @tag num: 11
-  test "ping detects no dutycycle server", context do
-    dc = Dutycycle.get_by(name: name_str(context[:num]))
-
-    rc1 = Server.shutdown(dc.name)
-    rc2 = Server.ping(dc.name)
-
-    assert rc1 == :ok
-    assert rc2 == :no_server
-  end
-
-  @tag num: 12
-  test "can get available profiles from server with active", context do
-    dc = Dutycycle.get_by(name: name_str(context[:num]))
-    rc1 = Server.activate_profile(dc.name, "fast")
-
-    profiles = Server.profiles(dc.name)
-    fast = for p <- profiles, p.profile === "fast", do: p
-
-    active =
-      if Enum.empty?(fast), do: false, else: hd(fast) |> Map.get(:active, false)
-
-    assert rc1 === :ok
-    refute Enum.empty?(profiles)
-    assert active
+    assert :ok === rc1
+    assert first_state === "running"
+    assert second_state === "idling"
   end
 
   @tag num: 13
   test "can change properties of an existing profile", context do
     dc = Dutycycle.get_by(name: name_str(context[:num]))
-    rc1 = Server.activate_profile(dc.name, "fast")
+    {rc1, _dcn} = Server.activate_profile(dc.name, "fast")
 
     %{profile: profile, reload: reload} =
       Server.update_profile(name_str(context[:num]), "fast", run_ms: 49_152)
@@ -322,7 +368,7 @@ defmodule DutycycleTest do
       Server.update_profile(name_str(context[:num]), "fast",
         run_ms: -1,
         idle_ms: -1,
-        name: "high"
+        name: "slow"
       )
 
     {rc, cs} = profile
@@ -338,7 +384,7 @@ defmodule DutycycleTest do
       Server.update_profile(name_str(context[:num]), "fast",
         run_ms: 1,
         idle_ms: 1,
-        name: "high"
+        name: "slow"
       )
 
     {rc, cs} = profile
@@ -384,12 +430,15 @@ defmodule DutycycleTest do
   @tag num: 21
   test "can stop and resume a known dutycycle",
        context do
-    name = name_str(context[:num])
-    rc1 = Server.stop(name)
-    rc2 = Server.resume(name)
+    {_dc, name} = name_from_db(context[:num])
+    rc1 = Server.activate_profile(name, "slow")
 
-    assert :ok === rc1
-    assert :ok === rc2
+    rc2 = Server.pause(name)
+    rc3 = Server.resume(name)
+
+    assert {:ok, _profile} = rc1
+    assert {:ok, %Dutycycle{}} = rc2
+    assert {:ok, _profile} = rc3
   end
 
   @tag num: 22
@@ -404,14 +453,14 @@ defmodule DutycycleTest do
   @tag num: 23
   test "can do general updates to Dutycycle",
        context do
-    name = name_str(context[:num])
+    {dc, _name} = name_from_db(context[:num])
 
     {rc, dc} =
-      Dutycycle.update(name, comment: "new comment", name: "updated name")
+      Dutycycle.update(dc, comment: "new comment", name: "updated name")
 
     rc2 = Server.ping("updated name")
 
-    assert :ok == rc
+    assert rc == :ok
     assert %Dutycycle{} = dc
     assert rc2 == :pong
     assert dc.name == "updated name"
@@ -424,56 +473,5 @@ defmodule DutycycleTest do
     rc1 = Server.resume(name)
 
     assert :not_found === rc1
-  end
-
-  test "all dutycycle ids (with empty opts)" do
-    all_dc = Dutycycle.all(:ids, [])
-
-    empty = Enum.empty?(all_dc)
-    has_id = if empty, do: false, else: is_integer(hd(all_dc))
-
-    refute empty
-    assert has_id
-  end
-
-  test "all dutycycle ids (with active: true)" do
-    all_dc = Dutycycle.all(:ids, active: true)
-
-    empty = Enum.empty?(all_dc)
-    has_id = if empty, do: false, else: is_integer(hd(all_dc))
-
-    refute empty
-    assert has_id
-  end
-
-  test "get dutycycle by id" do
-    id = get_an_id()
-
-    dc = Dutycycle.get_by(id: id)
-
-    assert dc.id === id
-  end
-
-  test "dutycycle as a map" do
-    dc = shared_dc()
-
-    m = Dutycycle.as_map(dc)
-
-    assert is_map(m)
-    assert Map.has_key?(m, :profiles)
-    assert Map.has_key?(m, :state)
-  end
-
-  test "as_map(nil) returns empty map" do
-    m = Dutycycle.as_map(nil)
-
-    assert is_map(m)
-  end
-
-  @tag num: 19
-  test "can set Dutycycle to standby", context do
-    rc = Server.standby(name_str(context[:num]))
-
-    assert :ok === rc
   end
 end

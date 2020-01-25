@@ -5,7 +5,6 @@ defmodule Dutycycle.Server do
   use GenServer
 
   alias Dutycycle.Profile
-  alias Dutycycle.State
 
   ####
   #### API
@@ -13,14 +12,6 @@ defmodule Dutycycle.Server do
 
   # function header for optional "opts" parameter
   def activate_profile(name, profile_name, opts \\ [])
-
-  # the "none" profile can never be activated, instead activate the
-  # server stopped functionality
-  def activate_profile(name, profile_name, opts)
-      when profile_name === "none" do
-    msg = %{:msg => :stop, opts: opts}
-    call_server(name, msg)
-  end
 
   def activate_profile(name, profile_name, opts)
       when is_binary(name) and is_binary(profile_name) do
@@ -36,25 +27,35 @@ defmodule Dutycycle.Server do
 
   def all(:dutycycles) do
     servers = Dutycycle.Supervisor.known_servers()
-    for s <- servers, d = Dutycycle.Server.dutycycle(s), is_map(d), do: d
+
+    for {s, _pid} <- servers,
+        d = Dutycycle.Server.dutycycle(s),
+        is_map(d),
+        do: d
   end
 
   def all(:names) do
     servers = Dutycycle.Supervisor.known_servers()
 
-    for s <- servers, d = Dutycycle.Server.dutycycle(s), is_map(d), do: d.name
+    for {s, _pid} <- servers,
+        d = Dutycycle.Server.dutycycle(s),
+        is_map(d),
+        do: d.name
   end
 
-  def all(:as_maps) do
-    dcs = all(:dutycycles)
-
-    for d <- dcs, do: Dutycycle.as_map(d)
-  end
+  def all(:as_maps), do: all(:dutycycles)
 
   def change_device(name, new_device)
       when is_binary(name) and is_binary(new_device) do
     msg = %{:msg => :change_device, new_device: new_device}
     call_server(name, msg)
+  end
+
+  # REFACTORED
+  def delete(%Dutycycle{} = dc) do
+    if Dutycycle.Supervisor.ping() == :pong,
+      do: Dutycycle.Supervisor.eliminate_dutycycle(server_name_atom(dc)),
+      else: :no_supervisor
   end
 
   def dutycycle(server_name, opts \\ []) when is_atom(server_name) do
@@ -65,10 +66,16 @@ defmodule Dutycycle.Server do
     if is_pid(pid), do: GenServer.call(server_name, msg), else: :no_server
   end
 
-  def pause(name, opts \\ [])
-  def pause(name, opts) when is_binary(name), do: stop(name, opts)
+  def dutycycle_state(name, opts \\ [])
+      when is_binary(name) and is_list(opts) do
+    msg = %{:msg => :dutycycle_state, opts: opts}
+    call_server(name, msg)
+  end
 
-  def pause(name, opts) when is_binary(name), do: stop(name, opts)
+  def pause(name, opts \\ []) when is_binary(name) do
+    msg = %{:msg => :pause, opts: opts}
+    call_server(name, msg)
+  end
 
   def ping(name, opts \\ []) when is_binary(name) do
     msg = %{:msg => :ping, opts: opts}
@@ -80,52 +87,42 @@ defmodule Dutycycle.Server do
     call_server(name, msg)
   end
 
-  def reload(name, opts \\ []) when is_binary(name) do
+  def reload(name, opts \\ []) when is_binary(name) and is_list(opts) do
     msg = %{:msg => :reload, opts: opts}
     call_server(name, msg)
   end
 
-  def resume(name, opts \\ []) when is_binary(name) do
-    log = Keyword.get(opts, :log, false)
-
-    found = ping(name)
-
-    if found == :pong do
-      profile = profiles(name, only_active: true)
-      rc = activate_profile(name, profile)
-
-      log &&
-        Logger.info(fn ->
-          "#{inspect(name)} resuming profile #{inspect(profile)}" <>
-            " [#{inspect(rc)}]"
-        end)
-
-      rc
-    else
-      log &&
-        Logger.warn(fn -> "#{inspect(name)} does not exist, can't resume" end)
-
-      found
-    end
-  end
-
-  def shutdown(name, opts \\ []) when is_binary(name) do
-    msg = %{:msg => :shutdown, opts: opts}
+  # REFACTORED
+  def resume(name, opts \\ []) when is_binary(name) and is_list(opts) do
+    # special case for resume -> request activation of the :active profile
+    msg = %{:msg => :activate_profile, profile: :active, opts: opts}
     call_server(name, msg)
   end
 
-  def standby(name, opts \\ []) when is_binary(name), do: stop(name, opts)
+  # REFACTORED
+  def restart(name) when is_binary(name),
+    do: Dutycycle.Supervisor.restart_dutycycle(name)
 
-  def start_server(%Dutycycle{} = d) do
+  # REFACTORED
+  def server_name_atom(%Dutycycle{id: id}),
+    do:
+      String.to_atom(
+        "Duty_ID" <> String.pad_leading(Integer.to_string(id), 6, "0")
+      )
+
+  def server_name_atom(nil), do: nil
+
+  def standby(name, opts \\ []) when is_binary(name), do: pause(name, opts)
+
+  def start_server(%Dutycycle{log: log} = d) do
     args = %{id: d.id, added: true}
+    log && Logger.debug(fn -> "starting dutycycle id #{inspect(d.id)}" end)
     Supervisor.start_child(Dutycycle.Supervisor, child_spec(args))
     d
   end
 
-  def stop(name, opts \\ []) when is_binary(name) do
-    msg = %{:msg => :stop, opts: opts}
-    call_server(name, msg)
-  end
+  def stop(name, opts \\ [])
+  def stop(name, opts) when is_binary(name), do: pause(name, opts)
 
   def switch_state(name, opts \\ []) when is_binary(name) do
     msg = %{:msg => :switch_state, opts: opts}
@@ -151,21 +148,32 @@ defmodule Dutycycle.Server do
   #### GENSERVER MESSAGE HANDLERS
   ####
 
-  def handle_call(%{:msg => :activate_profile} = msg, _from, s) do
-    {rc, d} = handle_activate_profile(msg, s)
-    profile = Profile.active(d)
+  def handle_call(
+        %{:msg => :activate_profile, profile: profile, dutycycle: dc},
+        _from,
+        s
+      ) do
+    rc = Dutycycle.activate_profile(dc, profile)
+    s = cache_dutycycle(s)
 
-    timer = Map.get(s, :timer, nil)
-    if is_reference(timer), do: Process.cancel_timer(timer)
+    case rc do
+      {:ok, %Dutycycle{name: name, log: log} = dc, %Profile{name: profile_name},
+       :run} ->
+        log &&
+          Logger.debug(fn ->
+            "dutycycle #{inspect(name)} profile #{inspect(profile_name)} activated"
+          end)
 
-    timer =
-      if rc == :ok,
-        do: phase_end_timer(s, profile, profile.run_ms),
-        else: nil
+        s = cancel_timer(s) |> start_phase_timer(rc)
 
-    s = Map.put(s, :dutycycle, d) |> Map.put(:phase_timer, timer)
+        {:reply, {:ok, dc}, cache_dutycycle(s)}
 
-    {:reply, rc, s}
+      {:ok, %Dutycycle{} = dc, %Profile{}, :none} ->
+        {:reply, {:ok, dc}, cancel_timer(s) |> cache_dutycycle()}
+
+      rc ->
+        {:reply, {:failed, rc}, s}
+    end
   end
 
   def handle_call(%{:msg => :add_profile, profile: p}, _from, s) do
@@ -174,6 +182,21 @@ defmodule Dutycycle.Server do
     s = Map.put(s, :need_reload, true) |> reload_dutycycle()
 
     {:reply, rc, s}
+  end
+
+  # REFACTORED!
+  def handle_call(
+        %{:msg => :dutycycle_state, :opts => opts},
+        _from,
+        %{dutycycle: dc} = s
+      ) do
+    {%Dutycycle{} = dc, %Dutycycle.State{} = st} =
+      Dutycycle.current_state(dc, opts)
+
+    # the caller may have requested a reload
+    # so cache the returned dutycycle
+    # if reload wasn't requested this is essentially a nop
+    {:reply, st, cache_dutycycle(dc, s)}
   end
 
   def handle_call(
@@ -191,11 +214,11 @@ defmodule Dutycycle.Server do
         {:reply, rc, s}
 
       {:ok, dc} ->
-        {:reply, :ok, Map.put(s, :dutycycle, dc)}
+        {:reply, :ok, %{s | dutycycle: dc}}
 
       rc ->
         Logger.warn(fn -> "unmatched change_device result" end)
-        Logger.warn(fn -> "#{inspect(rc)}" end)
+        Logger.warn(fn -> "#{inspect(rc, pretty: true)}" end)
         {:reply, :internal_error, s}
     end
   end
@@ -208,10 +231,12 @@ defmodule Dutycycle.Server do
     {:reply, :pong, s}
   end
 
-  def handle_call(%{:msg => :profiles, :opts => opts}, _from, s) do
-    profiles = Dutycycle.profiles(s.dutycycle, opts)
-    {:reply, profiles, s}
-  end
+  def handle_call(
+        %{:msg => :profiles, :opts => opts},
+        _from,
+        %{dutycycle: dc} = s
+      ),
+      do: {:reply, Dutycycle.profiles(dc, opts), s}
 
   def handle_call(%{:msg => :reload, :opts => opts}, _from, s) do
     log_reload = Keyword.get(opts, :log_reload, false)
@@ -221,16 +246,15 @@ defmodule Dutycycle.Server do
     {:reply, :reload_queued, s}
   end
 
-  def handle_call(%{:msg => :stop, :opts => _opts} = msg, _from, s) do
-    {rc, d} = handle_stop(msg, s)
+  def handle_call(
+        %{:msg => :pause, :opts => _opts},
+        _from,
+        %{dutycycle: dc} = s
+      ) do
+    s = cancel_timer(s)
+    rc = Dutycycle.stop(dc)
 
-    s = Map.put(s, :dutycycle, d) |> Map.put(:timer, nil)
-
-    {:reply, rc, s}
-  end
-
-  def handle_call(%{:msg => :shutdown}, _from, %{dutycycle: _dc} = s) do
-    {:stop, :shutdown, :ok, s}
+    {:reply, rc, cache_dutycycle(s)}
   end
 
   def handle_call(%{:msg => :switch_state, :opts => _opts}, _from, s) do
@@ -260,31 +284,46 @@ defmodule Dutycycle.Server do
   end
 
   # handle case when we receive a message that we don't understand
-  def handle_call(%{:msg => _unhandled}, _from, s) when is_map(s) do
-    {:reply, false, s}
+  def handle_call(%{:msg => _unhandled} = msg, _from, %{dutycycle: dc} = s) do
+    Logger.warn(fn ->
+      "unhandled message\n" <>
+        inspect(msg, pretty: true) <>
+        "\n" <>
+        inspect(dc, pretty: true)
+    end)
+
+    {:reply, :unhandled_msg, s}
   end
 
   def handle_info(
         %{:msg => :phase_end, :profile => profile, :ms => _ms},
-        %{dutycycle_id: dc_id} = s
+        %{dutycycle: dc} = s
       )
       when is_binary(profile) do
-    dc = Dutycycle.get_by(id: dc_id)
-
-    active_profile = Dutycycle.profiles(dc, only_active: true)
-
-    if active_profile == profile do
-      {d, timer} = next_phase(dc, s)
-
-      {:noreply, Map.put(s, :timer, timer) |> Map.put(:dutycycle, d)}
+    with true <- Profile.active?(dc, profile),
+         {:ok, dc, _active_profile, _mode} = rc <- Dutycycle.end_of_phase(dc),
+         %{dutycycle_id: _id} = s <-
+           %{s | dutycycle: dc} |> start_phase_timer(rc) do
+      {:noreply, cache_dutycycle(s)}
     else
-      Logger.warn(fn ->
-        "#{inspect(dc.name)}" <>
-          " phase end timer for #{inspect(profile)} does not" <>
-          " match active profile #{inspect(active_profile)}, ignored"
-      end)
+      false ->
+        active_profile = Profile.active(dc)
 
-      {:noreply, Map.put(s, :dutycycle, dc)}
+        Logger.warn(fn ->
+          "#{inspect(dc.name)}" <>
+            " phase end timer for #{inspect(profile, pretty: true)} does not" <>
+            " match active profile #{inspect(active_profile, pretty: true)}, ignored"
+        end)
+
+        {:noreply, s}
+
+      error ->
+        Logger.warn(fn ->
+          "phase_end(): " <>
+            "#{inspect(error, pretty: true)}"
+        end)
+
+        {:noreply, s}
     end
   end
 
@@ -300,8 +339,8 @@ defmodule Dutycycle.Server do
       {{:stop, :normal}, s}
     else
       Logger.warn(fn ->
-        ":EXIT #{inspect(dc.name)} message pid: #{inspect(pid)} reason: #{
-          inspect(reason)
+        ":EXIT #{inspect(dc.name)} message pid: #{inspect(pid, pretty: true)} reason: #{
+          inspect(reason, pretty: true)
         }"
       end)
 
@@ -313,8 +352,8 @@ defmodule Dutycycle.Server do
   #### GENSERVER BASE FUNCTIONS
   ####
 
-  def child_spec(args) do
-    {dutycycle, server_name} = server_name(id: args.id)
+  def child_spec(%{id: id} = args) do
+    {dutycycle, server_name} = server_name(id: id)
     args = Map.put(args, :dutycycle, dutycycle)
 
     if is_nil(dutycycle),
@@ -322,42 +361,71 @@ defmodule Dutycycle.Server do
       else: %{
         id: server_name,
         start: {Dutycycle.Server, :start_link, [args]},
-        restart: :transient,
+        restart: :permanent,
         shutdown: 10_000
       }
   end
 
-  def start_link(args) when is_map(args) do
-    Logger.debug(fn -> "start_link() args: #{inspect(args)}" end)
+  # REFACTORED
+  def start_link(%{id: id} = args) do
+    Logger.debug(fn -> "start_link() args: #{inspect(args, pretty: true)}" end)
 
     opts = Application.get_env(:mcp, Dutycycle.Server, [])
-    {_, name_atom} = server_name(id: args.id)
+    {dc, server_name} = server_name(id: id)
 
-    d =
-      Dutycycle.get_by(id: args.id)
-      |> Repo.preload([:state, :profiles], force: true)
-
-    s =
-      args
-      |> Map.put(:server_name, name_atom)
-      |> Map.put(:opts, opts)
-      |> Map.put(:dutycycle_id, args.id)
-      |> Map.put(:dutycycle, d)
-
-    GenServer.start_link(__MODULE__, s, name: name_atom)
+    GenServer.start_link(
+      __MODULE__,
+      %{
+        server_name: server_name,
+        opts: opts,
+        dutycycle_id: id,
+        # call Dutycycle.reload() to ensure all associations are preloaded
+        dutycycle: Dutycycle.reload(dc),
+        timer: nil
+      }
+      |> Map.merge(args),
+      name: server_name
+    )
   end
 
-  def init(%{server_name: server_name} = s) do
+  # REFACTORED
+  def init(
+        %{
+          server_name: server_name,
+          dutycycle: dc
+        } = s
+      ) do
+    case Dutycycle.start(dc) do
+      {:ok, :stopped} ->
+        nil
+
+      {:ok, :run, profile} ->
+        Process.send_after(
+          server_name,
+          %{:msg => :activate_profile, profile: profile, opts: []},
+          100
+        )
+
+        Logger.info(fn ->
+          "#{inspect(dc.name)} queued start with profile #{
+            inspect(Profile.active(dc), pretty: true)
+          }"
+        end)
+
+      rc ->
+        Logger.warn(fn -> "Dutycyle.start() returned #{inspect(rc)}" end)
+    end
+
     Process.flag(:trap_exit, true)
     Process.send_after(server_name, %{:msg => :scheduled_work}, 100)
-
-    s = server_start(s)
 
     {:ok, s}
   end
 
   def terminate(reason, %{dutycycle: _dc}) do
-    Logger.debug(fn -> "terminating with reason #{inspect(reason)}" end)
+    Logger.debug(fn ->
+      "terminating with reason #{inspect(reason, pretty: true)}"
+    end)
 
     # if not State.stopped?(dc), do: State.set(mode: "offline", dutycycle: dc)
   end
@@ -366,164 +434,113 @@ defmodule Dutycycle.Server do
   #### PRIVATE FUNCTIONS
   ####
 
-  defp call_server(name, msg) when is_binary(name) and is_map(msg) do
-    {d, server_name} = server_name(name: name)
+  # when called with just the state do a reload of the dutycycle
+  # and cache it
+  defp cache_dutycycle(%{dutycycle: dc} = s),
+    do: cache_dutycycle(Dutycycle.reload(dc), s)
 
-    msg = Map.put(msg, :dutycycle, d)
+  # when called with a Dutycycle and the state
+  # just cache the Dutycycle passed in
+  defp cache_dutycycle(%Dutycycle{} = dc, %{dutycycle: _dc} = s),
+    do: %{s | dutycycle: dc}
+
+  defp call_server(name, msg) when is_binary(name) and is_map(msg) do
+    {dc, server_name} = server_name(name: name)
+
+    msg = Map.put(msg, :dutycycle, dc)
     pid = Process.whereis(server_name)
 
     cond do
-      is_nil(d) -> :not_found
+      is_nil(dc) -> :not_found
       is_pid(pid) -> GenServer.call(server_name, msg)
       true -> :no_server
     end
   end
 
-  defp handle_activate_profile(%{profile: new_profile}, %{dutycycle: dc}) do
-    with {:ok, dc} <- Dutycycle.activate_profile(dc, new_profile),
-         :ok <- State.set(mode: "run", dutycycle: dc),
-         {:ok, dc} <- Dutycycle.stopped(dc, false) do
-      dc = Dutycycle.reload(dc)
-      {:ok, dc}
-    else
-      true ->
-        {:ok, dc}
+  # Refactor
+  defp cancel_timer(%{timer: t} = s) when is_reference(t) do
+    Process.cancel_timer(t)
 
-      error ->
-        Logger.warn(fn ->
-          "handle_activate_profile returned #{inspect(error)}"
-        end)
-
-        {:failed, dc}
-    end
+    %{s | timer: nil}
   end
 
-  defp handle_stop(_msg, %{dutycycle: dc} = s) do
-    rc = State.set(mode: "stop", dutycycle: dc)
+  defp cancel_timer(%{timer: nil} = s), do: s
+  defp cancel_timer(%{} = s), do: s
 
-    if rc === :ok do
-      timer = Map.get(s, :timer, nil)
-      if is_reference(timer), do: Process.cancel_timer(timer)
-
-      # returns tuple {rc, dutycycle} which is what the caller is expecting
-      Dutycycle.stopped(dc, true)
-    else
-      # State.set failed, return it's rc and original dutycycle
-      {rc, dc}
-    end
-  end
-
-  defp next_phase(%Dutycycle{} = d, s) do
-    profile = Profile.active(d)
-    timer = next_phase(d, profile, s)
-
-    {Dutycycle.get_by(id: s.dutycycle.id), timer}
-  end
-
-  defp next_phase(
-         %Dutycycle{state: %State{state: "running"}} = d,
-         %Profile{} = p,
-         s
+  # Refactor
+  defp start_phase_timer(
+         %{server_name: server} = s,
+         {:ok, %Dutycycle{} = dc, %Profile{run_ms: ms} = p, :run}
        ) do
-    active_profile = Profile.active(d) |> Profile.name()
+    msg = %{:msg => :phase_end, :profile => Profile.name(p), :ms => ms}
+    t = Process.send_after(server, msg, ms)
 
-    # if the idle phase has actual run ms then use it
-    if p.idle_ms > 0 do
-      if State.set(mode: "idle", dutycycle: d) == :ok,
-        do: phase_end_timer(s, active_profile, Profile.phase_ms(p, :idle)),
-        else: nil
-    else
-      # otherwise, just continue with the run phase
-      if State.set(mode: "run", dutycycle: d) == :ok,
-        do: phase_end_timer(s, active_profile, Profile.phase_ms(p, :run)),
-        else: nil
-    end
+    _dc = Dutycycle.persist_phase_end_timer(dc, t)
+
+    # return an updated state
+    %{s | timer: t}
   end
 
-  defp next_phase(
-         %Dutycycle{state: %State{state: "idling"}} = d,
-         %Profile{} = p,
-         s
+  # Refactor
+  defp start_phase_timer(
+         %{server_name: server} = s,
+         {:ok, %Dutycycle{} = dc, %Profile{idle_ms: ms} = p, :idle}
        ) do
-    active_profile = Profile.active(d) |> Profile.name()
+    msg = %{:msg => :phase_end, :profile => Profile.name(p), :ms => ms}
+    t = Process.send_after(server, msg, ms)
 
-    if p.run_ms > 0 do
-      if State.set(mode: "run", dutycycle: d) == :ok,
-        do: phase_end_timer(s, active_profile, Profile.phase_ms(p, :run)),
-        else: nil
-    else
-      if State.set(mode: "idle", dutycycle: d) == :ok,
-        do: phase_end_timer(s, active_profile, Profile.phase_ms(p, :idle)),
-        else: nil
-    end
+    _dc = Dutycycle.persist_phase_end_timer(dc, t)
+
+    # return an updated state
+    %{s | timer: t}
   end
 
-  defp next_phase(%Dutycycle{}, %Profile{}, _s), do: nil
+  # Refactor
+  # handle the special case of 'none' profile
+  #  a. run_ms = 0
+  #  b. idle_ms = 0
+  #  c. name === "none"
+  defp start_phase_timer(
+         %{server_name: _server} = s,
+         {:ok, %Dutycycle{}, %Profile{run_ms: 0, idle_ms: 0, name: "none"},
+          _mode}
+       ),
+       do: %{s | timer: nil}
 
-  defp phase_end_timer(s, %Profile{} = active_profile, ms),
-    do: phase_end_timer(s, Profile.name(active_profile), ms)
+  # Refactor
+  defp start_phase_timer(%{} = s, rc) do
+    Logger.warn(fn ->
+      "start_phase_timer received #{inspect(rc, pretty: true)} end"
+    end)
 
-  defp phase_end_timer(s, active_profile, ms) when is_binary(active_profile) do
-    msg = %{:msg => :phase_end, :profile => active_profile, :ms => ms}
-    Process.send_after(s.server_name, msg, ms)
+    s
   end
 
-  defp reload_dutycycle(%{dutycycle_id: id, need_reload: true} = s) do
-    d = Dutycycle.get_by(id: id)
+  defp reload_dutycycle(
+         %{dutycycle: %Dutycycle{name: name, id: id} = dc, need_reload: true} =
+           s
+       ) do
+    dc = Dutycycle.reload(dc)
     log = Map.get(s, :log_reload, false)
 
-    if is_nil(d) do
-      Logger.warn(fn -> "failed reload of dutycycle id=#{inspect(id)}" end)
+    if is_nil(dc) do
+      Logger.warn(fn ->
+        "dutycycle id=#{inspect(id, pretty: true)} reload failed"
+      end)
+
       s
     else
-      log && Logger.info(fn -> "#{inspect(d.name)} reloaded" end)
-      Map.merge(s, %{need_reload: false, dutycycle: d})
+      log && Logger.info(fn -> "#{inspect(name)} reloaded" end)
+      Map.merge(s, %{need_reload: false, dutycycle: dc})
     end
   end
 
   defp reload_dutycycle(%{} = s), do: s
 
+  # REFACTORED
   defp server_name(opts) when is_list(opts) do
-    d = Dutycycle.get_by(opts)
+    dc = Dutycycle.get_by(opts)
 
-    if is_nil(d) do
-      {nil, nil}
-    else
-      id_str = String.pad_leading(Integer.to_string(d.id), 6, "0")
-
-      {d, String.to_atom("Duty_ID" <> id_str)}
-    end
-  end
-
-  defp server_start(%{dutycycle: d, server_name: server_name} = s) do
-    d = Dutycycle.ensure_profile_none_exists(d)
-
-    cond do
-      Dutycycle.stopped?(d) ->
-        d.log &&
-          Logger.warn(fn ->
-            "Dutycycle #{inspect(d.name)} marked as stopped --" <>
-              " no profile started"
-          end)
-
-      Profile.none?(d) ->
-        State.set(mode: "stopped", dutycycle: d)
-
-      true ->
-        Process.send_after(
-          server_name,
-          %{:msg => :activate_profile, profile: Profile.active(d), opts: []},
-          100
-        )
-
-        d.log &&
-          Logger.info(fn ->
-            "#{inspect(d.name)} queued start with profile #{
-              inspect(Profile.active(d))
-            }"
-          end)
-    end
-
-    Map.put(s, :dutycycle, d)
+    if is_nil(dc), do: {nil, nil}, else: {dc, server_name_atom(dc)}
   end
 end
