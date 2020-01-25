@@ -295,6 +295,41 @@ defmodule Dutycycle.Server do
     {:reply, :unhandled_msg, s}
   end
 
+  # REFACTORED!
+  # NOTE: this is nearly identical to the handle_call() for activating
+  #       a profile so there is possibly an opportunity to refactor
+  def handle_info(
+        %{:msg => :activate_profile, profile: profile, dutycycle: dc},
+        s
+      ) do
+    rc = Dutycycle.activate_profile(dc, profile)
+    s = cache_dutycycle(s)
+
+    case rc do
+      {:ok, %Dutycycle{name: name, log: log}, %Profile{name: profile_name},
+       :run} ->
+        log &&
+          Logger.debug(fn ->
+            "dutycycle #{inspect(name)} profile #{inspect(profile_name)}" <>
+              " server start activate successful"
+          end)
+
+        s = cancel_timer(s) |> start_phase_timer(rc)
+
+        {:noreply, cache_dutycycle(s)}
+
+      {:ok, %Dutycycle{}, %Profile{}, :none} ->
+        {:noreply, cancel_timer(s) |> cache_dutycycle()}
+
+      rc ->
+        Logger.warn(fn ->
+          "initial activate failed #{inspect(rc, pretty: true)}"
+        end)
+
+        {:noreply, s}
+    end
+  end
+
   def handle_info(
         %{:msg => :phase_end, :profile => profile, :ms => _ms},
         %{dutycycle: dc} = s
