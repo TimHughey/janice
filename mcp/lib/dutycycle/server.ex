@@ -299,8 +299,8 @@ defmodule Dutycycle.Server do
   # NOTE: this is nearly identical to the handle_call() for activating
   #       a profile so there is possibly an opportunity to refactor
   def handle_info(
-        %{:msg => :activate_profile, profile: profile, dutycycle: dc},
-        s
+        %{:msg => :activate_profile, profile: profile, opts: _opts},
+        %{dutycycle: dc} = s
       ) do
     rc = Dutycycle.activate_profile(dc, profile)
     s = cache_dutycycle(s)
