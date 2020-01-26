@@ -168,6 +168,14 @@ defmodule Dutycycle do
 
   # REFACTORED!
   # HAS TEST CASE
+  def delete(name) when is_binary(name) do
+    dc = get_by(name: name)
+
+    if is_nil(dc),
+      do: {:not_found, name},
+      else: delete(dc)
+  end
+
   def delete(%Dutycycle{id: id}, opts \\ [timeout: 5 * 60 * 1000]) do
     dc =
       Repo.get(Dutycycle, id)

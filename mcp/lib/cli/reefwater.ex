@@ -189,9 +189,9 @@ defmodule Reef do
   defp display_tank, do: "display tank"
   defp dt, do: display_tank()
   defp dt_sensor, do: "display_tank"
-  defp rmrf, do: "reefwater rodi fill"
-  defp rma, do: "reefwater mix air"
-  defp rmp, do: "reefwater mix pump"
+  defp rmrf, do: "mix rodi"
+  defp rma, do: "mix air"
+  defp rmp, do: "mix pump"
   defp standby, do: "standby"
-  defp swmt, do: "salt water mix tank"
+  defp swmt, do: "mix tank"
 end

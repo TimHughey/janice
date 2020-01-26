@@ -51,6 +51,8 @@ defmodule Dutycycle.Server do
     call_server(name, msg)
   end
 
+  def delete(name) when is_binary(name), do: Dutycycle.delete(name)
+
   # REFACTORED
   def delete(%Dutycycle{} = dc) do
     if Dutycycle.Supervisor.ping() == :pong,

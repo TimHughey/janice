@@ -15,7 +15,7 @@ defmodule DutycycleTest do
 
   @moduletag :dutycycle
   setup_all do
-    ids = 0..23
+    ids = 0..24
     new_dcs = Enum.to_list(ids) ++ [99]
 
     for n <- new_dcs, do: new_dutycycle(n) |> Dutycycle.add()
@@ -465,6 +465,17 @@ defmodule DutycycleTest do
     assert rc2 == :pong
     assert dc.name == "updated name"
     assert dc.comment == "new comment"
+  end
+
+  @tag num: 24
+  test "can delete a Dutycycle by name via server",
+       context do
+    {_dc, name} = name_from_db(context[:num])
+
+    rc = Server.delete(name)
+
+    assert is_list(rc)
+    assert [server: :ok, db: :ok] == rc
   end
 
   test "server handles resuming an unkown dutycycle" do
