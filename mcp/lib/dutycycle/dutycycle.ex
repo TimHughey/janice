@@ -84,7 +84,9 @@ defmodule Dutycycle do
            Profile.activate(dc, profile),
          dc <- reload(dc),
          {:state_run, {dc, {:ok, _st}}} <- {:state_run, State.run(dc)},
-         {:ok, dc} <- Dutycycle.stopped(dc, false) do
+         {:ok, dc} <- Dutycycle.stopped(dc, false),
+         dc <- reload(dc),
+         {:ok, {:position, true}, dc} <- control_device(dc, lazy: false) do
       log &&
         Logger.info(fn ->
           dc_name(dc) <>
@@ -113,6 +115,17 @@ defmodule Dutycycle do
         Logger.warn(fn ->
           "State.run() failed: #{inspect(error, pretty: true)}"
         end)
+
+      {:ok, {:position, pos}, dc} ->
+        log?(dc) &&
+          Logger.warn(fn ->
+            inspect(dc_name(dc), pretty: true) <>
+              " device state is " <>
+              inspect(pos, pretty: true) <>
+              " after profile activation (should be true)"
+          end)
+
+        {:ok, dc, Profile.active(dc), :run}
 
       error ->
         Logger.warn(fn ->

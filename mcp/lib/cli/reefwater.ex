@@ -4,6 +4,7 @@ defmodule Reef do
   require Logger
   import IO.ANSI
 
+  alias Dutycycle.Profile, as: DCP
   alias Dutycycle.Server, as: DCS
   alias Thermostat.Server, as: THS
 
@@ -92,9 +93,9 @@ defmodule Reef do
     opts = [active: true]
 
     [
-      {rmp(), rmp() |> DCS.profiles(opts)},
-      {rma(), rma() |> DCS.profiles(opts)},
-      {rmrf(), rmrf() |> DCS.profiles(opts)},
+      {rmp(), rmp() |> DCS.profiles(opts) |> DCP.name()},
+      {rma(), rma() |> DCS.profiles(opts) |> DCP.name()},
+      {rmrf(), rmrf() |> DCS.profiles(opts) |> DCP.name()},
       {swmt(), swmt() |> THS.profiles(opts)},
       {display_tank(), display_tank() |> THS.profiles(opts)}
     ]
