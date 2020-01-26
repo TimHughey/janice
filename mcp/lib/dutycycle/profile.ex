@@ -143,6 +143,10 @@ defmodule Dutycycle.Profile do
 
   def deactivate(%Profile{} = p), do: update_profile(p, active: false)
 
+  def delete(%Dutycycle{profiles: _profiles} = dc, name) when is_binary(name) do
+    find(dc, name)
+  end
+
   def exists?(%Dutycycle{profiles: profiles}, name) when is_binary(name) do
     Enum.find_value(profiles, fn p -> name(p) === name end)
   end

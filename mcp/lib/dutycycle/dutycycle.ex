@@ -186,6 +186,11 @@ defmodule Dutycycle do
       else: [server: Server.delete(dc), db: elem(Repo.delete(dc, opts), 0)]
   end
 
+  def delete_profile(%Dutycycle{profiles: _profiles} = dc, profile_name)
+      when is_binary(profile_name) do
+    Profile.delete(dc, profile_name)
+  end
+
   # REFACTORED!
   # HAS TEST CASE
   def delete_all(:dangerous) do
@@ -389,7 +394,7 @@ defmodule Dutycycle do
       Dutycycle.log?(dc) &&
         Logger.info(fn ->
           dc_name(dc) <>
-            "will start with profile #{inspect(active_profile)}"
+            "will start with profile #{inspect(Profile.name(active_profile))}"
         end)
 
       {:ok, :run, active_profile}
@@ -448,7 +453,7 @@ defmodule Dutycycle do
        )
        when is_list(opts) do
     lazy = Keyword.get(opts, :lazy, true)
-    ack = Keyword.get(opts, :ack, true)
+    ack = Keyword.get(opts, :ack, false)
     log = Keyword.get(opts, :log, false)
 
     sw_state =

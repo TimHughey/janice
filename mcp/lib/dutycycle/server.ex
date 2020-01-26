@@ -60,6 +60,11 @@ defmodule Dutycycle.Server do
       else: :no_supervisor
   end
 
+  def delete_profile(name, opts \\ []) when is_binary(name) do
+    msg = %{:msg => :delete_profile, opts: opts}
+    call_server(name, msg)
+  end
+
   def dutycycle(server_name, opts \\ []) when is_atom(server_name) do
     msg = %{:msg => :dutycycle, opts: opts}
 
@@ -131,6 +136,13 @@ defmodule Dutycycle.Server do
     call_server(name, msg)
   end
 
+  def update(name, opts) when is_binary(name) and is_list(opts) do
+    msg = %{:msg => :update, opts: opts}
+    call_server(name, msg)
+  end
+
+  def update(_catchall), do: Logger.warn("update(dutycycle_name, opts")
+
   def update_profile(name, profile, opts)
       when is_binary(name) and is_binary(profile) and is_list(opts) do
     msg = %{:msg => :update_profile, profile: profile, opts: opts}
@@ -181,9 +193,21 @@ defmodule Dutycycle.Server do
   def handle_call(%{:msg => :add_profile, profile: p}, _from, s) do
     rc = Profile.add(s.dutycycle, p)
 
-    s = Map.put(s, :need_reload, true) |> reload_dutycycle()
+    s = need_reload(s, reload: true) |> reload_dutycycle()
 
     {:reply, rc, s}
+  end
+
+  def handle_call(
+        %{:msg => :delete_profile, :opts => opts},
+        _from,
+        %{dutycycle: dc} = s
+      ) do
+    s = need_reload(s, opts)
+    # process the actual changes to the profile
+    {rc, res} = Dutycycle.delete_profile(dc, opts)
+
+    {:reply, {rc, res}, reload_dutycycle(s)}
   end
 
   # REFACTORED!
@@ -243,7 +267,7 @@ defmodule Dutycycle.Server do
   def handle_call(%{:msg => :reload, :opts => opts}, _from, s) do
     log_reload = Keyword.get(opts, :log_reload, false)
 
-    s = Map.put(s, :need_reload, true) |> Map.put_new(:log_reload, log_reload)
+    s = need_reload(s, reload: true) |> Map.put_new(:log_reload, log_reload)
 
     {:reply, :reload_queued, s}
   end
@@ -266,23 +290,30 @@ defmodule Dutycycle.Server do
   end
 
   def handle_call(
+        %{:msg => :update, :opts => opts},
+        _from,
+        %{dutycycle: dc} = s
+      ) do
+    s = need_reload(s, opts)
+
+    # process the actual changes to the profile
+    {rc, res} = Dutycycle.update(dc, opts)
+
+    {:reply, %{dutycycle: {rc, res}, reload: need_reload?(s)},
+     reload_dutycycle(s)}
+  end
+
+  def handle_call(
         %{:msg => :update_profile, :profile => profile, :opts => opts},
         _from,
         %{dutycycle: dc} = s
       ) do
-    # default reload to true
-    reload = Keyword.get(opts, :reload, true)
+    s = need_reload(s, opts)
     # process the actual changes to the profile
     {rc, res} = Profile.change_properties(dc, profile, opts)
 
-    s =
-      if reload do
-        reload_dutycycle(s)
-      else
-        s
-      end
-
-    {:reply, %{profile: {rc, res}, reload: reload}, s}
+    {:reply, %{profile: {rc, res}, reload: need_reload?(s)},
+     reload_dutycycle(s)}
   end
 
   # handle case when we receive a message that we don't understand
@@ -418,7 +449,8 @@ defmodule Dutycycle.Server do
         dutycycle_id: id,
         # call Dutycycle.reload() to ensure all associations are preloaded
         dutycycle: Dutycycle.reload(dc),
-        timer: nil
+        timer: nil,
+        need_reload: false
       }
       |> Map.merge(args),
       name: server_name
@@ -503,6 +535,13 @@ defmodule Dutycycle.Server do
 
   defp cancel_timer(%{timer: nil} = s), do: s
   defp cancel_timer(%{} = s), do: s
+
+  # if the key reload is persent in the opts then add it to the state
+  # however defaults to true
+  defp need_reload(%{} = s, opts) when is_list(opts),
+    do: %{s | need_reload: Keyword.get(opts, :reload, true)}
+
+  defp need_reload?(%{need_reload: reload}), do: reload
 
   # Refactor
   defp start_phase_timer(
