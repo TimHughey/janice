@@ -48,7 +48,7 @@ defmodule DutycycleTest do
       device: dev_str,
       last_profile: "none",
       stopped: true,
-      log: false,
+      log: true,
       profiles: [
         %Dutycycle.Profile{name: "fast", run_ms: 3_000, idle_ms: 3_000},
         %Dutycycle.Profile{name: "slow", run_ms: 120_000, idle_ms: 60_000},

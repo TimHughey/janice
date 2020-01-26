@@ -257,10 +257,10 @@ defmodule Dutycycle do
        do: next_phase(:run, dc)
 
   # REFACTORED!
-  defp next_phase(mode, %Dutycycle{log: log} = dc) do
+  defp next_phase(mode, %Dutycycle{} = dc) do
     with {%Dutycycle{} = dc, {:ok, %State{}}} <- State.next_phase(mode, dc),
          dc <- reload(dc),
-         {:ok, {:position, _postition}, dc} <- control_device(dc, log: log) do
+         {:ok, {:position, _postition}, dc} <- control_device(dc) do
       active_profile = Profile.active(dc)
       {:ok, dc, active_profile, mode}
     else
@@ -341,12 +341,12 @@ defmodule Dutycycle do
       Repo.get!(Dutycycle, id)
       |> preload([:state, :profiles], force: true)
 
-  def stop(%Dutycycle{log: log} = dc) do
+  def stop(%Dutycycle{} = dc) do
     with {%Dutycycle{}, {:ok, %State{}}} <- State.stop(dc),
          {:ok, %Dutycycle{}} <- stopped(dc, true),
          {:reload, %Dutycycle{} = dc} <- {:reload, reload(dc)},
          {:ok, {:position, false}, dc} <-
-           control_device(dc, lazy: true, log: log) do
+           control_device(dc, lazy: false) do
       {:ok, dc}
     else
       {:invalid_changes, errors} ->
@@ -447,21 +447,25 @@ defmodule Dutycycle do
   defp control_device(
          %Dutycycle{
            device: device,
-           state: %Dutycycle.State{dev_state: dev_state}
+           state: %Dutycycle.State{dev_state: dev_state},
+           log: log
          } = dc,
-         opts
+         opts \\ []
        )
        when is_list(opts) do
     lazy = Keyword.get(opts, :lazy, true)
-    ack = Keyword.get(opts, :ack, false)
-    log = Keyword.get(opts, :log, false)
 
-    sw_state =
-      Switch.state(device, position: dev_state, lazy: lazy, ack: ack, log: log)
+    sw_state = Switch.state(device, position: dev_state, lazy: lazy, log: log)
 
-    log && is_nil(sw_state) &&
+    log?(dc) && is_nil(sw_state) &&
       Logger.warn(fn ->
         "#{inspect(device)} position is nil, does it exist?"
+      end)
+
+    log?(dc) && not is_nil(sw_state) && not sw_state == dev_state &&
+      Logger.warn(fn ->
+        "#{inspect(device)} position #{inspect(sw_state)} " <>
+          "!= #{inspect(dev_state)}"
       end)
 
     {:ok, {:position, sw_state}, dc}

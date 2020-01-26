@@ -89,15 +89,14 @@ defmodule Reef do
   def resume_pump, do: DCS.resume(rmp())
 
   def status do
-    dcs_opts = [only_active: true]
-    ths_opts = [active: true]
+    opts = [active: true]
 
     [
-      {rmp(), rmp() |> DCS.profiles(dcs_opts)},
-      {rma(), rma() |> DCS.profiles(dcs_opts)},
-      {rmrf(), rmrf() |> DCS.profiles(dcs_opts)},
-      {swmt(), swmt() |> THS.profiles(ths_opts)},
-      {display_tank(), display_tank() |> THS.profiles(ths_opts)}
+      {rmp(), rmp() |> DCS.profiles(opts)},
+      {rma(), rma() |> DCS.profiles(opts)},
+      {rmrf(), rmrf() |> DCS.profiles(opts)},
+      {swmt(), swmt() |> THS.profiles(opts)},
+      {display_tank(), display_tank() |> THS.profiles(opts)}
     ]
     |> print_status()
   end

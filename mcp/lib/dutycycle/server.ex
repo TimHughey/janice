@@ -450,7 +450,8 @@ defmodule Dutycycle.Server do
         # call Dutycycle.reload() to ensure all associations are preloaded
         dutycycle: Dutycycle.reload(dc),
         timer: nil,
-        need_reload: false
+        need_reload: false,
+        startup_delay_ms: 15_000
       }
       |> Map.merge(args),
       name: server_name
@@ -461,7 +462,8 @@ defmodule Dutycycle.Server do
   def init(
         %{
           server_name: server_name,
-          dutycycle: dc
+          dutycycle: %Dutycycle{name: name} = dc,
+          startup_delay_ms: activate_delay_ms
         } = s
       ) do
     case Dutycycle.start(dc) do
@@ -472,13 +474,14 @@ defmodule Dutycycle.Server do
         Process.send_after(
           server_name,
           %{:msg => :activate_profile, profile: profile, opts: []},
-          100
+          activate_delay_ms
         )
 
         Logger.info(fn ->
-          "#{inspect(dc.name)} queued start with profile\n#{
-            inspect(Profile.active(dc), pretty: true)
-          }"
+          inspect(name) <>
+            " profile " <>
+            inspect(Profile.active(dc) |> Profile.name()) <>
+            " will activate in #{inspect(activate_delay_ms)}ms"
         end)
 
       rc ->
