@@ -442,13 +442,13 @@ defmodule Dutycycle.Server do
         )
 
         Logger.info(fn ->
-          "#{inspect(dc.name)} queued start with profile #{
+          "#{inspect(dc.name)} queued start with profile\n#{
             inspect(Profile.active(dc), pretty: true)
           }"
         end)
 
       rc ->
-        Logger.warn(fn -> "Dutycyle.start() returned #{inspect(rc)}" end)
+        Logger.warn(fn -> "Dutycyle.start() returned:\n#{inspect(rc)}" end)
     end
 
     Process.flag(:trap_exit, true)

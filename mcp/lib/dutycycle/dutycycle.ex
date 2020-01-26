@@ -63,7 +63,7 @@ defmodule Dutycycle do
       {:no_active_profile, true} ->
         Logger.warn(fn ->
           dc_name(dc) <>
-            " does not have an active profile to activate"
+            "does not have an active profile to activate"
         end)
 
         {:no_active_profile, dc}
@@ -71,14 +71,14 @@ defmodule Dutycycle do
       unhandled ->
         Logger.warn(fn ->
           dc_name(dc) <>
-            " activate active profile unhandled condition " <>
+            "activate active profile unhandled condition " <>
             "#{inspect(unhandled, pretty: true)}"
         end)
     end
   end
 
   # REFACTORED!
-  def activate_profile(%Dutycycle{name: name, log: log} = dc, profile, _opts)
+  def activate_profile(%Dutycycle{log: log} = dc, profile, _opts)
       when is_binary(profile) do
     with {:ok, %Profile{} = new_profile} <-
            Profile.activate(dc, profile),
@@ -86,10 +86,9 @@ defmodule Dutycycle do
          {:state_run, {dc, {:ok, _st}}} <- {:state_run, State.run(dc)},
          {:ok, dc} <- Dutycycle.stopped(dc, false) do
       log &&
-        Logger.debug(fn ->
-          "dutycycle #{inspect(name)} profile #{
-            inspect(Profile.name(new_profile))
-          } activated"
+        Logger.info(fn ->
+          dc_name(dc) <>
+            "activated profile\n#{inspect(Profile.name(new_profile))}"
         end)
 
       {:ok, reload(dc), new_profile, :run}
@@ -280,6 +279,8 @@ defmodule Dutycycle do
     end
   end
 
+  def log?(%Dutycycle{log: log}), do: log
+
   # REFACTORED!
   def lookup_id(name) when is_binary(name) do
     with query <-
@@ -362,28 +363,25 @@ defmodule Dutycycle do
     end
   end
 
-  def start(%Dutycycle{stopped: true, name: name, log: log}) do
-    log && Logger.debug(fn -> "#{inspect(name)} stopped is true" end)
+  def start(%Dutycycle{stopped: true} = dc) do
+    Dutycycle.log?(dc) && Logger.info(fn -> dc_name(dc) <> "is stopped" end)
 
     {:ok, :stopped}
   end
 
-  def start(%Dutycycle{stopped: false, name: name, log: log} = dc) do
+  def start(%Dutycycle{stopped: false} = dc) do
     if Profile.none?(dc) do
-      log &&
-        Logger.info(fn ->
-          "dutycycle #{inspect(name)} does not have " <>
-            "an active profile"
-        end)
+      Dutycycle.log?(dc) &&
+        Logger.info(fn -> dc_name(dc) <> "does not have an active profile" end)
 
       {:ok, :stopped}
     else
       active_profile = Profile.active(dc)
 
-      log &&
+      Dutycycle.log?(dc) &&
         Logger.info(fn ->
-          "dutycycle #{inspect(name)} will start with " <>
-            " active profile #{inspect(active_profile)}"
+          dc_name(dc) <>
+            "will start with profile #{inspect(active_profile)}"
         end)
 
       {:ok, :run, active_profile}
@@ -457,8 +455,8 @@ defmodule Dutycycle do
   end
 
   # REFACTORED!
-  defp dc_name(%Dutycycle{name: name}), do: "#{inspect(name)}"
-  defp dc_name(catchall), do: "#{inspect(catchall, pretty: true)}"
+  defp dc_name(%Dutycycle{name: name}), do: "#{inspect(name)} "
+  defp dc_name(catchall), do: "#{inspect(catchall, pretty: true)} "
 
   # REFACTORED!
   # defp dev_state(device) when is_binary(device) do
