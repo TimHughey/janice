@@ -88,7 +88,7 @@ defmodule Dutycycle do
       log &&
         Logger.info(fn ->
           dc_name(dc) <>
-            "activated profile\n#{inspect(Profile.name(new_profile))}"
+            "activated profile #{inspect(Profile.name(new_profile))}"
         end)
 
       {:ok, reload(dc), new_profile, :run}
