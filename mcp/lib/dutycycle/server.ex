@@ -365,7 +365,7 @@ defmodule Dutycycle.Server do
   def handle_info(%{:msg => :scheduled_work}, %{server_name: server_name} = s) do
     s = reload_dutycycle(s)
 
-    Process.send_after(server_name, %{:msg => :scheduled_work}, 100)
+    Process.send_after(server_name, %{:msg => :scheduled_work}, 750)
     {:noreply, s}
   end
 

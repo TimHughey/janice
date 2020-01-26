@@ -442,7 +442,7 @@ defmodule Dutycycle do
        )
        when is_list(opts) do
     lazy = Keyword.get(opts, :lazy, true)
-    ack = Keyword.get(opts, :ack, false)
+    ack = Keyword.get(opts, :ack, true)
     log = Keyword.get(opts, :log, false)
 
     sw_state =

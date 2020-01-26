@@ -24,12 +24,16 @@ defmodule Dutycycle.Profile do
   end
 
   def activate(%Dutycycle{} = dc, name) when is_binary(name) do
-    with %Profile{} = next_profile <- find(dc, name),
-         %Profile{} = active_profile <- active(dc),
+    with %Profile{name: next_name} = next_profile <- find(dc, name),
+         %Profile{name: active_name} = active_profile <- active(dc),
+         {:is_same, false} <- {:is_same, next_name === active_name},
          {:ok, _old} <- deactivate(active_profile),
          {:ok, next} <- activate(next_profile) do
       {:ok, next}
     else
+      {:is_same, true} ->
+        active(dc) |> activate()
+
       error ->
         Logger.warn(fn -> "activate failed: #{inspect(error, pretty: true)}" end)
 
