@@ -144,7 +144,24 @@ defmodule Dutycycle.Profile do
   def deactivate(%Profile{} = p), do: update_profile(p, active: false)
 
   def delete(%Dutycycle{profiles: _profiles} = dc, name) when is_binary(name) do
-    find(dc, name)
+    with {:find, %Profile{} = p} <- {:find, find(dc, name)},
+         {:is_active, false, p} <- {:is_active, active?(p), p},
+         {:ok, %Profile{} = p} <- Repo.delete(p) do
+      {:ok, p}
+    else
+      {:is_active, true, p} ->
+        {:is_active, p}
+
+      {:find, {:profile_not_found}} ->
+        {:profile_not_found, name}
+
+      error ->
+        Logger.warn(fn ->
+          "delete() returned #{inspect(error, pretty: true)}"
+        end)
+
+        error
+    end
   end
 
   def exists?(%Dutycycle{profiles: profiles}, name) when is_binary(name) do

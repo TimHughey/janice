@@ -60,8 +60,10 @@ defmodule Dutycycle.Server do
       else: :no_supervisor
   end
 
-  def delete_profile(name, opts \\ []) when is_binary(name) do
-    msg = %{:msg => :delete_profile, opts: opts}
+  def delete_profile(name, profile, opts \\ [])
+      when is_binary(name) and
+             is_binary(profile) do
+    msg = %{:msg => :delete_profile, profile: profile, opts: opts}
     call_server(name, msg)
   end
 
@@ -199,15 +201,15 @@ defmodule Dutycycle.Server do
   end
 
   def handle_call(
-        %{:msg => :delete_profile, :opts => opts},
+        %{:msg => :delete_profile, :profile => profile, :opts => opts},
         _from,
         %{dutycycle: dc} = s
       ) do
     s = need_reload(s, opts)
-    # process the actual changes to the profile
-    {rc, res} = Dutycycle.delete_profile(dc, opts)
 
-    {:reply, {rc, res}, reload_dutycycle(s)}
+    {rc, res} = Dutycycle.delete_profile(dc, profile, opts)
+
+    {:reply, {rc, res}, cache_dutycycle(s)}
   end
 
   # REFACTORED!
@@ -300,7 +302,7 @@ defmodule Dutycycle.Server do
     {rc, res} = Dutycycle.update(dc, opts)
 
     {:reply, %{dutycycle: {rc, res}, reload: need_reload?(s)},
-     reload_dutycycle(s)}
+     cache_dutycycle(s)}
   end
 
   def handle_call(

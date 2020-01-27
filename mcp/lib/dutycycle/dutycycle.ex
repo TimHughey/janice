@@ -39,7 +39,6 @@ defmodule Dutycycle do
     field(:name)
     field(:comment)
     field(:log, :boolean)
-    field(:last_profile)
     field(:device)
     field(:stopped, :boolean)
     has_one(:state, State)
@@ -119,8 +118,8 @@ defmodule Dutycycle do
       {:ok, {:position, pos}, dc} ->
         log?(dc) &&
           Logger.warn(fn ->
-            inspect(dc_name(dc), pretty: true) <>
-              " device state is " <>
+            dc_name(dc) <>
+              "device state is " <>
               inspect(pos, pretty: true) <>
               " after profile activation (should be true)"
           end)
@@ -199,7 +198,7 @@ defmodule Dutycycle do
       else: [server: Server.delete(dc), db: elem(Repo.delete(dc, opts), 0)]
   end
 
-  def delete_profile(%Dutycycle{profiles: _profiles} = dc, profile_name)
+  def delete_profile(%Dutycycle{profiles: _profiles} = dc, profile_name, _opts)
       when is_binary(profile_name) do
     Profile.delete(dc, profile_name)
   end
@@ -472,13 +471,15 @@ defmodule Dutycycle do
 
     log?(dc) && is_nil(sw_state) &&
       Logger.warn(fn ->
-        "#{inspect(device)} position is nil, does it exist?"
+        dc_name(dc) <>
+          "device #{inspect(device)} position is nil, does it exist?"
       end)
 
     log?(dc) && not is_nil(sw_state) && not sw_state == dev_state &&
       Logger.warn(fn ->
-        "#{inspect(device)} position #{inspect(sw_state)} " <>
-          "!= #{inspect(dev_state)}"
+        dc_name(dc) <>
+          "device #{inspect(device)} position #{inspect(sw_state)} " <>
+          "is not #{inspect(dev_state)} (should be equal)"
       end)
 
     {:ok, {:position, sw_state}, dc}
@@ -496,5 +497,5 @@ defmodule Dutycycle do
   # end
 
   # REFACTORED!
-  defp possible_changes, do: [:name, :comment, :device, :last_profile, :stopped]
+  defp possible_changes, do: [:name, :comment, :device, :stopped]
 end
