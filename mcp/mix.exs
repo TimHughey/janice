@@ -104,7 +104,10 @@ defmodule Mcp.Mixfile do
 
   defp aliases do
     [
-      "ecto.migrate": ["ecto.migrate", "ecto.dump"],
+      "ecto.migrate": [
+        "ecto.migrate",
+        "ecto.dump --dump-path priv/repo/structure-#{Mix.env()}.sql"
+      ],
       "ecto.setup": ["ecto.create", "ecto.load", "ecto.migrate"],
       "ecto.reset": [
         "ecto.drop",
