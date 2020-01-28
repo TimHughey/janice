@@ -3,7 +3,7 @@
 --
 
 -- Dumped from database version 11.4
--- Dumped by pg_dump version 12.1
+-- Dumped by pg_dump version 11.4
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -17,6 +17,8 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 SET default_tablespace = '';
+
+SET default_with_oids = false;
 
 --
 -- Name: dutycycle; Type: TABLE; Schema: public; Owner: -
