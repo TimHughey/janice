@@ -15,12 +15,14 @@ defmodule DutycycleTest do
 
   @moduletag :dutycycle
   setup_all do
-    ids = 0..9
-    new_dcs = Enum.to_list(ids) ++ [99]
+    new_dcs = 0..9 |> Enum.to_list()
 
     for n <- new_dcs, do: new_dutycycle(n) |> Dutycycle.add()
+    for dc <- prod_dutycycles(), do: Dutycycle.add(dc)
     :ok
   end
+
+  def get_an_id, do: Dutycycle.get_by(name: name_str(0)) |> Map.get(:id)
 
   def name_from_db(num) when is_integer(num) do
     dc = load_dc(name_str(num))
@@ -28,12 +30,6 @@ defmodule DutycycleTest do
   end
 
   def load_dc(name) when is_binary(name), do: Dutycycle.get_by(name: name)
-
-  def shared_dc, do: Dutycycle.get_by(name: fixed_name())
-
-  def fixed_name, do: name_str(99)
-
-  def get_an_id, do: Dutycycle.get_by(name: fixed_name()) |> Map.get(:id)
 
   def name_str(n),
     do: "dutycycle" <> String.pad_leading(Integer.to_string(n), 3, "0")
@@ -151,6 +147,12 @@ defmodule DutycycleTest do
     rc1 = Server.resume(name)
 
     assert :not_found === rc1
+  end
+
+  test "Reef CLI" do
+    rc = Reef.status()
+
+    assert :ok == rc
   end
 
   @tag num: 1000
@@ -462,4 +464,72 @@ defmodule DutycycleTest do
     assert :error === rc
     refute cs.valid?()
   end
+
+  defp prod_dutycycles,
+    do: [
+      %Dutycycle{
+        name: "mix pump",
+        comment: "mix pump",
+        device: "mix_pump",
+        stopped: true,
+        log: true,
+        profiles: [
+          %Dutycycle.Profile{name: "fast", run_ms: 3_000, idle_ms: 3_000},
+          %Dutycycle.Profile{
+            name: "infinity",
+            run_ms: 360_000,
+            idle_ms: 360_000
+          }
+        ],
+        state: %Dutycycle.State{}
+      },
+      %Dutycycle{
+        name: "mix air",
+        comment: "mix air",
+        device: "mix_air",
+        stopped: true,
+        log: true,
+        profiles: [
+          %Dutycycle.Profile{name: "fast", run_ms: 3_000, idle_ms: 3_000},
+          %Dutycycle.Profile{
+            name: "infinity",
+            run_ms: 360_000,
+            idle_ms: 360_000
+          }
+        ],
+        state: %Dutycycle.State{}
+      },
+      %Dutycycle{
+        name: "mix rodi",
+        comment: "mix rodi",
+        device: "mix_rodi",
+        stopped: true,
+        log: true,
+        profiles: [
+          %Dutycycle.Profile{name: "fast", run_ms: 3_000, idle_ms: 3_000},
+          %Dutycycle.Profile{
+            name: "infinity",
+            run_ms: 360_000,
+            idle_ms: 360_000
+          }
+        ],
+        state: %Dutycycle.State{}
+      },
+      %Dutycycle{
+        name: "mix rodi boost",
+        comment: "mix rodi boost",
+        device: "mix_rodi_boost",
+        stopped: true,
+        log: true,
+        profiles: [
+          %Dutycycle.Profile{name: "fast", run_ms: 3_000, idle_ms: 3_000},
+          %Dutycycle.Profile{
+            name: "infinity",
+            run_ms: 360_000,
+            idle_ms: 360_000
+          }
+        ],
+        state: %Dutycycle.State{}
+      }
+    ]
 end

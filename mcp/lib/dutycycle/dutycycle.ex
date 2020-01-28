@@ -198,15 +198,15 @@ defmodule Dutycycle do
       else: [server: Server.delete(dc), db: elem(Repo.delete(dc, opts), 0)]
   end
 
-  def delete_profile(%Dutycycle{profiles: _profiles} = dc, profile_name, _opts)
-      when is_binary(profile_name) do
-    Profile.delete(dc, profile_name)
-  end
-
   # REFACTORED!
   # HAS TEST CASE
   def delete_all(:dangerous) do
     for dc <- Repo.all(Dutycycle), do: delete(dc)
+  end
+
+  def delete_profile(%Dutycycle{profiles: _profiles} = dc, profile_name, _opts)
+      when is_binary(profile_name) do
+    Profile.delete(dc, profile_name)
   end
 
   def device_change(%Dutycycle{} = d, new_device) when is_binary(new_device) do

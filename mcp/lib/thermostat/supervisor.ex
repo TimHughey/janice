@@ -4,6 +4,17 @@ defmodule Thermostat.Supervisor do
   require Logger
   use Supervisor
 
+  def eliminate_thermostat(name) when is_atom(name) do
+    children = Supervisor.which_children(Dutycycle.Supervisor)
+
+    deleted =
+      for {server, pid, _type, _modules} <- children,
+          server === name,
+          do: Supervisor.delete_child(__MODULE__, pid)
+
+    if Enum.empty?(deleted), do: :not_found, else: :ok
+  end
+
   def init(args) do
     Logger.info(fn -> "init()" end)
 
@@ -37,6 +48,20 @@ defmodule Thermostat.Supervisor do
     for {server_name, _pid, _type, _modules} <- children,
         is_match?(server_name, match_name),
         do: server_name
+  end
+
+  def ping, do: if(is_pid(Process.whereis(__MODULE__)), do: :pong, else: nil)
+
+  def restart_thermostat(name) when is_binary(name) do
+    child_id =
+      Thermostat.get_by(name: name)
+      |> Thermostat.Server.server_name_atom()
+
+    rc = Supervisor.terminate_child(__MODULE__, child_id)
+
+    if rc == :ok,
+      do: Supervisor.restart_child(__MODULE__, child_id),
+      else: :not_found
   end
 
   def start_link(args) do

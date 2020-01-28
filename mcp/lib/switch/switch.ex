@@ -285,8 +285,8 @@ defmodule Switch do
 
     # NOTE: must ack the command first so the below is able to determine if this
     #       update should be persisted (if the state is different)
-    # NOTE:  reminder, switch cmds operate a the switch device level, not individual
-    #        switch states
+    # NOTE: reminder, switch cmds operate at the switch device level,
+    #       not individual switch states
     SwitchCmd.ack_if_needed(r)
 
     # as a sanity check be certain the number of reported states actually

@@ -34,20 +34,13 @@ defmodule Thermostat.Server do
     for s <- servers, t = Thermostat.Server.thermostat(s), is_map(t), do: t
   end
 
-  def enable(name, opts \\ [])
-      when is_binary(name) do
-    msg = %{:msg => :enable, opts: opts}
-    call_server(name, msg)
-  end
+  def delete(name) when is_binary(name), do: Thermostat.delete(name)
 
-  def enabled?(name, opts \\ []) when is_binary(name) do
-    msg = %{:msg => :enabled?, opts: opts}
-    call_server(name, msg)
-  end
-
-  def owner(name, opts \\ []) when is_binary(name) do
-    msg = %{:msg => :owner, opts: opts}
-    call_server(name, msg)
+  # REFACTORED
+  def delete(%Thermostat{} = th) do
+    if Thermostat.Supervisor.ping() == :pong,
+      do: Thermostat.Supervisor.eliminate_thermostat(server_name_atom(th)),
+      else: :no_supervisor
   end
 
   def ping(name, opts \\ []) when is_binary(name) do
@@ -60,30 +53,23 @@ defmodule Thermostat.Server do
     call_server(name, msg)
   end
 
-  def release_ownership(name, opts \\ []) when is_binary(name) do
-    msg = %{:msg => :release_ownership, opts: opts}
-    call_server(name, msg)
-  end
-
   def reload(name, opts \\ []) when is_binary(name) do
     msg = %{:msg => :reload, opts: opts}
     call_server(name, msg)
   end
 
-  def restart(name, opts \\ []) when is_binary(name) do
-    msg = %{:msg => :restart, opts: opts}
-    call_server(name, msg)
-  end
+  # REFACTORED
+  def restart(name) when is_binary(name),
+    do: Thermostat.Supervisor.restart_thermostat(name)
 
-  def shutdown(name, opts \\ []) when is_binary(name) do
-    msg = %{:msg => :shutdown, opts: opts}
-    call_server(name, msg)
-  end
+  # REFACTORED
+  def server_name_atom(%Thermostat{id: id}),
+    do:
+      String.to_atom(
+        "Thermo_ID" <> String.pad_leading(Integer.to_string(id), 6, "0")
+      )
 
-  def standalone(name, opts \\ []) when is_binary(name) do
-    msg = %{:msg => :standalone, opts: opts}
-    call_server(name, msg)
-  end
+  def server_name_atom(nil), do: nil
 
   def standby(name, opts \\ [])
       when is_binary(name) and is_list(opts) do
@@ -104,11 +90,6 @@ defmodule Thermostat.Server do
 
   def stop(name, opts \\ []) when is_binary(name) do
     msg = %{:msg => :stop, opts: opts}
-    call_server(name, msg)
-  end
-
-  def take_ownership(name, owner, opts \\ []) when is_binary(name) do
-    msg = %{:msg => :take_ownership, owner: owner, opts: opts}
     call_server(name, msg)
   end
 
@@ -155,53 +136,24 @@ defmodule Thermostat.Server do
     {:reply, rc, s}
   end
 
-  def handle_call(%{:msg => :enable} = msg, _from, s) do
-    msg = Map.put(msg, :set, true)
-    {rc, t} = handle_enable(msg, s)
-
-    s = Map.put(s, :thermostat, t)
-
-    {:reply, rc, s}
-  end
-
-  def handle_call(%{:msg => :enabled?}, _from, s) do
-    {:reply, s.thermostat.enable, s}
-  end
-
-  def handle_call(%{:msg => :owner, :opts => opts}, _from, s) do
-    owner = Thermostat.owner(s.thermostat, opts)
-    {:reply, owner, s}
-  end
-
   def handle_call(%{:msg => :ping}, _from, s) do
     {:reply, :pong, s}
   end
 
-  def handle_call(%{:msg => :profiles, :opts => opts}, _from, s) do
-    profiles = Thermostat.profiles(s.thermostat, opts)
+  def handle_call(
+        %{:msg => :profiles, :opts => opts},
+        _from,
+        %{thermostat: th} = s
+      ) do
+    profiles = Thermostat.profiles(th, opts)
 
     {:reply, profiles, s}
-  end
-
-  def handle_call(%{:msg => :release_ownership, :opts => opts}, _from, s) do
-    {res, t} = Thermostat.release_ownership(s.thermostat, opts)
-    s = Map.put(s, :thermostat, t)
-
-    {:reply, res, s}
   end
 
   def handle_call(%{:msg => :reload, :opts => _opts}, _from, s) do
     s = Map.put(s, :need_reload, true)
 
     {:reply, :reload_queued, s}
-  end
-
-  def handle_call(%{:msg => :restart, :opts => _opts}, _from, s) do
-    {:stop, :normal, :restart_queued, s}
-  end
-
-  def handle_call(%{:msg => :shutdown}, _from, s) do
-    {:stop, :shutdown, :ok, s}
   end
 
   def handle_call(%{:msg => :state, :opts => _opts}, _from, s) do
@@ -214,17 +166,6 @@ defmodule Thermostat.Server do
     s = Map.merge(s, %{thermostat: t})
 
     {:reply, :ok, s}
-  end
-
-  def handle_call(
-        %{:msg => :take_ownership, :owner => owner, :opts => opts},
-        _from,
-        s
-      ) do
-    {res, t} = Thermostat.take_ownership(s.thermostat, owner, opts)
-    s = Map.put(s, :thermostat, t)
-
-    {:reply, res, s}
   end
 
   def handle_call(%{:msg => :thermostat, :opts => _opts}, _from, s) do
@@ -283,7 +224,7 @@ defmodule Thermostat.Server do
       else: %{
         id: server_name,
         start: {Thermostat.Server, :start_link, [args]},
-        restart: :transient,
+        restart: :permanent,
         shutdown: 10_000
       }
   end
@@ -312,19 +253,16 @@ defmodule Thermostat.Server do
     end
   end
 
-  def start_link(args) when is_map(args) do
+  def start_link(%{id: id} = args) do
     Logger.debug(fn -> "start_link() args: #{inspect(args)}" end)
 
     opts = Application.get_env(:mcp, Thermostat.Server, [])
-    {_, name_atom} = server_name(id: args.id)
-    t = Thermostat.get_by(id: args.id)
+    {_, name_atom} = server_name(id: id)
+    t = Thermostat.get_by(id: id)
 
     s =
-      args
-      |> Map.put(:server_name, name_atom)
-      |> Map.put(:opts, opts)
-      |> Map.put(:thermostat_id, args.id)
-      |> Map.put(:thermostat, t)
+      %{server_name: name_atom, opts: opts, thermostat_id: id, thermostat: t}
+      |> Map.merge(args)
 
     GenServer.start_link(__MODULE__, s, name: name_atom)
   end
@@ -365,27 +303,16 @@ defmodule Thermostat.Server do
     end
   end
 
-  defp enable_if_requested(%{opts: opts}, s) do
-    enable = opts[:enable] || false
-
-    if enable do
-      {rc, t} = Thermostat.enable(s.theromstat, true)
-      e = if rc == :ok, do: Thermostat.enabled?(t), else: false
-      {t, e}
-    else
-      {s.thermostat, Thermostat.enabled?(s.thermostat)}
-    end
-  end
-
   defp first_check({:ok, %Thermostat{} = t}) do
     Control.temperature(t)
   end
 
-  defp handle_activate_profile(%{profile: new_profile, opts: opts} = msg, s) do
-    enable = opts[:enable] || false
+  defp handle_activate_profile(
+         %{profile: new_profile, opts: _opts} = msg,
+         %{thermostat: t} = s
+       ) do
     known_profile = Profile.known?(s.thermostat, new_profile)
 
-    {t, enabled} = enable_if_requested(msg, s)
     s = Map.put(s, :thermostat, t)
     curr_profile = Profile.active(t)
 
@@ -396,13 +323,6 @@ defmodule Thermostat.Server do
         end)
 
         {:unknown_profile, s.thermostat}
-
-      not enabled ->
-        {:disabled, s.thermostat}
-
-      # handle the case when enable requested
-      enable ->
-        actual_activate_profile(msg, s)
 
       new_profile === curr_profile ->
         {:no_change, s.thermostat}
@@ -424,12 +344,6 @@ defmodule Thermostat.Server do
       Logger.warn(fn -> "[#{s.thermostat.name}] handle_check failed" end)
       Map.put(s, :timer, timer)
     end
-  end
-
-  defp handle_enable(msg, s) do
-    {rc, t} = Thermostat.enable(s.thermostat, msg.set)
-
-    if rc === :ok, do: {:ok, t}, else: {:failed, s.thermostat}
   end
 
   defp handle_stop(_msg, %{thermostat: t}) do
@@ -486,8 +400,7 @@ defmodule Thermostat.Server do
   end
 
   # start a __standalone__ thermostat (owner is nil)
-  defp start(%{thermostat: %Thermostat{owned_by: owner}} = s)
-       when is_nil(owner) do
+  defp start(%{thermostat: %Thermostat{}} = s) do
     Switch.state(Thermostat.switch(s.thermostat), position: false, lazy: true)
 
     timer = next_check_timer(s)

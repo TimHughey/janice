@@ -40,8 +40,6 @@ defmodule ThermostatTest do
       description: "test thermostat " <> num_str,
       switch: sw_name,
       sensor: sensor,
-      owned_by: "none",
-      enable: false,
       active_profile: nil,
       profiles: [
         %Profile{name: "follow", ref_sensor: follow_sensor},
@@ -78,50 +76,25 @@ defmodule ThermostatTest do
     assert Enum.all?(profiles, fn x -> %Thermostat.Profile{} = x end)
   end
 
-  test "can get enabled for a thermostat name" do
-    enabled = Server.enabled?(name_str(0))
-
-    assert enabled
-  end
-
-  test "can detect no ownership of thermostat" do
-    owner = Server.owner(name_str(0))
-
-    assert owner == :none
-  end
-
   test "can ping a server by thermostat name" do
     res = Server.ping(name_str(0))
 
     assert res === :pong
   end
 
-  test "can take ownership of a thermostat" do
-    owner = "new owner"
-    r1 = Server.take_ownership(name_str(1), owner)
-    r2 = Server.owner(name_str(1))
-
-    assert r1 == :ok
-    assert r2 === owner
-  end
-
-  test "can release ownership of a thermostat" do
-    owner = "new owner 2"
-    r1 = Server.take_ownership(name_str(2), owner)
-    r2 = Server.owner(name_str(2))
-    r3 = Server.release_ownership(name_str(2))
-    r4 = Server.owner(name_str(2))
-
-    assert r1 == :ok
-    assert r2 === owner
-    assert r3 === :ok
-    assert r4 == :none
-  end
-
   test "thermostat server handles non-existent thermostat" do
     rc = Server.ping(name_str(999))
 
     assert rc == :not_found
+  end
+
+  @tag num: 99
+  test "can restart a thermostat server",
+       context do
+    {rc, pid} = Server.restart(name_str(context[:num]))
+
+    assert rc == :ok
+    assert is_pid(pid)
   end
 
   test "can get the state of a new thermostat" do
@@ -145,26 +118,6 @@ defmodule ThermostatTest do
 
     assert length(res) >= 15
     assert all_bin
-  end
-
-  test "can enable a thermostat" do
-    res = Server.enable(name_str(3), set: true)
-    enabled = Server.enabled?(name_str(3))
-
-    assert res == :ok
-    assert enabled
-  end
-
-  test "can disable a thermostat" do
-    res1 = Server.enable(name_str(4), set: true)
-    enabled = Server.enabled?(name_str(4))
-    res2 = Server.enable(name_str(4), set: false)
-    disabled = Server.enabled?(name_str(4))
-
-    assert res1 == :ok
-    assert res2 == :ok
-    assert enabled
-    assert disabled
   end
 
   test "temperature control turns on when val < set_pt" do
@@ -211,17 +164,6 @@ defmodule ThermostatTest do
     assert active.name === "fixed_26"
     assert is_list(t2.profiles)
     assert rc2 === :unknown_profile
-  end
-
-  test "can set a %Thermostat{} to standalone" do
-    t = Thermostat.get_by(name: name_str(7))
-
-    {rc1, t2} = Thermostat.standalone(t)
-    rc2 = Thermostat.standalone?(t2)
-
-    assert rc1 === :ok
-    assert is_list(t2.profiles)
-    assert rc2
   end
 
   test "can add a new %Profile{}" do

@@ -13,26 +13,36 @@ defmodule Reef do
     IO.puts(yellow() <> underline() <> "Reef Control CLI" <> reset())
     IO.puts(" ")
 
-    print_standby("dcs_standby(dutycycle_name)")
-    print_standby("ths_standby(thermostat_name)")
-    IO.puts(" ")
+    [
+      %{cmd: "dcs_standby()", desc: "set Dutycycle to standby"},
+      %{cmd: "ths_standby()", desc: "set Thermostat to standby"},
+      %{cmd: "mix_air(profile)", desc: "set mix air profile"}
+    ]
+    |> Scribe.print(style: Scribe.Style.NoBorder)
+    |> IO.puts()
 
-    print_mix("mix_air(profile) -> control reefwater mix air")
-    print_mix("mix_heat(:standby | profile ) -> control reefwater mix heat")
-    print_mix("mix_keep_fresh() -> set mix air and pump to keep water fresh")
-    print_mix("utility_pump(profile) -> control utility pump")
-    print_mix("utility_pump_off() -> switch off utility pump")
-    IO.puts(" ")
-
-    print_water("water_change_begin() -> setup for water change")
-    print_water("water_change_end() -> stop everything after water change")
-    IO.puts(" ")
+    # print_mix("mix_air(profile) -> control reefwater mix air")
+    # print_mix("mix_heat(:standby | profile ) -> control reefwater mix heat")
+    # print_mix("mix_keep_fresh() -> set mix air and pump to keep water fresh")
+    # print_mix("utility_pump(profile) -> control utility pump")
+    # print_mix("utility_pump_off() -> switch off utility pump")
+    # IO.puts(" ")
+    #
+    # print_water("water_change_begin() -> setup for water change")
+    # print_water("water_change_end() -> stop everything after water change")
+    # IO.puts(" ")
   end
 
   def display_tank_pause, do: ths_standby(dt())
   def display_tank_resume, do: ths_activate(dt(), "75F")
 
   def dcs_standby(dc) when is_binary(dc), do: DCS.standby(dc)
+
+  def heat_standby,
+    do: [
+      {swmt(), swmt() |> THS.activate_profile(standby())},
+      {dt(), dt() |> THS.activate_profile(standby())}
+    ]
 
   def keep_fresh,
     do: [
@@ -92,14 +102,30 @@ defmodule Reef do
   def status do
     opts = [active: true]
 
+    temp_format = fn sensor ->
+      temp = Sensor.fahrenheit(name: sensor, since_secs: 30)
+      if is_nil(temp), do: temp, else: Float.round(temp, 1)
+    end
+
+    IO.puts(clear())
+    print_heading("Reef Subsystem Status")
+
     [
-      {rmp(), rmp() |> DCS.profiles(opts) |> DCP.name()},
-      {rma(), rma() |> DCS.profiles(opts) |> DCP.name()},
-      {rmrf(), rmrf() |> DCS.profiles(opts) |> DCP.name()},
-      {swmt(), swmt() |> THS.profiles(opts)},
-      {display_tank(), display_tank() |> THS.profiles(opts)}
+      %{subsystem: rmp(), status: rmp() |> DCS.profiles(opts) |> DCP.name()},
+      %{subsystem: rma(), status: rma() |> DCS.profiles(opts) |> DCP.name()},
+      %{subsystem: rmrf(), status: rmrf() |> DCS.profiles(opts) |> DCP.name()},
+      %{subsystem: swmt(), status: swmt() |> THS.profiles(opts)},
+      %{
+        subsystem: display_tank(),
+        status: display_tank() |> THS.profiles(opts)
+      },
+      %{
+        subsystem: dt_sensor(),
+        status: temp_format.(dt_sensor())
+      }
     ]
-    |> print_status()
+    |> Scribe.print(data: [{"Subsystem", :subsystem}, {"Status", :status}])
+    |> IO.puts()
   end
 
   def stop(name) when is_binary(name), do: DCS.stop(name)
@@ -142,37 +168,6 @@ defmodule Reef do
     IO.puts(" ")
   end
 
-  defp print_mix(text), do: IO.puts(light_blue() <> text <> reset())
-  defp print_standby(text), do: IO.puts(cyan() <> text <> reset())
-
-  defp print_status(l) when is_list(l) do
-    print_heading("Reef Subsystem Status")
-
-    for(i <- l) do
-      {subsystem, profile} = i
-
-      IO.puts(
-        light_blue() <>
-          "   " <>
-          String.pad_trailing(subsystem, 25, " ") <> light_green() <> profile
-      )
-    end
-
-    IO.puts(" ")
-
-    dt_temp =
-      Sensor.fahrenheit(name: dt_sensor(), since_secs: 30) |> Float.round(1)
-
-    IO.puts(
-      light_blue() <>
-        "   " <>
-        String.pad_trailing("Display Tank", 25, " ") <>
-        light_green() <> "#{dt_temp}"
-    )
-
-    IO.puts(reset())
-  end
-
   defp print_usage(f, p),
     do:
       IO.puts(
@@ -181,8 +176,6 @@ defmodule Reef do
           light_blue() <>
           f <> "(" <> yellow() <> p <> light_blue() <> ")" <> reset()
       )
-
-  defp print_water(text), do: IO.puts(light_green() <> text <> reset())
 
   defp add_salt, do: "add salt"
   defp constant, do: "constant"
