@@ -39,7 +39,7 @@ defmodule Thermostat.Server do
   # REFACTORED
   def delete(%Thermostat{} = th) do
     if Thermostat.Supervisor.ping() == :pong,
-      do: Thermostat.Supervisor.eliminate_thermostat(server_name_atom(th)),
+      do: Thermostat.Supervisor.eliminate_child(server_name_atom(th)),
       else: :no_supervisor
   end
 

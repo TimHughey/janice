@@ -56,7 +56,7 @@ defmodule Dutycycle.Server do
   # REFACTORED
   def delete(%Dutycycle{} = dc) do
     if Dutycycle.Supervisor.ping() == :pong,
-      do: Dutycycle.Supervisor.eliminate_dutycycle(server_name_atom(dc)),
+      do: Dutycycle.Supervisor.eliminate_child(server_name_atom(dc)),
       else: :no_supervisor
   end
 

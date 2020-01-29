@@ -4,8 +4,8 @@ defmodule Thermostat.Supervisor do
   require Logger
   use Supervisor
 
-  def eliminate_thermostat(name) when is_atom(name) do
-    children = Supervisor.which_children(Thermostat.Supervisor)
+  def eliminate_child(name) when is_atom(name) do
+    children = Supervisor.which_children(__MODULE__)
 
     deleted =
       for {server, pid, _type, _modules} <- children,
@@ -22,7 +22,7 @@ defmodule Thermostat.Supervisor do
 
     th_children =
       for id <- ids do
-        {Thermostat.Server, Map.put(args, :id, id)}
+        {__MODULE__, Map.put(args, :id, id)}
       end
 
     c =
@@ -32,8 +32,7 @@ defmodule Thermostat.Supervisor do
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
-    opts = [strategy: :rest_for_one, name: Thermostat.Supervisor]
-    Supervisor.init(c, opts)
+    Supervisor.init(c, strategy: :rest_for_one, name: __MODULE__)
   end
 
   def is_match?(a, name) when is_atom(a) do
@@ -43,7 +42,7 @@ defmodule Thermostat.Supervisor do
   end
 
   def known_servers(match_name \\ "Thermo_ID") do
-    children = Supervisor.which_children(Thermostat.Supervisor)
+    children = Supervisor.which_children(__MODULE__)
 
     for {server_name, _pid, _type, _modules} <- children,
         is_match?(server_name, match_name),
