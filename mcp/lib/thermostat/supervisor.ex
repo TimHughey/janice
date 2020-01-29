@@ -5,7 +5,7 @@ defmodule Thermostat.Supervisor do
   use Supervisor
 
   def eliminate_thermostat(name) when is_atom(name) do
-    children = Supervisor.which_children(Dutycycle.Supervisor)
+    children = Supervisor.which_children(Thermostat.Supervisor)
 
     deleted =
       for {server, pid, _type, _modules} <- children,
