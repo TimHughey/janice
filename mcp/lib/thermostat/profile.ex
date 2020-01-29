@@ -26,8 +26,8 @@ defmodule Thermostat.Profile do
     timestamps()
   end
 
-  def active(%Thermostat{} = t) do
-    if is_nil(t.active_profile), do: :none, else: find_profile(t)
+  def active(%Thermostat{active_profile: active} = t) do
+    if is_nil(active), do: :none, else: find(t, active)
   end
 
   def add(%Thermostat{} = t, %Profile{} = p) do
@@ -45,13 +45,11 @@ defmodule Thermostat.Profile do
     end
   end
 
-  def find_profile(%Thermostat{
-        active_profile: active_profile,
-        profiles: profiles
-      }) do
-    found = for p <- profiles, active_profile === p.name, do: p
+  def find(%Thermostat{profiles: profiles}, name)
+      when is_binary(name) do
+    found = for p <- profiles, name === p.name, do: p
 
-    if is_list(found), do: hd(found), else: :none
+    if Enum.empty?(found), do: :none, else: hd(found)
   end
 
   def get_profile(%Thermostat{profiles: profiles}, name) when is_binary(name) do

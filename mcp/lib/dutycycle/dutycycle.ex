@@ -22,36 +22,116 @@ defmodule Dutycycle do
   require Logger
   use Ecto.Schema
 
-  import Repo, only: [one: 1, insert_or_update!: 1]
-  import Ecto.Changeset, only: [change: 2]
+  import Repo, only: [one: 1, insert_or_update!: 1, update!: 1, preload: 3]
+
+  import Ecto.Changeset,
+    only: [cast: 3, validate_required: 2, validate_format: 3]
+
   import Ecto.Query, only: [from: 2]
 
+  import Janice.Common.DB, only: [name_regex: 0]
+
   alias Dutycycle.Profile
+  alias Dutycycle.Server
   alias Dutycycle.State
 
   schema "dutycycle" do
     field(:name)
     field(:comment)
-    field(:enable, :boolean)
-    field(:standalone, :boolean)
     field(:log, :boolean)
     field(:device)
+    field(:stopped, :boolean)
     has_one(:state, State)
     has_many(:profiles, Profile)
 
     timestamps(usec: true)
   end
 
-  # 15 minutes (as millesconds)
-  @delete_timeout_ms 15 * 60 * 1000
+  def activate_profile(dc, name, opts \\ [])
 
-  def activate(opts) when is_list(opts) do
-    name = Keyword.get(opts, :name)
-    profile = Keyword.get(opts, :profile)
+  # REFACTORED!
+  def activate_profile(%Dutycycle{} = dc, %Profile{name: name}, opts)
+      when is_list(opts),
+      do: activate_profile(dc, name, opts)
 
-    if is_nil(name) or is_nil(profile) do
-      :not_found
+  def activate_profile(%Dutycycle{} = dc, :active, opts) do
+    with {:no_active_profile, false} <- {:no_active_profile, Profile.none?(dc)},
+         %Profile{} = active_profile <- Profile.active(dc) do
+      activate_profile(dc, active_profile, opts)
     else
+      {:no_active_profile, true} ->
+        Logger.warn(fn ->
+          dc_name(dc) <>
+            "does not have an active profile to activate"
+        end)
+
+        {:no_active_profile, dc}
+
+      unhandled ->
+        Logger.warn(fn ->
+          dc_name(dc) <>
+            "activate active profile unhandled condition " <>
+            "#{inspect(unhandled, pretty: true)}"
+        end)
+    end
+  end
+
+  # REFACTORED!
+  def activate_profile(%Dutycycle{log: log} = dc, profile, _opts)
+      when is_binary(profile) do
+    with {:ok, %Profile{} = new_profile} <-
+           Profile.activate(dc, profile),
+         dc <- reload(dc),
+         {:state_run, {dc, {:ok, _st}}} <- {:state_run, State.run(dc)},
+         {:ok, dc} <- Dutycycle.stopped(dc, false),
+         dc <- reload(dc),
+         {:ok, {:position, true}, dc} <- control_device(dc, lazy: false) do
+      log &&
+        Logger.info(fn ->
+          dc_name(dc) <>
+            "activated profile #{inspect(Profile.name(new_profile))}"
+        end)
+
+      {:ok, reload(dc), new_profile, :run}
+    else
+      {:none, %Profile{}} ->
+        {rc, dc} = Dutycycle.stopped(dc, true)
+
+        Logger.warn(fn ->
+          "stopping dutycycle due to none profile"
+        end)
+
+        {rc, reload(dc), %Profile{name: "none"}, :none}
+
+      {:activate_profile_failed, error} ->
+        Logger.warn(fn ->
+          "activate failed #{inspect(error, pretty: true)}"
+        end)
+
+        {:failed, profile, error}
+
+      {:state_run, error} ->
+        Logger.warn(fn ->
+          "State.run() failed: #{inspect(error, pretty: true)}"
+        end)
+
+      {:ok, {:position, pos}, dc} ->
+        log?(dc) &&
+          Logger.warn(fn ->
+            dc_name(dc) <>
+              "device state is " <>
+              inspect(pos, pretty: true) <>
+              " after profile activation (should be true)"
+          end)
+
+        {:ok, dc, Profile.active(dc), :run}
+
+      error ->
+        Logger.warn(fn ->
+          "unhandled activate failure #{inspect(error, pretty: true)}"
+        end)
+
+        {:failed, dc}
     end
   end
 
@@ -66,8 +146,10 @@ defmodule Dutycycle do
 
     case one(q) do
       nil ->
-        dc = Map.put(dc, :state, %State{}) |> change([]) |> insert_or_update!()
-        Dutycycle.Server.start_server(dc)
+        dc =
+          Map.put(dc, :state, %State{}) |> changeset([]) |> insert_or_update!()
+
+        Server.start_server(dc)
 
       found ->
         Logger.warn(~s/add() [#{dc.name}] already exists/)
@@ -86,56 +168,126 @@ defmodule Dutycycle do
     for d <- Repo.all(Dutycycle), do: Map.get(d, :name)
   end
 
-  # LEGACY
-  def all_active do
-    from(
-      d in Dutycycle,
-      join: p in assoc(d, :profiles),
-      where: p.active == true,
-      join: s in assoc(d, :state),
-      preload: [profiles: p, state: s],
-      select: d
-    )
-    |> Repo.all()
+  # REFACTORED!
+  def current_state(%Dutycycle{state: _state} = dc, opts \\ [])
+      when is_list(opts) do
+    reload = Keyword.get(opts, :reload, false)
+
+    dc = if reload, do: reload(dc), else: dc
+
+    {dc, dc.state}
   end
 
-  def as_map(nil), do: %{}
+  # REFACTORED!
+  # HAS TEST CASE
+  def delete(name) when is_binary(name) do
+    dc = get_by(name: name)
 
-  def as_map(%Dutycycle{} = dc) do
-    %{
-      id: dc.id,
-      name: dc.name,
-      comment: dc.comment,
-      enable: dc.enable,
-      standalone: dc.standalone,
-      device: dc.device,
-      profiles: Profile.as_map(dc.profiles),
-      state: State.as_map(dc.state)
-    }
+    if is_nil(dc),
+      do: {:not_found, name},
+      else: delete(dc)
   end
 
+  def delete(%Dutycycle{id: id}, opts \\ [timeout: 5 * 60 * 1000]) do
+    dc =
+      Repo.get(Dutycycle, id)
+      |> preload([:state, :profiles], force: true)
+
+    if is_nil(dc),
+      do: [server: :not_found, db: :not_found],
+      else: [server: Server.delete(dc), db: elem(Repo.delete(dc, opts), 0)]
+  end
+
+  # REFACTORED!
+  # HAS TEST CASE
   def delete_all(:dangerous) do
-    names = from(d in Dutycycle, select: d.name) |> Repo.all(timeout: @delete_timeout_ms)
-
-    for name <- names do
-      rc = Dutycycle.Server.shutdown(name)
-      {name, rc}
-    end
-
-    from(dc in Dutycycle, where: dc.id >= 0)
-    |> Repo.delete_all()
+    for dc <- Repo.all(Dutycycle), do: delete(dc)
   end
 
-  def enable(%Dutycycle{} = dc, val) when is_boolean(val) do
-    change(dc, enable: val) |> Repo.update()
+  def delete_profile(%Dutycycle{profiles: _profiles} = dc, profile_name, _opts)
+      when is_binary(profile_name) do
+    Profile.delete(dc, profile_name)
+  end
+
+  def device_change(%Dutycycle{} = d, new_device) when is_binary(new_device) do
+    # reload the Dutycycle to be safe
+    dc = reload(d)
+
+    update(dc, device: new_device)
+  end
+
+  def device_change(d, device) do
+    Logger.warn(fn ->
+      "invalid args: device_change(#{inspect(d, pretty: true)}, #{
+        inspect(device, pretty: true)
+      }"
+    end)
+
+    {:error, :invalid_args}
+  end
+
+  # REFACTORED!
+  # primary entry point for handling the end of phase
+  def end_of_phase(%Dutycycle{} = dc) do
+    active_profile = Profile.active(dc)
+
+    end_of_phase(dc, active_profile)
+  end
+
+  # REFACTORED!
+  # when a dutycycle is running and idle_ms == 0 keep running
+  # however update the state to reflect the start of a new phase
+  defp end_of_phase(
+         %Dutycycle{state: %State{state: "running"}} = dc,
+         %Profile{idle_ms: 0}
+       ),
+       do: next_phase(:run, dc)
+
+  # REFACTORED!
+  # when a dutycycle is running and idle_ms > 0 then start the idle phase
+  defp end_of_phase(
+         %Dutycycle{state: %State{state: "running"}} = dc,
+         %Profile{idle_ms: _ms}
+       ),
+       do: next_phase(:idle, dc)
+
+  # REFACTORED!
+  # when a dutycycle is idling and run_ms == 0 keep idling
+  # however update the state to reflect the start of a new phase
+  defp end_of_phase(
+         %Dutycycle{state: %State{state: "idling"}} = dc,
+         %Profile{run_ms: 0}
+       ),
+       do: next_phase(:run, dc)
+
+  # REFACTORED!
+  # when a dutycycle is idling and run_ms > 0 then start the run phase
+  defp end_of_phase(
+         %Dutycycle{state: %State{state: "idling"}} = dc,
+         %Profile{run_ms: _ms}
+       ),
+       do: next_phase(:run, dc)
+
+  # REFACTORED!
+  defp next_phase(mode, %Dutycycle{} = dc) do
+    with {%Dutycycle{} = dc, {:ok, %State{}}} <- State.next_phase(mode, dc),
+         dc <- reload(dc),
+         {:ok, {:position, _postition}, dc} <- control_device(dc) do
+      active_profile = Profile.active(dc)
+      {:ok, dc, active_profile, mode}
+    else
+      error -> error
+    end
   end
 
   def get_by(opts) when is_list(opts) do
     filter = Keyword.take(opts, [:id, :device, :name])
-    select = Keyword.take(opts, [:only]) |> Keyword.get_values(:only) |> List.flatten()
+
+    select =
+      Keyword.take(opts, [:only]) |> Keyword.get_values(:only) |> List.flatten()
 
     if Enum.empty?(filter) do
-      Logger.warn(fn -> "get_by bad args: #{inspect(opts)}" end)
+      Logger.warn(fn -> "get_by bad args: #{inspect(opts, pretty: true)}" end)
       []
     else
       dc =
@@ -152,20 +304,198 @@ defmodule Dutycycle do
     end
   end
 
-  def profiles(%Dutycycle{} = d, opts \\ []) when is_list(opts) do
-    only_active = Keyword.get(opts, :only_active, false)
+  def log?(%Dutycycle{log: log}), do: log
 
-    if only_active do
-      list = for p <- d.profiles, p.active, do: p.name
-      if Enum.empty?(list), do: :none, else: hd(list)
+  # REFACTORED!
+  def lookup_id(name) when is_binary(name) do
+    with query <-
+           from(
+             d in Dutycycle,
+             where: [name: ^name],
+             select: [:id]
+           ),
+         %Dutycycle{id: id} <- one(query) do
+      id
     else
-      for p <- d.profiles, do: %{profile: p.name, active: p.active}
+      _error ->
+        nil
     end
   end
 
-  def standalone(%Dutycycle{} = dc, val) when is_boolean(val) do
-    change(dc, standalone: val) |> Repo.update()
+  # REFACTORED!
+  def persist_phase_end_timer(%Dutycycle{state: st} = dc, timer) do
+    active_profile = Profile.active(dc)
+    {rc, _state} = State.persist_phase_timer(st, active_profile, timer)
+
+    if rc == :ok, do: reload(dc), else: dc
   end
 
-  def standalone?(%Dutycycle{} = d), do: d.standalone
+  # REFACTORED!
+  def profiles(%Dutycycle{profiles: profiles} = dc, opts \\ [])
+      when is_list(opts) do
+    only_active = Keyword.get(opts, :active, false)
+
+    if only_active,
+      do: Profile.active(dc),
+      else:
+        for(
+          %Profile{name: name, active: active} <- profiles,
+          do: %{profile: name, active: active}
+        )
+  end
+
+  # REFACTORED!
+  def reload(%Dutycycle{id: id}), do: reload(id)
+
+  # REFACTORED!
+  def reload(id) when is_number(id),
+    do:
+      Repo.get!(Dutycycle, id)
+      |> preload([:state, :profiles], force: true)
+
+  def stop(%Dutycycle{} = dc) do
+    with {%Dutycycle{}, {:ok, %State{}}} <- State.stop(dc),
+         {:ok, %Dutycycle{}} <- stopped(dc, true),
+         {:reload, %Dutycycle{} = dc} <- {:reload, reload(dc)},
+         {:ok, {:position, false}, dc} <-
+           control_device(dc, lazy: false) do
+      {:ok, dc}
+    else
+      {:invalid_changes, errors} ->
+        Logger.warn(fn -> "#{inspect(errors, pretty: true)}" end)
+        dc = reload(dc)
+        {:failed, dc}
+
+      {:ok, {:position, nil}, %Dutycycle{} = dc} ->
+        {:ok, dc}
+
+      {:ok, {:position, pos}, %Dutycycle{device: device} = dc} ->
+        Logger.warn(fn ->
+          inspect(device) <>
+            "state is " <>
+            inspect(pos, pretty: true) <>
+            "after stop"
+        end)
+
+        {:device_still_true, dc}
+
+      error ->
+        Logger.warn(fn ->
+          "stop() unhandled error: #{inspect(error, pretty: true)}"
+        end)
+
+        {:failed, error}
+    end
+  end
+
+  def start(%Dutycycle{stopped: true} = dc) do
+    Dutycycle.log?(dc) && Logger.info(fn -> dc_name(dc) <> "is stopped" end)
+
+    {:ok, :stopped}
+  end
+
+  def start(%Dutycycle{stopped: false} = dc) do
+    if Profile.none?(dc) do
+      Dutycycle.log?(dc) &&
+        Logger.info(fn -> dc_name(dc) <> "does not have an active profile" end)
+
+      {:ok, :stopped}
+    else
+      active_profile = Profile.active(dc)
+
+      Dutycycle.log?(dc) &&
+        Logger.info(fn ->
+          dc_name(dc) <>
+            "will start with profile #{inspect(Profile.name(active_profile))}"
+        end)
+
+      {:ok, :run, active_profile}
+    end
+  end
+
+  def stopped(%Dutycycle{} = dc, stop) when is_boolean(stop),
+    do: update(dc, stopped: stop)
+
+  def stopped?(%Dutycycle{stopped: val}), do: val
+
+  def update(dc, opts \\ [])
+
+  def update(name, opts) when is_binary(name) and is_list(opts),
+    do: get_by([name: name] ++ opts) |> update(opts)
+
+  def update(%Dutycycle{} = dc, opts) when is_list(opts) do
+    set = Keyword.take(opts, possible_changes()) |> Enum.into(%{})
+
+    cs = changeset(dc, set)
+
+    if cs.valid? do
+      dc = update!(cs) |> reload()
+      {:ok, dc}
+    else
+      {:invalid_changes, cs}
+    end
+  end
+
+  def update(nil, _opts) do
+    Logger.warn(fn ->
+      "attempted to update a dutycycle that does not exist"
+    end)
+
+    {:error, :not_found}
+  end
+
+  defp changeset(dc, params) when is_list(params),
+    do: changeset(dc, Enum.into(params, %{}))
+
+  defp changeset(dc, params) when is_map(params) do
+    dc
+    |> cast(params, possible_changes())
+    |> validate_required(possible_changes())
+    |> validate_format(:name, name_regex())
+  end
+
+  # Private Functions
+  # REFACTORED!
+  defp control_device(
+         %Dutycycle{
+           device: device,
+           state: %Dutycycle.State{dev_state: dev_state},
+           log: log
+         } = dc,
+         opts \\ []
+       )
+       when is_list(opts) do
+    lazy = Keyword.get(opts, :lazy, true)
+
+    sw_state = Switch.state(device, position: dev_state, lazy: lazy, log: log)
+
+    log?(dc) && is_nil(sw_state) &&
+      Logger.warn(fn ->
+        dc_name(dc) <>
+          "device #{inspect(device)} position is nil, does it exist?"
+      end)
+
+    log?(dc) && not is_nil(sw_state) && not sw_state == dev_state &&
+      Logger.warn(fn ->
+        dc_name(dc) <>
+          "device #{inspect(device)} position #{inspect(sw_state)} " <>
+          "is not #{inspect(dev_state)} (should be equal)"
+      end)
+
+    {:ok, {:position, sw_state}, dc}
+  end
+
+  # REFACTORED!
+  defp dc_name(%Dutycycle{name: name}), do: "#{inspect(name)} "
+  defp dc_name(catchall), do: "#{inspect(catchall, pretty: true)} "
+
+  # REFACTORED!
+  # defp dev_state(device) when is_binary(device) do
+  #   dev_state = Switch.state(device)
+  #
+  #   if is_nil(dev_state), do: false, else: dev_state
+  # end
+
+  # REFACTORED!
+  defp possible_changes, do: [:name, :comment, :device, :stopped]
 end

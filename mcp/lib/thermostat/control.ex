@@ -20,7 +20,7 @@ defmodule Thermostat.Control do
   # handle the case when a thermostat is in standby
   def next_state(%{name: "standby"}, _state, _set_pt, _val), do: "off"
 
-  # handle typical operational case of enabled thermostat controlling a device
+  # handle typical operational case of thermostat controlling a device
   def next_state(
         %{low_offset: low_offset, high_offset: high_offset},
         state,
@@ -64,10 +64,7 @@ defmodule Thermostat.Control do
     {:no_active_profile, t}
   end
 
-  def temperature(%Thermostat{enable: false} = t),
-    do: Thermostat.state(t, "off")
-
-  def temperature(%Thermostat{enable: true} = t) do
+  def temperature(%Thermostat{} = t) do
     profile = Profile.active(t)
 
     curr_val = current_val(t)

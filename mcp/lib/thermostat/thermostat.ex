@@ -22,33 +22,29 @@ defmodule Thermostat do
   require Logger
   use Ecto.Schema
 
-  import Repo, only: [one: 1, insert_or_update!: 1]
+  import Repo, only: [one: 1, insert_or_update!: 1, preload: 3]
   import Ecto.Changeset, only: [change: 2]
   import Ecto.Query, only: [from: 2]
 
   alias Janice.TimeSupport
 
   alias Thermostat.Profile
+  alias Thermostat.Server
 
   schema "thermostat" do
     field(:name)
     field(:description)
-    field(:owned_by)
-    field(:enable, :boolean)
     field(:switch)
     field(:active_profile)
     field(:sensor)
     field(:state)
     field(:state_at, :utc_datetime_usec)
-    field(:log_activity, :boolean)
+    field(:log, :boolean)
 
     has_many(:profiles, Profile)
 
     timestamps()
   end
-
-  # 15 minutes (as millesconds)
-  @delete_timeout_ms 15 * 60 * 1000
 
   # quietly handle requests to activate a profile that is already active
   def activate_profile(%Thermostat{active_profile: active} = t, profile)
@@ -84,7 +80,6 @@ defmodule Thermostat do
     |> Profile.ensure_standby_profile_exists()
     |> Thermostat.Server.start_server()
 
-    Thermostat.Server.enable(name)
     Thermostat.Server.activate_profile(name, "standby")
   end
 
@@ -100,26 +95,30 @@ defmodule Thermostat do
     for t <- Repo.all(Thermostat), do: Map.get(t, :id)
   end
 
+  # REFACTORED
+  def delete(name) when is_binary(name) do
+    th = get_by(name: name)
+
+    if is_nil(th),
+      do: {:not_found, name},
+      else: delete(th)
+  end
+
+  def delete(%Thermostat{id: id}, opts \\ [timeout: 5 * 60 * 1000]) do
+    th =
+      Repo.get(Thermostat, id)
+      |> preload([:profiles], force: true)
+
+    if is_nil(th),
+      do: [server: :not_found, db: :not_found],
+      else: [server: Server.delete(th), db: elem(Repo.delete(th, opts), 0)]
+  end
+
+  # REFACTORED!
+  # HAS TEST CASE
   def delete_all(:dangerous) do
-    names =
-      from(t in Thermostat, select: t.name)
-      |> Repo.all(timeout: @delete_timeout_ms)
-
-    for name <- names do
-      rc = Thermostat.Server.shutdown(name)
-      {name, rc}
-    end
-
-    from(t in Thermostat, where: t.id >= 0) |> Repo.delete_all()
+    for th <- Repo.all(Thermostat), do: delete(th)
   end
-
-  def enable(%Thermostat{} = t, val) when is_boolean(val) do
-    {rc, ct} = change(t, enable: val) |> Repo.update()
-
-    if rc === :ok, do: {rc, Repo.preload(ct, :profiles)}, else: {rc, ct}
-  end
-
-  def enabled?(%Thermostat{enable: enable}), do: enable
 
   def get_by(opts) when is_list(opts) do
     filter = Keyword.take(opts, [:id, :device, :name])
@@ -144,34 +143,22 @@ defmodule Thermostat do
     end
   end
 
-  def log?(%Thermostat{log_activity: log}), do: log
+  def log?(%Thermostat{log: log}), do: log
 
-  def owner(%Thermostat{} = t, opts \\ []) when is_list(opts) do
-    cond do
-      t.owned_by === "none" -> :none
-      is_nil(t.owned_by) -> :standalone
-      true -> t.owned_by
-    end
-  end
-
-  def profiles(%Thermostat{} = t, opts \\ []) when is_list(opts) do
+  def profiles(
+        %Thermostat{active_profile: active_profile, profiles: profiles} = th,
+        opts \\ []
+      )
+      when is_list(opts) do
     active = opts[:active] || false
     names = opts[:names] || false
 
     cond do
-      active and not is_nil(t.active_profile) -> t.active_profile
-      active and is_nil(t.active_profile) -> :none
-      names -> Profile.names(t)
-      true -> t.profiles
+      active and not is_nil(active_profile) -> Profile.active(th)
+      active and is_nil(active_profile) -> :none
+      names -> Profile.names(th)
+      true -> profiles
     end
-  end
-
-  def release_ownership(%Thermostat{} = t, opts \\ []) when is_list(opts) do
-    log = opts[:log] || false
-
-    log && Logger.warn(fn -> "thermostat [#{t.name}] ownership released" end)
-
-    change(t, owned_by: "none") |> Repo.update()
   end
 
   def state(%Thermostat{state: curr_state}), do: curr_state
@@ -184,29 +171,5 @@ defmodule Thermostat do
     if rc === :ok, do: {rc, Repo.preload(ct, :profiles)}, else: {rc, t}
   end
 
-  def standalone(%Thermostat{} = t, opts \\ [])
-      when is_list(opts) do
-    log = opts[:log] || false
-
-    log && Logger.warn(fn -> "thermostat [#{t.name}] now standalone" end)
-
-    {rc, ct} = change(t, owned_by: nil) |> Repo.update()
-
-    if rc === :ok, do: {rc, Repo.preload(ct, :profiles)}, else: {rc, t}
-  end
-
-  def standalone?(%Thermostat{} = t, opts \\ []) when is_list(opts) do
-    if is_nil(t.owned_by), do: true, else: false
-  end
-
   def switch(%Thermostat{switch: sw}), do: sw
-
-  def take_ownership(%Thermostat{} = t, owner, opts \\ [])
-      when is_binary(owner) and is_list(opts) do
-    log = opts[:log] || false
-
-    log && Logger.warn(fn -> "thermostat [#{t.name}] owned by #{owner}" end)
-
-    change(t, owned_by: owner) |> Repo.update()
-  end
 end
