@@ -89,5 +89,7 @@
 		print "won't remove ${jan_base_old}, use --clean to do so"
 	fi
 
+	mcp_pid=$(sudo -u janice --login $jan/bin/mcp pid)
+
 	print "tailing janice log file. (use CTRL+C to stop)"
-	exec tail --lines=100 -f $jan_base/tmp/log/erlang.*(om[1])
+	exec tail --lines=100 --pid=${mcp_pid} -f $jan_base/tmp/log/erlang.*(om[1])
