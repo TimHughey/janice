@@ -22,7 +22,7 @@ defmodule Thermostat.Supervisor do
 
     th_children =
       for id <- ids do
-        {__MODULE__, Map.put(args, :id, id)}
+        {Thermostat.Server, Map.put(args, :id, id)}
       end
 
     c =
