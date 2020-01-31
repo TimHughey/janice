@@ -25,8 +25,11 @@ defmodule SwitchGroup do
     end
   end
 
-  def all(:names), do: from(sg in SwitchGroup, select: sg.name) |> all(timeout: 100)
-  def all(:everything), do: from(sg in SwitchGroup, order_by: [sg.name]) |> all(timeout: 100)
+  def all(:names),
+    do: from(sg in SwitchGroup, select: sg.name) |> all(timeout: 100)
+
+  def all(:everything),
+    do: from(sg in SwitchGroup, order_by: [sg.name]) |> all(timeout: 100)
 
   def delete_all(:dangerous) do
     from(sg in SwitchGroup, where: sg.id >= 0) |> Repo.delete_all()
@@ -34,7 +37,9 @@ defmodule SwitchGroup do
 
   def get_by(opts) when is_list(opts) do
     filter = Keyword.take(opts, [:name])
-    select = Keyword.take(opts, [:only]) |> Keyword.get_values(:only) |> List.flatten()
+
+    select =
+      Keyword.take(opts, [:only]) |> Keyword.get_values(:only) |> List.flatten()
 
     if Enum.empty?(filter) do
       Logger.warn(fn -> "get_by bad args: #{inspect(opts)}" end)
@@ -46,7 +51,8 @@ defmodule SwitchGroup do
     end
   end
 
-  def get_by(bad), do: Logger.warn(fn -> "get_by() bad args: #{inspect(bad)}" end)
+  def get_by(bad),
+    do: Logger.warn(fn -> "get_by() bad args: #{inspect(bad)}" end)
 
   def reduce_states(states) when is_list(states) do
     res = Enum.uniq(states)
@@ -79,20 +85,24 @@ defmodule SwitchGroup do
   # state{} header:
   def state(name, opts \\ [])
 
+  @deprecated "Use position/2 instead"
   def state(name, opts) when is_binary(name) and is_list(opts) do
     log = Keyword.get(opts, :log, true)
 
     sg = get_by(name: name)
 
     if is_nil(sg) do
-      log && Logger.debug(fn -> "#{name} not found while SETTING switch group" end)
+      log &&
+        Logger.debug(fn -> "#{name} not found while SETTING switch group" end)
+
       nil
     else
       state(sg, opts)
     end
   end
 
-  def state(%SwitchGroup{name: _name, members: members}, opts) when is_list(opts) do
+  def state(%SwitchGroup{name: _name, members: members}, opts)
+      when is_list(opts) do
     for ss <- members do
       SwitchState.state(ss, opts)
     end

@@ -149,6 +149,7 @@ defmodule DutycycleTest do
     assert :not_found === rc1
   end
 
+  @tag reef_cli: true
   test "Reef CLI" do
     rc = Reef.status()
 
