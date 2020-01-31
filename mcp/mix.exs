@@ -189,7 +189,7 @@ defmodule Mcp.Mixfile do
   end
 
   defp package_release(release) do
-    tarball = "#{release.name}.tar.bz2"
+    tarball = "#{release.name}.tar.gz"
     stage_path = Path.join("/var/tmp", tarball)
 
     msg =
