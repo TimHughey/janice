@@ -531,6 +531,22 @@ defmodule DutycycleTest do
           }
         ],
         state: %Dutycycle.State{}
+      },
+      %Dutycycle{
+        name: "display tank ato",
+        comment: "display tank ato",
+        device: "display tank ato",
+        stopped: true,
+        log: true,
+        profiles: [
+          %Dutycycle.Profile{name: "fast", run_ms: 3_000, idle_ms: 3_000},
+          %Dutycycle.Profile{
+            name: "infinity",
+            run_ms: 360_000,
+            idle_ms: 360_000
+          }
+        ],
+        state: %Dutycycle.State{}
       }
     ]
 end

@@ -133,6 +133,11 @@ defmodule Dutycycle.Server do
   def stop(name, opts \\ [])
   def stop(name, opts) when is_binary(name), do: pause(name, opts)
 
+  def stopped?(name, opts \\ []) when is_binary(name) and is_list(opts) do
+    msg = %{:msg => :stopped?, opts: opts}
+    call_server(name, msg)
+  end
+
   def switch_state(name, opts \\ []) when is_binary(name) do
     msg = %{:msg => :switch_state, opts: opts}
     call_server(name, msg)
@@ -289,6 +294,14 @@ defmodule Dutycycle.Server do
     state = Switch.state(s.dutycycle.device)
 
     {:reply, state, s}
+  end
+
+  def handle_call(
+        %{:msg => :stopped?, :opts => _opts},
+        _from,
+        %{dutycycle: dc} = s
+      ) do
+    {:reply, Dutycycle.stopped?(dc), s}
   end
 
   def handle_call(

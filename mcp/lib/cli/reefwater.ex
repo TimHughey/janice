@@ -111,20 +111,45 @@ defmodule Reef do
     print_heading("Reef Subsystem Status")
 
     [
-      %{subsystem: rmp(), status: rmp() |> DCS.profiles(opts) |> DCP.name()},
-      %{subsystem: rma(), status: rma() |> DCS.profiles(opts) |> DCP.name()},
-      %{subsystem: rmrf(), status: rmrf() |> DCS.profiles(opts) |> DCP.name()},
-      %{subsystem: swmt(), status: swmt() |> THS.profiles(opts)},
+      %{
+        subsystem: rmp(),
+        status: DCS.profiles(rmp(), opts) |> DCP.name(),
+        stopped: DCS.stopped?(rmp())
+      },
+      %{
+        subsystem: rma(),
+        status: DCS.profiles(rma(), opts) |> DCP.name(),
+        stopped: DCS.stopped?(rma())
+      },
+      %{
+        subsystem: rmrf(),
+        status: DCS.profiles(rmrf(), opts) |> DCP.name(),
+        stoppped: DCS.stopped?(rmrf())
+      },
+      %{
+        subsystem: ato(),
+        status: DCS.profiles(ato(), opts) |> DCP.name(),
+        stopped: DCS.stopped?(ato())
+      },
+      %{subsystem: swmt(), status: THS.profiles(swmt(), opts), stopped: "n/a"},
       %{
         subsystem: display_tank(),
-        status: display_tank() |> THS.profiles(opts)
+        status: THS.profiles(display_tank(), opts),
+        stopped: "n/a"
       },
       %{
         subsystem: dt_sensor(),
-        status: temp_format.(dt_sensor())
+        status: temp_format.(dt_sensor()),
+        stopped: "n/a"
       }
     ]
-    |> Scribe.print(data: [{"Subsystem", :subsystem}, {"Status", :status}])
+    |> Scribe.print(
+      data: [
+        {"Subsystem", :subsystem},
+        {"Status", :status},
+        {"Stopped", :stopped}
+      ]
+    )
     |> IO.puts()
   end
 
@@ -147,20 +172,26 @@ defmodule Reef do
 
   def water_change_begin,
     do: [
-      {rmp(), rmp() |> DCS.activate_profile(constant())},
-      {rma(), rma() |> DCS.activate_profile(standby())},
+      {rmp(), rmp() |> DCS.stop()},
+      {rma(), rma() |> DCS.stop()},
+      {ato(), ato() |> DCS.stop()},
       {swmt(), swmt() |> THS.activate_profile(standby())},
       {display_tank(), display_tank() |> THS.activate_profile(standby())}
     ]
 
   def water_change_end do
-    a = rmp() |> DCS.activate_profile(standby())
-    b = rma() |> DCS.activate_profile(standby())
-    c = swmt() |> THS.activate_profile(standby())
-    d = display_tank() |> THS.activate_profile("75F")
+    a = rmp() |> DCS.stop()
+    b = rma() |> DCS.stop()
+    c = ato() |> DCS.resume()
+    d = swmt() |> THS.activate_profile(standby())
+    e = display_tank() |> THS.activate_profile("75F")
 
-    [{rmp(), a}, {rma(), b}, {swmt(), c}, {display_tank(), d}]
+    [{rmp(), a}, {rma(), b}, {ato(), c}, {swmt(), d}, {display_tank(), e}]
   end
+
+  def xfer_swmt_to_wst, do: {rmp(), DCS.activate_profile(rmp(), "mx to wst")}
+
+  def xfer_wst_to_sewer, do: {rmp(), DCS.activate_profile(rmp(), "drain wst")}
 
   defp print_heading(text) when is_binary(text) do
     IO.puts(" ")
@@ -178,7 +209,7 @@ defmodule Reef do
       )
 
   defp add_salt, do: "add salt"
-  defp constant, do: "constant"
+  defp ato, do: "display tank ato"
   defp display_tank, do: "display tank"
   defp dt, do: display_tank()
   defp dt_sensor, do: "display_tank"
