@@ -105,52 +105,16 @@ defmodule Reef do
   def status do
     opts = [active: true]
 
-    temp_format = fn sensor ->
-      temp = Sensor.fahrenheit(name: sensor, since_secs: 30)
-      if is_nil(temp), do: temp, else: Float.round(temp, 1)
-    end
-
     IO.puts(clear())
     print_heading("Reef Subsystem Status")
 
-    [
-      %{
-        subsystem: rmp(),
-        status: DCS.profiles(rmp(), opts) |> DCP.name(),
-        stopped: DCS.stopped?(rmp())
-      },
-      %{
-        subsystem: rma(),
-        status: DCS.profiles(rma(), opts) |> DCP.name(),
-        stopped: DCS.stopped?(rma())
-      },
-      %{
-        subsystem: rmrf(),
-        status: DCS.profiles(rmrf(), opts) |> DCP.name(),
-        stoppped: DCS.stopped?(rmrf())
-      },
-      %{
-        subsystem: ato(),
-        status: DCS.profiles(ato(), opts) |> DCP.name(),
-        stopped: DCS.stopped?(ato())
-      },
-      %{
-        subsystem: swmt(),
-        status: THS.profiles(swmt(), opts) |> THP.name(),
-        stopped: "n/a"
-      },
-      %{
-        subsystem: display_tank(),
-        status: THS.profiles(display_tank(), opts) |> THP.name(),
-        stopped: "n/a"
-      },
-      %{
-        subsystem: dt_sensor(),
-        status: temp_format.(dt_sensor()),
-        stopped: "n/a"
-      }
-    ]
-    |> Scribe.print(
+    dcs = for name <- [rmp(), rma(), rmrf(), ato()], do: dc_status(name, opts)
+    ths = for name <- [swmt(), display_tank()], do: th_status(name, opts)
+    ss = for name <- [dt_sensor()], do: sensor_status(name)
+
+    all = dcs ++ ths ++ ss
+
+    Scribe.print(all,
       data: [
         {"Subsystem", :subsystem},
         {"Status", :status},
@@ -217,6 +181,34 @@ defmodule Reef do
           f <> "(" <> yellow() <> p <> light_blue() <> ")" <> reset()
       )
 
+  defp dc_status(name, opts),
+    do: %{
+      subsystem: name,
+      status: DCS.profiles(name, opts) |> DCP.name(),
+      stopped: DCS.stopped?(name)
+    }
+
+  defp sensor_status(name) do
+    temp_format = fn sensor ->
+      temp = Sensor.fahrenheit(name: sensor, since_secs: 30)
+      if is_nil(temp), do: temp, else: Float.round(temp, 1)
+    end
+
+    %{
+      subsystem: name,
+      status: temp_format.(name),
+      stopped: "n/a"
+    }
+  end
+
+  defp th_status(name, opts),
+    do: %{
+      subsystem: name,
+      status: THS.profiles(name, opts) |> THP.name(),
+      stopped: "n/a"
+    }
+
+  # constants
   defp add_salt, do: "add salt"
   defp ato, do: "display tank ato"
   defp display_tank, do: "display tank"
