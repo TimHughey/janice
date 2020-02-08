@@ -6,7 +6,7 @@ mcp=${jan_bin}/mcp
 
 print -n "waiting for mcp to start... "
 
-until $mcp pid >2 /dev/null; do
+until $mcp pid 1>/dev/null 2>/dev/null do
   sleep 1
 done
 
