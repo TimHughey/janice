@@ -51,6 +51,9 @@
 	run_cmd sudo chown janice:janice $jan_base_new
 	sudo -u janice --login tar -C $jan_base_new -xf $release && print " done."
 
+	print -n "correcting permissions... "
+	sudo -u janice --login chmod -R g+X $jan_base_new && print "done."
+
 	# run_cmd sudo -i janice --login $jan_bin/mcp ping 1> /dev/null 2>&1
 	print -n "stopping janice... "
 	sudo -u janice --login $jan_bin/mcp stop
@@ -88,9 +91,3 @@
 	else
 		print "won't remove ${jan_base_old}, use --clean to do so"
 	fi
-
-	sleep 2
-	mcp_pid=$(sudo -u janice --login $jan_bin/mcp pid)
-
-	print "tailing janice log file. (use CTRL+C to stop)"
-	exec tail --lines=100 --pid=${mcp_pid} -f $jan_base/tmp/log/erlang.*(om[1])
