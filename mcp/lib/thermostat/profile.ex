@@ -70,6 +70,9 @@ defmodule Thermostat.Profile do
     end
   end
 
+  def name(%Profile{name: name}), do: name
+  def name(_anything), do: :none
+
   def names(%Thermostat{} = t), do: for(p <- t.profiles, do: p.name)
 
   def set_point(%Thermostat{} = t) do

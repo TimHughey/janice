@@ -6,6 +6,7 @@ defmodule Reef do
 
   alias Dutycycle.Profile, as: DCP
   alias Dutycycle.Server, as: DCS
+  alias Thermostat.Profile, as: THP
   alias Thermostat.Server, as: THS
 
   def help do
@@ -36,6 +37,7 @@ defmodule Reef do
   def display_tank_pause, do: ths_standby(dt())
   def display_tank_resume, do: ths_activate(dt(), "75F")
 
+  def dcs_resume(dc) when is_binary(dc), do: DCS.resume(dc)
   def dcs_standby(dc) when is_binary(dc), do: DCS.standby(dc)
 
   def heat_standby,
@@ -96,6 +98,7 @@ defmodule Reef do
     ]
 
   def resume(name) when is_binary(name), do: DCS.resume(name)
+  def resume_ato, do: DCS.resume(ato())
   def resume_air, do: DCS.resume(rma())
   def resume_pump, do: DCS.resume(rmp())
 
@@ -131,10 +134,14 @@ defmodule Reef do
         status: DCS.profiles(ato(), opts) |> DCP.name(),
         stopped: DCS.stopped?(ato())
       },
-      %{subsystem: swmt(), status: THS.profiles(swmt(), opts), stopped: "n/a"},
+      %{
+        subsystem: swmt(),
+        status: THS.profiles(swmt(), opts) |> THP.name(),
+        stopped: "n/a"
+      },
       %{
         subsystem: display_tank(),
-        status: THS.profiles(display_tank(), opts),
+        status: THS.profiles(display_tank(), opts) |> THP.name(),
         stopped: "n/a"
       },
       %{
@@ -154,12 +161,15 @@ defmodule Reef do
   end
 
   def stop(name) when is_binary(name), do: DCS.stop(name)
+  def stop_ato, do: DCS.stop(ato())
   def stop_air, do: DCS.stop(rma())
   def stop_pump, do: DCS.stop(rmp())
 
   def ths_activate(th, profile)
       when is_binary(th) and is_binary(profile),
       do: THS.activate_profile(th, profile)
+
+  def ths_standby(th) when is_binary(th), do: THS.standby(th)
 
   def ths_standby(th) when is_binary(th), do: THS.standby(th)
 
@@ -190,7 +200,6 @@ defmodule Reef do
   end
 
   def xfer_swmt_to_wst, do: {rmp(), DCS.activate_profile(rmp(), "mx to wst")}
-
   def xfer_wst_to_sewer, do: {rmp(), DCS.activate_profile(rmp(), "drain wst")}
 
   defp print_heading(text) when is_binary(text) do
