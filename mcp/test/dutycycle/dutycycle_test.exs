@@ -423,12 +423,15 @@ defmodule DutycycleTest do
   test "can stop and resume a known dutycycle",
        context do
     {_dc, name} = name_from_db(context[:num])
-    rc1 = Server.activate_profile(name, "slow")
+    {rc1, res} = Server.activate_profile(name, "slow")
 
     rc2 = Server.pause(name)
     rc3 = Server.resume(name)
 
-    assert {:ok, _profile} = rc1
+    assert :ok == rc1
+    assert is_list(res)
+    assert res[:name] == name
+    assert res[:active_profile] == "slow"
     assert {:ok, %Dutycycle{}} = rc2
     assert {:ok, _profile} = rc3
   end

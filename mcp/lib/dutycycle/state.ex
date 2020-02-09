@@ -13,7 +13,7 @@ defmodule Dutycycle.State do
   alias Janice.TimeSupport
 
   schema "dutycycle_state" do
-    field(:state)
+    field(:state, :binary, default: "stopped")
     field(:dev_state, :boolean)
     field(:run_at, :utc_datetime_usec)
     field(:run_end_at, :utc_datetime_usec)

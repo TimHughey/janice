@@ -16,8 +16,8 @@ defmodule Dutycycle.Profile do
   schema "dutycycle_profile" do
     field(:name)
     field(:active, :boolean, default: false)
-    field(:run_ms, :integer)
-    field(:idle_ms, :integer)
+    field(:run_ms, :integer, default: 0)
+    field(:idle_ms, :integer, default: 0)
     belongs_to(:dutycycle, Dutycycle)
 
     timestamps(usec: true)

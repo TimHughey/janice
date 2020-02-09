@@ -16,7 +16,9 @@ defmodule Dutycycle.Server do
   def activate_profile(name, profile_name, opts)
       when is_binary(name) and is_binary(profile_name) do
     msg = %{:msg => :activate_profile, profile: profile_name, opts: opts}
-    call_server(name, msg)
+    {rc, res} = call_server(name, msg)
+
+    {rc, Dutycycle.status(res)}
   end
 
   def add_profile(name, %Profile{} = p, opts \\ [])

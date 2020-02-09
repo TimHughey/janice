@@ -38,9 +38,9 @@ defmodule Dutycycle do
   schema "dutycycle" do
     field(:name)
     field(:comment)
-    field(:log, :boolean)
+    field(:log, :boolean, default: false)
     field(:device)
-    field(:stopped, :boolean)
+    field(:stopped, :boolean, default: true)
     has_one(:state, State)
     has_many(:profiles, Profile)
 
@@ -413,6 +413,15 @@ defmodule Dutycycle do
     end
   end
 
+  def status(%Dutycycle{name: name, stopped: stopped} = dc),
+    do: [
+      name: name,
+      active_profile: Profile.active(dc) |> Profile.name(),
+      stopped: stopped
+    ]
+
+  def status(anything), do: anything
+
   def stopped(%Dutycycle{} = dc, stop) when is_boolean(stop),
     do: update(dc, stopped: stop)
 
@@ -497,5 +506,5 @@ defmodule Dutycycle do
   # end
 
   # REFACTORED!
-  defp possible_changes, do: [:name, :comment, :device, :stopped]
+  defp possible_changes, do: [:name, :comment, :device, :log, :stopped]
 end
