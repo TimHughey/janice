@@ -10,6 +10,11 @@ defmodule Dutycycle.Server do
   #### API
   ####
 
+  def active?(name, opts \\ []) when is_binary(name) and is_list(opts) do
+    msg = %{:msg => :active?, opts: opts}
+    call_server(name, msg)
+  end
+
   # function header for optional "opts" parameter
   def activate_profile(name, profile_name, opts \\ [])
 
@@ -83,10 +88,12 @@ defmodule Dutycycle.Server do
     call_server(name, msg)
   end
 
-  def pause(name, opts \\ []) when is_binary(name) do
-    msg = %{:msg => :pause, opts: opts}
+  def halt(name, opts \\ []) when is_binary(name) do
+    msg = %{:msg => :halt, opts: opts}
     call_server(name, msg)
   end
+
+  def pause(name, opts \\ []) when is_binary(name), do: halt(name, opts)
 
   def ping(name, opts \\ []) when is_binary(name) do
     msg = %{:msg => :ping, opts: opts}
@@ -123,21 +130,13 @@ defmodule Dutycycle.Server do
 
   def server_name_atom(nil), do: nil
 
-  def standby(name, opts \\ []) when is_binary(name), do: pause(name, opts)
+  def standby(name, opts \\ []) when is_binary(name), do: halt(name, opts)
 
   def start_server(%Dutycycle{log: log} = d) do
     args = %{id: d.id, added: true}
     log && Logger.debug(fn -> "starting dutycycle id #{inspect(d.id)}" end)
     Supervisor.start_child(Dutycycle.Supervisor, child_spec(args))
     d
-  end
-
-  def stop(name, opts \\ [])
-  def stop(name, opts) when is_binary(name), do: pause(name, opts)
-
-  def stopped?(name, opts \\ []) when is_binary(name) and is_list(opts) do
-    msg = %{:msg => :stopped?, opts: opts}
-    call_server(name, msg)
   end
 
   def switch_state(name, opts \\ []) when is_binary(name) do
@@ -159,8 +158,7 @@ defmodule Dutycycle.Server do
     %{profile: {rc, res}, reload: reload} = call_server(name, msg)
 
     # if the change was successful and it was to the active profile then
-    # stop the dutycycle and then re-activate the profile to effectuate the
-    # changes made
+    # then re-activate the profile to effectuate the changes made
     reload && :ok === rc && Profile.active?(res) &&
       activate_profile(name, Profile.name(res))
 
@@ -282,12 +280,12 @@ defmodule Dutycycle.Server do
   end
 
   def handle_call(
-        %{:msg => :pause, :opts => _opts},
+        %{:msg => :halt, :opts => _opts},
         _from,
         %{dutycycle: dc} = s
       ) do
     s = cancel_timer(s)
-    rc = Dutycycle.stop(dc)
+    rc = Dutycycle.halt(dc)
 
     {:reply, rc, cache_dutycycle(s)}
   end
@@ -299,11 +297,11 @@ defmodule Dutycycle.Server do
   end
 
   def handle_call(
-        %{:msg => :stopped?, :opts => _opts},
+        %{:msg => :active?, :opts => _opts},
         _from,
         %{dutycycle: dc} = s
       ) do
-    {:reply, Dutycycle.stopped?(dc), s}
+    {:reply, Dutycycle.active?(dc), s}
   end
 
   def handle_call(
@@ -484,7 +482,7 @@ defmodule Dutycycle.Server do
         } = s
       ) do
     case Dutycycle.start(dc) do
-      {:ok, :stopped} ->
+      {:ok, :inactive} ->
         nil
 
       {:ok, :run, profile} ->

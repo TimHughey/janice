@@ -21,17 +21,6 @@ defmodule Reef do
     ]
     |> Scribe.print(style: Scribe.Style.NoBorder)
     |> IO.puts()
-
-    # print_mix("mix_air(profile) -> control reefwater mix air")
-    # print_mix("mix_heat(:standby | profile ) -> control reefwater mix heat")
-    # print_mix("mix_keep_fresh() -> set mix air and pump to keep water fresh")
-    # print_mix("utility_pump(profile) -> control utility pump")
-    # print_mix("utility_pump_off() -> switch off utility pump")
-    # IO.puts(" ")
-    #
-    # print_water("water_change_begin() -> setup for water change")
-    # print_water("water_change_end() -> stop everything after water change")
-    # IO.puts(" ")
   end
 
   def display_tank_pause, do: ths_standby(dt())
@@ -39,6 +28,8 @@ defmodule Reef do
 
   def dcs_resume(dc) when is_binary(dc), do: DCS.resume(dc)
   def dcs_standby(dc) when is_binary(dc), do: DCS.standby(dc)
+
+  def halt(name) when is_binary(name), do: DCS.halt(name)
 
   def heat_standby,
     do: [
@@ -64,7 +55,7 @@ defmodule Reef do
 
   def mix_air(_), do: print_usage("mix_air", "profile)")
 
-  def mix_air_pause, do: DCS.stop(rma())
+  def mix_air_pause, do: DCS.halt(rma())
   def mix_air_resume, do: DCS.resume(rma())
 
   def mix_heat_standby, do: THS.activate_profile(swmt(), standby())
@@ -84,11 +75,11 @@ defmodule Reef do
   def mix_pump(_), do: print_usage("mix_pump", "profile")
   def mix_pump_off, do: utility_pump_off()
 
-  def mix_pump_pause, do: DCS.stop(rmp())
+  def mix_pump_pause, do: DCS.halt(rmp())
   def mix_pump_resume, do: DCS.resume(rmp())
 
   def mix_rodi_fast, do: DCS.activate_profile(rmrf(), "fast")
-  def mix_rodi_stop, do: DCS.stop(rmrf())
+  def mix_rodi_halt, do: DCS.halt(rmrf())
 
   def mix_standby,
     do: [
@@ -118,16 +109,15 @@ defmodule Reef do
       data: [
         {"Subsystem", :subsystem},
         {"Status", :status},
-        {"Stopped", :stopped}
+        {"Active", :active}
       ]
     )
     |> IO.puts()
   end
 
-  def stop(name) when is_binary(name), do: DCS.stop(name)
-  def stop_ato, do: DCS.stop(ato())
-  def stop_air, do: DCS.stop(rma())
-  def stop_pump, do: DCS.stop(rmp())
+  def halt_ato, do: DCS.halt(ato())
+  def halt_air, do: DCS.halt(rma())
+  def halt_pump, do: DCS.halt(rmp())
 
   def ths_activate(th, profile)
       when is_binary(th) and is_binary(profile),
@@ -146,16 +136,16 @@ defmodule Reef do
 
   def water_change_begin,
     do: [
-      {rmp(), rmp() |> DCS.stop()},
-      {rma(), rma() |> DCS.stop()},
-      {ato(), ato() |> DCS.stop()},
+      {rmp(), rmp() |> DCS.halt()},
+      {rma(), rma() |> DCS.halt()},
+      {ato(), ato() |> DCS.halt()},
       {swmt(), swmt() |> THS.activate_profile(standby())},
       {display_tank(), display_tank() |> THS.activate_profile(standby())}
     ]
 
   def water_change_end do
-    a = rmp() |> DCS.stop()
-    b = rma() |> DCS.stop()
+    a = rmp() |> DCS.halt()
+    b = rma() |> DCS.halt()
     c = ato() |> DCS.resume()
     d = swmt() |> THS.activate_profile(standby())
     e = display_tank() |> THS.activate_profile("75F")
@@ -185,7 +175,7 @@ defmodule Reef do
     do: %{
       subsystem: name,
       status: DCS.profiles(name, opts) |> DCP.name(),
-      stopped: DCS.stopped?(name)
+      active: DCS.active?(name)
     }
 
   defp sensor_status(name) do
@@ -197,7 +187,7 @@ defmodule Reef do
     %{
       subsystem: name,
       status: temp_format.(name),
-      stopped: "n/a"
+      active: "n/a"
     }
   end
 
@@ -205,7 +195,7 @@ defmodule Reef do
     do: %{
       subsystem: name,
       status: THS.profiles(name, opts) |> THP.name(),
-      stopped: "n/a"
+      active: "n/a"
     }
 
   # constants

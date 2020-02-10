@@ -45,12 +45,15 @@ defmodule Dutycycle do
     field(:comment)
     field(:log, :boolean, default: false)
     field(:device)
-    field(:stopped, :boolean, default: true)
+    field(:active, :boolean, default: false)
     has_one(:state, State)
     has_many(:profiles, Profile)
 
     timestamps(usec: true)
   end
+
+  def activate(%Dutycycle{} = dc),
+    do: update(dc, active: true)
 
   def activate_profile(dc, name, opts \\ [])
 
@@ -86,7 +89,7 @@ defmodule Dutycycle do
            Profile.activate(dc, profile),
          dc <- reload(dc),
          {:state_run, {dc, {:ok, _st}}} <- {:state_run, State.run(dc)},
-         {:ok, dc} <- Dutycycle.stopped(dc, false),
+         {:ok, dc} <- Dutycycle.activate(dc),
          dc <- reload(dc),
          {:ok, {:position, true}, dc} <- control_device(dc, lazy: false) do
       log &&
@@ -98,10 +101,10 @@ defmodule Dutycycle do
       {:ok, reload(dc), new_profile, :run}
     else
       {:none, %Profile{}} ->
-        {rc, dc} = Dutycycle.stopped(dc, true)
+        {rc, dc} = Dutycycle.deactivate(dc)
 
         Logger.warn(fn ->
-          "stopping dutycycle due to none profile"
+          "deactivating dutycycle due to none profile"
         end)
 
         {rc, reload(dc), %Profile{name: "none"}, :none}
@@ -137,6 +140,8 @@ defmodule Dutycycle do
         {:failed, dc}
     end
   end
+
+  def active?(%Dutycycle{active: val}), do: val
 
   def add([]), do: []
 
@@ -190,7 +195,9 @@ defmodule Dutycycle do
     {dc, dc.state}
   end
 
-  # HAS TEST CASE
+  def deactivate(%Dutycycle{} = dc),
+    do: update(dc, active: false)
+
   def delete(name) when is_binary(name) do
     dc = get_by(name: name)
 
@@ -308,6 +315,41 @@ defmodule Dutycycle do
     end
   end
 
+  def halt(%Dutycycle{} = dc) do
+    with {%Dutycycle{}, {:ok, %State{}}} <- State.stop(dc),
+         {:ok, %Dutycycle{}} <- deactivate(dc),
+         {:reload, %Dutycycle{} = dc} <- {:reload, reload(dc)},
+         {:ok, {:position, false}, dc} <-
+           control_device(dc, lazy: false) do
+      {:ok, dc}
+    else
+      {:invalid_changes, errors} ->
+        Logger.warn(fn -> "#{inspect(errors, pretty: true)}" end)
+        dc = reload(dc)
+        {:failed, dc}
+
+      {:ok, {:position, nil}, %Dutycycle{} = dc} ->
+        {:ok, dc}
+
+      {:ok, {:position, pos}, %Dutycycle{device: device} = dc} ->
+        Logger.warn(
+          inspect(device) <>
+            "state is " <>
+            inspect(pos, pretty: true) <>
+            "after halt"
+        )
+
+        {:device_still_true, dc}
+
+      error ->
+        Logger.warn("halt() unhandled error: #{inspect(error, pretty: true)}")
+
+        {:failed, error}
+    end
+  end
+
+  def inactive?(%Dutycycle{active: val}), do: not val
+
   def log?(%Dutycycle{log: log}), do: log
 
   def lookup_id(name) when is_binary(name) do
@@ -352,53 +394,18 @@ defmodule Dutycycle do
       Repo.get!(Dutycycle, id)
       |> preload([:state, :profiles], force: true)
 
-  def stop(%Dutycycle{} = dc) do
-    with {%Dutycycle{}, {:ok, %State{}}} <- State.stop(dc),
-         {:ok, %Dutycycle{}} <- stopped(dc, true),
-         {:reload, %Dutycycle{} = dc} <- {:reload, reload(dc)},
-         {:ok, {:position, false}, dc} <-
-           control_device(dc, lazy: false) do
-      {:ok, dc}
-    else
-      {:invalid_changes, errors} ->
-        Logger.warn(fn -> "#{inspect(errors, pretty: true)}" end)
-        dc = reload(dc)
-        {:failed, dc}
+  def start(%Dutycycle{active: false} = dc) do
+    Dutycycle.log?(dc) && Logger.info(fn -> dc_name(dc) <> "is inactive" end)
 
-      {:ok, {:position, nil}, %Dutycycle{} = dc} ->
-        {:ok, dc}
-
-      {:ok, {:position, pos}, %Dutycycle{device: device} = dc} ->
-        Logger.warn(fn ->
-          inspect(device) <>
-            "state is " <>
-            inspect(pos, pretty: true) <>
-            "after stop"
-        end)
-
-        {:device_still_true, dc}
-
-      error ->
-        Logger.warn(fn ->
-          "stop() unhandled error: #{inspect(error, pretty: true)}"
-        end)
-
-        {:failed, error}
-    end
+    {:ok, :inactive}
   end
 
-  def start(%Dutycycle{stopped: true} = dc) do
-    Dutycycle.log?(dc) && Logger.info(fn -> dc_name(dc) <> "is stopped" end)
-
-    {:ok, :stopped}
-  end
-
-  def start(%Dutycycle{stopped: false} = dc) do
+  def start(%Dutycycle{active: true} = dc) do
     if Profile.none?(dc) do
       Dutycycle.log?(dc) &&
         Logger.info(fn -> dc_name(dc) <> "does not have an active profile" end)
 
-      {:ok, :stopped}
+      {:ok, :inactive}
     else
       active_profile = Profile.active(dc)
 
@@ -412,19 +419,14 @@ defmodule Dutycycle do
     end
   end
 
-  def status(%Dutycycle{name: name, stopped: stopped} = dc),
+  def status(%Dutycycle{name: name, active: active} = dc),
     do: [
       name: name,
       active_profile: Profile.active(dc) |> Profile.name(),
-      stopped: stopped
+      active: active
     ]
 
   def status(anything), do: anything
-
-  def stopped(%Dutycycle{} = dc, stop) when is_boolean(stop),
-    do: update(dc, stopped: stop)
-
-  def stopped?(%Dutycycle{stopped: val}), do: val
 
   def update(dc, opts \\ [])
 
@@ -497,5 +499,5 @@ defmodule Dutycycle do
   defp dc_name(%Dutycycle{name: name}), do: "#{inspect(name)} "
   defp dc_name(catchall), do: "#{inspect(catchall, pretty: true)} "
 
-  defp possible_changes, do: [:name, :comment, :device, :log, :stopped]
+  defp possible_changes, do: [:name, :comment, :device, :log, :active]
 end

@@ -42,7 +42,7 @@ defmodule DutycycleTest do
       name: name_str(n),
       comment: "test dutycycle " <> num_str,
       device: dev_str,
-      stopped: true,
+      active: false,
       log: false,
       profiles: [
         %Dutycycle.Profile{name: "fast", run_ms: 3_000, idle_ms: 3_000},
@@ -306,18 +306,18 @@ defmodule DutycycleTest do
   end
 
   @tag num: 2
-  test "can get and set Dutycycle stopped", context do
+  test "can get and set Dutycycle active", context do
     {dc, _name} = name_from_db(context[:num])
 
-    stopped1 = Dutycycle.stopped?(dc)
+    active1 = Dutycycle.active?(dc)
 
-    {rc, dc} = Dutycycle.stopped(dc, false)
+    {rc, dc} = Dutycycle.activate(dc)
 
-    stopped2 = Dutycycle.stopped?(dc)
+    active2 = Dutycycle.active?(dc)
 
-    assert stopped1 === true
+    assert active1 === false
     assert rc === :ok
-    assert stopped2 === false
+    assert active2 === true
   end
 
   @tag num: 3
@@ -420,7 +420,7 @@ defmodule DutycycleTest do
   end
 
   @tag num: 7
-  test "can stop and resume a known dutycycle",
+  test "can pause (halt) and resume a known dutycycle",
        context do
     {_dc, name} = name_from_db(context[:num])
     {rc1, res} = Server.activate_profile(name, "slow")
@@ -475,7 +475,7 @@ defmodule DutycycleTest do
         name: "mix pump",
         comment: "mix pump",
         device: "mix_pump",
-        stopped: true,
+        active: false,
         log: true,
         profiles: [
           %Dutycycle.Profile{name: "fast", run_ms: 3_000, idle_ms: 3_000},
@@ -491,7 +491,7 @@ defmodule DutycycleTest do
         name: "mix air",
         comment: "mix air",
         device: "mix_air",
-        stopped: true,
+        active: false,
         log: true,
         profiles: [
           %Dutycycle.Profile{name: "fast", run_ms: 3_000, idle_ms: 3_000},
@@ -507,7 +507,7 @@ defmodule DutycycleTest do
         name: "mix rodi",
         comment: "mix rodi",
         device: "mix_rodi",
-        stopped: true,
+        active: false,
         log: true,
         profiles: [
           %Dutycycle.Profile{name: "fast", run_ms: 3_000, idle_ms: 3_000},
@@ -523,7 +523,7 @@ defmodule DutycycleTest do
         name: "mix rodi boost",
         comment: "mix rodi boost",
         device: "mix_rodi_boost",
-        stopped: true,
+        active: false,
         log: true,
         profiles: [
           %Dutycycle.Profile{name: "fast", run_ms: 3_000, idle_ms: 3_000},
@@ -539,7 +539,7 @@ defmodule DutycycleTest do
         name: "display tank ato",
         comment: "display tank ato",
         device: "display tank ato",
-        stopped: true,
+        active: false,
         log: true,
         profiles: [
           %Dutycycle.Profile{name: "fast", run_ms: 3_000, idle_ms: 3_000},
