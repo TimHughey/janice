@@ -1,5 +1,10 @@
 #!/usr/bin/env zsh
 
+autoload colors
+if [[ "$terminfo[colors]" -gt 8 ]]; then
+    colors
+fi
+
 # save current working directory
 save_cwd=`pwd`
 
