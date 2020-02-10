@@ -22,10 +22,15 @@ defmodule Dutycycle do
   require Logger
   use Ecto.Schema
 
-  import Repo, only: [one: 1, insert_or_update!: 1, update!: 1, preload: 3]
+  import Repo, only: [one: 1, insert: 1, update!: 1, preload: 3]
 
   import Ecto.Changeset,
-    only: [cast: 3, validate_required: 2, validate_format: 3]
+    only: [
+      cast: 3,
+      validate_required: 2,
+      validate_format: 3,
+      unique_constraint: 3
+    ]
 
   import Ecto.Query, only: [from: 2]
 
@@ -49,7 +54,6 @@ defmodule Dutycycle do
 
   def activate_profile(dc, name, opts \\ [])
 
-  # REFACTORED!
   def activate_profile(%Dutycycle{} = dc, %Profile{name: name}, opts)
       when is_list(opts),
       do: activate_profile(dc, name, opts)
@@ -76,7 +80,6 @@ defmodule Dutycycle do
     end
   end
 
-  # REFACTORED!
   def activate_profile(%Dutycycle{log: log} = dc, profile, _opts)
       when is_binary(profile) do
     with {:ok, %Profile{} = new_profile} <-
@@ -142,18 +145,28 @@ defmodule Dutycycle do
   end
 
   def add(%Dutycycle{name: name} = dc) do
-    q = from(d in Dutycycle, where: d.name == ^name, select: {d})
+    cs = changeset(dc, Map.take(dc, possible_changes()))
 
-    case one(q) do
-      nil ->
-        dc =
-          Map.put(dc, :state, %State{}) |> changeset([]) |> insert_or_update!()
+    with {:cs_valid, true} <- {:cs_valid, cs.valid?()},
+         {:ok, _dc} <- insert(cs),
+         %Dutycycle{} = dc <- get_by(name: name) do
+      # {:add_state, {:ok, %State{}}} <-
+      #   {:add_state, Ecto.build_assoc(dc, :state, %State{}) |> Repo.insert()} do
+      reload(dc)
+      |> Server.start_server()
+    else
+      {:cs_valid, false} ->
+        {:invalid_changes, cs}
 
-        Server.start_server(dc)
+      {:add_state, rc} ->
+        Logger.warn(
+          "add() failed to insert %State{}: #{inspect(rc, pretty: true)}"
+        )
 
-      found ->
-        Logger.warn(~s/add() [#{dc.name}] already exists/)
-        found
+      error ->
+        Logger.warn("add() failure: #{inspect(error, pretty: true)}")
+
+        {:failed, error}
     end
   end
 
@@ -168,7 +181,6 @@ defmodule Dutycycle do
     for d <- Repo.all(Dutycycle), do: Map.get(d, :name)
   end
 
-  # REFACTORED!
   def current_state(%Dutycycle{state: _state} = dc, opts \\ [])
       when is_list(opts) do
     reload = Keyword.get(opts, :reload, false)
@@ -178,7 +190,6 @@ defmodule Dutycycle do
     {dc, dc.state}
   end
 
-  # REFACTORED!
   # HAS TEST CASE
   def delete(name) when is_binary(name) do
     dc = get_by(name: name)
@@ -198,7 +209,6 @@ defmodule Dutycycle do
       else: [server: Server.delete(dc), db: elem(Repo.delete(dc, opts), 0)]
   end
 
-  # REFACTORED!
   # HAS TEST CASE
   def delete_all(:dangerous) do
     for dc <- Repo.all(Dutycycle), do: delete(dc)
@@ -217,16 +227,15 @@ defmodule Dutycycle do
   end
 
   def device_change(d, device) do
-    Logger.warn(fn ->
+    Logger.warn(
       "invalid args: device_change(#{inspect(d, pretty: true)}, #{
         inspect(device, pretty: true)
       }"
-    end)
+    )
 
     {:error, :invalid_args}
   end
 
-  # REFACTORED!
   # primary entry point for handling the end of phase
   def end_of_phase(%Dutycycle{} = dc) do
     active_profile = Profile.active(dc)
@@ -234,7 +243,6 @@ defmodule Dutycycle do
     end_of_phase(dc, active_profile)
   end
 
-  # REFACTORED!
   # when a dutycycle is running and idle_ms == 0 keep running
   # however update the state to reflect the start of a new phase
   defp end_of_phase(
@@ -243,7 +251,6 @@ defmodule Dutycycle do
        ),
        do: next_phase(:run, dc)
 
-  # REFACTORED!
   # when a dutycycle is running and idle_ms > 0 then start the idle phase
   defp end_of_phase(
          %Dutycycle{state: %State{state: "running"}} = dc,
@@ -251,7 +258,6 @@ defmodule Dutycycle do
        ),
        do: next_phase(:idle, dc)
 
-  # REFACTORED!
   # when a dutycycle is idling and run_ms == 0 keep idling
   # however update the state to reflect the start of a new phase
   defp end_of_phase(
@@ -260,7 +266,6 @@ defmodule Dutycycle do
        ),
        do: next_phase(:run, dc)
 
-  # REFACTORED!
   # when a dutycycle is idling and run_ms > 0 then start the run phase
   defp end_of_phase(
          %Dutycycle{state: %State{state: "idling"}} = dc,
@@ -268,7 +273,6 @@ defmodule Dutycycle do
        ),
        do: next_phase(:run, dc)
 
-  # REFACTORED!
   defp next_phase(mode, %Dutycycle{} = dc) do
     with {%Dutycycle{} = dc, {:ok, %State{}}} <- State.next_phase(mode, dc),
          dc <- reload(dc),
@@ -287,7 +291,7 @@ defmodule Dutycycle do
       Keyword.take(opts, [:only]) |> Keyword.get_values(:only) |> List.flatten()
 
     if Enum.empty?(filter) do
-      Logger.warn(fn -> "get_by bad args: #{inspect(opts, pretty: true)}" end)
+      Logger.warn("get_by bad args: #{inspect(opts, pretty: true)}")
       []
     else
       dc =
@@ -306,7 +310,6 @@ defmodule Dutycycle do
 
   def log?(%Dutycycle{log: log}), do: log
 
-  # REFACTORED!
   def lookup_id(name) when is_binary(name) do
     with query <-
            from(
@@ -322,7 +325,6 @@ defmodule Dutycycle do
     end
   end
 
-  # REFACTORED!
   def persist_phase_end_timer(%Dutycycle{state: st} = dc, timer) do
     active_profile = Profile.active(dc)
     {rc, _state} = State.persist_phase_timer(st, active_profile, timer)
@@ -330,7 +332,6 @@ defmodule Dutycycle do
     if rc == :ok, do: reload(dc), else: dc
   end
 
-  # REFACTORED!
   def profiles(%Dutycycle{profiles: profiles} = dc, opts \\ [])
       when is_list(opts) do
     only_active = Keyword.get(opts, :active, false)
@@ -344,10 +345,8 @@ defmodule Dutycycle do
         )
   end
 
-  # REFACTORED!
   def reload(%Dutycycle{id: id}), do: reload(id)
 
-  # REFACTORED!
   def reload(id) when is_number(id),
     do:
       Repo.get!(Dutycycle, id)
@@ -461,10 +460,11 @@ defmodule Dutycycle do
     |> cast(params, possible_changes())
     |> validate_required(possible_changes())
     |> validate_format(:name, name_regex())
+    |> unique_constraint(:name, name: :dutycycle_name_index)
   end
 
   # Private Functions
-  # REFACTORED!
+
   defp control_device(
          %Dutycycle{
            device: device,
@@ -494,17 +494,8 @@ defmodule Dutycycle do
     {:ok, {:position, sw_state}, dc}
   end
 
-  # REFACTORED!
   defp dc_name(%Dutycycle{name: name}), do: "#{inspect(name)} "
   defp dc_name(catchall), do: "#{inspect(catchall, pretty: true)} "
 
-  # REFACTORED!
-  # defp dev_state(device) when is_binary(device) do
-  #   dev_state = Switch.state(device)
-  #
-  #   if is_nil(dev_state), do: false, else: dev_state
-  # end
-
-  # REFACTORED!
   defp possible_changes, do: [:name, :comment, :device, :log, :stopped]
 end
