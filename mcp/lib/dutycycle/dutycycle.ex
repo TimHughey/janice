@@ -271,7 +271,7 @@ defmodule Dutycycle do
          %Dutycycle{state: %State{state: "idling"}} = dc,
          %Profile{run_ms: 0}
        ),
-       do: next_phase(:run, dc)
+       do: next_phase(:idle, dc)
 
   # when a dutycycle is idling and run_ms > 0 then start the run phase
   defp end_of_phase(
