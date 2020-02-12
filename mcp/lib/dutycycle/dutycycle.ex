@@ -481,21 +481,33 @@ defmodule Dutycycle do
     sw_state =
       Switch.position(device, position: dev_state, lazy: lazy, log: log)
 
-    log?(dc) && is_nil(sw_state) &&
-      Logger.warn(fn ->
-        dc_name(dc) <>
-          "device #{inspect(device)} position is nil, does it exist?"
-      end)
+    case sw_state do
+      {:ok, position} ->
+        log?(dc) && position == dev_state &&
+          Logger.info("#{control_device_log(dc)} set successfully")
 
-    log?(dc) && not is_nil(sw_state) && not sw_state == dev_state &&
-      Logger.warn(fn ->
-        dc_name(dc) <>
-          "device #{inspect(device)} position #{inspect(sw_state)} " <>
-          "is not #{inspect(dev_state)} (should be equal)"
-      end)
+        not position == dev_state &&
+          Logger.warn(
+            "#{control_device_log(dc)} position #{inspect(sw_state)} " <>
+              "is not #{inspect(dev_state)} (should be equal)"
+          )
+
+      {:not_found, _} ->
+        log?(dc) && Logger.warn("#{control_device_log(dc)} does not exist")
+
+      anything ->
+        Logger.warn(
+          "#{control_device_log(dc)} unmatched result #{
+            inspect(anything, pretty: true)
+          }"
+        )
+    end
 
     {:ok, {:position, sw_state}, dc}
   end
+
+  defp control_device_log(%Dutycycle{name: name, device: device}),
+    do: "#{inspect(name)} device #{inspect(device)}"
 
   defp dc_name(%Dutycycle{name: name}), do: "#{inspect(name)} "
   defp dc_name(catchall), do: "#{inspect(catchall, pretty: true)} "
