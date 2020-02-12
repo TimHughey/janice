@@ -334,9 +334,9 @@ defmodule Dutycycle do
       {:ok, {:position, pos}, %Dutycycle{device: device} = dc} ->
         Logger.warn(
           inspect(device) <>
-            "state is " <>
+            " state is " <>
             inspect(pos, pretty: true) <>
-            "after halt"
+            " after halt"
         )
 
         {:device_still_true, dc}
@@ -478,7 +478,8 @@ defmodule Dutycycle do
        when is_list(opts) do
     lazy = Keyword.get(opts, :lazy, true)
 
-    sw_state = Switch.state(device, position: dev_state, lazy: lazy, log: log)
+    sw_state =
+      Switch.position(device, position: dev_state, lazy: lazy, log: log)
 
     log?(dc) && is_nil(sw_state) &&
       Logger.warn(fn ->

@@ -245,16 +245,21 @@ defmodule Thermostat.Server do
 
       s = Map.put(s, :timer, timer)
 
-      if rc2 === :nil_active_profile or rc2 === :ok,
-        do: {:ok, s},
-        else: {rc2, s}
+      if rc2 === :nil_active_profile or rc2 === :ok do
+        Logger.debug("init() returning #{inspect({:ok, s}, pretty: true)}")
+        {:ok, s}
+      else
+        Logger.debug("init() returning #{inspect({rc2, s}, pretty: true)}")
+        {rc2, s}
+      end
     else
+      Logger.debug("init() returning #{inspect({rc1, s}, pretty: true)}")
       {rc1, s}
     end
   end
 
   def start_link(%{id: id} = args) do
-    Logger.debug(fn -> "start_link() args: #{inspect(args)}" end)
+    Logger.debug(fn -> "start_link() args: #{inspect(args, pretty: true)}" end)
 
     opts = Application.get_env(:mcp, Thermostat.Server, [])
     {_, name_atom} = server_name(id: id)
@@ -276,7 +281,7 @@ defmodule Thermostat.Server do
         "#{inspect(t.name)} terminate(#{inspect(reason)}) #{inspect(rc)}"
       end)
 
-    Switch.state(t.switch, position: false, lazy: true, ack: false)
+    Switch.position(t.switch, position: false, lazy: true, ack: false)
     :ok
   end
 
@@ -349,7 +354,7 @@ defmodule Thermostat.Server do
   defp handle_stop(_msg, %{thermostat: t}) do
     {rc, nt} = Thermostat.state(t, "stopped")
 
-    Switch.state(Thermostat.switch(nt), position: false)
+    Switch.position(Thermostat.switch(nt), position: false)
 
     if rc === :ok, do: {:ok, nt}, else: {:failed, t}
   end
@@ -401,7 +406,7 @@ defmodule Thermostat.Server do
 
   # start a __standalone__ thermostat (owner is nil)
   defp start(%{thermostat: %Thermostat{}} = s) do
-    Switch.state(Thermostat.switch(s.thermostat), position: false, lazy: true)
+    Switch.position(Thermostat.switch(s.thermostat), position: false, lazy: true)
 
     timer = next_check_timer(s)
     {rc, t} = Thermostat.state(s.thermostat, "started")

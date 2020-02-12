@@ -197,23 +197,14 @@ defmodule Switch do
     if sw, do: SwitchCmd.pending_cmds(sw, opts), else: nil
   end
 
-  @deprecated "Use position/1 instead"
-  def state(name) when is_binary(name) do
-    ss = SwitchState.state(name)
+  # position() function header
+  def position(name, opts \\ [])
 
-    # when the switch state isn't found automatically check for a
-    # swich group
-    if is_nil(ss), do: SwitchGroup.state(name), else: ss
-  end
+  def position(name, opts) when is_binary(name),
+    do: SwitchState.position(name) |> SwitchGroup.position(opts)
 
-  @deprecated "Use position/2 instead"
-  def state(name, opts \\ []) when is_binary(name) do
-    ss = SwitchState.state(name, opts)
-
-    # when the switch state isn't found automatically check for a
-    # swich group
-    if is_nil(ss), do: SwitchGroup.state(name, opts), else: ss
-  end
+  def position(name, opts) when is_binary(name) and is_list(opts),
+    do: SwitchState.position(name, opts) |> SwitchGroup.position(opts)
 
   ##
   ## Internal / private functions

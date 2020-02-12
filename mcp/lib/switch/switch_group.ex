@@ -7,7 +7,7 @@ defmodule SwitchGroup do
   use Ecto.Schema
 
   import Ecto.Query, only: [from: 2]
-  import Repo, only: [all: 2, one: 1]
+  import Repo, only: [all: 2, get_by: 2]
 
   schema "switch_group" do
     field(:name, :string)
@@ -35,77 +35,54 @@ defmodule SwitchGroup do
     from(sg in SwitchGroup, where: sg.id >= 0) |> Repo.delete_all()
   end
 
-  def get_by(opts) when is_list(opts) do
-    filter = Keyword.take(opts, [:name])
+  def find(name) when is_binary(name), do: get_by(__MODULE__, name: name)
 
-    select =
-      Keyword.take(opts, [:only]) |> Keyword.get_values(:only) |> List.flatten()
+  def position(opt, opts \\ [])
 
-    if Enum.empty?(filter) do
-      Logger.warn(fn -> "get_by bad args: #{inspect(opts)}" end)
-      []
+  # position() should only be called from SwitchState if the requested
+  # name was not found
+  def position({:not_found, name}, opts)
+      when is_binary(name) and
+             is_list(opts) do
+    log = Keyword.get(opts, :log, false)
+
+    with %SwitchGroup{members: members} <- find(name),
+         {:members, true, members} <- {:members, is_list(members), members},
+         {:positions, 1, res} <- positions(members, opts) do
+      hd(res)
     else
-      sg = from(sg in SwitchGroup, where: ^filter) |> one()
+      nil ->
+        log && Logger.warn("switch group #{inspect(name)} not found")
+        {:not_found, name}
 
-      if is_nil(sg) or Enum.empty?(select), do: sg, else: Map.take(sg, select)
+      {:members, false, members} ->
+        log &&
+          Logger.warn(
+            "#{inspect(name)} has invalid members #{
+              inspect(members, pretty: true)
+            }"
+          )
+
+        {:error, members}
+
+      error ->
+        Logger.warn("unhandled error #{inspect(error, pretty: true)}")
+        {:error, error}
     end
   end
 
-  def get_by(bad),
-    do: Logger.warn(fn -> "get_by() bad args: #{inspect(bad)}" end)
+  # handle call from Switch when the position has already been found or
+  # generated an error
+  def position({:ok, _} = rc, _opts), do: rc
+  def position({_, _} = rc, _opts), do: rc
 
-  def reduce_states(states) when is_list(states) do
-    res = Enum.uniq(states)
+  defp positions(members, opts) when is_list(members) and is_list(opts) do
+    res =
+      for ss <- members do
+        SwitchState.position(ss, opts)
+      end
+      |> Enum.uniq()
 
-    cond do
-      res == [true] -> true
-      res == [false] -> false
-      true -> res
-    end
-  end
-
-  def state(name) when is_binary(name) do
-    sg = get_by(name: name)
-
-    if is_nil(sg) do
-      Logger.debug(fn -> "#{name} not while RETRIEVING state" end)
-      nil
-    else
-      state(sg)
-    end
-  end
-
-  def state(%SwitchGroup{name: _name, members: members}) do
-    for ss <- members do
-      SwitchState.state(ss)
-    end
-    |> reduce_states()
-  end
-
-  # state{} header:
-  def state(name, opts \\ [])
-
-  @deprecated "Use position/2 instead"
-  def state(name, opts) when is_binary(name) and is_list(opts) do
-    log = Keyword.get(opts, :log, true)
-
-    sg = get_by(name: name)
-
-    if is_nil(sg) do
-      log &&
-        Logger.debug(fn -> "#{name} not found while SETTING switch group" end)
-
-      nil
-    else
-      state(sg, opts)
-    end
-  end
-
-  def state(%SwitchGroup{name: _name, members: members}, opts)
-      when is_list(opts) do
-    for ss <- members do
-      SwitchState.state(ss, opts)
-    end
-    |> reduce_states()
+    {:positions, length(res), res}
   end
 end

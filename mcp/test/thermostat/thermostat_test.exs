@@ -40,7 +40,7 @@ defmodule ThermostatTest do
       description: "test thermostat " <> num_str,
       switch: sw_name,
       sensor: sensor,
-      active_profile: nil,
+      log: true,
       profiles: [
         %Profile{name: "follow", ref_sensor: follow_sensor},
         %Profile{name: "fixed_25", fixed_setpt: 25.0},

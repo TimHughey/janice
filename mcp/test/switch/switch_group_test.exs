@@ -32,7 +32,7 @@ defmodule SwitchGroupTest do
     assert sg.name === name
   end
 
-  test "can get the state of a SwitchGroup" do
+  test "can get the position of a SwitchGroup" do
     name = "test sw grp 02"
 
     nsg = %SwitchGroup{
@@ -42,13 +42,13 @@ defmodule SwitchGroupTest do
 
     {rc, _sg} = SwitchGroup.add(nsg)
 
-    state = SwitchGroup.state(name)
+    position = SwitchGroup.position({:not_found, name})
 
     assert rc === :ok
-    assert state === false
+    assert position === {:ok, false}
   end
 
-  test "can set the state of a SwitchGroup" do
+  test "can set the position of a SwitchGroup" do
     name = "test sw grp 03"
 
     nsg = %SwitchGroup{
@@ -58,12 +58,12 @@ defmodule SwitchGroupTest do
 
     {rc, _sg} = SwitchGroup.add(nsg)
 
-    state1 = SwitchGroup.state(name, position: true)
-    state2 = Switch.state(name, position: false)
+    position1 = SwitchGroup.position({:not_found, name}, position: true)
+    position2 = Switch.position(name, position: false)
 
     assert rc === :ok
-    assert state1 === true
-    assert state2 === false
+    assert position1 === {:ok, true}
+    assert position2 === {:ok, false}
   end
 
   test "can detect missing members in new SwitchGroup" do

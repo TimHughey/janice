@@ -290,8 +290,12 @@ defmodule Dutycycle.Server do
     {:reply, rc, cache_dutycycle(s)}
   end
 
-  def handle_call(%{:msg => :switch_state, :opts => _opts}, _from, s) do
-    state = Switch.state(s.dutycycle.device)
+  def handle_call(
+        %{:msg => :switch_state, :opts => _opts},
+        _from,
+        %{dutycycle: %Dutycycle{device: device}} = s
+      ) do
+    state = Switch.position(device)
 
     {:reply, state, s}
   end

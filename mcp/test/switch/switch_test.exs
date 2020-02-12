@@ -29,6 +29,11 @@ defmodule SwitchStateTest do
     :ok
   end
 
+  def load_ss(opts) when is_list(opts), do: Repo.get_by(SwitchState, opts)
+
+  def load_sw(opts) when is_list(opts),
+    do: Repo.get_by(Switch, opts) |> Repo.preload([:states])
+
   @tag num: 98
   test "process well formed external switch update", context do
     res = create_switch(context[:num], 8, false)
@@ -68,23 +73,26 @@ defmodule SwitchStateTest do
     n = context[:num]
 
     dev = device_pio(n, 0)
-    pos = SwitchState.state(dev, position: true)
+    pos = SwitchState.position(dev, position: true)
 
-    _msg = capture_log(fn -> SwitchState.state("foobar", position: true) end)
+    msg =
+      capture_log(fn ->
+        SwitchState.position("foobar", position: true, log: true)
+      end)
 
     assert pos
-    # assert msg =~ "foobar not found while SETTING state"
+    assert msg =~ "not found"
   end
 
   @tag num: 3
   test "change switch position lazy", context do
     n = context[:num]
 
-    lazy1 = SwitchState.state(device_pio(n, 2), position: false, lazy: true)
-    lazy2 = SwitchState.state(device_pio(n, 2), position: true, lazy: true)
+    lazy1 = SwitchState.position(device_pio(n, 2), position: false, lazy: true)
+    lazy2 = SwitchState.position(device_pio(n, 2), position: true, lazy: true)
 
-    refute lazy1
-    assert lazy2
+    assert {:ok, false} == lazy1
+    assert {:ok, true} == lazy2
   end
 
   @tag num: 4
@@ -93,13 +101,17 @@ defmodule SwitchStateTest do
 
     dev = device_pio(n, 0)
 
-    ss = SwitchState.get_by(name: dev)
+    ss = load_ss(name: dev)
 
-    {rc, refid} = SwitchCmd.record_cmd(dev, ss, ack: false, log: false)
+    res = SwitchCmd.record_cmd(ss, ack: false, log: false)
+
+    ss = Keyword.get(res, :switch_state)
+    refid = Keyword.get(res, :refid)
 
     ack = SwitchCmd.is_acked?(refid)
 
-    assert rc === :ok and ack
+    assert %SwitchState{} = ss
+    assert ack
   end
 
   test "ack a refid that doesn't exist" do
@@ -112,7 +124,7 @@ defmodule SwitchStateTest do
   @tag pio: 0
   test "check for pending commands", context do
     ss = context[:device_pio]
-    SwitchState.state(ss, position: false)
+    SwitchState.position(ss, position: false)
 
     :timer.sleep(10)
 
@@ -136,33 +148,11 @@ defmodule SwitchStateTest do
     assert is_struct
   end
 
-  test "handle bad args SwitchState.state() and SwitchState.get_by()" do
-    msg1 = capture_log(fn -> SwitchState.state(nil) end)
-    msg2 = capture_log(fn -> SwitchState.get_by("foobar") end)
-    msg3 = capture_log(fn -> SwitchState.get_by(foo: "bar") end)
-
-    assert msg1 =~ "nil"
-    assert msg2 =~ "bad args:"
-    assert msg3 =~ "get_by bad args:"
-  end
-
-  @tag num: 6
-  test "toggle a switch (by id)", context do
-    n = context[:num]
-
-    ss = SwitchState.get_by(name: device_pio(n, 1))
-    before_toggle = ss.state
-
-    after_toggle = SwitchState.toggle(ss.id)
-
-    refute before_toggle == after_toggle
-  end
-
   @tag num: 6
   test "toggle a switch (by name)", context do
     n = context[:num]
 
-    ss = SwitchState.get_by(name: device_pio(n, 2))
+    ss = load_ss(name: device_pio(n, 2))
     before_toggle = ss.state
 
     after_toggle = SwitchState.toggle(device_pio(n, 2))
@@ -172,18 +162,18 @@ defmodule SwitchStateTest do
 
   @tag num: 7
   @tag pio: 3
-  test "get a SwitchState state (position) by name and handle not found",
+  test "get a SwitchState position by name and handle not found",
        context do
-    ss = SwitchState.state(context[:device_pio])
-    _msg = capture_log(fn -> SwitchState.state("foobar") end)
+    pos = SwitchState.position(context[:device_pio])
+    msg = capture_log(fn -> SwitchState.position("foobar", log: true) end)
 
-    refute ss
-    # assert msg =~ "foobar not found while RETRIEVING state"
+    assert {:ok, false} == pos
+    assert msg =~ "not found"
   end
 
   test "change a SwitchState name and test not found" do
-    ss1 = SwitchState.get_by(name: device_pio(0, 4))
-    ss2 = SwitchState.get_by(name: device_pio(0, 5))
+    ss1 = load_ss(name: device_pio(0, 4))
+    ss2 = load_ss(name: device_pio(0, 5))
 
     {rc1, new_ss} =
       SwitchState.change_name(ss1.id, name("switch", 4), "changed by test")
@@ -226,7 +216,7 @@ defmodule SwitchStateTest do
   test "delete a Switch", context do
     n = context[:num]
 
-    sw1 = Switch.get_by(device: device("switch", n))
+    sw1 = load_sw(device: device("switch", n))
     {count, sw_rc} = Switch.delete(sw1.id)
 
     assert count == 1
@@ -238,7 +228,7 @@ defmodule SwitchStateTest do
   test "can deprecate a Switch", context do
     name = context[:device_pio]
 
-    ss1 = SwitchState.get_by(name: name)
+    ss1 = load_ss(name: name)
     id = Map.get(ss1, :id)
 
     {rc, ss} = Switch.deprecate(id)

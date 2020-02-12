@@ -6,11 +6,19 @@ defmodule SwitchState do
   require Logger
   use Ecto.Schema
 
-  import Ecto.Changeset
+  import Ecto.Changeset,
+    only: [
+      cast: 3,
+      validate_required: 2,
+      validate_format: 3,
+      unique_constraint: 2
+    ]
+
   import Ecto.Query, only: [from: 2]
-  import Repo, only: [all: 2, get: 2, update!: 1, update: 1, one: 1]
+  import Repo, only: [all: 2, get_by: 2, update!: 1, update: 1]
 
   import Janice.Common.DB, only: [name_regex: 0]
+  import Janice.TimeSupport, only: [ttl_expired?: 2]
 
   schema "switch_state" do
     field(:name, :string)
@@ -65,7 +73,7 @@ defmodule SwitchState do
     #      spaces
     #  -ends with an alpha char
     ss
-    |> cast(params, [:name, :description])
+    |> cast(params, [:name, :description, :state])
     |> validate_required([:name])
     |> validate_format(:name, name_regex())
     |> unique_constraint(:name)
@@ -74,7 +82,7 @@ defmodule SwitchState do
   def change_name(id, to_be, comment \\ "")
 
   def change_name(id, tobe, comment) when is_integer(id) do
-    ss = get(SwitchState, id)
+    ss = get_by(SwitchState, id: id)
 
     if is_nil(ss) do
       Logger.info(fn -> "change name failed" end)
@@ -88,7 +96,7 @@ defmodule SwitchState do
 
   def change_name(asis, tobe, comment)
       when is_binary(asis) and is_binary(tobe) do
-    ss = get_by(name: asis)
+    ss = get_by(SwitchState, name: asis)
 
     if is_nil(ss) do
       {:error, :not_found}
@@ -100,7 +108,7 @@ defmodule SwitchState do
   end
 
   def deprecate(id) when is_integer(id) do
-    ss = get_by(id: id)
+    ss = get_by(SwitchState, id: id)
 
     if is_nil(ss) do
       Logger.warn(fn -> "deprecate(#{id}) failed" end)
@@ -130,108 +138,85 @@ defmodule SwitchState do
   end
 
   def exists?(name) when is_binary(name) do
-    if is_nil(get_by(name: name)), do: false, else: true
+    if is_nil(get_by(SwitchState, name: name)), do: false, else: true
   end
 
-  def get_by(opts) when is_list(opts) do
-    filter = Keyword.take(opts, [:name, :id])
+  def find(name) when is_binary(name), do: get_by(__MODULE__, name: name)
 
-    select =
-      Keyword.take(opts, [:only]) |> Keyword.get_values(:only) |> List.flatten()
-
-    if Enum.empty?(filter) do
-      Logger.warn(fn -> "get_by bad args: #{inspect(opts)}" end)
-      []
-    else
-      ss = from(ss in SwitchState, where: ^filter) |> one()
-
-      if is_nil(ss) or Enum.empty?(select), do: ss, else: Map.take(ss, select)
-    end
-  end
-
-  def get_by(bad),
-    do: Logger.warn(fn -> "get_by() bad args: #{inspect(bad)}" end)
-
-  # def get_by_name(name) when is_binary(name) do
-  #   from(ss in SwitchState, where: ss.name == ^name) |> one()
-  # end
-
-  def state(name) when is_binary(name) do
-    ss = get_by(name: name)
-
-    if is_nil(ss) do
-      Logger.debug(fn -> "#{name} not found while RETRIEVING state" end)
-      nil
-    else
-      ss.state
-    end
-  end
-
-  # state() header:
-  def state(name, opts \\ [])
-
-  # change a switch state (position) by name
-  # opts:
-  #   lazy: [true | false]
-  #   ack: [true | false]
-  def state(name, opts) when is_binary(name) and is_list(opts) do
-    position = Keyword.get(opts, :position)
-    lazy = Keyword.get(opts, :lazy, false)
-    log = Keyword.get(opts, :log, true)
-
-    ss = get_by(name: name)
-
-    cond do
-      is_nil(ss) ->
-        log && Logger.debug(fn -> "#{name} not found while SETTING state" end)
-        nil
-
-      # only change the ss if it doesn't match requested position when lazy
-      lazy and ss.state != position ->
-        state(ss, opts)
-
-      # just return the position if ss matches the requested position when lazy
-      lazy and ss.state == position ->
-        position
-
-      # force a ss position update
-      true ->
-        state(ss, opts)
-    end
-  end
-
-  def state(%SwitchState{name: name} = ss, opts)
+  def position(name, opts \\ [])
       when is_binary(name) and is_list(opts) do
+    lazy = Keyword.get(opts, :lazy, true)
+    log = Keyword.get(opts, :log, false)
+    position = Keyword.get(opts, :position, nil)
+
+    with %SwitchState{state: curr_position} = ss <- find(name),
+         # if the position opt was passed then an update is requested
+         {:position, {:opt, true}, _ss} <-
+           {:position, {:opt, is_boolean(position)}, ss},
+         # the most typical scenario... lazy is true and current position
+         # does not match the requsted position
+         {:lazy, true, false, _ss} <-
+           {:lazy, lazy, position == curr_position, ss} do
+      # the requested position does not match the current posiion
+      # so update it
+      position_update([switch_state: ss] ++ opts)
+    else
+      {:position, {:opt, false}, %SwitchState{} = ss} ->
+        # position change not included in opts, just return current position
+        position_read([switch_state: ss] ++ opts)
+
+      {:lazy, true, true, %SwitchState{} = ss} ->
+        # requested lazy and requested position matches current position
+        # nothing to do here... just return the position
+        position_read([switch_state: ss] ++ opts)
+
+      {:lazy, _lazy_or_not, _true_or_false, %SwitchState{} = ss} ->
+        # regardless if lazy or not the current position does not match
+        # the requested position so change the position
+        position_update([switch_state: ss] ++ opts)
+
+      nil ->
+        log && Logger.warn("#{inspect(name)} not found")
+        {:not_found, name}
+    end
+  end
+
+  defp position_read(opts) do
+    %SwitchState{state: position, updated_at: state_at, ttl_ms: ttl_ms} =
+      Keyword.get(opts, :switch_state)
+
+    if ttl_expired?(state_at, ttl_ms),
+      do: {:ttl_expired, position},
+      else: {:ok, position}
+  end
+
+  defp position_update(opts) do
+    ss = Keyword.get(opts, :switch_state)
     position = Keyword.get(opts, :position)
 
-    new_ss = change(ss, state: position) |> update!()
-    SwitchCmd.record_cmd(name, new_ss, opts)
-    new_ss.state
+    changeset(ss, %{state: position})
+    |> update!()
+    |> reload()
+    |> SwitchCmd.record_cmd(opts)
+    |> position_read()
   end
 
-  def state(bad, opts) when is_list(opts) do
-    Logger.warn(fn -> "state() invoked with bad args:" end)
-    Logger.warn(fn -> "  #{inspect(bad)}" end)
-    nil
-  end
+  def reload(%SwitchState{id: id}), do: Repo.get!(SwitchState, id)
 
   # toggle() header
   def toggle(name, opts \\ [])
 
-  def toggle(id, opts) when is_integer(id),
-    do: get(SwitchState, id) |> toggle(opts)
-
   def toggle(name, opts) when is_binary(name),
-    do: get_by(name: name) |> toggle(opts)
+    do: find(name) |> toggle(opts)
 
-  def toggle(%SwitchState{} = ss, opts) do
-    state(ss, lazy: true, position: not ss.state)
+  def toggle(%SwitchState{name: name, state: position} = ss, opts) do
+    position(name, lazy: true, position: not position)
 
     for_ms = Keyword.get(opts, :for_ms, 0)
 
     if for_ms > 0 do
       Process.sleep(for_ms)
-      state(ss, lazy: true, position: not ss.state)
+      position(ss, lazy: true, position: position)
     end
   end
 

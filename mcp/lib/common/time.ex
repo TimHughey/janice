@@ -25,6 +25,13 @@ defmodule Janice.TimeSupport do
     nil
   end
 
+  def ttl_expired?(at, ttl_ms) when is_integer(ttl_ms) do
+    shift_ms = ttl_ms * -1
+    ttl_dt = DateTime.utc_now() |> Timex.shift(milliseconds: shift_ms)
+
+    Timex.before?(at, ttl_dt)
+  end
+
   def unix_now do
     DateTime.utc_now() |> DateTime.to_unix(:microseconds)
   end

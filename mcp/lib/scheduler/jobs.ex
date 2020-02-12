@@ -19,12 +19,12 @@ defmodule Janice.Jobs do
 
   def germination(pos) when is_boolean(pos) do
     sw = "germination_heat"
-    curr = Switch.state(sw)
+    rc = Switch.position(sw)
 
-    if curr == pos do
+    if rc == {:ok, pos} do
       Logger.debug(fn -> "#{sw} position correct" end)
     else
-      Switch.state(sw, position: pos, lazy: true)
+      Switch.position(sw, position: pos)
       Logger.info(fn -> "#{sw} position set to #{inspect(pos)}" end)
     end
   end
@@ -47,7 +47,7 @@ defmodule Janice.Jobs do
   def purge_readings(opts) when is_list(opts), do: Sensor.purge_readings(opts)
 
   def switch_control(sw, pos) when is_binary(sw) and is_boolean(pos) do
-    curr = Switch.state(sw)
+    curr = Switch.position(sw)
 
     case curr do
       # switch is not found
@@ -60,7 +60,7 @@ defmodule Janice.Jobs do
 
       # switch is not in the desired position, set it
       x when x != pos ->
-        Switch.state(sw, position: pos, lazy: true)
+        Switch.position(sw, position: pos)
         Logger.info(fn -> "#{sw} position set to #{inspect(pos)}" end)
 
       # catch all, log a warning with what is returned

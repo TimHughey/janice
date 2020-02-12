@@ -251,11 +251,9 @@ defmodule SwitchCmd do
     |> check_purge_acked_cmds()
   end
 
-  # header for function with optional args
-  def record_cmd(name, ss, opts \\ [])
-
-  def record_cmd(name, %SwitchState{} = ss, opts) when is_binary(name) do
+  def record_cmd(%SwitchState{name: name} = ss, opts) when is_list(opts) do
     log = Keyword.get(opts, :log, true)
+    publish = Keyword.get(opts, :publish, true)
 
     # ensure the associated switch is loaded
     ss = preload(ss, :switch)
@@ -281,7 +279,7 @@ defmodule SwitchCmd do
 
         # create and publish the actual command to the remote device
         # if the publish option is true or does not exist
-        if Keyword.get(opts, :publish, true) do
+        if publish do
           state_map = SwitchState.as_map(ss)
 
           remote_cmd =
@@ -301,15 +299,7 @@ defmodule SwitchCmd do
       record: true
     )
 
-    {:ok, refid}
-  end
-
-  def record_cmd(name, %SwitchState{} = ss, opts) do
-    Logger.warn(fn -> "SwitchCmd.record_cmd() invoked with bad args:" end)
-    Logger.warn(fn -> "  name: #{inspect(name)}" end)
-    Logger.warn(fn -> "  ss: #{inspect(ss)}" end)
-    Logger.warn(fn -> "  opts: #{inspect(opts)}" end)
-    {:fail, nil}
+    [switch_state: ss, refid: refid] ++ opts
   end
 
   #

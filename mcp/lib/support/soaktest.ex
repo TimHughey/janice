@@ -91,8 +91,8 @@ defmodule Mcp.SoakTest do
     dev = "led1"
     led_flashes = s.led_flashes + 1
 
-    Switch.state(dev, true)
-    Switch.state(dev, false)
+    Switch.position(dev, position: true)
+    Switch.position(dev, position: false)
 
     LedFlashes.record(application: "mcp_soaktest", name: dev, val: led_flashes)
 
