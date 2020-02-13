@@ -319,7 +319,7 @@ defmodule Dutycycle do
     with {%Dutycycle{}, {:ok, %State{}}} <- State.stop(dc),
          {:ok, %Dutycycle{}} <- deactivate(dc),
          {:reload, %Dutycycle{} = dc} <- {:reload, reload(dc)},
-         {:ok, {:position, false}, dc} <-
+         {:ok, {:position, {:ok, false}}, dc} <-
            control_device(dc, lazy: false) do
       {:ok, dc}
     else
@@ -332,7 +332,7 @@ defmodule Dutycycle do
         {:ok, dc}
 
       {:ok, {:position, pos}, %Dutycycle{device: device} = dc} ->
-        Logger.warn(
+        Logger.info(
           inspect(device) <>
             " state is " <>
             inspect(pos, pretty: true) <>
