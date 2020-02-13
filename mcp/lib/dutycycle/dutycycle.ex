@@ -23,7 +23,7 @@ defmodule Dutycycle do
   use Ecto.Schema
 
   import Repo,
-    only: [one: 1, get_by: 2, insert: 1, update!: 1, preload: 2, preload: 3]
+    only: [get_by: 2, insert: 1, update!: 1, preload: 2, preload: 3]
 
   import Ecto.Changeset,
     only: [
@@ -32,8 +32,6 @@ defmodule Dutycycle do
       validate_format: 3,
       unique_constraint: 3
     ]
-
-  import Ecto.Query, only: [from: 2]
 
   import Janice.Common.DB, only: [name_regex: 0]
 
@@ -275,6 +273,9 @@ defmodule Dutycycle do
        ),
        do: next_phase(:run, dc)
 
+  def find(id) when is_integer(id),
+    do: get_by(__MODULE__, id: id) |> preload([:state, :profiles])
+
   def find(name) when is_binary(name),
     do: get_by(__MODULE__, name: name) |> preload([:state, :profiles])
 
@@ -286,30 +287,6 @@ defmodule Dutycycle do
       {:ok, dc, active_profile, mode}
     else
       error -> error
-    end
-  end
-
-  def get_by(opts) when is_list(opts) do
-    filter = Keyword.take(opts, [:id, :device, :name])
-
-    select =
-      Keyword.take(opts, [:only]) |> Keyword.get_values(:only) |> List.flatten()
-
-    if Enum.empty?(filter) do
-      Logger.warn("get_by bad args: #{inspect(opts, pretty: true)}")
-      []
-    else
-      dc =
-        from(
-          d in Dutycycle,
-          join: p in assoc(d, :profiles),
-          join: s in assoc(d, :state),
-          where: ^filter,
-          preload: [state: s, profiles: p]
-        )
-        |> one()
-
-      if is_nil(dc) or Enum.empty?(select), do: dc, else: Map.take(dc, select)
     end
   end
 

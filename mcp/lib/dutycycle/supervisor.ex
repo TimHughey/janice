@@ -49,9 +49,7 @@ defmodule Dutycycle.Supervisor do
   def ping, do: if(is_pid(Process.whereis(__MODULE__)), do: :pong, else: nil)
 
   def restart_dutycycle(name) when is_binary(name) do
-    child_id =
-      Dutycycle.get_by(name: name)
-      |> Dutycycle.Server.server_name_atom()
+    {_dc, child_id} = Dutycycle.Server.server_name(name)
 
     rc = Supervisor.terminate_child(__MODULE__, child_id)
 

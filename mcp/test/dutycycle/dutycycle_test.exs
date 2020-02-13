@@ -22,14 +22,14 @@ defmodule DutycycleTest do
     :ok
   end
 
-  def get_an_id, do: Dutycycle.get_by(name: name_str(0)) |> Map.get(:id)
+  def get_an_id, do: Dutycycle.find(name_str(0)) |> Map.get(:id)
 
   def name_from_db(num) when is_integer(num) do
     dc = load_dc(name_str(num))
     {dc, dc.name}
   end
 
-  def load_dc(name) when is_binary(name), do: Dutycycle.get_by(name: name)
+  def load_dc(name) when is_binary(name), do: Dutycycle.find(name)
 
   def name_str(n),
     do: "dutycycle" <> String.pad_leading(Integer.to_string(n), 3, "0")
@@ -128,7 +128,7 @@ defmodule DutycycleTest do
   test "get dutycycle by id" do
     id = get_an_id()
 
-    dc = Dutycycle.get_by(id: id)
+    dc = Dutycycle.find(id)
 
     assert dc.id === id
   end

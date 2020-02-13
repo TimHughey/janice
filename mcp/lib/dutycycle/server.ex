@@ -440,7 +440,7 @@ defmodule Dutycycle.Server do
   ####
 
   def child_spec(%{id: id} = args) do
-    {dutycycle, server_name} = server_name(id: id)
+    {dutycycle, server_name} = server_name(id)
     args = Map.put(args, :dutycycle, dutycycle)
 
     if is_nil(dutycycle),
@@ -458,7 +458,7 @@ defmodule Dutycycle.Server do
     Logger.debug(fn -> "start_link() args: #{inspect(args, pretty: true)}" end)
 
     opts = Application.get_env(:mcp, Dutycycle.Server, [])
-    {dc, server_name} = server_name(id: id)
+    {dc, server_name} = server_name(id)
 
     GenServer.start_link(
       __MODULE__,
@@ -536,7 +536,7 @@ defmodule Dutycycle.Server do
     do: %{s | dutycycle: dc}
 
   defp call_server(name, msg) when is_binary(name) and is_map(msg) do
-    {dc, server_name} = server_name(name: name)
+    {dc, server_name} = server_name(name)
 
     msg = Map.put(msg, :dutycycle, dc)
     pid = Process.whereis(server_name)
@@ -636,8 +636,8 @@ defmodule Dutycycle.Server do
   defp reload_dutycycle(%{} = s), do: s
 
   # REFACTORED
-  defp server_name(opts) when is_list(opts) do
-    dc = Dutycycle.get_by(opts)
+  def server_name(x) when is_binary(x) or is_integer(x) do
+    dc = Dutycycle.find(x)
 
     if is_nil(dc), do: {nil, nil}, else: {dc, server_name_atom(dc)}
   end
