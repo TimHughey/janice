@@ -42,8 +42,8 @@ defmodule Switch do
 
   schema "switch" do
     field(:device, :string)
-    field(:enabled, :boolean, default: true)
     field(:dev_latency, :integer)
+    field(:log, :boolean, default: false)
     field(:discovered_at, :utc_datetime_usec)
     field(:last_cmd_at, :utc_datetime_usec)
     field(:last_seen_at, :utc_datetime_usec)
