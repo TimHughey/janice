@@ -24,8 +24,10 @@ defmodule SwitchState do
     field(:name, :string)
     field(:description, :string, default: "new switch")
     field(:pio, :integer, default: 0)
+    field(:invert_state, :boolean, default: false)
     field(:state, :boolean, default: false)
     field(:ttl_ms, :integer)
+    field(:log, :boolean, default: false)
 
     belongs_to(:switch, Switch)
 
