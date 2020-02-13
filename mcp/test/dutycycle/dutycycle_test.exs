@@ -198,16 +198,6 @@ defmodule DutycycleTest do
   end
 
   @tag num: 1
-  test "can get a Dutycycle id by name", context do
-    {%Dutycycle{id: id1}, name} = name_from_db(context[:num])
-
-    id2 = Dutycycle.lookup_id(name)
-
-    assert is_number(id2)
-    assert id1 == id2
-  end
-
-  @tag num: 1
   test "can find a profile", context do
     {dc, _name} = name_from_db(context[:num])
 
@@ -306,18 +296,12 @@ defmodule DutycycleTest do
   end
 
   @tag num: 2
-  test "can get and set Dutycycle active", context do
+  test "can get Dutycycle active", context do
     {dc, _name} = name_from_db(context[:num])
 
     active1 = Dutycycle.active?(dc)
 
-    {rc, dc} = Dutycycle.activate(dc)
-
-    active2 = Dutycycle.active?(dc)
-
     assert active1 === false
-    assert rc === :ok
-    assert active2 === true
   end
 
   @tag num: 3
@@ -432,7 +416,8 @@ defmodule DutycycleTest do
     assert is_list(res)
     assert res[:name] == name
     assert res[:active_profile] == "slow"
-    assert {_, %Dutycycle{}} = rc2
+    assert {:device_not_found, %Dutycycle{}} = rc2
+    # assert {:failed, {:ok, {:position, {:not_found, _}}}, %Dutycycle{}} = rc2
     assert {:ok, _profile} = rc3
   end
 

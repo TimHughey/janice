@@ -26,38 +26,30 @@ defmodule Dutycycle.State do
     timestamps(usec: true)
   end
 
-  # REFACTORED
   def state(%Dutycycle{state: state}),
     do: Map.get(state, :state, %State{state: "stopped"})
 
-  # REFACTORED
   def mode(%State{state: state}), do: state
 
-  # REFACTORED
   def next_phase(:run, %Dutycycle{} = dc), do: run(dc)
   def next_phase(:idle, %Dutycycle{} = dc), do: idle(dc)
   def next_phase(:offline, %Dutycycle{} = dc), do: offline(dc)
   def next_phase(:stop, %Dutycycle{} = dc), do: stop(dc)
 
-  # REFACTORED
   def idle(%Dutycycle{state: st} = dc) do
     {dc, update_states_only(st, state: "idling", dev_state: false)}
   end
 
-  # REFACTORED
   def idling?(%Dutycycle{state: %State{state: "idling"}}), do: true
   def idling?(%Dutycycle{state: %State{state: _}}), do: false
 
-  # REFACTORED
   def offline(%Dutycycle{} = dc) do
     {dc, stop(dc, "offline")}
   end
 
-  # REFACTORED
   def offline?(%Dutycycle{state: %State{state: "offline"}}), do: true
   def offline?(%Dutycycle{state: %State{state: _}}), do: false
 
-  # REFACTORED
   def run(%Dutycycle{name: name, state: st, log: log} = dc) do
     log &&
       Logger.debug(fn -> "dutycycle #{inspect(name)} setting state to run" end)
@@ -65,21 +57,17 @@ defmodule Dutycycle.State do
     {dc, update_states_only(st, state: "running", dev_state: true)}
   end
 
-  # REFACTORED
   def running?(%Dutycycle{state: %State{state: "running"}}), do: true
   def running?(%Dutycycle{state: %State{state: _}}), do: false
 
-  # REFACTORED
   def stop(%Dutycycle{state: st} = dc, state \\ "stopped")
       when is_binary(state) do
     {dc, update_states_only(st, state: state, dev_state: false)}
   end
 
-  # REFACTORED
   def stopped?(%Dutycycle{state: %State{state: "stopped"}}), do: true
   def stopped?(%Dutycycle{state: %State{state: _}}), do: false
 
-  # REFACTORED
   def persist_phase_timer(
         %State{state: state} = st,
         %Profile{idle_ms: idle_ms, run_ms: run_ms},
@@ -137,18 +125,15 @@ defmodule Dutycycle.State do
     |> Keyword.put(at_end_key, shift_ms(remaining_ms))
   end
 
-  # REFACTORED
   defp changeset(st, params),
     do:
       st
       |> cast(params, possible_changes())
       |> validate_required(required_changes())
 
-  # REFACTORED
   defp nil_phase_at_times,
     do: [idle_at: nil, idle_end_at: nil, run_at: nil, run_end_at: nil]
 
-  # REFACTORED
   defp possible_changes,
     do: [
       :state,
@@ -161,7 +146,6 @@ defmodule Dutycycle.State do
       :state_at
     ]
 
-  # REFACTORED
   defp required_changes, do: [:state, :dev_state]
 
   defp shift_ms(ms),
@@ -169,7 +153,6 @@ defmodule Dutycycle.State do
       TimeSupport.utc_now()
       |> Timex.shift(milliseconds: ms)
 
-  # REFACTORED
   defp update(%State{} = st, opts) when is_list(opts) do
     opts = add_state_at(opts)
     set = Keyword.take(opts, possible_changes()) |> Enum.into(%{})
@@ -185,7 +168,6 @@ defmodule Dutycycle.State do
     end
   end
 
-  # REFACTORED
   defp update_states_only(%State{} = st, opts)
        when is_list(opts) do
     opts = add_state_at(opts)

@@ -219,7 +219,7 @@ defmodule ThermostatTest do
     state = Thermostat.Server.state(name_str(12))
 
     assert rc === :ok
-    assert state === "stopped"
+    assert state in ["stopped", "off"]
   end
 
   test "can create default Thermostat" do

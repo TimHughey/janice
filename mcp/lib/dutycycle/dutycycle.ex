@@ -22,7 +22,8 @@ defmodule Dutycycle do
   require Logger
   use Ecto.Schema
 
-  import Repo, only: [one: 1, insert: 1, update!: 1, preload: 3]
+  import Repo,
+    only: [one: 1, get_by: 2, insert: 1, update!: 1, preload: 2, preload: 3]
 
   import Ecto.Changeset,
     only: [
@@ -51,9 +52,6 @@ defmodule Dutycycle do
 
     timestamps(usec: true)
   end
-
-  def activate(%Dutycycle{} = dc),
-    do: update(dc, active: true)
 
   def activate_profile(dc, name, opts \\ [])
 
@@ -89,7 +87,7 @@ defmodule Dutycycle do
            Profile.activate(dc, profile),
          dc <- reload(dc),
          {:state_run, {dc, {:ok, _st}}} <- {:state_run, State.run(dc)},
-         {:ok, dc} <- Dutycycle.activate(dc),
+         {:ok, dc} <- activate(dc),
          dc <- reload(dc),
          {:ok, {:position, true}, dc} <- control_device(dc, lazy: false) do
       log &&
@@ -101,7 +99,7 @@ defmodule Dutycycle do
       {:ok, reload(dc), new_profile, :run}
     else
       {:none, %Profile{}} ->
-        {rc, dc} = Dutycycle.deactivate(dc)
+        {rc, dc} = deactivate(dc)
 
         Logger.warn(fn ->
           "deactivating dutycycle due to none profile"
@@ -154,7 +152,7 @@ defmodule Dutycycle do
 
     with {:cs_valid, true} <- {:cs_valid, cs.valid?()},
          {:ok, _dc} <- insert(cs),
-         %Dutycycle{} = dc <- get_by(name: name) do
+         %Dutycycle{} = dc <- find(name) do
       # {:add_state, {:ok, %State{}}} <-
       #   {:add_state, Ecto.build_assoc(dc, :state, %State{}) |> Repo.insert()} do
       reload(dc)
@@ -195,11 +193,8 @@ defmodule Dutycycle do
     {dc, dc.state}
   end
 
-  def deactivate(%Dutycycle{} = dc),
-    do: update(dc, active: false)
-
   def delete(name) when is_binary(name) do
-    dc = get_by(name: name)
+    dc = find(name)
 
     if is_nil(dc),
       do: {:not_found, name},
@@ -208,7 +203,7 @@ defmodule Dutycycle do
 
   def delete(%Dutycycle{id: id}, opts \\ [timeout: 5 * 60 * 1000]) do
     dc =
-      Repo.get(Dutycycle, id)
+      Repo.get(__MODULE__, id)
       |> preload([:state, :profiles], force: true)
 
     if is_nil(dc),
@@ -280,6 +275,9 @@ defmodule Dutycycle do
        ),
        do: next_phase(:run, dc)
 
+  def find(name) when is_binary(name),
+    do: get_by(__MODULE__, name: name) |> preload([:state, :profiles])
+
   defp next_phase(mode, %Dutycycle{} = dc) do
     with {%Dutycycle{} = dc, {:ok, %State{}}} <- State.next_phase(mode, dc),
          dc <- reload(dc),
@@ -331,15 +329,20 @@ defmodule Dutycycle do
       {:ok, {:position, nil}, %Dutycycle{} = dc} ->
         {:ok, dc}
 
-      {:ok, {:position, pos}, %Dutycycle{device: device} = dc} ->
-        Logger.info(
-          inspect(device) <>
-            " state is " <>
-            inspect(pos, pretty: true) <>
-            " after halt"
+      {:ok, {:position, true}, %Dutycycle{device: device} = dc} ->
+        Logger.warn(
+          "#{inspect(device, pretty: true)} position is true after halt"
         )
 
         {:device_still_true, dc}
+
+      {:ok, {:position, {:not_found, device}}, %Dutycycle{} = dc} ->
+        Logger.warn(
+          dc_name(dc) <>
+            "device #{inspect(device, pretty: true)} does not exist at time of halt"
+        )
+
+        {:device_not_found, dc}
 
       error ->
         Logger.warn("halt() unhandled error: #{inspect(error, pretty: true)}")
@@ -351,21 +354,6 @@ defmodule Dutycycle do
   def inactive?(%Dutycycle{active: val}), do: not val
 
   def log?(%Dutycycle{log: log}), do: log
-
-  def lookup_id(name) when is_binary(name) do
-    with query <-
-           from(
-             d in Dutycycle,
-             where: [name: ^name],
-             select: [:id]
-           ),
-         %Dutycycle{id: id} <- one(query) do
-      id
-    else
-      _error ->
-        nil
-    end
-  end
 
   def persist_phase_end_timer(%Dutycycle{state: st} = dc, timer) do
     active_profile = Profile.active(dc)
@@ -430,8 +418,19 @@ defmodule Dutycycle do
 
   def update(dc, opts \\ [])
 
-  def update(name, opts) when is_binary(name) and is_list(opts),
-    do: get_by([name: name] ++ opts) |> update(opts)
+  def update(name, opts) when is_binary(name) and is_list(opts) do
+    with dc <- find(name),
+         {true, _name} <- {%Dutycycle{} = dc, name} do
+      update(dc, opts)
+    else
+      {false, name} ->
+        Logger.warn(
+          "#{inspect(name, pretty: true)} does not exist, can't update"
+        )
+
+        {:not_found, name}
+    end
+  end
 
   def update(%Dutycycle{} = dc, opts) when is_list(opts) do
     set = Keyword.take(opts, possible_changes()) |> Enum.into(%{})
@@ -446,13 +445,8 @@ defmodule Dutycycle do
     end
   end
 
-  def update(nil, _opts) do
-    Logger.warn(fn ->
-      "attempted to update a dutycycle that does not exist"
-    end)
-
-    {:error, :not_found}
-  end
+  defp activate(%Dutycycle{} = dc),
+    do: update(dc, active: true)
 
   defp changeset(dc, params) when is_list(params),
     do: changeset(dc, Enum.into(params, %{}))
@@ -508,6 +502,10 @@ defmodule Dutycycle do
 
   defp control_device_log(%Dutycycle{name: name, device: device}),
     do: "#{inspect(name)} device #{inspect(device)}"
+
+  defp deactivate(%Dutycycle{} = dc) do
+    update(dc, active: false)
+  end
 
   defp dc_name(%Dutycycle{name: name}), do: "#{inspect(name)} "
   defp dc_name(catchall), do: "#{inspect(catchall, pretty: true)} "
