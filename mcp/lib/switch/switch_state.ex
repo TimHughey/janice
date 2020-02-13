@@ -197,7 +197,6 @@ defmodule SwitchState do
 
     changeset(ss, %{state: position})
     |> update!()
-    |> reload()
     |> SwitchCmd.record_cmd(opts)
     |> position_read()
   end
