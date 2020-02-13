@@ -290,7 +290,7 @@ defmodule SwitchCmd do
         # if the publish option is true or does not exist
         if publish do
           log &&
-            Logger.info(
+            Logger.debug(
               "publishing switch cmd for #{inspect(name, pretty: true)} (#{
                 inspect(device, pretty: true)
               })"

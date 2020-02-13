@@ -123,7 +123,7 @@ defmodule Dutycycle do
 
       {:ok, {:position, pos}, dc} ->
         log?(dc) &&
-          Logger.info(fn ->
+          Logger.debug(fn ->
             dc_name(dc) <>
               "device state is " <>
               inspect(pos, pretty: true) <>
@@ -484,7 +484,7 @@ defmodule Dutycycle do
     case sw_state do
       {:ok, position} ->
         log?(dc) && position == dev_state &&
-          Logger.info("#{control_device_log(dc)} set successfully")
+          Logger.debug("#{control_device_log(dc)} position set correctly")
 
         not position == dev_state &&
           Logger.warn(
