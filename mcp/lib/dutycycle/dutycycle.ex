@@ -123,11 +123,11 @@ defmodule Dutycycle do
 
       {:ok, {:position, pos}, dc} ->
         log?(dc) &&
-          Logger.warn(fn ->
+          Logger.info(fn ->
             dc_name(dc) <>
               "device state is " <>
               inspect(pos, pretty: true) <>
-              " after profile activation (should be true)"
+              " after profile activation"
           end)
 
         {:ok, dc, Profile.active(dc), :run}

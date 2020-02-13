@@ -199,7 +199,7 @@ defmodule Switch do
     if sw, do: SwitchCmd.pending_cmds(sw, opts), else: nil
   end
 
-  def position(name, opts) when is_binary(name) and is_list(opts),
+  def position(name, opts \\ []) when is_binary(name) and is_list(opts),
     do: SwitchState.position(name, opts) |> SwitchGroup.position(opts)
 
   ##
