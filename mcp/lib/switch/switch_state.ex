@@ -15,7 +15,7 @@ defmodule SwitchState do
     ]
 
   import Ecto.Query, only: [from: 2]
-  import Repo, only: [all: 2, get_by: 2, update!: 1, update: 1]
+  import Repo, only: [all: 2, get_by: 2, preload: 2, update!: 1, update: 1]
 
   import Janice.Common.DB, only: [name_regex: 0]
   import Janice.TimeSupport, only: [ttl_expired?: 2]
@@ -138,10 +138,11 @@ defmodule SwitchState do
   end
 
   def exists?(name) when is_binary(name) do
-    if is_nil(get_by(SwitchState, name: name)), do: false, else: true
+    if is_nil(get_by(__MODULE__, name: name)), do: false, else: true
   end
 
-  def find(name) when is_binary(name), do: get_by(__MODULE__, name: name)
+  def find(name) when is_binary(name),
+    do: get_by(__MODULE__, name: name) |> preload(:switch)
 
   def position(name, opts \\ [])
       when is_binary(name) and is_list(opts) do
@@ -182,10 +183,10 @@ defmodule SwitchState do
   end
 
   defp position_read(opts) do
-    %SwitchState{state: position, updated_at: state_at, ttl_ms: ttl_ms} =
+    %SwitchState{state: position, switch: switch, ttl_ms: ttl_ms} =
       Keyword.get(opts, :switch_state)
 
-    if ttl_expired?(state_at, ttl_ms),
+    if ttl_expired?(Switch.last_seen_at(switch), ttl_ms),
       do: {:ttl_expired, position},
       else: {:ok, position}
   end
@@ -201,7 +202,8 @@ defmodule SwitchState do
     |> position_read()
   end
 
-  def reload(%SwitchState{id: id}), do: Repo.get!(SwitchState, id)
+  def reload(%SwitchState{id: id}),
+    do: Repo.get!(SwitchState, id) |> preload(:switch)
 
   # toggle() header
   def toggle(name, opts \\ [])

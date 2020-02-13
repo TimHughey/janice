@@ -191,6 +191,8 @@ defmodule Switch do
     :error
   end
 
+  def last_seen_at(%Switch{last_seen_at: last_seen_at}), do: last_seen_at
+
   def pending_cmds(device, opts \\ []) when is_binary(device) do
     sw = get_by(device: device)
 
