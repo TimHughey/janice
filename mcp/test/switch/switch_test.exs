@@ -88,11 +88,11 @@ defmodule SwitchStateTest do
   test "change switch position lazy", context do
     n = context[:num]
 
-    lazy1 = SwitchState.position(device_pio(n, 2), position: false, lazy: true)
-    lazy2 = SwitchState.position(device_pio(n, 2), position: true, lazy: true)
+    lazy1 = SwitchState.position(device_pio(n, 2), position: true, lazy: false)
+    lazy2 = SwitchState.position(device_pio(n, 2), position: false, lazy: false)
 
-    assert {:ok, false} == lazy1
-    assert {:ok, true} == lazy2
+    assert {:ok, true} == lazy1
+    assert {:ok, false} == lazy2
   end
 
   @tag num: 4
@@ -103,7 +103,13 @@ defmodule SwitchStateTest do
 
     ss = load_ss(name: dev)
 
-    res = SwitchCmd.record_cmd(ss, ack: false, log: false)
+    res =
+      SwitchCmd.record_cmd(ss,
+        switch_state: ss,
+        ack: false,
+        log: false,
+        record_cmd: true
+      )
 
     ss = Keyword.get(res, :switch_state)
     refid = Keyword.get(res, :refid)
@@ -199,17 +205,6 @@ defmodule SwitchStateTest do
   test "can instantiate a SwitchState" do
     ss = %SwitchState{name: "foobar"}
     assert ss
-  end
-
-  test "create a map of states from a list" do
-    everything = SwitchState.all(:everything)
-
-    maps = SwitchState.as_list_of_maps(everything)
-    first = if Enum.empty?(maps), do: %{}, else: hd(maps)
-
-    refute Enum.empty?(maps)
-    assert Map.has_key?(first, :pio)
-    assert Map.has_key?(first, :state)
   end
 
   @tag num: 8

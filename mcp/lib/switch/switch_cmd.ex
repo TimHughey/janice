@@ -251,17 +251,26 @@ defmodule SwitchCmd do
     |> check_purge_acked_cmds()
   end
 
-  def record_cmd(%SwitchState{name: name} = ss, opts) when is_list(opts) do
-    log = Keyword.get(opts, :log, true)
+  def record_cmd(%SwitchState{} = ss, opts) when is_list(opts) do
+    if Keyword.get(opts, :record_cmd, false),
+      do: record_cmd(:record_cmd, ss, opts),
+      else: [switch_state: ss] ++ opts
+  end
+
+  def record_cmd(:record_cmd, %SwitchState{name: name} = ss, opts)
+      when is_list(opts) do
+    log = Keyword.get(opts, :log, false)
     publish = Keyword.get(opts, :publish, true)
+    cmd_map = Keyword.get(opts, :cmd_map)
 
     # ensure the associated switch is loaded
     ss = preload(ss, :switch)
+    %SwitchState{switch: %Switch{device: device} = switch} = ss
 
     {elapsed_us, refid} =
       :timer.tc(fn ->
         # create and presist a new switch comamnd (also updates last switch cmd)
-        refid = Switch.add_cmd(name, ss.switch, utc_now())
+        refid = Switch.add_cmd(name, switch, utc_now())
 
         # NOTE: if :ack is missing from opts then default to true
         if Keyword.get(opts, :ack, true) do
@@ -280,12 +289,14 @@ defmodule SwitchCmd do
         # create and publish the actual command to the remote device
         # if the publish option is true or does not exist
         if publish do
-          state_map = SwitchState.as_map(ss)
+          log &&
+            Logger.info(
+              "publishing switch cmd for #{inspect(device, pretty: true)}"
+            )
 
-          remote_cmd =
-            SetSwitch.new_cmd(ss.switch.device, [state_map], refid, opts)
-
-          publish_switch_cmd(SetSwitch.json(remote_cmd))
+          SetSwitch.new_cmd(device, [cmd_map], refid, opts)
+          |> SetSwitch.json()
+          |> publish_switch_cmd()
         end
 
         refid

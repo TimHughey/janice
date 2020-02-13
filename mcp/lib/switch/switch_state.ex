@@ -46,11 +46,6 @@ defmodule SwitchState do
     |> all(timeout: 100)
   end
 
-  def as_map(%SwitchState{} = ss), do: %{pio: ss.pio, state: ss.state}
-
-  def as_list_of_maps(list) when is_list(list),
-    do: for(ss <- list, do: as_map(ss))
-
   def browse do
     sorted = all(:everything) |> Enum.sort(fn a, b -> a.name <= b.name end)
 
@@ -74,7 +69,7 @@ defmodule SwitchState do
     #  -ends with an alpha char
     ss
     |> cast(params, [:name, :description, :state])
-    |> validate_required([:name])
+    |> validate_required([:name, :state])
     |> validate_format(:name, name_regex())
     |> unique_constraint(:name)
   end
@@ -160,7 +155,7 @@ defmodule SwitchState do
            {:lazy, lazy, position == curr_position, ss} do
       # the requested position does not match the current posiion
       # so update it
-      position_update([switch_state: ss] ++ opts)
+      position_update([switch_state: ss, record_cmd: true] ++ opts)
     else
       {:position, {:opt, false}, %SwitchState{} = ss} ->
         # position change not included in opts, just return current position
@@ -174,7 +169,7 @@ defmodule SwitchState do
       {:lazy, _lazy_or_not, _true_or_false, %SwitchState{} = ss} ->
         # regardless if lazy or not the current position does not match
         # the requested position so change the position
-        position_update([switch_state: ss] ++ opts)
+        position_update([switch_state: ss, record_cmd: true] ++ opts)
 
       nil ->
         log && Logger.warn("#{inspect(name)} not found")
@@ -192,11 +187,14 @@ defmodule SwitchState do
   end
 
   defp position_update(opts) do
-    ss = Keyword.get(opts, :switch_state)
+    ss = %SwitchState{pio: pio} = Keyword.get(opts, :switch_state)
     position = Keyword.get(opts, :position)
+
+    opts = [cmd_map: %{pio: pio, state: position}] ++ opts
 
     changeset(ss, %{state: position})
     |> update!()
+    |> reload()
     |> SwitchCmd.record_cmd(opts)
     |> position_read()
   end
