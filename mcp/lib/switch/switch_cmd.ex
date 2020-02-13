@@ -291,7 +291,9 @@ defmodule SwitchCmd do
         if publish do
           log &&
             Logger.info(
-              "publishing switch cmd for #{inspect(device, pretty: true)}"
+              "publishing switch cmd for #{inspect(name, pretty: true)} (#{
+                inspect(device, pretty: true)
+              })"
             )
 
           SetSwitch.new_cmd(device, [cmd_map], refid, opts)
