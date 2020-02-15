@@ -45,6 +45,7 @@ defmodule Dutycycle do
     field(:log, :boolean, default: false)
     field(:device)
     field(:active, :boolean, default: false)
+    field(:scheduled_work_ms, :integer, default: 750)
     has_one(:state, State)
     has_many(:profiles, Profile)
 
