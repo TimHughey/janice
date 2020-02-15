@@ -93,6 +93,9 @@ defmodule Dutycycle.Server do
     call_server(name, msg)
   end
 
+  def log(name, opts \\ []) when is_binary(name),
+    do: %{name: name, msg: %{:msg => :log, opts: opts}} |> call_server()
+
   def pause(name, opts \\ []) when is_binary(name), do: halt(name, opts)
 
   def ping(name, opts \\ []) when is_binary(name) do
@@ -286,6 +289,16 @@ defmodule Dutycycle.Server do
       ) do
     s = cancel_timer(s)
     rc = Dutycycle.halt(dc)
+
+    {:reply, rc, cache_dutycycle(s)}
+  end
+
+  def handle_call(
+        %{:msg => :log, :opts => opts},
+        _from,
+        %{dutycycle: dc} = s
+      ) do
+    rc = Dutycycle.log(dc, opts)
 
     {:reply, rc, cache_dutycycle(s)}
   end
@@ -534,6 +547,8 @@ defmodule Dutycycle.Server do
   # just cache the Dutycycle passed in
   defp cache_dutycycle(%Dutycycle{} = dc, %{dutycycle: _dc} = s),
     do: %{s | dutycycle: dc}
+
+  defp call_server(%{name: name, msg: %{} = msg}), do: call_server(name, msg)
 
   defp call_server(name, msg) when is_binary(name) and is_map(msg) do
     {dc, server_name} = server_name(name)

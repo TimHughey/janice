@@ -143,8 +143,6 @@ defmodule Switch do
     |> Repo.delete_all(timeout: @delete_timeout_ms)
   end
 
-  def deprecate(id), do: SwitchState.deprecate(id)
-
   def external_update(%{host: host, device: device, mtime: mtime} = r) do
     result =
       :timer.tc(fn ->
@@ -178,16 +176,14 @@ defmodule Switch do
         :ok
 
       {_, {_, _}} ->
-        Logger.warn(fn ->
-          "external update failed for [#{device}]"
-        end)
+        Logger.warn("external update failed for [#{device}]")
 
         :error
     end
   end
 
   def external_update(%{} = eu) do
-    Logger.warn(fn -> "external_update received a bad map #{inspect(eu)}" end)
+    Logger.warn("external_update received a bad map #{inspect(eu)}")
     :error
   end
 
@@ -201,6 +197,10 @@ defmodule Switch do
 
   def position(name, opts \\ []) when is_binary(name) and is_list(opts),
     do: SwitchState.position(name, opts) |> SwitchGroup.position(opts)
+
+  def replace(name, replacement)
+      when is_binary(name) and is_binary(replacement),
+      do: SwitchState.replace(name, replacement)
 
   ##
   ## Internal / private functions
@@ -218,18 +218,18 @@ defmodule Switch do
     end
   end
 
-  defp ensure_cmds(%Switch{cmds: cmds} = sw) do
+  defp ensure_cmds(%Switch{cmds: cmds, log: log} = sw) do
     if Ecto.assoc_loaded?(cmds) == false do
-      Logger.info(fn -> "default acked cmd added for switch [#{sw.device}]" end)
+      log && Logger.info("default acked cmd added for switch [#{sw.device}]")
       Map.put(sw, :cmds, create_cmds(%{}))
     else
       sw
     end
   end
 
-  defp ensure_states(%Switch{states: states} = sw) do
+  defp ensure_states(%Switch{states: states, log: log} = sw) do
     if Ecto.assoc_loaded?(states) == false do
-      Logger.info(fn -> "default states added for switch [#{sw.device}]" end)
+      log && Logger.info("default states added for switch [#{sw.device}]")
       Map.put(sw, :states, create_states(%{device: sw.device, pio_count: 2}))
     else
       sw
@@ -243,7 +243,7 @@ defmodule Switch do
       Keyword.take(opts, [:only]) |> Keyword.get_values(:only) |> List.flatten()
 
     if Enum.empty?(filter) do
-      Logger.warn(fn -> "get_by bad args: #{inspect(opts)}" end)
+      Logger.warn("get_by bad args: #{inspect(opts)}")
       []
     else
       sw = from(sw in Switch, where: ^filter) |> one()
@@ -300,9 +300,9 @@ defmodule Switch do
         change(sw, opts) |> update()
 
       false ->
-        Logger.warn(fn ->
+        Logger.warn(
           "number of states in reading does not match switch [#{sw.device}]"
-        end)
+        )
 
         {:error, sw}
     end
@@ -318,8 +318,8 @@ defmodule Switch do
     |> update_all([])
   end
 
-  defp update_states_from_reading(%Switch{} = sw, %{} = r) do
-    log = Map.get(r, :log, false)
+  defp update_states_from_reading(%Switch{log: sw_log} = sw, %{} = r) do
+    log = Map.get(r, :log, sw_log)
 
     for new <- r.states do
       # PIO numbers always start at zero they can be easily used as list index ids
@@ -335,14 +335,14 @@ defmodule Switch do
         # incoming state then we have a problem.  so, force an update.
         if pending == 0 do
           log &&
-            Logger.warn(fn ->
+            Logger.warn(
               "[#{ss.name}] forcing to reported state=#{inspect(new.state)}"
-            end)
+            )
 
           log &&
-            Logger.warn(fn ->
+            Logger.warn(
               "^^^ hint: the mcr device may have lost power and restarted"
-            end)
+            )
 
           # ok, update the switch state -- it truly doesn't match
           change(ss, %{state: new.state}) |> update!()
