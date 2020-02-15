@@ -273,12 +273,6 @@ defmodule Dutycycle do
        ),
        do: next_phase(:run, dc)
 
-  def find(id) when is_integer(id),
-    do: get_by(__MODULE__, id: id) |> preload([:state, :profiles])
-
-  def find(name) when is_binary(name),
-    do: get_by(__MODULE__, name: name) |> preload([:state, :profiles])
-
   defp next_phase(mode, %Dutycycle{} = dc) do
     with {%Dutycycle{} = dc, {:ok, %State{}}} <- State.next_phase(mode, dc),
          dc <- reload(dc),
@@ -289,6 +283,12 @@ defmodule Dutycycle do
       error -> error
     end
   end
+
+  def find(id) when is_integer(id),
+    do: get_by(__MODULE__, id: id) |> preload([:state, :profiles])
+
+  def find(name) when is_binary(name),
+    do: get_by(__MODULE__, name: name) |> preload([:state, :profiles])
 
   def halt(%Dutycycle{} = dc) do
     with {%Dutycycle{}, {:ok, %State{}}} <- State.stop(dc),
@@ -330,6 +330,7 @@ defmodule Dutycycle do
 
   def inactive?(%Dutycycle{active: val}), do: not val
 
+  def log(%Dutycycle{log: log}, opts) when is_list(opts), do: {:ok, log: log}
   def log?(%Dutycycle{log: log}), do: log
 
   def persist_phase_end_timer(%Dutycycle{state: st} = dc, timer) do

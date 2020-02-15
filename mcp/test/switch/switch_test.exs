@@ -57,17 +57,6 @@ defmodule SwitchStateTest do
     assert rc1 === :ok and rc2 === :ok
   end
 
-  @tag num: 1
-  test "change the name of a switch state", context do
-    n = context[:num]
-
-    asis = device_pio(n, 0)
-    tobe = name("switch", n)
-    {rc, ss} = SwitchState.change_name(asis, tobe, "changed via test")
-
-    assert(rc === :ok and ss.name === tobe)
-  end
-
   @tag num: 2
   test "change switch position and handle not found", context do
     n = context[:num]
@@ -155,15 +144,64 @@ defmodule SwitchStateTest do
   end
 
   @tag num: 6
+  @tag pio: 2
   test "toggle a switch (by name)", context do
     n = context[:num]
+    pio = context[:pio]
 
-    ss = load_ss(name: device_pio(n, 2))
+    ss = load_ss(name: device_pio(n, pio))
     before_toggle = ss.state
 
-    after_toggle = SwitchState.toggle(device_pio(n, 2))
+    after_toggle = SwitchState.toggle(device_pio(n, pio))
 
     refute before_toggle == after_toggle
+  end
+
+  @tag num: 6
+  @tag pio: 3
+  test "can get and set the position of an inverted switch", context do
+    n = context[:num]
+    pio = context[:pio]
+
+    %SwitchState{name: name, invert_state: initial_inverted} =
+      load_ss(name: device_pio(n, pio))
+
+    {rc1, name_rc, opts} = SwitchState.invert_position(name, true)
+
+    {rc2, inverted_pos} =
+      SwitchState.position(name, position: true, lazy: false)
+
+    # disabe inverted position
+    SwitchState.invert_position(name, false)
+
+    # get the position which should be false with inverted disabled
+    {rc3, std_pos} = SwitchState.position(name)
+
+    assert initial_inverted == false
+    assert rc1 == :ok
+    assert name_rc === name
+    assert is_map(opts)
+    assert rc2 == :ok
+    assert inverted_pos == true
+    assert rc3 == :ok
+    assert std_pos == false
+  end
+
+  @tag num: 6
+  @tag pio: 4
+  test "can make updates to a SwitchState", context do
+    n = context[:num]
+    pio = context[:pio]
+
+    %SwitchState{name: name, ttl_ms: ttl_ms} = load_ss(name: device_pio(n, pio))
+
+    {rc1, update_rc, opts} = SwitchState.update(name, ttl_ms: 1000)
+
+    assert rc1 == :ok
+    assert update_rc === name
+    assert is_map(opts)
+    assert Map.has_key?(opts, :ttl_ms)
+    assert ttl_ms != Map.get(opts, :ttl_ms)
   end
 
   @tag num: 7
@@ -177,29 +215,25 @@ defmodule SwitchStateTest do
     assert msg =~ "not found"
   end
 
-  test "change a SwitchState name and test not found" do
-    ss1 = load_ss(name: device_pio(0, 4))
-    ss2 = load_ss(name: device_pio(0, 5))
+  @tag num: 7
+  @tag pio: 4
+  test "can replace a switch", context do
+    old_name = device_pio(context[:num], context[:pio])
+    new_name = device_pio(context[:num], context[:pio] + 1)
 
-    {rc1, new_ss} =
-      SwitchState.change_name(ss1.id, name("switch", 4), "changed by test")
+    {rc, name, opts} = SwitchState.replace(old_name, new_name)
 
-    is_ss = %SwitchState{} = new_ss
+    assert :ok == rc
+    assert name === old_name
+    assert is_list(opts)
+  end
 
-    {rc2, _} = SwitchState.change_name(ss2.name, name("switch", 5))
+  test "can detect SwitchState not found" do
+    name = "foobar"
+    {rc, not_found_name} = SwitchState.update(name, name: "foobar2")
 
-    msg =
-      capture_log(fn ->
-        SwitchState.change_name(1_000_000, name("switch", 6), "changed by test")
-      end)
-
-    {rc3, _} = SwitchState.change_name(device_pio(0, 6), name("switch", 5))
-
-    assert rc1 === :ok
-    assert is_ss
-    assert rc2 == :ok
-    assert msg =~ "change name failed"
-    assert rc3 == :error
+    assert rc === :not_found
+    assert not_found_name == name
   end
 
   test "can instantiate a SwitchState" do
@@ -216,19 +250,5 @@ defmodule SwitchStateTest do
 
     assert count == 1
     assert is_nil(sw_rc)
-  end
-
-  @tag num: 9
-  @tag pio: 0
-  test "can deprecate a Switch", context do
-    name = context[:device_pio]
-
-    ss1 = load_ss(name: name)
-    id = Map.get(ss1, :id)
-
-    {rc, ss} = Switch.deprecate(id)
-
-    assert rc == :ok
-    assert String.contains?(ss.name, "~")
   end
 end
