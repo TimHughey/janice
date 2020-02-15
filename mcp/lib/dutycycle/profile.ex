@@ -18,7 +18,7 @@ defmodule Dutycycle.Profile do
     field(:active, :boolean, default: false)
     field(:run_ms, :integer, default: 0)
     field(:idle_ms, :integer, default: 0)
-    field(:check_device_ms, :integer, default: 60_000)
+    field(:device_check_ms, :integer, default: 60_000)
     belongs_to(:dutycycle, Dutycycle)
 
     timestamps(usec: true)
