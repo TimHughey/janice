@@ -178,14 +178,12 @@ defmodule Reef do
     do:
       DCS.activate_profile(name, p)
       |> DC.status()
-      |> inspect(pretty: true)
-      |> IO.puts()
 
   def dc_halt(name),
-    do: DCS.halt(name) |> DC.status() |> inspect(pretty: true) |> IO.puts()
+    do: DCS.halt(name) |> DC.status()
 
   def dc_resume(name),
-    do: DCS.resume(name) |> DC.status() |> inspect(pretty: true) |> IO.puts()
+    do: DCS.resume(name) |> DC.status()
 
   def dc_status(name, opts) do
     %{
