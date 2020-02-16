@@ -303,21 +303,16 @@ defmodule Dutycycle do
   # if nothing above has matched and run_ms > 0 then run to handle
   # cases such as "stopped" or "offline"
   defp end_of_phase(
-         %Dutycycle{state: %State{state: state}} = dc,
+         %Dutycycle{state: %State{state: _state}} = dc,
          %Profile{run_ms: ms}
        )
        when ms > 0 do
-    log?(dc) &&
-      Logger.info(
-        dc_name(dc) <>
-          " transitioning from #{inspect(state, pretty: true)} to run"
-      )
-
     next_phase(:run, dc)
   end
 
   defp next_phase(mode, %Dutycycle{} = dc) do
-    with {%Dutycycle{} = dc, {:ok, %State{}}} <- State.next_phase(mode, dc),
+    with {%Dutycycle{} = dc, {:ok, %State{}}} <-
+           State.next_phase(mode, dc, log_transition: log?(dc)),
          dc <- reload(dc),
          {:ok, {:position, _postition}, dc} <- control_device(dc) do
       active_profile = Profile.active(dc)

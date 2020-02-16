@@ -54,7 +54,10 @@ defmodule JanTest do
     # all relative humidity senors start at 50 for test purposes
     # also avoids conflicts with temperature sensors
     n = n + 50
-    relhum_ext(n) |> Jason.encode!() |> Mqtt.InboundMessage.process(async: false)
+
+    relhum_ext(n)
+    |> Jason.encode!()
+    |> Mqtt.InboundMessage.process(async: false)
   end
 
   def relhum_name(n), do: name("relhum", n + 50)
@@ -80,7 +83,9 @@ defmodule JanTest do
   end
 
   def soil_ext_msg(n, opts \\ []) do
-    soil_ext(n, opts) |> Jason.encode!() |> Mqtt.InboundMessage.process(async: false)
+    soil_ext(n, opts)
+    |> Jason.encode!()
+    |> Mqtt.InboundMessage.process(async: false)
   end
 
   def temp_ext(num, opts \\ []) do
@@ -98,7 +103,9 @@ defmodule JanTest do
   end
 
   def temp_ext_msg(n, opts \\ []) do
-    temp_ext(n, opts) |> Jason.encode!() |> Mqtt.InboundMessage.process(async: false)
+    temp_ext(n, opts)
+    |> Jason.encode!()
+    |> Mqtt.InboundMessage.process(async: false)
   end
 
   def create_temp_sensor(sub, name, num, opts \\ []) do
@@ -107,7 +114,9 @@ defmodule JanTest do
 
     sensor = %{type: "temp", device: name, tc: tc}
 
-    Map.merge(base, sensor) |> Jason.encode!() |> Mqtt.InboundMessage.process(async: false)
+    Map.merge(base, sensor)
+    |> Jason.encode!()
+    |> Mqtt.InboundMessage.process(async: false)
   end
 
   ####
@@ -132,6 +141,8 @@ defmodule JanTest do
     }
     |> Switch.external_update()
   end
+
+  def sw_state_name(name, num, pio), do: device(name, num) <> ":#{pio}"
 
   def device_pio(num, pio), do: device("switch", num) <> ":#{pio}"
   def pios(num, pos), do: for(n <- 0..(num - 1), do: %{pio: n, state: pos})

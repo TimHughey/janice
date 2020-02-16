@@ -31,6 +31,25 @@ defmodule Dutycycle.State do
 
   def mode(%State{state: state}), do: state
 
+  def next_phase(
+        mode,
+        %Dutycycle{name: name, state: %State{state: prev_mode}} = dc,
+        opts
+      )
+      when is_atom(mode) and is_list(opts) do
+    log = Keyword.get(opts, :log_transition, false)
+
+    log &&
+      Logger.info(
+        inspect(name, pretty: true) <>
+          " transitioning from " <>
+          inspect(prev_mode, pretty: true) <>
+          " to " <> inspect(Atom.to_string(mode), pretty: true)
+      )
+
+    next_phase(mode, dc)
+  end
+
   def next_phase(:run, %Dutycycle{} = dc), do: run(dc)
   def next_phase(:idle, %Dutycycle{} = dc), do: idle(dc)
   def next_phase(:offline, %Dutycycle{} = dc), do: offline(dc)
