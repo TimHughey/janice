@@ -4,59 +4,54 @@ defmodule Reef do
   require Logger
   import IO.ANSI
 
+  alias Dutycycle, as: DC
   alias Dutycycle.Profile, as: DCP
   alias Dutycycle.Server, as: DCS
   alias Thermostat.Profile, as: THP
   alias Thermostat.Server, as: THS
 
-  def help do
-    IO.puts(clear())
-    IO.puts(yellow() <> underline() <> "Reef Control CLI" <> reset())
-    IO.puts(" ")
+  # def help do
+  #   IO.puts(clear())
+  #   IO.puts(yellow() <> underline() <> "Reef Control CLI" <> reset())
+  #   IO.puts(" ")
+  #
+  #   [
+  #     %{cmd: "dcs_standby()", desc: "set Dutycycle to standby"},
+  #     %{cmd: "ths_standby()", desc: "set Thermostat to standby"},
+  #     %{cmd: "mix_air(profile)", desc: "set mix air profile"}
+  #   ]
+  #   |> Scribe.print(style: Scribe.Style.NoBorder)
+  #   |> IO.puts()
+  # end
 
+  def heat_standby do
     [
-      %{cmd: "dcs_standby()", desc: "set Dutycycle to standby"},
-      %{cmd: "ths_standby()", desc: "set Thermostat to standby"},
-      %{cmd: "mix_air(profile)", desc: "set mix air profile"}
-    ]
-    |> Scribe.print(style: Scribe.Style.NoBorder)
-    |> IO.puts()
-  end
-
-  def display_tank_pause, do: ths_standby(dt())
-  def display_tank_resume, do: ths_activate(dt(), "75F")
-
-  def dcs_resume(dc) when is_binary(dc), do: DCS.resume(dc)
-  def dcs_standby(dc) when is_binary(dc), do: DCS.standby(dc)
-
-  def halt(name) when is_binary(name), do: DCS.halt(name)
-
-  def heat_standby,
-    do: [
       {swmt(), swmt() |> THS.activate_profile(standby())},
       {dt(), dt() |> THS.activate_profile(standby())}
     ]
+  end
 
-  def keep_fresh,
-    do: [
-      {rmp(), DCS.activate_profile(rmp(), "keep fresh")},
-      {rma(), DCS.activate_profile(rma(), "keep fresh")}
-    ]
+  def keep_fresh do
+    dc_activate_profile(rmp(), "keep fresh")
+    dc_activate_profile(rma(), "keep fresh")
+  end
 
   def mix_add_salt do
-    rmp() |> DCS.activate_profile(add_salt())
+    rmp() |> dc_activate_profile(add_salt())
     rma() |> DCS.activate_profile(add_salt())
     swmt() |> THS.activate_profile(standby())
   end
 
-  def mix_air(profile) when is_binary(profile) do
-    DCS.activate_profile(rma(), profile)
-  end
+  def mix_air(profile) when is_binary(profile),
+    do: dc_activate_profile(rma(), profile)
 
   def mix_air(_), do: print_usage("mix_air", "profile)")
 
-  def mix_air_pause, do: DCS.halt(rma())
-  def mix_air_resume, do: DCS.resume(rma())
+  def mix_air_pause,
+    do: dc_halt(rma())
+
+  def mix_air_resume,
+    do: dc_resume(rma())
 
   def mix_heat_standby, do: THS.activate_profile(swmt(), standby())
 
@@ -66,37 +61,31 @@ defmodule Reef do
 
   def mix_match_display_tank do
     THS.activate_profile(swmt(), "prep for change")
-    DCS.activate_profile(rma(), "keep fresh")
-    DCS.activate_profile(rmp(), "eco")
-    :ok
+    dc_activate_profile(rma(), "keep fresh")
+    dc_activate_profile(rmp(), "eco")
+    status()
   end
 
   def mix_pump(p) when is_binary(p), do: utility_pump(p)
   def mix_pump(_), do: print_usage("mix_pump", "profile")
   def mix_pump_off, do: utility_pump_off()
 
-  def mix_pump_pause, do: DCS.halt(rmp())
-  def mix_pump_resume, do: DCS.resume(rmp())
+  def mix_pump_pause, do: dc_halt(rmp())
+  def mix_pump_resume, do: dc_resume(rmp())
 
-  def mix_rodi_fast, do: DCS.activate_profile(rmrf(), "fast")
-  def mix_rodi_halt, do: DCS.halt(rmrf())
+  def mix_rodi_fast, do: dc_activate_profile(rmrf(), "fast")
+  def mix_rodi_halt, do: dc_halt(rmrf())
 
-  def mix_standby,
-    do: [
-      {rma(), rma() |> DCS.standby()},
-      {rmp(), rmp() |> DCS.standby()},
-      {swmt(), swmt() |> THS.standby()}
-    ]
+  def mix_standby do
+    dc_halt(rma())
+    dc_halt(rmp())
+    THS.standby(swmt())
+  end
 
-  def resume(name) when is_binary(name), do: DCS.resume(name)
-  def resume_ato, do: DCS.resume(ato())
-  def resume_air, do: DCS.resume(rma())
-  def resume_pump, do: DCS.resume(rmp())
+  def status(opts \\ []) do
+    opts = opts ++ [active: true]
 
-  def status do
-    opts = [active: true]
-
-    IO.puts(clear())
+    Keyword.get(opts, :clear_screen, true) && IO.puts(clear())
     print_heading("Reef Subsystem Status")
 
     dcs = for name <- [rmp(), rma(), rmrf(), ato()], do: dc_status(name, opts)
@@ -115,9 +104,19 @@ defmodule Reef do
     |> IO.puts()
   end
 
-  def halt_ato, do: DCS.halt(ato())
-  def halt_air, do: DCS.halt(rma())
-  def halt_pump, do: DCS.halt(rmp())
+  def halt("display tank ato"), do: dc_activate_profile(ato(), "off")
+  def halt(name) when is_binary(name), do: dc_halt(name)
+  def halt_ato, do: dc_activate_profile(ato(), "off")
+  def halt_air, do: dc_halt(rma())
+  def halt_display_tank, do: ths_standby(dt())
+  def halt_pump, do: dc_halt(rmp())
+
+  def resume("display tank ato"), do: dc_halt(ato())
+  def resume(name) when is_binary(name), do: dc_resume(name)
+  def resume_ato, do: dc_halt(ato())
+  def resume_air, do: dc_resume(rma())
+  def resume_display_tank, do: ths_activate(dt(), "75F")
+  def resume_pump, do: dc_resume(rmp())
 
   def ths_activate(th, profile)
       when is_binary(th) and is_binary(profile),
@@ -128,33 +127,37 @@ defmodule Reef do
   def ths_standby(th) when is_binary(th), do: THS.standby(th)
 
   def utility_pump(p) when is_binary(p),
-    do: DCS.activate_profile(rmp(), p)
+    do: dc_activate_profile(rmp(), p)
 
   def utility_pump(_), do: print_usage("utility_pump", "profile")
 
-  def utility_pump_off, do: rmp() |> DCS.activate_profile(standby())
+  def utility_pump_off, do: rmp() |> dc_halt()
 
-  def water_change_begin,
-    do: [
-      {rmp(), rmp() |> DCS.halt()},
-      {rma(), rma() |> DCS.halt()},
-      {ato(), ato() |> DCS.halt()},
-      {swmt(), swmt() |> THS.activate_profile(standby())},
-      {display_tank(), display_tank() |> THS.activate_profile(standby())}
-    ]
+  def water_change_begin do
+    rmp() |> dc_halt()
+    rma() |> dc_halt()
+    ato() |> dc_halt()
+    swmt() |> THS.activate_profile(standby())
+    display_tank() |> THS.activate_profile(standby())
 
-  def water_change_end do
-    a = rmp() |> DCS.halt()
-    b = rma() |> DCS.halt()
-    c = ato() |> DCS.resume()
-    d = swmt() |> THS.activate_profile(standby())
-    e = display_tank() |> THS.activate_profile("75F")
-
-    [{rmp(), a}, {rma(), b}, {ato(), c}, {swmt(), d}, {display_tank(), e}]
+    status()
   end
 
-  def xfer_swmt_to_wst, do: {rmp(), DCS.activate_profile(rmp(), "mx to wst")}
-  def xfer_wst_to_sewer, do: {rmp(), DCS.activate_profile(rmp(), "drain wst")}
+  def water_change_end do
+    rmp() |> dc_halt()
+    rma() |> dc_halt()
+    ato() |> dc_resume()
+    swmt() |> THS.activate_profile(standby())
+    display_tank() |> THS.activate_profile("75F")
+
+    status()
+  end
+
+  def xfer_swmt_to_wst,
+    do: dc_activate_profile(rmp(), "mx to wst")
+
+  def xfer_wst_to_sewer,
+    do: dc_activate_profile(rmp(), "drain wst")
 
   defp print_heading(text) when is_binary(text) do
     IO.puts(" ")
@@ -171,17 +174,36 @@ defmodule Reef do
           f <> "(" <> yellow() <> p <> light_blue() <> ")" <> reset()
       )
 
-  defp dc_status(name, opts),
-    do: %{
+  def dc_activate_profile(name, p),
+    do:
+      DCS.activate_profile(name, p)
+      |> DC.status()
+      |> inspect(pretty: true)
+      |> IO.puts()
+
+  def dc_halt(name),
+    do: DCS.halt(name) |> DC.status() |> inspect(pretty: true) |> IO.puts()
+
+  def dc_resume(name),
+    do: DCS.resume(name) |> DC.status() |> inspect(pretty: true) |> IO.puts()
+
+  def dc_status(name, opts) do
+    %{
       subsystem: name,
       status: DCS.profiles(name, opts) |> DCP.name(),
       active: DCS.active?(name)
     }
+  end
 
   defp sensor_status(name) do
     temp_format = fn sensor ->
       temp = Sensor.fahrenheit(name: sensor, since_secs: 30)
-      if is_nil(temp), do: temp, else: Float.round(temp, 1)
+
+      if is_nil(temp) do
+        temp
+      else
+        Float.round(temp, 1)
+      end
     end
 
     %{

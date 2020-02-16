@@ -188,12 +188,12 @@ defmodule Dutycycle.Server do
             "dutycycle #{inspect(name)} profile #{inspect(profile_name)} activated"
           end)
 
-        s = cancel_timer(s) |> start_phase_timer(rc)
+        s = cancel_timer(s, :phase_timer) |> start_phase_timer(rc)
 
         {:reply, {:ok, dc}, cache_dutycycle(s)}
 
       {:ok, %Dutycycle{} = dc, %Profile{}, :none} ->
-        {:reply, {:ok, dc}, cancel_timer(s) |> cache_dutycycle()}
+        {:reply, {:ok, dc}, cancel_timer(s, :phase_timer) |> cache_dutycycle()}
 
       rc ->
         {:reply, {:failed, rc}, s}
@@ -287,7 +287,7 @@ defmodule Dutycycle.Server do
         _from,
         %{dutycycle: dc} = s
       ) do
-    s = cancel_timer(s)
+    s = cancel_timer(s, :all)
     rc = Dutycycle.halt(dc)
 
     {:reply, rc, cache_dutycycle(s)}
@@ -379,12 +379,12 @@ defmodule Dutycycle.Server do
               " server start activate successful"
           end)
 
-        s = cancel_timer(s) |> start_phase_timer(rc)
+        s = cancel_timer(s, :all) |> start_phase_timer(rc)
 
         {:noreply, cache_dutycycle(s)}
 
       {:ok, %Dutycycle{}, %Profile{}, :none} ->
-        {:noreply, cancel_timer(s) |> cache_dutycycle()}
+        {:noreply, cancel_timer(s, :all) |> cache_dutycycle()}
 
       rc ->
         Logger.warn(fn ->
@@ -428,9 +428,14 @@ defmodule Dutycycle.Server do
   end
 
   def handle_info(%{:msg => :scheduled_work}, %{server_name: server_name} = s) do
-    s = reload_dutycycle(s)
+    s = %{dutycycle: dc} = reload_dutycycle(s)
 
-    Process.send_after(server_name, %{:msg => :scheduled_work}, 750)
+    Process.send_after(
+      server_name,
+      %{:msg => :scheduled_work},
+      Dutycycle.scheduled_work_ms(dc)
+    )
+
     {:noreply, s}
   end
 
@@ -481,7 +486,7 @@ defmodule Dutycycle.Server do
         dutycycle_id: id,
         # call Dutycycle.reload() to ensure all associations are preloaded
         dutycycle: Dutycycle.reload(dc),
-        timer: nil,
+        timers: [],
         need_reload: false,
         startup_delay_ms: 15_000
       }
@@ -521,7 +526,12 @@ defmodule Dutycycle.Server do
     end
 
     Process.flag(:trap_exit, true)
-    Process.send_after(server_name, %{:msg => :scheduled_work}, 100)
+
+    Process.send_after(
+      server_name,
+      %{:msg => :scheduled_work},
+      Dutycycle.scheduled_work_ms(dc)
+    )
 
     {:ok, s}
   end
@@ -564,14 +574,26 @@ defmodule Dutycycle.Server do
   end
 
   # Refactor
-  defp cancel_timer(%{timer: t} = s) when is_reference(t) do
-    Process.cancel_timer(t)
+  defp cancel_timer(%{timers: timers} = s, timer)
+       when is_list(timers) and is_atom(timer) do
+    timers =
+      case timer do
+        :all ->
+          for {k, v} <- timers do
+            if is_reference(v), do: Process.cancel_timer(v)
+            {k, nil}
+          end
 
-    %{s | timer: nil}
+        x ->
+          t = Keyword.get(timers, x)
+          if is_reference(t), do: Process.cancel_timer(t)
+          Keyword.put(timers, x, nil)
+      end
+
+    %{s | timers: timers}
   end
 
-  defp cancel_timer(%{timer: nil} = s), do: s
-  defp cancel_timer(%{} = s), do: s
+  defp cancel_timer(%{} = s, _timer), do: %{s | timers: []}
 
   # if the key reload is persent in the opts then add it to the state
   # however defaults to true
@@ -582,7 +604,7 @@ defmodule Dutycycle.Server do
 
   # Refactor
   defp start_phase_timer(
-         %{server_name: server} = s,
+         %{server_name: server, timers: timers} = s,
          {:ok, %Dutycycle{} = dc, %Profile{run_ms: ms} = p, :run}
        ) do
     msg = %{:msg => :phase_end, :profile => Profile.name(p), :ms => ms}
@@ -591,12 +613,12 @@ defmodule Dutycycle.Server do
     _dc = Dutycycle.persist_phase_end_timer(dc, t)
 
     # return an updated state
-    %{s | timer: t}
+    %{s | timers: Keyword.put(timers, :phase_timer, t)}
   end
 
   # Refactor
   defp start_phase_timer(
-         %{server_name: server} = s,
+         %{server_name: server, timers: timers} = s,
          {:ok, %Dutycycle{} = dc, %Profile{idle_ms: ms} = p, :idle}
        ) do
     msg = %{:msg => :phase_end, :profile => Profile.name(p), :ms => ms}
@@ -605,7 +627,7 @@ defmodule Dutycycle.Server do
     _dc = Dutycycle.persist_phase_end_timer(dc, t)
 
     # return an updated state
-    %{s | timer: t}
+    %{s | timers: Keyword.put(timers, :phase_timer, t)}
   end
 
   # Refactor
@@ -614,11 +636,11 @@ defmodule Dutycycle.Server do
   #  b. idle_ms = 0
   #  c. name === "none"
   defp start_phase_timer(
-         %{server_name: _server} = s,
+         %{server_name: _server, timers: timers} = s,
          {:ok, %Dutycycle{}, %Profile{run_ms: 0, idle_ms: 0, name: "none"},
           _mode}
        ),
-       do: %{s | timer: nil}
+       do: %{s | timers: Keyword.put(timers, :phase_timer, nil)}
 
   # Refactor
   defp start_phase_timer(%{} = s, rc) do

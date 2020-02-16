@@ -18,7 +18,7 @@ defmodule DutycycleTest do
     new_dcs = 0..9 |> Enum.to_list()
 
     for n <- new_dcs, do: new_dutycycle(n) |> Dutycycle.add()
-    for dc <- prod_dutycycles(), do: Dutycycle.add(dc)
+
     :ok
   end
 
@@ -148,13 +148,6 @@ defmodule DutycycleTest do
 
     assert :not_found === rc1
   end
-
-  # @tag reef_cli: false
-  # test "Reef CLI" do
-  #   rc = Reef.status()
-  #
-  #   assert :ok == rc
-  # end
 
   @tag num: 1000
   test "ping detects not found dutycycle", context do
@@ -453,88 +446,4 @@ defmodule DutycycleTest do
     assert :error === rc
     refute cs.valid?()
   end
-
-  defp prod_dutycycles,
-    do: [
-      %Dutycycle{
-        name: "mix pump",
-        comment: "mix pump",
-        device: "mix_pump",
-        active: false,
-        log: true,
-        profiles: [
-          %Dutycycle.Profile{name: "fast", run_ms: 3_000, idle_ms: 3_000},
-          %Dutycycle.Profile{
-            name: "infinity",
-            run_ms: 360_000,
-            idle_ms: 360_000
-          }
-        ],
-        state: %Dutycycle.State{}
-      },
-      %Dutycycle{
-        name: "mix air",
-        comment: "mix air",
-        device: "mix_air",
-        active: false,
-        log: true,
-        profiles: [
-          %Dutycycle.Profile{name: "fast", run_ms: 3_000, idle_ms: 3_000},
-          %Dutycycle.Profile{
-            name: "infinity",
-            run_ms: 360_000,
-            idle_ms: 360_000
-          }
-        ],
-        state: %Dutycycle.State{}
-      },
-      %Dutycycle{
-        name: "mix rodi",
-        comment: "mix rodi",
-        device: "mix_rodi",
-        active: false,
-        log: true,
-        profiles: [
-          %Dutycycle.Profile{name: "fast", run_ms: 3_000, idle_ms: 3_000},
-          %Dutycycle.Profile{
-            name: "infinity",
-            run_ms: 360_000,
-            idle_ms: 360_000
-          }
-        ],
-        state: %Dutycycle.State{}
-      },
-      %Dutycycle{
-        name: "mix rodi boost",
-        comment: "mix rodi boost",
-        device: "mix_rodi_boost",
-        active: false,
-        log: true,
-        profiles: [
-          %Dutycycle.Profile{name: "fast", run_ms: 3_000, idle_ms: 3_000},
-          %Dutycycle.Profile{
-            name: "infinity",
-            run_ms: 360_000,
-            idle_ms: 360_000
-          }
-        ],
-        state: %Dutycycle.State{}
-      },
-      %Dutycycle{
-        name: "display tank ato",
-        comment: "display tank ato",
-        device: "display tank ato",
-        active: false,
-        log: true,
-        profiles: [
-          %Dutycycle.Profile{name: "fast", run_ms: 3_000, idle_ms: 3_000},
-          %Dutycycle.Profile{
-            name: "infinity",
-            run_ms: 360_000,
-            idle_ms: 360_000
-          }
-        ],
-        state: %Dutycycle.State{}
-      }
-    ]
 end

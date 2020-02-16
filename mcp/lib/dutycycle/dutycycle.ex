@@ -66,7 +66,7 @@ defmodule Dutycycle do
       {:no_active_profile, true} ->
         Logger.warn(fn ->
           dc_name(dc) <>
-            "does not have an active profile to activate"
+            " does not have an active profile to activate"
         end)
 
         {:no_active_profile, dc}
@@ -74,7 +74,7 @@ defmodule Dutycycle do
       unhandled ->
         Logger.warn(fn ->
           dc_name(dc) <>
-            "activate active profile unhandled condition " <>
+            " activate active profile unhandled condition " <>
             "#{inspect(unhandled, pretty: true)}"
         end)
     end
@@ -82,27 +82,28 @@ defmodule Dutycycle do
 
   def activate_profile(%Dutycycle{log: log} = dc, profile, _opts)
       when is_binary(profile) do
-    with {:ok, %Profile{} = new_profile} <-
+    with {:ok, %Profile{} = next_profile} <-
            Profile.activate(dc, profile),
-         dc <- reload(dc),
-         {:state_run, {dc, {:ok, _st}}} <- {:state_run, State.run(dc)},
          {:ok, dc} <- activate(dc),
          dc <- reload(dc),
+         # use the end_of_phase function to determine the start phase
+         # when activating the profile and control the device
+         {:first_phase, {:ok, dc, _active_profile, mode}} <-
+           {:first_phase, end_of_phase(dc, next_profile)},
          {:ok, {:position, true}, dc} <- control_device(dc, lazy: false) do
       log &&
         Logger.info(fn ->
           dc_name(dc) <>
-            "activated profile #{inspect(Profile.name(new_profile))}"
+            " activated profile #{inspect(Profile.name(next_profile))}" <>
+            " first phase #{inspect(mode, pretty: true)}"
         end)
 
-      {:ok, reload(dc), new_profile, :run}
+      {:ok, reload(dc), next_profile, mode}
     else
       {:none, %Profile{}} ->
-        {rc, dc} = deactivate(dc)
+        Logger.warn(dc_name(dc) <> " deactivated, profile none")
 
-        Logger.warn(fn ->
-          "deactivating dutycycle due to none profile"
-        end)
+        {rc, dc} = deactivate(dc)
 
         {rc, reload(dc), %Profile{name: "none"}, :none}
 
@@ -113,16 +114,16 @@ defmodule Dutycycle do
 
         {:failed, profile, error}
 
-      {:state_run, error} ->
+      {:first_phase, error} ->
         Logger.warn(fn ->
-          "State.run() failed: #{inspect(error, pretty: true)}"
+          "next_phase() failed: #{inspect(error, pretty: true)}"
         end)
 
       {:ok, {:position, pos}, dc} ->
         log?(dc) &&
           Logger.debug(fn ->
             dc_name(dc) <>
-              "device state is " <>
+              " device state is " <>
               inspect(pos, pretty: true) <>
               " after profile activation"
           end)
@@ -237,6 +238,9 @@ defmodule Dutycycle do
     {:error, :invalid_args}
   end
 
+  def device_check_ms(x) when is_binary(x) or is_integer(x),
+    do: find(x) |> Profile.device_check_ms()
+
   # primary entry point for handling the end of phase
   def end_of_phase(%Dutycycle{} = dc) do
     active_profile = Profile.active(dc)
@@ -244,10 +248,27 @@ defmodule Dutycycle do
     end_of_phase(dc, active_profile)
   end
 
-  # when a dutycycle is running and idle_ms == 0 keep running
-  # however update the state to reflect the start of a new phase
+  # special cases:
+  #  a. if idle_ms == 0 then always run
+  #  b. if run_ms == 0 then always idle
+  #  c. if run_ms and idle_ms == 0 then always idle
+  #
+  # typical cases:
+  #  a. idle_ms > 0 then idle after run
+  #  b. run_ms > 0 then run after idle
+
   defp end_of_phase(
-         %Dutycycle{state: %State{state: "running"}} = dc,
+         %Dutycycle{state: %State{state: _any}} = dc,
+         %Profile{idle_ms: 0, run_ms: 0}
+       ),
+       do: next_phase(:idle, dc)
+
+  # regardless the current state when idle_ms == 0 the next phase
+  # is always run
+
+  # NOTE: only executed if the idle_ms == run_ms == 0 doesn't match
+  defp end_of_phase(
+         %Dutycycle{state: %State{state: _any}} = dc,
          %Profile{idle_ms: 0}
        ),
        do: next_phase(:run, dc)
@@ -255,14 +276,18 @@ defmodule Dutycycle do
   # when a dutycycle is running and idle_ms > 0 then start the idle phase
   defp end_of_phase(
          %Dutycycle{state: %State{state: "running"}} = dc,
-         %Profile{idle_ms: _ms}
-       ),
+         %Profile{idle_ms: ms}
+       )
+       when ms > 0,
        do: next_phase(:idle, dc)
 
-  # when a dutycycle is idling and run_ms == 0 keep idling
-  # however update the state to reflect the start of a new phase
+  # regardless the current state when run_ms == 0 the next phase
+  # is always idle
+
+  # NOTE: only executed if the idle_ms == run_ms == 0 doesn't match
+
   defp end_of_phase(
-         %Dutycycle{state: %State{state: "idling"}} = dc,
+         %Dutycycle{state: %State{state: _any}} = dc,
          %Profile{run_ms: 0}
        ),
        do: next_phase(:idle, dc)
@@ -270,9 +295,26 @@ defmodule Dutycycle do
   # when a dutycycle is idling and run_ms > 0 then start the run phase
   defp end_of_phase(
          %Dutycycle{state: %State{state: "idling"}} = dc,
-         %Profile{run_ms: _ms}
-       ),
+         %Profile{run_ms: ms}
+       )
+       when ms > 0,
        do: next_phase(:run, dc)
+
+  # if nothing above has matched and run_ms > 0 then run to handle
+  # cases such as "stopped" or "offline"
+  defp end_of_phase(
+         %Dutycycle{state: %State{state: state}} = dc,
+         %Profile{run_ms: ms}
+       )
+       when ms > 0 do
+    log?(dc) &&
+      Logger.info(
+        dc_name(dc) <>
+          " transitioning from #{inspect(state, pretty: true)} to run"
+      )
+
+    next_phase(:run, dc)
+  end
 
   defp next_phase(mode, %Dutycycle{} = dc) do
     with {%Dutycycle{} = dc, {:ok, %State{}}} <- State.next_phase(mode, dc),
@@ -317,7 +359,7 @@ defmodule Dutycycle do
       {:ok, {:position, {:not_found, device}}, %Dutycycle{} = dc} ->
         Logger.warn(
           dc_name(dc) <>
-            "device #{inspect(device, pretty: true)} does not exist at time of halt"
+            " device #{inspect(device, pretty: true)} does not exist at time of halt"
         )
 
         {:device_not_found, dc}
@@ -361,8 +403,10 @@ defmodule Dutycycle do
       Repo.get!(Dutycycle, id)
       |> preload([:state, :profiles], force: true)
 
+  def scheduled_work_ms(%Dutycycle{scheduled_work_ms: ms}), do: ms
+
   def start(%Dutycycle{active: false} = dc) do
-    Dutycycle.log?(dc) && Logger.info(fn -> dc_name(dc) <> "is inactive" end)
+    Dutycycle.log?(dc) && Logger.info(fn -> dc_name(dc) <> " is inactive" end)
 
     {:ok, :inactive}
   end
@@ -370,7 +414,7 @@ defmodule Dutycycle do
   def start(%Dutycycle{active: true} = dc) do
     if Profile.none?(dc) do
       Dutycycle.log?(dc) &&
-        Logger.info(fn -> dc_name(dc) <> "does not have an active profile" end)
+        Logger.info(fn -> dc_name(dc) <> " does not have an active profile" end)
 
       {:ok, :inactive}
     else
@@ -379,12 +423,14 @@ defmodule Dutycycle do
       Dutycycle.log?(dc) &&
         Logger.info(fn ->
           dc_name(dc) <>
-            "will start with profile #{inspect(Profile.name(active_profile))}"
+            " will start with profile #{inspect(Profile.name(active_profile))}"
         end)
 
       {:ok, :run, active_profile}
     end
   end
+
+  def status({:ok, dc}), do: status(dc)
 
   def status(%Dutycycle{name: name, active: active} = dc),
     do: [
@@ -479,15 +525,16 @@ defmodule Dutycycle do
     {:ok, {:position, sw_state}, dc}
   end
 
-  defp control_device_log(%Dutycycle{name: name, device: device}),
-    do: "#{inspect(name)} device #{inspect(device)}"
+  defp control_device_log(%Dutycycle{device: device} = dc),
+    do: dc_name(dc) <> " device #{inspect(device, pretty: true)}"
 
   defp deactivate(%Dutycycle{} = dc) do
     update(dc, active: false)
   end
 
-  defp dc_name(%Dutycycle{name: name}), do: "#{inspect(name)} "
+  defp dc_name(%Dutycycle{name: name}), do: "#{inspect(name, pretty: true)}"
   defp dc_name(catchall), do: "#{inspect(catchall, pretty: true)} "
 
-  defp possible_changes, do: [:name, :comment, :device, :log, :active]
+  defp possible_changes,
+    do: [:name, :comment, :device, :log, :active, :scheduled_work_ms]
 end

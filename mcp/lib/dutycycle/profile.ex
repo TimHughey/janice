@@ -59,7 +59,8 @@ defmodule Dutycycle.Profile do
         name: "none",
         run_ms: 0,
         idle_ms: 0,
-        active: true
+        active: true,
+        device_check_ms: 0
       },
       else: hd(active_profiles)
   end
@@ -165,6 +166,11 @@ defmodule Dutycycle.Profile do
     end
   end
 
+  def device_check_ms(%Dutycycle{} = dc),
+    do: active(dc) |> Map.get(:device_check_ms)
+
+  def device_check_ms(nil), do: 0
+
   def exists?(%Dutycycle{profiles: profiles}, name) when is_binary(name) do
     Enum.find_value(profiles, fn p -> name(p) === name end)
   end
@@ -206,7 +212,8 @@ defmodule Dutycycle.Profile do
     end
   end
 
-  defp possible_changes, do: [:name, :active, :run_ms, :idle_ms]
+  defp possible_changes,
+    do: [:name, :active, :run_ms, :idle_ms, :device_check_ms]
 
   defp convert_change_properties_opts(opts) when is_list(opts) do
     for opt <- opts do
