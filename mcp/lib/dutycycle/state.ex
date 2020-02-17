@@ -174,8 +174,9 @@ defmodule Dutycycle.State do
 
   # if we just transitioned from offline or stopped to running then
   # record the current time as started at
-  defp started_at({dc, {:ok, %State{state: "running"} = st}}, prev_mode)
-       when prev_mode in ["stopped", "offline"] do
+  defp started_at({dc, {:ok, %State{state: mode} = st}}, prev_mode)
+       when mode in ["running", "idling"] and
+              prev_mode in ["stopped", "offline"] do
     {dc, update(st, started_at: TimeSupport.utc_now())}
   end
 
