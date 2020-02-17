@@ -60,7 +60,6 @@ defmodule Dutycycle.Server do
 
   def delete(name) when is_binary(name), do: Dutycycle.delete(name)
 
-  # REFACTORED
   def delete(%Dutycycle{} = dc) do
     if Dutycycle.Supervisor.ping() == :pong,
       do: Dutycycle.Supervisor.eliminate_child(server_name_atom(dc)),
@@ -113,18 +112,15 @@ defmodule Dutycycle.Server do
     call_server(name, msg)
   end
 
-  # REFACTORED
   def resume(name, opts \\ []) when is_binary(name) and is_list(opts) do
     # special case for resume -> request activation of the :active profile
     msg = %{:msg => :activate_profile, profile: :active, opts: opts}
     call_server(name, msg)
   end
 
-  # REFACTORED
   def restart(name) when is_binary(name),
     do: Dutycycle.Supervisor.restart_dutycycle(name)
 
-  # REFACTORED
   def server_name_atom(%Dutycycle{id: id}),
     do:
       String.to_atom(
@@ -220,12 +216,11 @@ defmodule Dutycycle.Server do
     {:reply, {rc, res}, cache_dutycycle(s)}
   end
 
-  # REFACTORED!
-  def handle_call(
-        %{:msg => :dutycycle_state, :opts => opts},
-        _from,
-        %{dutycycle: dc} = s
-      ) do
+  !def handle_call(
+         %{:msg => :dutycycle_state, :opts => opts},
+         _from,
+         %{dutycycle: dc} = s
+       ) do
     {%Dutycycle{} = dc, %Dutycycle.State{} = st} =
       Dutycycle.current_state(dc, opts)
 
@@ -360,13 +355,12 @@ defmodule Dutycycle.Server do
     {:reply, :unhandled_msg, s}
   end
 
-  # REFACTORED!
   # NOTE: this is nearly identical to the handle_call() for activating
   #       a profile so there is possibly an opportunity to refactor
-  def handle_info(
-        %{:msg => :activate_profile, profile: profile, opts: _opts},
-        %{dutycycle: dc} = s
-      ) do
+  !def handle_info(
+         %{:msg => :activate_profile, profile: profile, opts: _opts},
+         %{dutycycle: dc} = s
+       ) do
     rc = Dutycycle.activate_profile(dc, profile)
     s = cache_dutycycle(s)
 
@@ -471,7 +465,6 @@ defmodule Dutycycle.Server do
       }
   end
 
-  # REFACTORED
   def start_link(%{id: id} = args) do
     Logger.debug(fn -> "start_link() args: #{inspect(args, pretty: true)}" end)
 
@@ -495,7 +488,6 @@ defmodule Dutycycle.Server do
     )
   end
 
-  # REFACTORED
   def init(
         %{
           server_name: server_name,
@@ -672,7 +664,6 @@ defmodule Dutycycle.Server do
 
   defp reload_dutycycle(%{} = s), do: s
 
-  # REFACTORED
   def server_name(x) when is_binary(x) or is_integer(x) do
     dc = Dutycycle.find(x)
 

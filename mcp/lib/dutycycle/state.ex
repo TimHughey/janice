@@ -47,7 +47,7 @@ defmodule Dutycycle.State do
           " to " <> inspect(Atom.to_string(mode), pretty: true)
       )
 
-    next_phase(mode, dc)
+    next_phase(mode, dc) |> started_at(prev_mode, :reload)
   end
 
   def next_phase(:run, %Dutycycle{} = dc), do: run(dc)
@@ -68,6 +68,8 @@ defmodule Dutycycle.State do
 
   def offline?(%Dutycycle{state: %State{state: "offline"}}), do: true
   def offline?(%Dutycycle{state: %State{state: _}}), do: false
+
+  def reload(%State{id: id}), do: Repo.get!(__MODULE__, id)
 
   def run(%Dutycycle{name: name, state: st, log: log} = dc) do
     log &&
@@ -166,6 +168,26 @@ defmodule Dutycycle.State do
     ]
 
   defp required_changes, do: [:state, :dev_state]
+
+  defp started_at({dc, {:ok, %State{} = st}}, prev_mode, :reload),
+    do: started_at({dc, {:ok, reload(st)}}, prev_mode)
+
+  # if we just transitioned from offline or stopped to running then
+  # record the current time as started at
+  defp started_at({dc, {:ok, %State{state: "running"} = st}}, prev_mode)
+       when prev_mode in ["stopped", "offline"] do
+    {dc, update(st, started_at: TimeSupport.utc_now())}
+  end
+
+  # if we just transitioned to stopped or offline from any state
+  # clear the started at time
+  defp started_at({dc, {:ok, %State{state: state} = st}}, _prev_mode)
+       when state in ["stopped", "offline"] do
+    {dc, update(st, started_at: nil)}
+  end
+
+  # all other cases, don't change started at
+  defp started_at(passthrough, _prev_mode), do: passthrough
 
   defp shift_ms(ms),
     do:

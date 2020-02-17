@@ -8,6 +8,7 @@ defmodule DutycycleTest do
   alias Dutycycle.Server
   alias Dutycycle.State
   alias Dutycycle.Supervisor
+  alias Janice.TimeSupport
 
   setup do
     :ok
@@ -46,7 +47,7 @@ defmodule DutycycleTest do
       log: false,
       profiles: [
         %Dutycycle.Profile{name: "fast", run_ms: 3_000, idle_ms: 3_000},
-        %Dutycycle.Profile{name: "medium", run_ms: 20_000, idle_ms: 20_000},
+        %Dutycycle.Profile{name: "very fast", run_ms: 99, idle_ms: 60_000},
         %Dutycycle.Profile{name: "slow", run_ms: 120_000, idle_ms: 60_000},
         %Dutycycle.Profile{name: "very slow", run_ms: 120_000, idle_ms: 60_000},
         %Dutycycle.Profile{name: "infinity", run_ms: 360_000, idle_ms: 360_000}
@@ -338,17 +339,18 @@ defmodule DutycycleTest do
   test "dutycycle server state changes from running to idling",
        context do
     {dc, name} = name_from_db(context[:num])
-    {rc1, _profile} = Server.activate_profile(name, "fast")
+    {rc1, _profile} = Server.activate_profile(name, "very fast")
 
     dc = Dutycycle.reload(dc)
 
-    %State{state: first_state} = Server.dutycycle_state(dc.name)
+    %State{state: first_state, started_at: started} =
+      Server.dutycycle_state(dc.name)
 
-    Process.sleep(3200)
-
+    Process.sleep(101)
     %State{state: second_state} = Server.dutycycle_state(dc.name)
 
     assert :ok === rc1
+    assert Timex.before?(started, TimeSupport.utc_now())
     assert first_state === "running"
     assert second_state === "idling"
   end
