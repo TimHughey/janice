@@ -15,11 +15,8 @@ defmodule Dutycycle.Server do
     call_server(name, msg)
   end
 
-  # function header for optional "opts" parameter
   def activate_profile(name, profile_name, opts \\ [])
-
-  def activate_profile(name, profile_name, opts)
-      when is_binary(name) and is_binary(profile_name) do
+      when is_binary(name) and is_binary(profile_name) and is_list(opts) do
     msg = %{:msg => :activate_profile, profile: profile_name, opts: opts}
     {rc, res} = call_server(name, msg)
 
@@ -169,30 +166,21 @@ defmodule Dutycycle.Server do
   ####
 
   def handle_call(
-        %{:msg => :activate_profile, profile: profile, dutycycle: dc},
+        %{:msg => :activate_profile, profile: profile, opts: opts} = msg,
         _from,
         s
       ) do
-    rc = Dutycycle.activate_profile(dc, profile)
-    s = cache_dutycycle(s)
+    delay_ms = Keyword.get(opts, :delay_ms, 0)
 
-    case rc do
-      {:ok, %Dutycycle{name: name, log: log} = dc, %Profile{name: profile_name},
-       :run} ->
-        log &&
-          Logger.debug(fn ->
-            "dutycycle #{inspect(name)} profile #{inspect(profile_name)} activated"
-          end)
+    if delay_ms == 0 do
+      {rc, s} = actual_activate_profile(msg, s)
 
-        s = cancel_timer(s, :phase_timer) |> start_phase_timer(rc)
+      {:reply, rc, s}
+    else
+      {rc, s} =
+        activate_profile_delayed(s, %{profile: profile, delay_ms: delay_ms})
 
-        {:reply, {:ok, dc}, cache_dutycycle(s)}
-
-      {:ok, %Dutycycle{} = dc, %Profile{}, :none} ->
-        {:reply, {:ok, dc}, cancel_timer(s, :phase_timer) |> cache_dutycycle()}
-
-      rc ->
-        {:reply, {:failed, rc}, s}
+      {:reply, rc, s}
     end
   end
 
@@ -358,35 +346,12 @@ defmodule Dutycycle.Server do
   # NOTE: this is nearly identical to the handle_call() for activating
   #       a profile so there is possibly an opportunity to refactor
   !def handle_info(
-         %{:msg => :activate_profile, profile: profile, opts: _opts},
-         %{dutycycle: dc} = s
+         %{:msg => :activate_profile} = msg,
+         %{} = s
        ) do
-    rc = Dutycycle.activate_profile(dc, profile)
-    s = cache_dutycycle(s)
+    {_rc, s} = actual_activate_profile(msg, s)
 
-    case rc do
-      {:ok, %Dutycycle{name: name, log: log}, %Profile{name: profile_name},
-       :run} ->
-        log &&
-          Logger.debug(fn ->
-            "dutycycle #{inspect(name)} profile #{inspect(profile_name)}" <>
-              " server start activate successful"
-          end)
-
-        s = cancel_timer(s, :all) |> start_phase_timer(rc)
-
-        {:noreply, cache_dutycycle(s)}
-
-      {:ok, %Dutycycle{}, %Profile{}, :none} ->
-        {:noreply, cancel_timer(s, :all) |> cache_dutycycle()}
-
-      rc ->
-        Logger.warn(fn ->
-          "initial activate failed #{inspect(rc, pretty: true)}"
-        end)
-
-        {:noreply, s}
-    end
+    {:noreply, s}
   end
 
   def handle_info(
@@ -491,32 +456,9 @@ defmodule Dutycycle.Server do
   def init(
         %{
           server_name: server_name,
-          dutycycle: %Dutycycle{name: name} = dc,
-          startup_delay_ms: activate_delay_ms
+          dutycycle: %Dutycycle{startup_delay_ms: activate_delay_ms} = dc
         } = s
       ) do
-    case Dutycycle.start(dc) do
-      {:ok, :inactive} ->
-        nil
-
-      {:ok, :run, profile} ->
-        Process.send_after(
-          server_name,
-          %{:msg => :activate_profile, profile: profile, opts: []},
-          activate_delay_ms
-        )
-
-        Logger.info(fn ->
-          inspect(name) <>
-            " profile " <>
-            inspect(Profile.active(dc) |> Profile.name()) <>
-            " will activate in #{inspect(activate_delay_ms)}ms"
-        end)
-
-      rc ->
-        Logger.warn(fn -> "Dutycyle.start() returned:\n#{inspect(rc)}" end)
-    end
-
     Process.flag(:trap_exit, true)
 
     Process.send_after(
@@ -525,20 +467,99 @@ defmodule Dutycycle.Server do
       Dutycycle.scheduled_work_ms(dc)
     )
 
-    {:ok, s}
+    # case statement determines return value
+    case Dutycycle.start(dc) do
+      {:ok, :inactive} ->
+        {:ok, s}
+
+      {:ok, :run, profile} ->
+        {_rc, s} =
+          activate_profile_delayed(s, %{
+            profile: profile,
+            delay_ms: activate_delay_ms
+          })
+
+        {:ok, s}
+
+      rc ->
+        Logger.warn("start() returned:\n#{inspect(rc, pretty: true)}")
+        {:ok, s}
+    end
   end
 
-  def terminate(reason, %{dutycycle: _dc}) do
-    Logger.debug(fn ->
-      "terminating with reason #{inspect(reason, pretty: true)}"
-    end)
+  def terminate(reason, %{dutycycle: %Dutycycle{name: name, log: log} = dc}) do
+    log &&
+      Logger.info(
+        inspect(name, pretty: true) <>
+          " terminating, reason #{inspect(reason, pretty: true)}"
+      )
 
-    # if not State.stopped?(dc), do: State.set(mode: "offline", dutycycle: dc)
+    Dutycycle.halt(dc)
   end
 
   ####
   #### PRIVATE FUNCTIONS
   ####
+
+  defp activate_profile_delayed(
+         %{
+           server_name: server_name,
+           dutycycle: %Dutycycle{name: name, log: log} = dc,
+           timers: timers
+         } = s,
+         %{
+           profile: profile,
+           delay_ms: delay_ms
+         }
+       ) do
+    timer =
+      Process.send_after(
+        server_name,
+        %{:msg => :activate_profile, profile: profile, opts: []},
+        delay_ms
+      )
+
+    log &&
+      Logger.info(
+        "#{inspect(name)} profile #{
+          inspect(Profile.name(profile), pretty: true)
+        }" <>
+          " will activate in #{inspect(delay_ms)}ms"
+      )
+
+    {{:ok, dc},
+     %{s | timers: Keyword.put(timers, :delayed_activate_timer, timer)}}
+  end
+
+  defp actual_activate_profile(
+         %{:msg => :activate_profile, profile: profile, opts: _opts},
+         %{dutycycle: %Dutycycle{} = dc} = s
+       ) do
+    rc = Dutycycle.activate_profile(dc, profile)
+    s = cache_dutycycle(s) |> cancel_timer(:delayed_activate_timer)
+
+    case rc do
+      {:ok, %Dutycycle{name: name, log: log} = dc, %Profile{name: profile_name},
+       :run} ->
+        log &&
+          Logger.info(
+            "#{inspect(name)} profile #{inspect(profile_name)} activated"
+          )
+
+        {{:ok, dc},
+         cancel_timer(s, :phase_timer)
+         |> start_phase_timer(rc)
+         |> cache_dutycycle()}
+
+      {:ok, %Dutycycle{} = dc, %Profile{}, :none} ->
+        {{:ok, dc}, cancel_timer(s, :phase_timer) |> cache_dutycycle()}
+
+      rc ->
+        {{:failed, rc}, s}
+    end
+
+    # case statement above returns {result, state}
+  end
 
   # when called with just the state do a reload of the dutycycle
   # and cache it
@@ -565,7 +586,6 @@ defmodule Dutycycle.Server do
     end
   end
 
-  # Refactor
   defp cancel_timer(%{timers: timers} = s, timer)
        when is_list(timers) and is_atom(timer) do
     timers =

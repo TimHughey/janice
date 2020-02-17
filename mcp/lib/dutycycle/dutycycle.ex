@@ -46,6 +46,7 @@ defmodule Dutycycle do
     field(:device)
     field(:active, :boolean, default: false)
     field(:scheduled_work_ms, :integer, default: 750)
+    field(:startup_delay_ms, :integer, default: 10_000)
     has_one(:state, State)
     has_many(:profiles, Profile)
 
@@ -329,7 +330,7 @@ defmodule Dutycycle do
     do: get_by(__MODULE__, name: name) |> preload([:state, :profiles])
 
   def halt(%Dutycycle{} = dc) do
-    with {%Dutycycle{}, {:ok, %State{}}} <- State.stop(dc),
+    with {%Dutycycle{}, {:ok, %State{}}} <- State.next_phase(:stop, dc),
          {:ok, %Dutycycle{}} <- deactivate(dc),
          {:reload, %Dutycycle{} = dc} <- {:reload, reload(dc)},
          {:ok, {:position, {:ok, false}}, dc} <-

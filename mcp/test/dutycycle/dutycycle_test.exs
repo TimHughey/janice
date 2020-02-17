@@ -20,6 +20,25 @@ defmodule DutycycleTest do
 
     for n <- new_dcs, do: new_dutycycle(n) |> Dutycycle.add()
 
+    %Dutycycle{
+      name: name_str(10),
+      comment: "with an active profile",
+      device: "no_device",
+      active: true,
+      log: true,
+      startup_delay_ms: 100,
+      profiles: [
+        %Dutycycle.Profile{
+          name: "slow",
+          active: true,
+          run_ms: 360_000,
+          idle_ms: 360_000
+        }
+      ],
+      state: %Dutycycle.State{}
+    }
+    |> Dutycycle.add()
+
     :ok
   end
 
@@ -399,12 +418,13 @@ defmodule DutycycleTest do
   end
 
   @tag num: 7
-  test "can pause (halt) and resume a known dutycycle",
+  test "can halt and resume a known dutycycle",
        context do
     {_dc, name} = name_from_db(context[:num])
     {rc1, res} = Server.activate_profile(name, "slow")
 
-    rc2 = Server.pause(name)
+    rc2 = Server.halt(name)
+    %Dutycycle{state: %State{started_at: started_at}} = Dutycycle.find(name)
     rc3 = Server.resume(name)
 
     assert :ok == rc1
@@ -412,6 +432,7 @@ defmodule DutycycleTest do
     assert res[:name] == name
     assert res[:active_profile] == "slow"
     assert {:device_not_found, %Dutycycle{}} = rc2
+    refute is_nil(started_at)
     # assert {:failed, {:ok, {:position, {:not_found, _}}}, %Dutycycle{}} = rc2
     assert {:ok, _profile} = rc3
   end
