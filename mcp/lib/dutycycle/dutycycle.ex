@@ -401,6 +401,13 @@ defmodule Dutycycle do
 
   def scheduled_work_ms(%Dutycycle{scheduled_work_ms: ms}), do: ms
 
+  def shutdown(%Dutycycle{name: name, log: log} = dc) do
+    next_phase(:offline, dc)
+
+    log &&
+      Logger.info("#{inspect(name, pretty: true)} shutdown and marked offline")
+  end
+
   def start(%Dutycycle{active: false} = dc) do
     Dutycycle.log?(dc) && Logger.info(fn -> dc_name(dc) <> " is inactive" end)
 

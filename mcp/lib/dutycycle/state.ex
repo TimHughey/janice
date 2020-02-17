@@ -63,7 +63,7 @@ defmodule Dutycycle.State do
   def idling?(%Dutycycle{state: %State{state: _}}), do: false
 
   def offline(%Dutycycle{} = dc) do
-    {dc, stop(dc, "offline")}
+    stop(dc, "offline")
   end
 
   def offline?(%Dutycycle{state: %State{state: "offline"}}), do: true

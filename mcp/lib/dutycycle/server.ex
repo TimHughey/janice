@@ -487,7 +487,7 @@ defmodule Dutycycle.Server do
     end
   end
 
-  def terminate(reason, %{dutycycle: %Dutycycle{name: name} = dc, log: log}) do
+  def terminate(reason, %{dutycycle: %Dutycycle{name: name, log: log} = dc}) do
     log &&
       Logger.info(
         inspect(name, pretty: true) <>
@@ -532,14 +532,8 @@ defmodule Dutycycle.Server do
   end
 
   defp actual_activate_profile(
-         %{:msg => :activate_profile, profile: _profile, opts: _opts},
-         %{dutycycle: %Dutycycle{active: false} = dc} = s
-       ),
-       do: {{:ok, dc}, s}
-
-  defp actual_activate_profile(
          %{:msg => :activate_profile, profile: profile, opts: _opts},
-         %{dutycycle: %Dutycycle{active: true} = dc} = s
+         %{dutycycle: dc} = s
        ) do
     rc = Dutycycle.activate_profile(dc, profile)
     s = cache_dutycycle(s) |> cancel_timer(:delayed_activate_timer)
