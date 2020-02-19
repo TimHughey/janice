@@ -382,14 +382,22 @@ defmodule Dutycycle do
   def profiles(%Dutycycle{profiles: profiles} = dc, opts \\ [])
       when is_list(opts) do
     only_active = Keyword.get(opts, :active, false)
+    profile_name = Keyword.get(opts, :profile, false)
 
-    if only_active,
-      do: Profile.active(dc),
-      else:
+    cond do
+      only_active ->
+        Profile.active(dc)
+
+      is_binary(profile_name) ->
+        Profile.find(dc, profile_name)
+
+      # if no opts were specified return all profile names and active flag
+      true ->
         for(
           %Profile{name: name, active: active} <- profiles,
           do: %{profile: name, active: active}
         )
+    end
   end
 
   def reload(%Dutycycle{id: id}), do: reload(id)
