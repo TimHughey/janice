@@ -10,24 +10,28 @@ defmodule Dutycycle.Server do
   #### API
   ####
 
-  def active?(name, opts \\ []) when is_binary(name) and is_list(opts) do
-    msg = %{:msg => :active?, opts: opts}
-    call_server(name, msg)
-  end
+  def active?(name, opts \\ []) when is_binary(name) and is_list(opts),
+    do:
+      %{name: name, msg: %{msg: :active?, opts: opts}}
+      |> call_server()
 
   def activate_profile(name, profile_name, opts \\ [])
       when is_binary(name) and is_binary(profile_name) and is_list(opts) do
-    msg = %{:msg => :activate_profile, profile: profile_name, opts: opts}
-    {rc, res} = call_server(name, msg)
+    {rc, res} =
+      %{
+        name: name,
+        msg: %{msg: :activate_profile, profile: profile_name, opts: opts}
+      }
+      |> call_server()
 
     {rc, Dutycycle.status(res)}
   end
 
   def add_profile(name, %Profile{} = p, opts \\ [])
-      when is_binary(name) and is_list(opts) do
-    msg = %{:msg => :add_profile, profile: p, opts: opts}
-    call_server(name, msg)
-  end
+      when is_binary(name) and is_list(opts),
+      do:
+        %{name: name, msg: %{msg: :add_profile, profile: p, opts: opts}}
+        |> call_server()
 
   def all(:dutycycles) do
     servers = Dutycycle.Supervisor.known_servers()
@@ -50,10 +54,10 @@ defmodule Dutycycle.Server do
   def all(:as_maps), do: all(:dutycycles)
 
   def change_device(name, new_device)
-      when is_binary(name) and is_binary(new_device) do
-    msg = %{:msg => :change_device, new_device: new_device}
-    call_server(name, msg)
-  end
+      when is_binary(name) and is_binary(new_device),
+      do:
+        %{name: name, msg: %{msg: :change_device, new_device: new_device}}
+        |> call_server()
 
   def delete(name) when is_binary(name), do: Dutycycle.delete(name)
 
@@ -65,12 +69,20 @@ defmodule Dutycycle.Server do
 
   def delete_profile(name, profile, opts \\ [])
       when is_binary(name) and
-             is_binary(profile) do
-    msg = %{:msg => :delete_profile, profile: profile, opts: opts}
-    call_server(name, msg)
-  end
+             is_binary(profile),
+      do:
+        %{
+          name: name,
+          msg: %{msg: :delete_profile, profile: profile, opts: opts}
+        }
+        |> call_server()
 
-  def dutycycle(server_name, opts \\ []) when is_atom(server_name) do
+  def dutycycle(x, opts \\ [])
+
+  def dutycycle(name, opts) when is_binary(name),
+    do: %{name: name, msg: %{msg: :dutycycle, opts: opts}} |> call_server()
+
+  def dutycycle(server_name, opts) when is_atom(server_name) do
     msg = %{:msg => :dutycycle, opts: opts}
 
     pid = Process.whereis(server_name)
@@ -79,41 +91,44 @@ defmodule Dutycycle.Server do
   end
 
   def dutycycle_state(name, opts \\ [])
-      when is_binary(name) and is_list(opts) do
-    msg = %{:msg => :dutycycle_state, opts: opts}
-    call_server(name, msg)
-  end
+      when is_binary(name) and is_list(opts),
+      do:
+        %{name: name, msg: %{msg: :dutycycle_state, opts: opts}}
+        |> call_server()
 
-  def halt(name, opts \\ []) when is_binary(name) do
-    msg = %{:msg => :halt, opts: opts}
-    call_server(name, msg)
-  end
+  def halt(name, opts \\ []) when is_binary(name),
+    do:
+      %{name: name, msg: %{msg: :halt, opts: opts}}
+      |> call_server()
 
   def log(name, opts \\ []) when is_binary(name),
-    do: %{name: name, msg: %{:msg => :log, opts: opts}} |> call_server()
+    do: %{name: name, msg: %{msg: :log, opts: opts}} |> call_server()
 
   def pause(name, opts \\ []) when is_binary(name), do: halt(name, opts)
 
-  def ping(name, opts \\ []) when is_binary(name) do
-    msg = %{:msg => :ping, opts: opts}
-    call_server(name, msg)
-  end
+  def ping(name, opts \\ []) when is_binary(name),
+    do:
+      %{name: name, msg: %{msg: :ping, opts: opts}}
+      |> call_server()
 
-  def profiles(name, opts \\ []) when is_binary(name) and is_list(opts) do
-    msg = %{:msg => :profiles, opts: opts}
-    call_server(name, msg)
-  end
+  def profiles(name, opts \\ []) when is_binary(name) and is_list(opts),
+    do:
+      %{name: name, msg: %{msg: :profiles, opts: opts}}
+      |> call_server()
 
-  def reload(name, opts \\ []) when is_binary(name) and is_list(opts) do
-    msg = %{:msg => :reload, opts: opts}
-    call_server(name, msg)
-  end
+  def reload(name, opts \\ []) when is_binary(name) and is_list(opts),
+    do:
+      %{name: name, msg: %{msg: :reload, opts: opts}}
+      |> call_server()
 
-  def resume(name, opts \\ []) when is_binary(name) and is_list(opts) do
+  def resume(name, opts \\ []) when is_binary(name) and is_list(opts),
     # special case for resume -> request activation of the :active profile
-    msg = %{:msg => :activate_profile, profile: :active, opts: opts}
-    call_server(name, msg)
-  end
+    do:
+      %{
+        name: name,
+        msg: %{msg: :activate_profile, profile: :active, opts: opts}
+      }
+      |> call_server()
 
   def restart(name) when is_binary(name),
     do: Dutycycle.Supervisor.restart_dutycycle(name)
@@ -135,28 +150,32 @@ defmodule Dutycycle.Server do
     d
   end
 
-  def switch_state(name, opts \\ []) when is_binary(name) do
-    msg = %{:msg => :switch_state, opts: opts}
-    call_server(name, msg)
-  end
+  def switch_state(name, opts \\ []) when is_binary(name),
+    do:
+      %{name: name, msg: %{:msg => :switch_state, opts: opts}}
+      |> call_server()
 
-  def update(name, opts) when is_binary(name) and is_list(opts) do
-    msg = %{:msg => :update, opts: opts}
-    call_server(name, msg)
-  end
+  def update(name, opts) when is_binary(name) and is_list(opts),
+    do:
+      %{name: name, msg: :update, opts: opts}
+      |> call_server()
 
   def update(_catchall), do: Logger.warn("update(dutycycle_name, opts")
 
   def update_profile(name, profile, opts)
       when is_binary(name) and is_binary(profile) and is_list(opts) do
-    msg = %{:msg => :update_profile, profile: profile, opts: opts}
+    msg = %{msg: :update_profile, profile: profile, opts: opts}
 
     %{profile: {rc, res}, reload: reload} = call_server(name, msg)
 
     # if the change was successful and it was to the active profile then
     # then re-activate the profile to effectuate the changes made
-    reload && :ok === rc && Profile.active?(res) &&
-      activate_profile(name, Profile.name(res))
+    if rc == :ok do
+      dc = dutycycle(name)
+
+      reload && Dutycycle.active?(dc) && Profile.active?(res) &&
+        activate_profile(name, Profile.name(res))
+    end
 
     %{profile: {rc, res}, reload: reload}
   end
@@ -166,7 +185,7 @@ defmodule Dutycycle.Server do
   ####
 
   def handle_call(
-        %{:msg => :activate_profile, profile: profile, opts: opts} = msg,
+        %{msg: :activate_profile, profile: profile, opts: opts} = msg,
         _from,
         s
       ) do
@@ -184,7 +203,7 @@ defmodule Dutycycle.Server do
     end
   end
 
-  def handle_call(%{:msg => :add_profile, profile: p}, _from, s) do
+  def handle_call(%{msg: :add_profile, profile: p}, _from, s) do
     rc = Profile.add(s.dutycycle, p)
 
     s = need_reload(s, reload: true) |> reload_dutycycle()
@@ -193,7 +212,7 @@ defmodule Dutycycle.Server do
   end
 
   def handle_call(
-        %{:msg => :delete_profile, :profile => profile, :opts => opts},
+        %{msg: :delete_profile, profile: profile, opts: opts},
         _from,
         %{dutycycle: dc} = s
       ) do
@@ -204,11 +223,18 @@ defmodule Dutycycle.Server do
     {:reply, {rc, res}, cache_dutycycle(s)}
   end
 
-  !def handle_call(
-         %{:msg => :dutycycle_state, :opts => opts},
-         _from,
-         %{dutycycle: dc} = s
-       ) do
+  def handle_call(
+        %{msg: :dutycycle, opts: _opts},
+        _from,
+        %{dutycycle: dc} = s
+      ),
+      do: {:reply, dc, s}
+
+  def handle_call(
+        %{msg: :dutycycle_state, opts: opts},
+        _from,
+        %{dutycycle: dc} = s
+      ) do
     {%Dutycycle{} = dc, %Dutycycle.State{} = st} =
       Dutycycle.current_state(dc, opts)
 
@@ -219,7 +245,7 @@ defmodule Dutycycle.Server do
   end
 
   def handle_call(
-        %{:msg => :change_device, new_device: new_device},
+        %{msg: :change_device, new_device: new_device},
         _from,
         %{dutycycle: dc} = s
       ) do
@@ -242,16 +268,12 @@ defmodule Dutycycle.Server do
     end
   end
 
-  def handle_call(%{:msg => :dutycycle}, _from, %{dutycycle: d} = s) do
-    {:reply, d, s}
-  end
-
-  def handle_call(%{:msg => :ping}, _from, s) do
+  def handle_call(%{msg: :ping}, _from, s) do
     {:reply, :pong, s}
   end
 
   def handle_call(
-        %{:msg => :profiles, :opts => opts},
+        %{msg: :profiles, opts: opts},
         _from,
         %{dutycycle: dc} = s
       ),
@@ -266,7 +288,7 @@ defmodule Dutycycle.Server do
   end
 
   def handle_call(
-        %{:msg => :halt, :opts => _opts},
+        %{msg: :halt, opts: _opts},
         _from,
         %{dutycycle: dc} = s
       ) do
@@ -277,7 +299,7 @@ defmodule Dutycycle.Server do
   end
 
   def handle_call(
-        %{:msg => :log, :opts => opts},
+        %{msg: :log, opts: opts},
         _from,
         %{dutycycle: dc} = s
       ) do
@@ -287,7 +309,7 @@ defmodule Dutycycle.Server do
   end
 
   def handle_call(
-        %{:msg => :switch_state, :opts => _opts},
+        %{msg: :switch_state, opts: _opts},
         _from,
         %{dutycycle: %Dutycycle{device: device}} = s
       ) do
@@ -297,7 +319,7 @@ defmodule Dutycycle.Server do
   end
 
   def handle_call(
-        %{:msg => :active?, :opts => _opts},
+        %{msg: :active?, opts: _opts},
         _from,
         %{dutycycle: dc} = s
       ) do
@@ -305,7 +327,7 @@ defmodule Dutycycle.Server do
   end
 
   def handle_call(
-        %{:msg => :update, :opts => opts},
+        %{msg: :update, opts: opts},
         _from,
         %{dutycycle: dc} = s
       ) do
@@ -319,7 +341,7 @@ defmodule Dutycycle.Server do
   end
 
   def handle_call(
-        %{:msg => :update_profile, :profile => profile, :opts => opts},
+        %{msg: :update_profile, profile: profile, opts: opts},
         _from,
         %{dutycycle: dc} = s
       ) do
@@ -332,7 +354,7 @@ defmodule Dutycycle.Server do
   end
 
   # handle case when we receive a message that we don't understand
-  def handle_call(%{:msg => _unhandled} = msg, _from, %{dutycycle: dc} = s) do
+  def handle_call(%{msg: _unhandled} = msg, _from, %{dutycycle: dc} = s) do
     Logger.warn(fn ->
       "unhandled message\n" <>
         inspect(msg, pretty: true) <>
@@ -343,10 +365,8 @@ defmodule Dutycycle.Server do
     {:reply, :unhandled_msg, s}
   end
 
-  # NOTE: this is nearly identical to the handle_call() for activating
-  #       a profile so there is possibly an opportunity to refactor
   !def handle_info(
-         %{:msg => :activate_profile} = msg,
+         %{msg: :activate_profile} = msg,
          %{} = s
        ) do
     {_rc, s} = actual_activate_profile(msg, s)
@@ -355,7 +375,7 @@ defmodule Dutycycle.Server do
   end
 
   def handle_info(
-        %{:msg => :phase_end, :profile => profile, :ms => _ms},
+        %{msg: :phase_end, profile: profile, ms: _ms},
         %{dutycycle: dc} = s
       )
       when is_binary(profile) do
@@ -386,7 +406,7 @@ defmodule Dutycycle.Server do
     end
   end
 
-  def handle_info(%{:msg => :scheduled_work}, %{server_name: server_name} = s) do
+  def handle_info(%{msg: :scheduled_work}, %{server_name: server_name} = s) do
     s = %{dutycycle: dc} = reload_dutycycle(s)
 
     Process.send_after(
@@ -532,7 +552,7 @@ defmodule Dutycycle.Server do
   end
 
   defp actual_activate_profile(
-         %{:msg => :activate_profile, profile: profile, opts: _opts},
+         %{msg: :activate_profile, profile: profile, opts: _opts},
          %{dutycycle: dc} = s
        ) do
     rc = Dutycycle.activate_profile(dc, profile)

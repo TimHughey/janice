@@ -73,7 +73,8 @@ defmodule Reef do
   def mix_pump_pause, do: dc_halt(rmp())
   def mix_pump_resume, do: dc_resume(rmp())
 
-  def mix_rodi_fast, do: dc_activate_profile(rmrf(), "fast")
+  def mix_rodi(p) when is_binary(p), do: dc_activate_profile(rmrf(), p)
+  def mix_rodi_boost, do: dc_activate_profile(rmrf(), "boost")
   def mix_rodi_halt, do: dc_halt(rmrf())
 
   def mix_standby do
@@ -110,6 +111,7 @@ defmodule Reef do
   def halt_air, do: dc_halt(rma())
   def halt_display_tank, do: ths_standby(dt())
   def halt_pump, do: dc_halt(rmp())
+  def halt_rodi, do: dc_halt(rmrf())
 
   def resume("display tank ato"), do: dc_halt(ato())
   def resume(name) when is_binary(name), do: dc_resume(name)
@@ -117,6 +119,7 @@ defmodule Reef do
   def resume_air, do: dc_resume(rma())
   def resume_display_tank, do: ths_activate(dt(), "75F")
   def resume_pump, do: dc_resume(rmp())
+  def resume_rodi, do: dc_resume(rmrf())
 
   def ths_activate(th, profile)
       when is_binary(th) and is_binary(profile),

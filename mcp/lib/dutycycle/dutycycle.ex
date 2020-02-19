@@ -460,13 +460,20 @@ defmodule Dutycycle do
     end
   end
 
-  def update(%Dutycycle{} = dc, opts) when is_list(opts) do
+  def update(%Dutycycle{name: name, log: log} = dc, opts) when is_list(opts) do
     set = Keyword.take(opts, possible_changes()) |> Enum.into(%{})
 
     cs = changeset(dc, set)
 
     if cs.valid? do
       dc = update!(cs) |> reload()
+
+      log &&
+        Logger.info(
+          "#{inspect(name, pretty: true)}" <>
+            " updated " <> inspect(opts, pretty: true)
+        )
+
       {:ok, dc}
     else
       {:invalid_changes, cs}
