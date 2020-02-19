@@ -385,7 +385,7 @@ defmodule Dutycycle do
     profile_name = Keyword.get(opts, :profile, false)
 
     cond do
-      only_active ->
+      only_active and not is_binary(profile_name) ->
         Profile.active(dc)
 
       is_binary(profile_name) ->
@@ -416,28 +416,34 @@ defmodule Dutycycle do
       Logger.info("#{inspect(name, pretty: true)} shutdown and marked offline")
   end
 
-  def start(%Dutycycle{active: false} = dc) do
-    Dutycycle.log?(dc) && Logger.info(fn -> dc_name(dc) <> " is inactive" end)
+  def start(%Dutycycle{active: active} = dc) do
+    no_active_profile = Profile.none?(dc)
 
-    {:ok, :inactive}
-  end
+    cond do
+      not active ->
+        log_info(dc, " is inactive")
+        # ensure the state represents the Dutycycle is up but inactive
+        next_phase(:stop, dc)
 
-  def start(%Dutycycle{active: true} = dc) do
-    if Profile.none?(dc) do
-      Dutycycle.log?(dc) &&
-        Logger.info(fn -> dc_name(dc) <> " does not have an active profile" end)
+        {:ok, :inactive}
 
-      {:ok, :inactive}
-    else
-      active_profile = Profile.active(dc)
+      no_active_profile ->
+        log_info(dc, " does not have an active profile")
+        # ensure the state represents the Dutycycle is up but inactive
+        next_phase(:stop, dc)
 
-      Dutycycle.log?(dc) &&
-        Logger.info(fn ->
-          dc_name(dc) <>
-            " will start with profile #{inspect(Profile.name(active_profile))}"
-        end)
+        {:ok, :inactive}
 
-      {:ok, :run, active_profile}
+      true ->
+        active_profile = Profile.active(dc)
+
+        log_info(
+          dc,
+          " will start with profile " <>
+            "#{inspect(Profile.name(active_profile))}"
+        )
+
+        {:ok, :run, active_profile}
     end
   end
 
@@ -552,6 +558,14 @@ defmodule Dutycycle do
 
   defp dc_name(%Dutycycle{name: name}), do: "#{inspect(name, pretty: true)}"
   defp dc_name(catchall), do: "#{inspect(catchall, pretty: true)} "
+
+  defp log_info(%Dutycycle{name: name, log: log}, msg) do
+    if log do
+      Logger.info("#{inspect(name, pretty: true)} #{msg}")
+    else
+      :ok
+    end
+  end
 
   defp possible_changes,
     do: [:name, :comment, :device, :log, :active, :scheduled_work_ms]

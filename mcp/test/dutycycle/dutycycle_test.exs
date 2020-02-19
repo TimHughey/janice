@@ -211,13 +211,17 @@ defmodule DutycycleTest do
   end
 
   @tag num: 1
+  @tag profile: "infinity"
   test "can get a %Profile{} by name via Dutycycle.Server", context do
+    test_profile = context[:profile]
     {_dc, name} = name_from_db(context[:num])
 
-    profile = Dutycycle.Server.profiles(name, profile: "slow")
+    all_profiles = Dutycycle.Server.profiles(name)
+    profile = Dutycycle.Server.profiles(name, profile: test_profile)
 
+    assert is_list(all_profiles)
     assert %Profile{} = profile
-    assert %Profile{name: "slow"} = profile
+    assert %Profile{name: ^test_profile} = profile
   end
 
   @tag num: 1
