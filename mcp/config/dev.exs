@@ -18,6 +18,42 @@ config :mcp,
     rpt: {"dev/mcr/f/report", :qos0}
   ]
 
+config :mcp,
+  # listed in startup order
+  start_children: [
+    {Repo, []},
+    :core_supervisors,
+    # TODO: once the Supervisors below are implemented remove the following
+    #       specific list of supervisors
+    :protocol_supervisors,
+    :support_workers,
+    :worker_supervisors,
+    :misc_workers
+  ],
+  core_supervisors: [
+    # TODO: implement the Supervisors below to create a 'proper'
+    #       supervisom tree that does not restart servers uncessary
+    # {Protocols.Supervisor, []},
+    # {Support.Supervisor, []},
+    # {Workers.Supervisor, []},
+    # {Misc.Supervisors, []}
+  ],
+  protocol_supervisors: [
+    {Fact.Supervisor, %{autostart: false}},
+    {Mqtt.Supervisor, %{autostart: false}}
+  ],
+  support_workers: [
+    {Janitor, %{autostart: true}}
+  ],
+  worker_supervisors: [
+    # DynamicSupervisors
+    {Dutycycle.Supervisor, %{autostart: false, start_children: false}},
+    {Thermostat.Supervisor, %{autostart: false, start_servers: false}}
+  ],
+  misc_workers: [
+    {Janice.Scheduler, []}
+  ]
+
 config(:mcp, Janitor,
   switch_cmds: [
     purge: true,

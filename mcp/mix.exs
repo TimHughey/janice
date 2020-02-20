@@ -26,8 +26,8 @@ defmodule Mcp.Mixfile do
   def project do
     [
       app: :mcp,
-      version: "0.1.42",
-      elixir: "~> 1.9",
+      version: "0.1.43",
+      elixir: "~> 1.10",
       deps: deps(),
       releases: releases(),
       start_permanent: Mix.env() == :prod,

@@ -2,6 +2,7 @@ defmodule DutycycleTest do
   @moduledoc false
 
   use ExUnit.Case, async: true
+
   # import ExUnit.CaptureLog
 
   alias Dutycycle.Profile
@@ -242,7 +243,7 @@ defmodule DutycycleTest do
 
     assert is_map(st1)
     assert is_map(st2)
-    assert st1 == st2
+    assert st1.id == st2.id
   end
 
   @tag num: 1
