@@ -157,7 +157,7 @@ defmodule Dutycycle.Server do
 
   def update(name, opts) when is_binary(name) and is_list(opts),
     do:
-      %{name: name, msg: :update, opts: opts}
+      %{name: name, msg: %{msg: :update, opts: opts}}
       |> call_server()
 
   def update(_catchall), do: Logger.warn("update(dutycycle_name, opts")
