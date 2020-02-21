@@ -193,6 +193,9 @@ defmodule Dutycycle do
     {dc, dc.state}
   end
 
+  def dc_name(%Dutycycle{name: name}), do: inspect(name, pretty: true)
+  def dc_name(catchall), do: inspect(catchall, pretty: true)
+
   def delete(name) when is_binary(name) do
     dc = find(name)
 
@@ -568,9 +571,6 @@ defmodule Dutycycle do
   defp deactivate(%Dutycycle{} = dc) do
     update(dc, active: false)
   end
-
-  defp dc_name(%Dutycycle{name: name}), do: inspect(name, pretty: true)
-  defp dc_name(catchall), do: inspect(catchall, pretty: true)
 
   defp possible_changes,
     do: [:name, :comment, :device, :log, :active, :scheduled_work_ms]

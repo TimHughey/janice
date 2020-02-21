@@ -4,6 +4,7 @@ defmodule Dutycycle.Server do
   require Logger
   use GenServer
 
+  import Dutycycle, only: [dc_name: 1]
   alias Dutycycle.Profile
 
   ####
@@ -189,7 +190,12 @@ defmodule Dutycycle.Server do
       %{name: name, msg: %{msg: :update, opts: opts}}
       |> call_server()
 
-  def update(_catchall), do: Logger.warn("update(dutycycle_name, opts")
+  def update(catchall),
+    do:
+      Logger.warn([
+        "update(dutycycle_name, opts) bad args: ",
+        inspect(catchall, pretty: true)
+      ])
 
   def update_profile(name, profile, opts)
       when is_binary(name) and is_binary(profile) and is_list(opts) do
@@ -291,8 +297,11 @@ defmodule Dutycycle.Server do
         {:reply, :ok, %{s | dutycycle: dc}}
 
       rc ->
-        Logger.warn(fn -> "unmatched change_device result" end)
-        Logger.warn(fn -> "#{inspect(rc, pretty: true)}" end)
+        Logger.warn([
+          "unmatched change_device result: ",
+          inspect(rc, pretty: true)
+        ])
+
         {:reply, :internal_error, s}
     end
   end
@@ -384,12 +393,12 @@ defmodule Dutycycle.Server do
 
   # handle case when we receive a message that we don't understand
   def handle_call(%{msg: _unhandled} = msg, _from, %{dutycycle: dc} = s) do
-    Logger.warn(fn ->
-      "unhandled message\n" <>
-        inspect(msg, pretty: true) <>
-        "\n" <>
-        inspect(dc, pretty: true)
-    end)
+    Logger.warn([
+      "handle_call() unhandled message\n",
+      inspect(msg, pretty: true),
+      "\n",
+      inspect(dc, pretty: true)
+    ])
 
     {:reply, :unhandled_msg, s}
   end
@@ -417,19 +426,19 @@ defmodule Dutycycle.Server do
       false ->
         active_profile = Profile.active(dc)
 
-        Logger.warn(fn ->
-          "#{inspect(dc.name)}" <>
-            " phase end timer for #{inspect(profile, pretty: true)} does not" <>
-            " match active profile #{inspect(active_profile, pretty: true)}, ignored"
-        end)
+        Logger.warn([
+          dc_name(dc),
+          " phase end timer for ",
+          inspect(profile, pretty: true),
+          " does not match active profile ",
+          inspect(active_profile, pretty: true),
+          " ignored"
+        ])
 
         {:noreply, s}
 
       error ->
-        Logger.warn(fn ->
-          "phase_end(): " <>
-            "#{inspect(error, pretty: true)}"
-        end)
+        Logger.warn(["phase_end(): ", inspect(error, pretty: true)])
 
         {:noreply, s}
     end
@@ -451,11 +460,14 @@ defmodule Dutycycle.Server do
     if reason == :normal do
       {{:stop, :normal}, s}
     else
-      Logger.warn(fn ->
-        ":EXIT #{inspect(dc.name)} message pid: #{inspect(pid, pretty: true)} reason: #{
-          inspect(reason, pretty: true)
-        }"
-      end)
+      Logger.warn([
+        ":EXIT ",
+        dc_name(dc),
+        " message pid: ",
+        inspect(pid, pretty: true),
+        " reason: ",
+        inspect(reason, pretty: true)
+      ])
 
       {{:stop, reason}, s}
     end
@@ -482,7 +494,7 @@ defmodule Dutycycle.Server do
   end
 
   def start_link(%{id: id} = args) do
-    Logger.debug(fn -> "start_link() args: #{inspect(args, pretty: true)}" end)
+    Logger.debug(["start_link() args: ", inspect(args, pretty: true)])
 
     opts = Application.get_env(:mcp, Dutycycle.Server, [])
     {dc, server_name} = server_name(id)
@@ -533,17 +545,18 @@ defmodule Dutycycle.Server do
         {:ok, s}
 
       rc ->
-        Logger.warn("start() returned:\n#{inspect(rc, pretty: true)}")
+        Logger.warn(["start() returned:\n", inspect(rc, pretty: true)])
         {:ok, s}
     end
   end
 
   def terminate(reason, %{dutycycle: %Dutycycle{name: name, log: log} = dc}) do
     log &&
-      Logger.info(
-        inspect(name, pretty: true) <>
-          " terminating, reason #{inspect(reason, pretty: true)}"
-      )
+      Logger.info([
+        inspect(name, pretty: true),
+        " terminating, reason ",
+        inspect(reason, pretty: true)
+      ])
 
     Dutycycle.shutdown(dc)
   end
@@ -555,7 +568,7 @@ defmodule Dutycycle.Server do
   defp activate_profile_delayed(
          %{
            server_name: server_name,
-           dutycycle: %Dutycycle{name: name, log: log} = dc,
+           dutycycle: %Dutycycle{name: _name, log: log} = dc,
            timers: timers
          } = s,
          %{
@@ -571,12 +584,14 @@ defmodule Dutycycle.Server do
       )
 
     log &&
-      Logger.info(
-        "#{inspect(name)} profile #{
-          inspect(Profile.name(profile), pretty: true)
-        }" <>
-          " will activate in #{inspect(delay_ms)}ms"
-      )
+      Logger.info([
+        dc_name(dc),
+        " profile ",
+        inspect(Profile.name(profile), pretty: true),
+        " will activate in ",
+        inspect(delay_ms),
+        "ms"
+      ])
 
     {{:ok, dc},
      %{s | timers: Keyword.put(timers, :delayed_activate_timer, timer)}}
@@ -590,12 +605,15 @@ defmodule Dutycycle.Server do
     s = cache_dutycycle(s) |> cancel_timer(:delayed_activate_timer)
 
     case rc do
-      {:ok, %Dutycycle{name: name, log: log} = dc, %Profile{name: profile_name},
-       :run} ->
+      {:ok, %Dutycycle{name: _name, log: log} = dc,
+       %Profile{name: profile_name}, :run} ->
         log &&
-          Logger.info(
-            "#{inspect(name)} profile #{inspect(profile_name)} activated"
-          )
+          Logger.info([
+            dc_name(dc),
+            " profile ",
+            inspect(profile_name),
+            " activated"
+          ])
 
         {{:ok, dc},
          cancel_timer(s, :phase_timer)
@@ -707,28 +725,31 @@ defmodule Dutycycle.Server do
 
   # Refactor
   defp start_phase_timer(%{} = s, rc) do
-    Logger.warn(fn ->
-      "start_phase_timer received #{inspect(rc, pretty: true)} end"
-    end)
+    Logger.warn([
+      "start_phase_timer received ",
+      inspect(rc, pretty: true)
+    ])
 
     s
   end
 
   defp reload_dutycycle(
-         %{dutycycle: %Dutycycle{name: name, id: id} = dc, need_reload: true} =
+         %{dutycycle: %Dutycycle{name: _name, id: id} = dc, need_reload: true} =
            s
        ) do
     dc = Dutycycle.reload(dc)
     log = Map.get(s, :log_reload, false)
 
     if is_nil(dc) do
-      Logger.warn(fn ->
-        "dutycycle id=#{inspect(id, pretty: true)} reload failed"
-      end)
+      Logger.warn([
+        "dutycycle id=",
+        inspect(id, pretty: true),
+        " reload failed"
+      ])
 
       s
     else
-      log && Logger.info(fn -> "#{inspect(name)} reloaded" end)
+      log && Logger.info([dc_name(dc), " reloaded"])
       Map.merge(s, %{need_reload: false, dutycycle: dc})
     end
   end
