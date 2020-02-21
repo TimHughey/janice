@@ -43,7 +43,7 @@ config :mcp,
   ],
   worker_supervisors: [
     # DynamicSupervisors
-    {Dutycycle.Supervisor, %{autostart: true, start_children: true}},
+    {Dutycycle.Supervisor, %{autostart: true, start_servers: true}},
     {Thermostat.Supervisor, %{autostart: true, start_servers: true}}
   ],
   misc_workers: [

@@ -16,19 +16,10 @@ defmodule Dutycycle.Supervisor do
   end
 
   def init(args) do
-    Logger.info(fn -> "init()" end)
+    Logger.info(["init() args: ", inspect(args, pretty: true)])
 
-    ids = Dutycycle.all(:ids)
-
-    dc_children =
-      for id <- ids do
-        {Dutycycle.Server, Map.put(args, :id, id)}
-      end
-
-    # List all child processes to be supervised
-    c = if Map.get(args, :start_children, false), do: dc_children, else: []
-
-    Supervisor.init(c, strategy: :rest_for_one, name: __MODULE__)
+    servers_to_start(args)
+    |> Supervisor.init(strategy: :one_for_one, name: __MODULE__)
   end
 
   def is_match?(a, name) when is_atom(a) do
@@ -58,7 +49,47 @@ defmodule Dutycycle.Supervisor do
       else: :not_found
   end
 
+  def server_name_atom(%{id: id}),
+    do:
+      String.to_atom(
+        "Duty_ID" <> String.pad_leading(Integer.to_string(id), 6, "0")
+      )
+
+  def server_name_atom(_), do: :no_server
+
+  def start_child(%{id: id, start: _, log: log} = spec) when is_atom(id) do
+    {rc, pid} = Supervisor.start_child(__MODULE__, spec)
+
+    if rc == :ok,
+      do:
+        log &&
+          Logger.info([
+            "started child ",
+            inspect(id, pretty: true)
+          ]),
+      else:
+        Logger.warn([
+          "failed to start child ",
+          inspect(id, pretty: true),
+          " ",
+          inspect(rc, pretty: true)
+        ])
+
+    {rc, pid}
+  end
+
+  def start_child(catchall),
+    do:
+      Logger.warn(["start_child() bad args: ", inspect(catchall, pretty: true)])
+
   def start_link(args) do
     Supervisor.start_link(__MODULE__, args, name: __MODULE__)
   end
+
+  defp servers_to_start(%{start_servers: true} = args) do
+    for id <- Dutycycle.all(:ids),
+        do: {Dutycycle.Server, Map.put(args, :id, id)}
+  end
+
+  defp servers_to_start(_args), do: []
 end

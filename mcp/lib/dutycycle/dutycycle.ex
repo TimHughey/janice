@@ -65,19 +65,19 @@ defmodule Dutycycle do
       activate_profile(dc, active_profile, opts)
     else
       {:no_active_profile, true} ->
-        Logger.warn(fn ->
-          dc_name(dc) <>
-            " does not have an active profile to activate"
-        end)
+        Logger.warn([
+          dc_name(dc),
+          " does not have an active profile to activate"
+        ])
 
         {:no_active_profile, dc}
 
       unhandled ->
-        Logger.warn(fn ->
-          dc_name(dc) <>
-            " activate active profile unhandled condition " <>
-            "#{inspect(unhandled, pretty: true)}"
-        end)
+        Logger.warn([
+          dc_name(dc),
+          " activate active profile unhandled condition ",
+          inspect(unhandled, pretty: true)
+        ])
     end
   end
 
@@ -93,48 +93,47 @@ defmodule Dutycycle do
            {:first_phase, end_of_phase(dc, next_profile)},
          {:ok, {:position, true}, dc} <- control_device(dc, lazy: false) do
       log &&
-        Logger.info(fn ->
-          dc_name(dc) <>
-            " activated profile #{inspect(Profile.name(next_profile))}" <>
-            " first phase #{inspect(mode, pretty: true)}"
-        end)
+        Logger.info([
+          dc_name(dc),
+          " activated profile ",
+          inspect(Profile.name(next_profile)),
+          " first phase ",
+          inspect(mode, pretty: true)
+        ])
 
       {:ok, reload(dc), next_profile, mode}
     else
       {:none, %Profile{}} ->
-        Logger.warn(dc_name(dc) <> " deactivated, profile none")
+        Logger.warn([dc_name(dc), " deactivated, profile none"])
 
         {rc, dc} = deactivate(dc)
 
         {rc, reload(dc), %Profile{name: "none"}, :none}
 
       {:activate_profile_failed, error} ->
-        Logger.warn(fn ->
-          "activate failed #{inspect(error, pretty: true)}"
-        end)
+        Logger.warn(["activate failed ", inspect(error, pretty: true)])
 
         {:failed, profile, error}
 
       {:first_phase, error} ->
-        Logger.warn(fn ->
-          "next_phase() failed: #{inspect(error, pretty: true)}"
-        end)
+        Logger.warn(["next_phase() failed: ", inspect(error, pretty: true)])
 
       {:ok, {:position, pos}, dc} ->
         log?(dc) &&
-          Logger.debug(fn ->
-            dc_name(dc) <>
-              " device state is " <>
-              inspect(pos, pretty: true) <>
-              " after profile activation"
-          end)
+          Logger.debug([
+            dc_name(dc),
+            " device state is ",
+            inspect(pos, pretty: true),
+            " after profile activation"
+          ])
 
         {:ok, dc, Profile.active(dc), :run}
 
       error ->
-        Logger.warn(fn ->
-          "unhandled activate failure #{inspect(error, pretty: true)}"
-        end)
+        Logger.warn([
+          "unhandled activate failure ",
+          inspect(error, pretty: true)
+        ])
 
         {:failed, dc}
     end
@@ -142,11 +141,11 @@ defmodule Dutycycle do
 
   def active?(%Dutycycle{active: val}), do: val
 
-  def add([]), do: []
-
-  def add([%Dutycycle{} = dc | rest]) do
-    [add(dc)] ++ add(rest)
-  end
+  # def add(list) when is_list(list) do
+  #   for(dc <- list) do
+  #     add(dc)
+  #   end
+  # end
 
   def add(%Dutycycle{name: name} = dc) do
     cs = changeset(dc, Map.take(dc, possible_changes()))
@@ -154,25 +153,25 @@ defmodule Dutycycle do
     with {:cs_valid, true} <- {:cs_valid, cs.valid?()},
          {:ok, _dc} <- insert(cs),
          %Dutycycle{} = dc <- find(name) do
-      # {:add_state, {:ok, %State{}}} <-
-      #   {:add_state, Ecto.build_assoc(dc, :state, %State{}) |> Repo.insert()} do
       reload(dc)
-      |> Server.start_server()
     else
       {:cs_valid, false} ->
         {:invalid_changes, cs}
 
       {:add_state, rc} ->
-        Logger.warn(
-          "add() failed to insert %State{}: #{inspect(rc, pretty: true)}"
-        )
+        Logger.warn([
+          "add() failed to insert %State{}: ",
+          inspect(rc, pretty: true)
+        ])
 
       error ->
-        Logger.warn("add() failure: #{inspect(error, pretty: true)}")
+        Logger.warn(["add() failure: ", inspect(error, pretty: true)])
 
         {:failed, error}
     end
   end
+
+  def add(catchall), do: {:failed, {:bad_args, catchall}}
 
   # FUNCTION HEADER
   def all(atom, opts \\ [])
@@ -230,11 +229,13 @@ defmodule Dutycycle do
   end
 
   def device_change(d, device) do
-    Logger.warn(
-      "invalid args: device_change(#{inspect(d, pretty: true)}, #{
-        inspect(device, pretty: true)
-      }"
-    )
+    Logger.warn([
+      "invalid args: device_change(",
+      inspect(d, pretty: true),
+      " ",
+      inspect(device, pretty: true),
+      ")"
+    ])
 
     {:error, :invalid_args}
   end
@@ -338,7 +339,7 @@ defmodule Dutycycle do
       {:ok, dc}
     else
       {:invalid_changes, errors} ->
-        Logger.warn(fn -> "#{inspect(errors, pretty: true)}" end)
+        Logger.warn([inspect(errors, pretty: true)])
         dc = reload(dc)
         {:failed, dc}
 
@@ -346,22 +347,25 @@ defmodule Dutycycle do
         {:ok, dc}
 
       {:ok, {:position, true}, %Dutycycle{device: device} = dc} ->
-        Logger.warn(
-          "#{inspect(device, pretty: true)} position is true after halt"
-        )
+        Logger.warn([
+          inspect(device, pretty: true),
+          " position is true after halt"
+        ])
 
         {:device_still_true, dc}
 
       {:ok, {:position, {:not_found, device}}, %Dutycycle{} = dc} ->
-        Logger.warn(
-          dc_name(dc) <>
-            " device #{inspect(device, pretty: true)} does not exist at time of halt"
-        )
+        Logger.warn([
+          dc_name(dc),
+          " device ",
+          inspect(device, pretty: true),
+          " does not exist at time of halt"
+        ])
 
         {:device_not_found, dc}
 
       error ->
-        Logger.warn("halt() unhandled error: #{inspect(error, pretty: true)}")
+        Logger.warn(["halt() unhandled error: ", inspect(error, pretty: true)])
 
         {:failed, error}
     end
@@ -413,7 +417,7 @@ defmodule Dutycycle do
     next_phase(:offline, dc)
 
     log &&
-      Logger.info("#{inspect(name, pretty: true)} shutdown and marked offline")
+      Logger.info([inspect(name, pretty: true), "shutdown and marked offline"])
   end
 
   def start(%Dutycycle{active: active} = dc) do
@@ -421,14 +425,16 @@ defmodule Dutycycle do
 
     cond do
       not active ->
-        log_info(dc, " is inactive")
+        log?(dc) && Logger.info([dc_name(dc), " is inactive"])
         # ensure the state represents the Dutycycle is up but inactive
         next_phase(:stop, dc)
 
         {:ok, :inactive}
 
       no_active_profile ->
-        log_info(dc, " does not have an active profile")
+        log?(dc) &&
+          Logger.info([dc_name(dc), " does not have an active profile"])
+
         # ensure the state represents the Dutycycle is up but inactive
         next_phase(:stop, dc)
 
@@ -437,11 +443,12 @@ defmodule Dutycycle do
       true ->
         active_profile = Profile.active(dc)
 
-        log_info(
-          dc,
-          " will start with profile " <>
-            "#{inspect(Profile.name(active_profile))}"
-        )
+        log?(dc) &&
+          Logger.info([
+            dc_name(dc),
+            " will start with profile",
+            inspect(Profile.name(active_profile), pretty: true)
+          ])
 
         {:ok, :run, active_profile}
     end
@@ -466,9 +473,10 @@ defmodule Dutycycle do
       update(dc, opts)
     else
       {false, name} ->
-        Logger.warn(
-          "#{inspect(name, pretty: true)} does not exist, can't update"
-        )
+        Logger.warn([
+          inspect(name, pretty: true),
+          "does not exist, can't update"
+        ])
 
         {:not_found, name}
     end
@@ -483,10 +491,11 @@ defmodule Dutycycle do
       dc = update!(cs) |> reload()
 
       log &&
-        Logger.info(
-          "#{inspect(name, pretty: true)}" <>
-            " updated " <> inspect(opts, pretty: true)
-        )
+        Logger.info([
+          inspect(name, pretty: true),
+          " updated ",
+          inspect(opts, pretty: true)
+        ])
 
       {:ok, dc}
     else
@@ -527,45 +536,41 @@ defmodule Dutycycle do
     case sw_state do
       {:ok, position} ->
         log?(dc) && position == dev_state &&
-          Logger.debug("#{control_device_log(dc)} position set correctly")
+          Logger.debug([control_device_log(dc), " position set correctly"])
 
         not position == dev_state &&
-          Logger.warn(
-            "#{control_device_log(dc)} position #{inspect(sw_state)} " <>
-              "is not #{inspect(dev_state)} (should be equal)"
-          )
+          Logger.warn([
+            control_device_log(dc),
+            "position ",
+            inspect(sw_state),
+            "is not ",
+            inspect(dev_state),
+            " (should be equal)"
+          ])
 
       {:not_found, _} ->
-        log?(dc) && Logger.warn("#{control_device_log(dc)} does not exist")
+        log?(dc) && Logger.warn([control_device_log(dc), " does not exist"])
 
       anything ->
-        Logger.warn(
-          "#{control_device_log(dc)} unmatched result #{
-            inspect(anything, pretty: true)
-          }"
-        )
+        Logger.warn([
+          control_device_log(dc),
+          " unmatched result ",
+          inspect(anything, pretty: true)
+        ])
     end
 
     {:ok, {:position, sw_state}, dc}
   end
 
   defp control_device_log(%Dutycycle{device: device} = dc),
-    do: dc_name(dc) <> " device #{inspect(device, pretty: true)}"
+    do: [dc_name(dc), " device ", inspect(device, pretty: true)]
 
   defp deactivate(%Dutycycle{} = dc) do
     update(dc, active: false)
   end
 
-  defp dc_name(%Dutycycle{name: name}), do: "#{inspect(name, pretty: true)}"
-  defp dc_name(catchall), do: "#{inspect(catchall, pretty: true)} "
-
-  defp log_info(%Dutycycle{name: name, log: log}, msg) do
-    if log do
-      Logger.info("#{inspect(name, pretty: true)} #{msg}")
-    else
-      :ok
-    end
-  end
+  defp dc_name(%Dutycycle{name: name}), do: inspect(name, pretty: true)
+  defp dc_name(catchall), do: inspect(catchall, pretty: true)
 
   defp possible_changes,
     do: [:name, :comment, :device, :log, :active, :scheduled_work_ms]

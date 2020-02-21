@@ -138,7 +138,7 @@ defmodule Mqtt.InboundMessage do
   end
 
   def handle_call(catch_all, _from, s) do
-    Logger.warn(fn -> "unknown handle_call(#{inspect(catch_all)})" end)
+    Logger.warn(["unknown handle_call(", inspect(catch_all, pretty: true), ")"])
     {:reply, {:bad_msg}, s}
   end
 
@@ -148,7 +148,7 @@ defmodule Mqtt.InboundMessage do
   end
 
   def handle_cast(catch_all, s) do
-    Logger.warn(fn -> "unknown handle_cast(#{inspect(catch_all)})" end)
+    Logger.warn(["unknown handle_cast(", inspect(catch_all, pretty: true), ")"])
     {:noreply, s}
   end
 
@@ -158,10 +158,14 @@ defmodule Mqtt.InboundMessage do
     repeat = Kernel.get_in(s, [:periodic_log, :repeat])
 
     msg_text = fn flag, x, repeat ->
-      a = if x == 0, do: "no ", else: "#{x} "
-      b = if flag == :first, do: " (future reports every #{repeat})", else: ""
+      a = if x == 0, do: ["no "], else: ["#{x} "]
 
-      "#{a}messages dispatched#{b}"
+      b =
+        if flag == :first,
+          do: [" (future reports every ", "#{repeat})"],
+          else: []
+
+      [a, "messages dispatched", b]
     end
 
     log && Logger.info(msg_text.(flag, s.messages_dispatched, repeat))
@@ -172,7 +176,7 @@ defmodule Mqtt.InboundMessage do
   end
 
   def handle_info(catch_all, s) do
-    Logger.warn(fn -> "unknown handle_info(#{inspect(catch_all)})" end)
+    Logger.warn(["unknown handle_info(", inspect(catch_all, pretty: true), ")"])
     {:noreply, s}
   end
 
@@ -191,8 +195,8 @@ defmodule Mqtt.InboundMessage do
             Task.async(fn ->
               out =
                 if log_opt == :as_elixir,
-                  do: "~S(" <> msg <> "), ",
-                  else: msg
+                  do: ["~S(", msg, "), "],
+                  else: [msg]
 
               IO.puts(s.json_log, out)
             end)
@@ -260,9 +264,10 @@ defmodule Mqtt.InboundMessage do
         nil
 
       :missing == mod ->
-        Logger.warn(fn ->
-          "missing configuration for reading type: #{r.type}"
-        end)
+        Logger.warn([
+          "missing configuration for reading type: ",
+          inspect(r.type, pretty: true)
+        ])
 
       # reading needs to be processed, sould we do it async?
       async ->
@@ -276,9 +281,8 @@ defmodule Mqtt.InboundMessage do
     nil
   end
 
-  defp msg_decode({:error, e}, _s, _opts) do
-    Logger.warn(fn -> e end)
-  end
+  defp msg_decode({:error, e}, _s, _opts),
+    do: Logger.warn(["msg_decode() error: ", inspect(e, pretty: true)])
 
   defp msg_process_external(%{} = s, %{} = r) do
     missing = {:missing, :missing}
@@ -317,12 +321,10 @@ defmodule Mqtt.InboundMessage do
 
       Reading.simple_text?(r) ->
         log = Map.get(r, :log, true)
-        log && Logger.warn(fn -> "#{r.name} --> #{r.text}" end)
+        log && Logger.warn([r.name, " --> ", r.text])
 
       true ->
-        Logger.warn(fn ->
-          "#{r.name} unhandled reading #{inspect(r, pretty: true)}"
-        end)
+        Logger.warn([r.name, " unhandled reading ", inspect(r, pretty: true)])
     end
 
     nil

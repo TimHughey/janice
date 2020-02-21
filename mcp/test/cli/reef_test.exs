@@ -2,7 +2,6 @@ defmodule ReefTest do
   @moduledoc false
 
   use ExUnit.Case, async: false
-  # import ExUnit.CaptureLog
 
   import JanTest, only: [create_switch: 5, sw_state_name: 3]
 
@@ -27,7 +26,7 @@ defmodule ReefTest do
     for {name, i} <- Enum.with_index(switches),
         do: SwitchState.update(sw_state_name("reef", 0, i), name: name)
 
-    for dc <- prod_dutycycles(), do: Dutycycle.add(dc)
+    for dc <- prod_dutycycles(), do: Dutycycle.Server.add(dc)
     :ok
   end
 

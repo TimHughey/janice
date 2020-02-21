@@ -10,6 +10,50 @@ defmodule Dutycycle.Server do
   #### API
   ####
 
+  def add(list) when is_list(list) do
+    for x <- list, do: add(x)
+  end
+
+  def add(x) do
+    case Dutycycle.add(x) do
+      %Dutycycle{id: id, name: name, log: log} ->
+        log &&
+          Logger.info([
+            "added ",
+            inspect(name, pretty: true),
+            " (id: ",
+            inspect(id, pretty: true),
+            ")"
+          ])
+
+        Dutycycle.Supervisor.start_child(
+          child_spec(%{id: id, added: true, log: log})
+        )
+
+      {:invalid_changes, cs} = rc ->
+        Logger.warn([
+          "add failed due to invalid changes ",
+          "args: ",
+          inspect(x, pretty: true),
+          "rc: ",
+          inspect(cs, pretty: true)
+        ])
+
+        rc
+
+      rc ->
+        Logger.warn([
+          "add failed",
+          "args: ",
+          inspect(x, pretty: true),
+          "rc: ",
+          inspect(rc, pretty: true)
+        ])
+
+        rc
+    end
+  end
+
   def active?(name, opts \\ []) when is_binary(name) and is_list(opts),
     do:
       %{name: name, msg: %{msg: :active?, opts: opts}}
@@ -133,22 +177,7 @@ defmodule Dutycycle.Server do
   def restart(name) when is_binary(name),
     do: Dutycycle.Supervisor.restart_dutycycle(name)
 
-  def server_name_atom(%Dutycycle{id: id}),
-    do:
-      String.to_atom(
-        "Duty_ID" <> String.pad_leading(Integer.to_string(id), 6, "0")
-      )
-
-  def server_name_atom(nil), do: nil
-
   def standby(name, opts \\ []) when is_binary(name), do: halt(name, opts)
-
-  def start_server(%Dutycycle{log: log} = d) do
-    args = %{id: d.id, added: true}
-    log && Logger.debug(fn -> "starting dutycycle id #{inspect(d.id)}" end)
-    Supervisor.start_child(Dutycycle.Supervisor, child_spec(args))
-    d
-  end
 
   def switch_state(name, opts \\ []) when is_binary(name),
     do:
@@ -436,7 +465,7 @@ defmodule Dutycycle.Server do
   #### GENSERVER BASE FUNCTIONS
   ####
 
-  def child_spec(%{id: id} = args) do
+  def child_spec(%{id: id, log: log} = args) do
     {dutycycle, server_name} = server_name(id)
     args = Map.put(args, :dutycycle, dutycycle)
 
@@ -446,7 +475,8 @@ defmodule Dutycycle.Server do
         id: server_name,
         start: {Dutycycle.Server, :start_link, [args]},
         restart: :permanent,
-        shutdown: 10_000
+        shutdown: 10_000,
+        log: log
       }
   end
 
@@ -709,4 +739,9 @@ defmodule Dutycycle.Server do
 
     if is_nil(dc), do: {nil, nil}, else: {dc, server_name_atom(dc)}
   end
+
+  defp server_name_atom(%{id: _} = dc),
+    do: Dutycycle.Supervisor.server_name_atom(dc)
+
+  defp server_name_atom(_), do: :no_server
 end

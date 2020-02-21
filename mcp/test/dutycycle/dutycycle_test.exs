@@ -17,9 +17,12 @@ defmodule DutycycleTest do
 
   @moduletag :dutycycle
   setup_all do
-    new_dcs = 0..9 |> Enum.to_list()
+    range = 0..9 |> Enum.to_list()
 
-    for n <- new_dcs, do: new_dutycycle(n) |> Dutycycle.add()
+    for n <- range do
+      new_dutycycle(n)
+    end
+    |> Dutycycle.Server.add()
 
     %Dutycycle{
       name: name_str(10),
@@ -38,7 +41,7 @@ defmodule DutycycleTest do
       ],
       state: %Dutycycle.State{}
     }
-    |> Dutycycle.add()
+    |> Dutycycle.Server.add()
 
     :ok
   end

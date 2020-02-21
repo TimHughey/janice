@@ -21,12 +21,11 @@ defmodule Mcp.Mixfile do
   """
 
   use Mix.Project
-  alias IO.ANSI
 
   def project do
     [
       app: :mcp,
-      version: "0.1.43",
+      version: "0.1.44",
       elixir: "~> 1.10",
       deps: deps(),
       releases: releases(),
@@ -188,45 +187,42 @@ defmodule Mcp.Mixfile do
     ]
   end
 
-  defp package_release(release) do
-    tarball = "#{release.name}.tar.gz"
-    stage_path = Path.join("/var/tmp", tarball)
+  defp sym_link_data(release) do
+    {:ok, home} = System.fetch_env("HOME")
 
-    msg =
-      ANSI.format([
-        :bright,
-        :white,
-        "[MCP] ",
-        "creating ",
-        :green,
-        tarball
-      ])
+    %{
+      build_path:
+        Path.join([
+          home,
+          "devel",
+          "janice",
+          "mcp",
+          "_build",
+          Atom.to_string(Mix.env())
+        ]),
+      tarball: "#{release.name}-#{release.version}.tar.gz",
+      sym_link: "mcp.tar.gz"
+    }
+  end
 
-    Mix.shell().info(msg)
+  defp sym_link_to_tar_rm(release) do
+    link = sym_link_data(release)
 
-    System.cmd("tar", ["-caf", stage_path, "."], cd: release.path)
+    System.cmd("rm", ["-f", link.tarball],
+      cd: link.build_path,
+      stderr_to_stdout: true
+    )
 
-    msg =
-      ANSI.format([
-        :bright,
-        :white,
-        "[MCP] ",
-        "staged ",
-        :green,
-        tarball,
-        :white,
-        " to ",
-        :yellow,
-        stage_path,
-        :white,
-        " for ",
-        :cyan,
-        "prod ",
-        :white,
-        "deployment"
-      ])
+    release
+  end
 
-    Mix.shell().info(msg)
+  defp sym_link_to_tar(release) do
+    link = sym_link_data(release)
+
+    System.cmd("ln", ["-sf", link.tarball, link.sym_link],
+      cd: link.build_path,
+      stderr_to_stdout: true
+    )
 
     release
   end
@@ -238,7 +234,7 @@ defmodule Mcp.Mixfile do
         include_executables_for: [:unix],
         applications: [runtime_tools: :permanent],
         cookie: "augury-kinship-swain-circus",
-        steps: [:assemble, &package_release/1]
+        steps: [&sym_link_to_tar_rm/1, :assemble, :tar, &sym_link_to_tar/1]
       ]
     ]
   end
