@@ -465,9 +465,10 @@ defmodule Dutycycle.Server do
   #### GENSERVER BASE FUNCTIONS
   ####
 
-  def child_spec(%{id: id, log: log} = args) do
+  def child_spec(%{id: id} = args) do
     {dutycycle, server_name} = server_name(id)
     args = Map.put(args, :dutycycle, dutycycle)
+    log = Map.get(args, :log, false)
 
     if is_nil(dutycycle),
       do: %{},

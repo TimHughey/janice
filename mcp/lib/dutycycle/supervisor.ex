@@ -57,7 +57,8 @@ defmodule Dutycycle.Supervisor do
 
   def server_name_atom(_), do: :no_server
 
-  def start_child(%{id: id, start: _, log: log} = spec) when is_atom(id) do
+  def start_child(%{id: id, start: _} = spec) when is_atom(id) do
+    log = Map.get(spec, :log, false)
     {rc, pid} = Supervisor.start_child(__MODULE__, spec)
 
     if rc == :ok,
