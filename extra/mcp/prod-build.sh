@@ -14,7 +14,7 @@ source $base/extra/common/vars.sh
 
 chdir $mcp_base
 
-mix mcp.deps.update
+mix deps.get
 
 if [[ -v SKIP_PULL ]]; then
   print -P "\n$fg_bold[yellow]* skipping git pull, as requested%f\n"
