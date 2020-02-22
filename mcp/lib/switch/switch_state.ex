@@ -127,7 +127,7 @@ defmodule SwitchState do
         position_update([switch_state: ss, record_cmd: true] ++ opts)
 
       nil ->
-        log && Logger.warn("#{inspect(name)} not found")
+        log && Logger.warn([inspect(name), " not found"])
         {:not_found, name}
     end
   end
@@ -145,28 +145,30 @@ defmodule SwitchState do
            update(was_id, name: deprecated_name(name), comment: "replaced"),
          {:ok, _name, _opts} <- update(tobe_id, name: name) do
       log &&
-        Logger.info(
-          "#{inspect(was_id, pretty: true)} replaced by #{
-            inspect(tobe_id, pretty: true)
-          }"
-        )
+        Logger.info([
+          inspect(was_id, pretty: true),
+          " replaced by ",
+          inspect(tobe_id, pretty: true)
+        ])
 
       {:ok, name, [was_id: was_id, is_id: tobe_id]}
     else
       {:was, {:not_found, x} = rc} ->
-        Logger.warn("#{inspect(x, pretty: true)} not found, nothing changed")
+        Logger.warn([inspect(x, pretty: true), " not found, nothing changed"])
 
         rc
 
       {:tobe, {:not_found, y} = rc} ->
-        Logger.warn(
-          "replacement #{inspect(y, pretty: true)} not found, nothing changed"
-        )
+        Logger.warn([
+          "replacement ",
+          inspect(y, pretty: true),
+          " not found, nothing changed"
+        ])
 
         rc
 
       rc ->
-        Logger.warn("unhandled error #{inspect(rc, pretty: true)}")
+        Logger.warn(["unhandled error ", inspect(rc, pretty: true)])
         rc
     end
   end
@@ -193,19 +195,19 @@ defmodule SwitchState do
   def update(x, opts) when is_binary(x) or (is_integer(x) and is_list(opts)) do
     case find(x) |> preload([:switch]) do
       %SwitchState{log: log} = ss ->
-        log && Logger.info("#{inspect(x, pretty: true)} found for update")
+        log && Logger.info([inspect(x, pretty: true), " found for update"])
         update(ss, opts)
 
       nil ->
-        Logger.warn("#{inspect(x, pretty: true)} not found for update")
+        Logger.warn([inspect(x, pretty: true), " not found for update"])
         {:not_found, x}
 
       error ->
-        Logger.warn(
-          "#{inspect(x, pretty: true)} unhandled condition #{
-            inspect(error, pretty: true)
-          }"
-        )
+        Logger.warn([
+          inspect(x, pretty: true),
+          " unhandled condition ",
+          inspect(error, pretty: true)
+        ])
 
         {:error, error}
     end
@@ -221,51 +223,51 @@ defmodule SwitchState do
          {:cs_valid, true, _cs} <- {:cs_valid, cs.valid?(), cs},
          {:update, {:ok, %SwitchState{}}} <- {:update, update(cs)} do
       log &&
-        Logger.info(
-          "#{inspect(name, pretty: true)} update successful #{
-            inspect(opts, pretty: true)
-          }"
-        )
+        Logger.info([
+          inspect(name, pretty: true),
+          " update successful ",
+          inspect(opts, pretty: true)
+        ])
 
       {:ok, name, params}
     else
       {:params, false} ->
         log &&
-          Logger.warn(
-            "#{inspect(name, pretty: true)} no updates specified in #{
-              inspect(opts, pretty: true)
-            }"
-          )
+          Logger.warn([
+            inspect(name, pretty: true),
+            " no updates specified in ",
+            inspect(opts, pretty: true)
+          ])
 
         {:bad_params, params}
 
       {:cs_valid, false, cs} ->
         log &&
-          Logger.warn(
-            "#{inspect(name, pretty: true)} invalid changes #{
-              inspect(cs, pretty: true)
-            }"
-          )
+          Logger.warn([
+            inspect(name, pretty: true),
+            " invalid changes ",
+            inspect(cs, pretty: true)
+          ])
 
         {:invalid_changes, cs}
 
       {:update, rc} ->
         log &&
-          Logger.warn(
-            "#{inspect(name, pretty: true)} update failed #{
-              inspect(rc, pretty: true)
-            }"
-          )
+          Logger.warn([
+            inspect(name, pretty: true),
+            " update failed ",
+            inspect(rc, pretty: true)
+          ])
 
         {:failed, rc}
 
       error ->
         log &&
-          Logger.warn(
-            "#{inspect(name, pretty: true)} update unhandled error #{
-              inspect(error, pretty: true)
-            })"
-          )
+          Logger.warn([
+            inspect(name, pretty: true),
+            "update unhandled error ",
+            inspect(error, pretty: true)
+          ])
 
         {:error, error}
     end

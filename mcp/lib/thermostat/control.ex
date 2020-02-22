@@ -52,14 +52,23 @@ defmodule Thermostat.Control do
   def temperature(%Thermostat{name: name, active_profile: profile} = t)
       when is_nil(profile) do
     Thermostat.log?(t) &&
-      Logger.warn(fn -> "active profile is nil for thermostat [#{name}]" end)
+      Logger.warn([
+        inspect(name, pretty: true),
+        " active profile is ",
+        inspect(profile, pretty: true)
+      ])
 
     {:nil_active_profile, t}
   end
 
-  def temperature(%Thermostat{name: name, active_profile: "none"} = t) do
+  def temperature(%Thermostat{name: name, active_profile: profile} = t)
+      when profile == "none" do
     Thermostat.log?(t) &&
-      Logger.warn(fn -> "active profile is [none] for thermostat [#{name}]" end)
+      Logger.warn([
+        inspect(name, pretty: true),
+        " active profile is ",
+        inspect(profile, pretty: true)
+      ])
 
     {:no_active_profile, t}
   end

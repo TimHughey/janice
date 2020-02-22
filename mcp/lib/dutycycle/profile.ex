@@ -36,7 +36,7 @@ defmodule Dutycycle.Profile do
         active(dc) |> activate()
 
       error ->
-        Logger.warn(fn -> "activate failed: #{inspect(error, pretty: true)}" end)
+        Logger.warn(["activate failed: ", inspect(error, pretty: true)])
 
         {:activate_profile_failed, error}
     end
@@ -158,9 +158,7 @@ defmodule Dutycycle.Profile do
         {:profile_not_found, name}
 
       error ->
-        Logger.warn(fn ->
-          "delete() returned #{inspect(error, pretty: true)}"
-        end)
+        Logger.warn(["delete() returned ", inspect(error, pretty: true)])
 
         error
     end
@@ -204,9 +202,10 @@ defmodule Dutycycle.Profile do
         {:invalid_changes, cs}
 
       error ->
-        Logger.warn(fn ->
-          "update_profiles() failure: #{inspect(error, pretty: true)}"
-        end)
+        Logger.warn([
+          "update_profiles() failure: ",
+          inspect(error, pretty: true)
+        ])
 
         {:failed, error}
     end

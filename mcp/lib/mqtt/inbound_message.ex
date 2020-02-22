@@ -25,7 +25,7 @@ defmodule Mqtt.InboundMessage do
 
   def init(s)
       when is_map(s) do
-    Logger.debug("init()")
+    Logger.debug(["init()"])
 
     periodic_log_default = [
       enable: true,

@@ -37,7 +37,7 @@ defmodule Janitor do
   end
 
   def terminate(reason, _state) do
-    Logger.info(fn -> "terminating with reason #{inspect(reason)}" end)
+    Logger.info(["terminating with reason ", inspect(reason, pretty: true)])
   end
 
   ## Callbacks
@@ -49,7 +49,7 @@ defmodule Janitor do
       false -> nil
     end
 
-    Logger.info("init()")
+    Logger.info(["init()"])
 
     {:ok, s}
   end
@@ -74,22 +74,6 @@ defmodule Janitor do
   ## GenServer callbacks
   #
 
-  def code_change(old_vsn, %{} = state, extra) when is_atom(old_vsn) do
-    s = do_code_change(old_vsn, state, extra)
-    {:ok, s}
-  end
-
-  def code_change(old_vsn, state, extra) do
-    Logger.warn(fn ->
-      "code_change() unrecognized params: " <>
-        "#{inspect(old_vsn)} " <>
-        "#{inspect(state)} " <>
-        "#{inspect(extra)}"
-    end)
-
-    {:error, :bad_params}
-  end
-
   def handle_call({@opts_msg, %{} = new_opts}, _from, s) do
     opts = %{opts: new_opts}
 
@@ -103,7 +87,7 @@ defmodule Janitor do
   end
 
   def handle_call({@log_purge_cmd_msg, val}, _from, s) do
-    Logger.info(fn -> "switch cmds purge set to #{inspect(val)}" end)
+    Logger.info(["switch cmds purge set to ", inspect(val)])
     new_opts = %{opts: %{switch_cmds: %{purge: val}}}
     s = Map.merge(s, new_opts)
 
@@ -111,9 +95,9 @@ defmodule Janitor do
   end
 
   def handle_call({@manual_purge_msg}, _from, s) do
-    Logger.info(fn -> "manual purge requested" end)
+    Logger.info(["manual purge requested"])
     result = purge_sw_cmds(s)
-    Logger.info(fn -> "manually purged #{result} switch cmds" end)
+    Logger.info(["manually purged ", inspect(result), " switch cmds"])
 
     {:reply, result, s}
   end
@@ -122,7 +106,7 @@ defmodule Janitor do
       when is_map(s) do
     opts = Map.get(s, :opts)
 
-    Logger.debug(fn -> "startup(), opts: #{inspect(opts)}" end)
+    Logger.debug(["startup(), opts: ", inspect(opts, pretty: true)])
 
     Process.flag(:trap_exit, true)
 
@@ -149,10 +133,11 @@ defmodule Janitor do
     {:noreply, s}
   end
 
-  def handle_info({:EXIT, pid, reason}, state) do
-    Logger.debug(fn ->
-      ":EXIT message " <> "pid: #{inspect(pid)} reason: #{inspect(reason)}"
-    end)
+  def handle_info({:EXIT, _pid, _reason} = msg, state) do
+    Logger.info([
+      ":EXIT msg: ",
+      inspect(msg, pretty: true)
+    ])
 
     {:noreply, state}
   end
@@ -160,19 +145,6 @@ defmodule Janitor do
   #
   ## Private functions
   #
-
-  defp do_code_change(:janitor0001, state, _extra) do
-    Map.put(state, :stats, %{})
-  end
-
-  defp do_code_change(:janitor0002, state, _extra) do
-    Map.put(state, :stats, %{last_purge: Timex.now()})
-  end
-
-  # default for code changes that don't require any action
-  defp do_code_change(_old_vsn, state, _extra) do
-    state
-  end
 
   defp clean_orphan_acks(s) when is_map(s) do
     opts = s.opts.orphan_acks
@@ -185,7 +157,7 @@ defmodule Janitor do
     )
 
     if opts.log do
-      orphans > 0 && Logger.info(fn -> "orphans ack'ed: [#{orphans}]" end)
+      orphans > 0 && Logger.info(["orphans ack'ed: [", inspect(orphans), "]"])
     end
 
     orphans
@@ -207,9 +179,7 @@ defmodule Janitor do
 
     if log_purge(s) do
       purged > 0 &&
-        Logger.info(fn ->
-          ~s/purged #{purged} acked switch commands/
-        end)
+        Logger.info(["purged ", inspect(purged), " acked switch commands"])
     end
 
     purged

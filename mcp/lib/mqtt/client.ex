@@ -40,7 +40,7 @@ defmodule Mqtt.Client do
   end
 
   def init(s) when is_map(s) do
-    Logger.info(fn -> "init()" end)
+    Logger.info(["init() state: ", inspect(s, pretty: true)])
 
     s = Map.put_new(s, :runtime_metrics, false)
 
@@ -58,7 +58,7 @@ defmodule Mqtt.Client do
 
       s = Map.merge(s, new_state)
 
-      Logger.info(fn -> "tortoise pid(#{inspect(mqtt_pid)})" end)
+      Logger.info(["tortoise ", inspect(mqtt_pid)])
 
       {:ok, s}
     else
@@ -89,8 +89,8 @@ defmodule Mqtt.Client do
   end
 
   def subscribe(feed) when is_nil(feed) do
-    Logger.warn(fn -> "can't subscribe to nil feed" end)
-    Logger.warn(fn -> "hint: check :feeds are defined in the configuration" end)
+    Logger.warn(["can't subscribe to nil feed"])
+    Logger.warn(["hint: check :feeds are defined in the configuration"])
     :ok
   end
 
@@ -99,11 +99,12 @@ defmodule Mqtt.Client do
   end
 
   def subscribe(feed) do
-    Logger.warn(fn ->
-      "subscribe feed doesn't make sense, got #{inspect(feed)}"
-    end)
+    Logger.warn([
+      "subscribe feed doesn't make sense, got ",
+      inspect(feed, pretty: true)
+    ])
 
-    Logger.warn(fn -> "hint: subscribe feed should be a tuple" end)
+    Logger.warn(["hint: subscribe feed should be a tuple"])
     :ok
   end
 
@@ -124,17 +125,18 @@ defmodule Mqtt.Client do
     MessageSave.save(:out, payload)
 
     if is_nil(feed) or is_nil(payload) do
-      Logger.warn(fn ->
-        "can't publish: feed=#{inspect(feed)} payload=#{inspect(payload)}"
-      end)
+      Logger.warn([
+        "can't publish: feed=",
+        inspect(feed, pretty: true),
+        " payload=",
+        inspect(payload, pretty: true)
+      ])
 
-      Logger.warn(fn ->
-        "hint: check :feeds are defined in the configuration"
-      end)
+      Logger.warn(["hint: check :feeds are defined in the configuration"])
 
       :ok
     else
-      Logger.debug(fn -> "outbound: #{payload}" end)
+      Logger.debug(["outbound: ", inspect(payload, pretty: true)])
 
       GenServer.call(__MODULE__, {:publish, feed, payload, pub_opts})
     end
@@ -196,7 +198,7 @@ defmodule Mqtt.Client do
         %{autostart: false} = s
       )
       when is_binary(feed) and is_binary(payload) and is_list(pub_opts) do
-    Logger.debug(fn -> "not started, dropping #{inspect(payload)}" end)
+    Logger.debug(["not started, dropping ", inspect(payload, pretty: true)])
     {:reply, :not_started, s}
   end
 
@@ -204,7 +206,12 @@ defmodule Mqtt.Client do
       when is_tuple(feed) do
     {:ok, ref} = Connection.subscribe(s.client_id, feed)
 
-    Logger.info(fn -> "subscribing to #{inspect(feed)} ref: #{inspect(ref)}" end)
+    Logger.info([
+      "subscribing to ",
+      inspect(feed, pretty: true),
+      "ref: ",
+      inspect(ref, pretty: true)
+    ])
 
     {:reply, ref, s}
   end
@@ -230,7 +237,7 @@ defmodule Mqtt.Client do
     {feed, qos} = get_env(:mcp, :feeds, []) |> Keyword.get(:cmd, {nil, nil})
 
     if is_nil(feed) or is_nil(qos) do
-      Logger.warn(fn -> "can't send timesync, feed configuration missing" end)
+      Logger.warn(["can't send timesync, feed configuration missing"])
       {:reply, {:failed}, s}
     else
       payload = Timesync.new_cmd() |> Timesync.json()
@@ -248,7 +255,7 @@ defmodule Mqtt.Client do
 
   def handle_cast({:connected}, s) do
     s = Map.put(s, :connected, true)
-    Logger.info(fn -> "mqtt endpoint connected" end)
+    Logger.info(["mqtt endpoint connected"])
 
     # subscribe to the report feed
     feed = get_env(:mcp, :feeds, []) |> Keyword.get(:rpt, nil)
@@ -262,7 +269,7 @@ defmodule Mqtt.Client do
   end
 
   def handle_cast({:disconnected}, s) do
-    Logger.warn(fn -> "mqtt endpoint disconnected" end)
+    Logger.warn(["mqtt endpoint disconnected"])
     s = Map.put(s, :connected, false)
     {:noreply, s}
   end
@@ -295,7 +302,12 @@ defmodule Mqtt.Client do
     log = Map.get(s, :log_subscriptions, false)
 
     log &&
-      Logger.warn(fn -> "subscription ref: #{inspect(ref)} #{inspect(res)}" end)
+      Logger.info([
+        "subscription ref: ",
+        inspect(ref, pretty: true),
+        " res: ",
+        inspect(res, pretty: true)
+      ])
 
     {:noreply, s}
   end
@@ -305,7 +317,13 @@ defmodule Mqtt.Client do
         %{timesync: %{task: %{ref: timesync_ref}}} = s
       )
       when is_reference(ref) and ref == timesync_ref do
-    Logger.debug(fn -> "handle_info(#{inspect(msg)}, #{inspect(s)})" end)
+    Logger.debug([
+      "handle_info(",
+      inspect(msg, pretty: true),
+      ", ",
+      inspect(s, pretty: true)
+    ])
+
     s = Map.put(s, :timesync, Map.put(s.timesync, :result, result))
 
     {:noreply, s}
@@ -316,7 +334,12 @@ defmodule Mqtt.Client do
         %{timesync: %{task: %{ref: timesync_ref}}} = s
       )
       when is_reference(ref) and is_pid(pid) do
-    Logger.debug(fn -> "handle_info(#{inspect(msg)}, #{inspect(s)})" end)
+    Logger.debug([
+      "handle_info(",
+      inspect(msg, pretty: true),
+      ", ",
+      inspect(s, pretty: true)
+    ])
 
     s =
       if ref == timesync_ref do
@@ -342,7 +365,12 @@ defmodule Mqtt.Client do
   end
 
   defp log_unhandled(type, message) do
-    Logger.warn(fn -> "unhandled #{type} message #{inspect(message)}" end)
+    Logger.warn([
+      "unhandled ",
+      inspect(type, pretty: true),
+      " message ",
+      inspect(message, pretty: true)
+    ])
   end
 
   defp start_timesync_task(s) do

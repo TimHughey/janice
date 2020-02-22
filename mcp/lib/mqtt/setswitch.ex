@@ -32,7 +32,7 @@ defmodule Mqtt.SetSwitch do
 
     cmd = if ack, do: cmd, else: Map.put(cmd, :ack, false)
 
-    Logger.debug(fn -> "sw_cmd: #{inspect(cmd)}" end)
+    Logger.debug(["sw_cmd: ", inspect(cmd, pretty: true)])
     cmd
   end
 

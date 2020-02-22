@@ -84,7 +84,7 @@ defmodule Thermostat do
   end
 
   def add(%Thermostat{name: name}, %Thermostat{}, _opts) do
-    Logger.warn(fn -> "add() [#{name}] already exists" end)
+    Logger.warn([inspect(name, pretty: true), " already exists"])
     :already_exists
   end
 
@@ -127,7 +127,7 @@ defmodule Thermostat do
       Keyword.take(opts, [:only]) |> Keyword.get_values(:only) |> List.flatten()
 
     if Enum.empty?(filter) do
-      Logger.warn(fn -> "get_by bad args: #{inspect(opts)}" end)
+      Logger.warn(["get_by bad args: ", inspect(opts, pretty: true)])
       []
     else
       th =

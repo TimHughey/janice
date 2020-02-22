@@ -25,7 +25,7 @@ defmodule Mqtt.Timesync do
     # publish it!
     res = publish(msg)
 
-    log && Logger.info(fn -> "published timesync #{inspect(res)}" end)
+    log && Logger.info(["published timesync ", inspect(res, pretty: true)])
 
     opts = %{opts | loops: opts.loops - 1}
 

@@ -45,7 +45,7 @@ defmodule Fact.EngineMetric do
   def make_point(%{type: @metric_type, metric: _, engine: _} = r) do
     filtered = Enum.filter(r, &wanted?/1)
 
-    # Logger.info(fn -> "filter: #{inspect(filtered)}" end)
+    Logger.debug(["filter: ", inspect(filtered, pretty: true)])
 
     tags = Enum.filter(filtered, &tag?/1)
     fields = Enum.filter(filtered, &field?/1)
@@ -66,7 +66,7 @@ defmodule Fact.EngineMetric do
 
   # trap when the input map doesn't match
   def make_point(%{} = r) do
-    Logger.warn(fn -> "no match for #{inspect(r)}" end)
+    Logger.warn(["no match for ", inspect(r, pretty: true)])
     %{}
   end
 

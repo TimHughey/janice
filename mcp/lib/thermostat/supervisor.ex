@@ -16,7 +16,7 @@ defmodule Thermostat.Supervisor do
   end
 
   def init(args) do
-    Logger.info(fn -> "init()" end)
+    Logger.info(["init() args: ", inspect(args, pretty: true)])
 
     ids = Thermostat.all(:ids)
 

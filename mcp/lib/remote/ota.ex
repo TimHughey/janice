@@ -39,7 +39,7 @@ defmodule OTA do
     # be sure to filter out any :not_found
     results =
       for %{host: host, name: name} <- Keyword.get(opts, :restart_list) do
-        log && Logger.info(fn -> "send restart[#{host}]" end)
+        log && Logger.info(["send restart: ", inspect(host, pretty: true)])
 
         rc =
           %{
@@ -55,7 +55,7 @@ defmodule OTA do
         {name, host, rc}
       end
 
-    log && Logger.info(fn -> "sent ota https to: #{inspect(results)}" end)
+    log && Logger.info(["sent ota https to: ", inspect(results, pretty: true)])
     results
   end
 
@@ -64,7 +64,7 @@ defmodule OTA do
   end
 
   def restart(anything) do
-    Logger.warn(fn -> "restart invoked with: #{inspect(anything)}" end)
+    Logger.warn(["restart bad args: ", inspect(anything, pretty: true)])
     {:bad_opts, anything}
   end
 
@@ -86,7 +86,7 @@ defmodule OTA do
     # be sure to filter out any :not_found
     results =
       for %{host: host, name: name} <- Keyword.get(opts, :update_list) do
-        log && Logger.info(fn -> "send ota https [#{host}]" end)
+        log && Logger.info(["send ota https ", inspect(host, pretty: true)])
 
         # TODO: design and implement new firmware version handling
         # fw_file_version()
@@ -106,7 +106,8 @@ defmodule OTA do
         {name, host, rc}
       end
 
-    log && Logger.info(fn -> "sent ota https to: #{inspect(results)}" end)
+    log && Logger.info(["sent ota https to ", inspect(results, pretty: true)])
+
     results
   end
 
@@ -116,7 +117,7 @@ defmodule OTA do
   end
 
   def send_cmd(anything) do
-    Logger.warn(fn -> "send invoked with: #{inspect(anything)}" end)
+    Logger.warn(["send bad args: ", inspect(anything, pretty: true)])
     {:bad_opts, anything}
   end
 

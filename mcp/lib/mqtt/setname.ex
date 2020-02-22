@@ -16,7 +16,7 @@ defmodule Mqtt.SetName do
       |> Map.put_new(:host, host)
       |> Map.put_new(:name, String.replace_prefix(name, "mcr.", ""))
 
-    Logger.debug(fn -> "name_cmd: #{inspect(cmd)}" end)
+    Logger.debug(["name_cmd: ", inspect(cmd, pretty: true)])
     cmd
   end
 

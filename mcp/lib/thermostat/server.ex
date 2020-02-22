@@ -36,7 +36,6 @@ defmodule Thermostat.Server do
 
   def delete(name) when is_binary(name), do: Thermostat.delete(name)
 
-  # REFACTORED
   def delete(%Thermostat{} = th) do
     if Thermostat.Supervisor.ping() == :pong,
       do: Thermostat.Supervisor.eliminate_child(server_name_atom(th)),
@@ -58,11 +57,9 @@ defmodule Thermostat.Server do
     call_server(name, msg)
   end
 
-  # REFACTORED
   def restart(name) when is_binary(name),
     do: Thermostat.Supervisor.restart_thermostat(name)
 
-  # REFACTORED
   def server_name_atom(%Thermostat{id: id}),
     do:
       String.to_atom(
@@ -203,10 +200,11 @@ defmodule Thermostat.Server do
     {:noreply, s}
   end
 
-  def handle_info({:EXIT, pid, reason}, state) do
-    Logger.debug(fn ->
-      ":EXIT message " <> "pid: #{inspect(pid)} reason: #{inspect(reason)}"
-    end)
+  def handle_info({:EXIT, _pid, _reason} = msg, state) do
+    Logger.info([
+      ":EXIT msg: ",
+      inspect(msg, pretty: true)
+    ])
 
     {:noreply, state}
   end
@@ -246,20 +244,17 @@ defmodule Thermostat.Server do
       s = Map.put(s, :timer, timer)
 
       if rc2 === :nil_active_profile or rc2 === :ok do
-        Logger.debug("init() returning #{inspect({:ok, s}, pretty: true)}")
         {:ok, s}
       else
-        Logger.debug("init() returning #{inspect({rc2, s}, pretty: true)}")
         {rc2, s}
       end
     else
-      Logger.debug("init() returning #{inspect({rc1, s}, pretty: true)}")
       {rc1, s}
     end
   end
 
   def start_link(%{id: id} = args) do
-    Logger.debug(fn -> "start_link() args: #{inspect(args, pretty: true)}" end)
+    Logger.debug(["start_link() args: ", inspect(args, pretty: true)])
 
     opts = Application.get_env(:mcp, Thermostat.Server, [])
     {_, name_atom} = server_name(id: id)
@@ -277,9 +272,14 @@ defmodule Thermostat.Server do
     log = Map.get(s, :log_terminate, false)
 
     log &&
-      Logger.info(fn ->
-        "#{inspect(t.name)} terminate(#{inspect(reason)}) #{inspect(rc)}"
-      end)
+      Logger.info([
+        inspect(t.name),
+        " terminate(",
+        inspect(reason, pretty: true),
+        ", ",
+        inspect(rc, pretty: true),
+        ")"
+      ])
 
     Switch.position(t.switch, position: false, lazy: true, ack: false)
     :ok
@@ -323,9 +323,11 @@ defmodule Thermostat.Server do
 
     cond do
       not known_profile ->
-        Logger.warn(fn ->
-          "unknown profile [#{new_profile}] for thermostat [#{s.thermostat.name}]"
-        end)
+        Logger.warn([
+          inspect(s.thermostat.name, pretty: true),
+          "unknown profile ",
+          inspect(new_profile, pretty: true)
+        ])
 
         {:unknown_profile, s.thermostat}
 
@@ -346,7 +348,11 @@ defmodule Thermostat.Server do
     if rc === :ok do
       Map.merge(s, %{timer: timer, thermostat: t})
     else
-      Logger.warn(fn -> "[#{s.thermostat.name}] handle_check failed" end)
+      Logger.warn([
+        inspect(s.thermostat.name, pretty: true),
+        " handle_check failed"
+      ])
+
       Map.put(s, :timer, timer)
     end
   end
@@ -381,10 +387,10 @@ defmodule Thermostat.Server do
     log = Map.get(s, :log_reload, false)
 
     if is_nil(t) do
-      Logger.warn(fn -> "failed reload of thermostat id=#{id}" end)
+      Logger.warn(["id=", inspect(id, pretty: true), " reload failed"])
       s
     else
-      log && Logger.info(fn -> "#{inspect(t.name)} reloaded" end)
+      log && Logger.info([inspect(t.name, pretty: true), " reloaded"])
       Map.merge(s, %{need_reload: false, thermostat: t})
     end
   end

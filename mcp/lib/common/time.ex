@@ -21,7 +21,7 @@ defmodule Janice.TimeSupport do
   def ms({:months, x}) when is_number(x), do: ms({:weeks, x * 4}) |> round()
 
   def ms(unsupported) do
-    Logger.warn(fn -> "ms(#{inspect(unsupported)}) is not supported" end)
+    Logger.warn(["ms(", inspect(unsupported), ") is not supported"])
     nil
   end
 

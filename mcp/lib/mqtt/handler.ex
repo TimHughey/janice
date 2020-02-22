@@ -43,9 +43,13 @@ defmodule Mqtt.Handler do
     log = Keyword.get(state, :log_subscriptions, false)
 
     log &&
-      Logger.warn(fn ->
-        "subscription(): status(inspect(#{status})) topic(inspect#{topic_filter}))"
-      end)
+      Logger.warn([
+        "subscription(): status(",
+        inspect(status, pretty: true),
+        ") topic(",
+        inspect(topic_filter, pretty: true),
+        ")"
+      ])
 
     {:ok, state}
   end
@@ -54,7 +58,7 @@ defmodule Mqtt.Handler do
     # tortoise doesn't care about what you return from terminate/2,
     # that is in alignment with other behaviours that implement a
     # terminate-callback
-    Logger.warn(fn -> "Tortoise terminate: #{inspect(reason)}" end)
+    Logger.warn(["Tortoise terminate: ", inspect(reason)])
     :ok
   end
 end

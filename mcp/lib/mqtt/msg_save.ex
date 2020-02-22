@@ -44,7 +44,7 @@ defmodule MessageSave do
   @startup_msg {:startup}
   def init(s) when is_map(s) do
     if s.autostart, do: send_after(self(), @startup_msg, 0)
-    Logger.info(fn -> "init()" end)
+    Logger.info(["init() state: ", inspect(s, pretty: true)])
 
     {:ok, s}
   end
@@ -64,7 +64,7 @@ defmodule MessageSave do
   end
 
   def terminate(reason, _state) do
-    Logger.info(fn -> "terminating with reason #{inspect(reason)}" end)
+    Logger.info(["terminating with reason ", inspect(reason, pretty: true)])
   end
 
   def handle_call({@runtime_opts_msg}, _from, s) do
@@ -111,7 +111,7 @@ defmodule MessageSave do
     saving_msgs = Keyword.get(opts, :save, false)
 
     saving_msgs &&
-      Logger.info(fn -> "startup(), opts: #{inspect(opts)}" end)
+      Logger.info(["startup(), opts: ", inspect(opts, pretty: true)])
 
     {:noreply, s}
   end

@@ -40,12 +40,13 @@ defmodule Dutycycle.State do
     log = Keyword.get(opts, :log_transition, false)
 
     log &&
-      Logger.info(
-        inspect(name, pretty: true) <>
-          " transitioning from " <>
-          inspect(prev_mode, pretty: true) <>
-          " to " <> inspect(Atom.to_string(mode), pretty: true)
-      )
+      Logger.info([
+        inspect(name, pretty: true),
+        " transitioning from ",
+        inspect(prev_mode, pretty: true),
+        " to ",
+        inspect(Atom.to_string(mode), pretty: true)
+      ])
 
     next_phase(mode, dc) |> started_at(prev_mode, :reload)
   end
@@ -73,7 +74,11 @@ defmodule Dutycycle.State do
 
   def run(%Dutycycle{name: name, state: st, log: log} = dc) do
     log &&
-      Logger.debug(fn -> "dutycycle #{inspect(name)} setting state to run" end)
+      Logger.debug([
+        "dutycycle ",
+        inspect(name, pretty: true),
+        " setting state to run"
+      ])
 
     {dc, update_states_only(st, state: "running", dev_state: true)}
   end
@@ -96,7 +101,7 @@ defmodule Dutycycle.State do
       ) do
     cond do
       state === "running" ->
-        Logger.debug(fn -> "persist_phase_timer() handling state 'running')" end)
+        Logger.debug(["persist_phase_timer() handling state 'running')"])
 
         update(
           st,
@@ -113,10 +118,11 @@ defmodule Dutycycle.State do
         )
 
       true ->
-        Logger.warn(fn ->
-          "persist_phase_timer(): unhandled state #{inspect(state)}, " <>
-            "setting at times to nil"
-        end)
+        Logger.warn([
+          "persist_phase_timer(): unhandled state",
+          inspect(state, pretty: true),
+          "setting at times to nil"
+        ])
 
         update(st, nil_phase_at_times())
     end
@@ -202,7 +208,7 @@ defmodule Dutycycle.State do
     cs = changeset(st, set)
 
     if cs.valid? do
-      Logger.debug(fn -> "state update\n#{inspect(cs, pretty: true)}" end)
+      Logger.debug(["state update\n", inspect(cs, pretty: true)])
       st = update!(cs)
       {:ok, st}
     else
@@ -222,9 +228,10 @@ defmodule Dutycycle.State do
     cs = changeset(st, set)
 
     if cs.valid? do
-      Logger.debug(fn ->
-        "state update_states_only cs #{inspect(cs, pretty: true)}"
-      end)
+      Logger.debug([
+        "state update_states_only cs ",
+        inspect(cs, pretty: true)
+      ])
 
       st = update!(cs)
       {:ok, st}

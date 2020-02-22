@@ -19,7 +19,7 @@ defmodule Mqtt.Reading do
   @simple_text_t "text"
 
   def boot?(%{type: @boot_t, host: host} = r) do
-    Logger.debug(fn -> "detected boot message for #{host}" end)
+    Logger.debug(["detected boot message for ", inspect(host, pretty: true)])
     metadata?(r)
   end
 
@@ -78,25 +78,13 @@ defmodule Mqtt.Reading do
       do: Map.put(r, :metadata, :ok)
 
   def metadata(bad) do
-    Logger.warn(fn -> "bad metadata #{inspect(bad)}" end)
+    Logger.warn(["bad metadata ", inspect(bad, pretty: true)])
     %{metadata: :failed}
   end
 
   def metadata?(%{metadata: :ok}), do: true
   def metadata?(%{metadata: :failed}), do: false
   def metadata?(%{} = r), do: metadata(r) |> metadata?()
-
-  # def metadata?(%{} = r) do
-  #   mtime = Map.get(r, :mtime, nil)
-  #   type = Map.get(r, :type, nil)
-  #
-  #   proper =
-  #     is_integer(mtime) and String.starts_with?(r.host, "mcr") and
-  #       is_binary(type)
-  #
-  #   not proper && Logger.warn(fn -> "bad metadata #{inspect(r)}" end)
-  #   proper
-  # end
 
   @doc ~S"""
   Does the Reading have a good mtime?
@@ -182,11 +170,17 @@ defmodule Mqtt.Reading do
     check =
       (metadata?(r) and r.type === @temp_t and is_number(tc)) or is_number(tf)
 
-    if check && Map.get(r, :log_reading, false),
-      do:
-        Logger.info(fn ->
-          ~s(#{r.host} #{r.device} #{r.tc} #{r.tf})
-        end)
+    if check && Map.get(r, :log_reading, false) do
+      Logger.info([
+        inspect(r.host),
+        " ",
+        inspect(r.device),
+        " ",
+        inspect(r.tc),
+        " ",
+        inspect(r.tf)
+      ])
+    end
 
     check
   end
@@ -207,11 +201,19 @@ defmodule Mqtt.Reading do
     rh = Map.get(r, :rh)
     check = metadata?(r) and r.type === @relhum_t and is_number(rh)
 
-    if check && Map.get(r, :log_reading, false),
-      do:
-        Logger.info(fn ->
-          ~s(#{r.host} #{r.device} #{r.tc} #{r.tf} #{r.rh})
-        end)
+    if check && Map.get(r, :log_reading, false) do
+      Logger.info([
+        inspect(r.host),
+        " ",
+        inspect(r.device),
+        " ",
+        inspect(r.tc),
+        " ",
+        inspect(r.tf),
+        " ",
+        inspect(r.rh)
+      ])
+    end
 
     check
   end

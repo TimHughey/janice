@@ -88,9 +88,12 @@ defmodule Sensor do
       %{found: nil} ->
         type = Map.get(r, :type, nil)
 
-        Logger.warn(fn ->
-          "#{device} unknown type #{type}, defaulting to unknown"
-        end)
+        Logger.warn([
+          inspect(device, pretty: true),
+          " unknown type ",
+          inspect(type, pretty: true),
+          " defaulting to unknown"
+        ])
 
         %Sensor{device: device, name: device, type: "unknown"} |> insert!()
     end
@@ -140,7 +143,7 @@ defmodule Sensor do
     s = get_by(id: id)
 
     if is_nil(s) do
-      Logger.warn(fn -> "change description failed" end)
+      Logger.warn(["change description failed"])
       {:error, :not_found}
     else
       s
@@ -156,7 +159,7 @@ defmodule Sensor do
     s = get_by(id: id)
 
     if is_nil(s) do
-      Logger.warn(fn -> "change name failed" end)
+      Logger.warn(["change name failed"])
       {:error, :not_found}
     else
       s
@@ -201,7 +204,7 @@ defmodule Sensor do
     s = get_by(id: id)
 
     if is_nil(s) do
-      Logger.warn(fn -> "deprecate(#{id}) failed" end)
+      Logger.warn(["deprecate(", inspect(id), ") failed"])
       {:error, :not_found}
     else
       tobe = "~ #{s.name}-#{Timex.now() |> Timex.format!("{ASN1:UTCtime}")}"
@@ -232,7 +235,11 @@ defmodule Sensor do
   end
 
   def external_update(%{} = eu) do
-    Logger.warn(fn -> "external_update received a bad map #{inspect(eu)}" end)
+    Logger.warn([
+      "external_update received a bad map ",
+      inspect(eu, pretty: true)
+    ])
+
     :error
   end
 
@@ -255,7 +262,7 @@ defmodule Sensor do
       Keyword.take(opts, [:only]) |> Keyword.get_values(:only) |> List.flatten()
 
     if Enum.empty?(filter) do
-      Logger.warn(fn -> "get_by bad args: #{inspect(opts)}" end)
+      Logger.warn(["get_by bad args: ", inspect(opts, pretty: true)])
       []
     else
       s = from(s in Sensor, where: ^filter) |> one()
@@ -312,9 +319,13 @@ defmodule Sensor do
     new = get_by(id: new_id)
 
     if is_nil(old) or is_nil(new) do
-      Logger.warn(fn ->
-        "error finding sensors: old(#{inspect(old)}) new(#{inspect(new)})"
-      end)
+      Logger.warn([
+        "error finding sensors: old(",
+        inspect(old),
+        ") new(",
+        inspect(new),
+        ")"
+      ])
 
       {:failed, old, new}
     else
@@ -428,25 +439,19 @@ defmodule Sensor do
     log = Map.get(r, :log_invalid_readings, false)
 
     log &&
-      Logger.warn(fn ->
-        "dropping invalid temperature for #{inspect(name)} from #{
-          inspect(hostname)
-        }"
-      end)
+      Logger.warn([
+        inspect(name),
+        " dropping invalid temperature from ",
+        inspect(hostname)
+      ])
 
     {s, r}
   end
 
   defp record_metrics(
          {%Sensor{type: "temp", device: device, name: name} = s,
-          %{hostname: hostname, mtime: mtime, tc: tc, tf: tf} = r}
+          %{hostname: hostname, mtime: mtime, tc: _tc, tf: tf} = r}
        ) do
-    Logger.debug(fn ->
-      "#{name} " <>
-        "#{String.pad_leading(Float.to_string(tf), 8)}F " <>
-        "#{String.pad_leading(Float.to_string(tc), 8)}C"
-    end)
-
     Fahrenheit.record(
       remote_host: hostname,
       device: device,
@@ -468,15 +473,8 @@ defmodule Sensor do
 
   defp record_metrics(
          {%Sensor{type: "relhum", device: device, name: name} = s,
-          %{hostname: hostname, mtime: mtime, rh: rh, tc: tc, tf: tf} = r}
+          %{hostname: hostname, mtime: mtime, rh: rh, tc: _tc, tf: tf} = r}
        ) do
-    Logger.debug(fn ->
-      "#{name} " <>
-        "#{String.pad_leading(Float.to_string(tf), 8)}F " <>
-        "#{String.pad_leading(Float.to_string(tc), 8)}C " <>
-        "#{String.pad_leading(Float.to_string(rh), 8)}RH"
-    end)
-
     Fahrenheit.record(
       remote_host: hostname,
       device: device,
@@ -506,15 +504,8 @@ defmodule Sensor do
 
   defp record_metrics(
          {%Sensor{type: "soil", device: device, name: name} = s,
-          %{hostname: hostname, mtime: mtime, cap: cap, tc: tc, tf: tf} = r}
+          %{hostname: hostname, mtime: mtime, cap: cap, tc: _tc, tf: tf} = r}
        ) do
-    Logger.debug(fn ->
-      "#{name} " <>
-        "#{String.pad_leading(Float.to_string(tf), 8)}F " <>
-        "#{String.pad_leading(Float.to_string(tc), 8)}C " <>
-        "#{cap} moisture"
-    end)
-
     Fahrenheit.record(
       remote_host: hostname,
       device: device,
@@ -543,9 +534,11 @@ defmodule Sensor do
   end
 
   defp record_metrics({%Sensor{name: name} = s, %{} = r}) do
-    Logger.warn(fn ->
-      "Unable to record metrics for #{name}:\n#{inspect(r, pretty: true)}"
-    end)
+    Logger.warn([
+      inspect(name),
+      " unable to record metrics: ",
+      inspect(r, pretty: true)
+    ])
 
     {s, r}
   end

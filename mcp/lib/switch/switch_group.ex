@@ -52,21 +52,21 @@ defmodule SwitchGroup do
       hd(res)
     else
       nil ->
-        log && Logger.warn("switch group #{inspect(name)} not found")
+        log && Logger.warn([inspect(name), " not found"])
         {:not_found, name}
 
       {:members, false, members} ->
         log &&
-          Logger.warn(
-            "#{inspect(name)} has invalid members #{
-              inspect(members, pretty: true)
-            }"
-          )
+          Logger.warn([
+            inspect(name),
+            " has invalid members ",
+            inspect(members, pretty: true)
+          ])
 
         {:error, members}
 
       error ->
-        Logger.warn("unhandled error #{inspect(error, pretty: true)}")
+        Logger.warn(["unhandled error ", inspect(error, pretty: true)])
         {:error, error}
     end
   end

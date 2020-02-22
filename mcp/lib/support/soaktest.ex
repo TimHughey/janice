@@ -1,6 +1,5 @@
 defmodule Mcp.SoakTest do
-  @moduledoc """
-  """
+  @moduledoc false
   require Logger
   use GenServer
   import Application, only: [get_env: 2]
@@ -42,7 +41,7 @@ defmodule Mcp.SoakTest do
       |> Map.put_new(:flash_led, config(:flash_led))
       |> Map.put_new(:periodic_log, config(:periodic_log))
 
-    Logger.info("init()")
+    Logger.info(["init() state: ", inspect(s, pretty: true)])
 
     {:ok, s}
   end
@@ -114,14 +113,14 @@ defmodule Mcp.SoakTest do
 
     send_after(self(), {:flash_led}, ms(s.flash_led))
 
-    Logger.info("startup()")
+    Logger.info(["startup()"])
 
     {:noreply, s}
   end
 
   def handle_info({:periodic_log}, s)
       when is_map(s) do
-    Logger.debug(fn -> ~s/led flashes: #{s.led_flashes}/ end)
+    Logger.debug(["led flashes: ", inspect(s.led_flashes)])
 
     send_after(self(), {:periodic_log}, ms(s.periodic_log))
 

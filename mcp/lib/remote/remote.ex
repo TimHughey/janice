@@ -84,14 +84,17 @@ defmodule Remote do
           insert!(r)
 
         found ->
-          Logger.debug(fn -> ~s/[#{r.host}] already exists, skipping add/ end)
           found
       end
     end
   end
 
   def add(no_match) do
-    Logger.warn(fn -> "attempt to add non %Remote{} #{inspect(no_match)}" end)
+    Logger.warn([
+      "attempt to add non %Remote{} ",
+      inspect(no_match, pretty: true)
+    ])
+
     no_match
   end
 
@@ -196,7 +199,7 @@ defmodule Remote do
     r = get_by(id: id)
 
     if is_nil(r) do
-      Logger.warn(fn -> "deprecate(#{id}) failed" end)
+      Logger.warn(["deprecate(", inspect(id), " failed"])
       {:error, :not_found}
     else
       tobe = "~ #{r.name}-#{Timex.now() |> Timex.format!("{ASN1:UTCtime}")}"
@@ -219,12 +222,6 @@ defmodule Remote do
 
     result =
       :timer.tc(fn ->
-        Logger.debug(fn -> "external_update() handling:" end)
-
-        Logger.debug(fn ->
-          "#{inspect(eu, binaries: :as_strings, pretty: true)}"
-        end)
-
         eu |> add() |> send_remote_config(eu)
       end)
 
@@ -243,11 +240,17 @@ defmodule Remote do
 
       {_t, {err, details}} ->
         log &&
-          Logger.warn(fn ->
-            "external update failed host(#{host}) " <>
-              "err(#{inspect(err, pretty: true)}) " <>
-              "details(#{inspect(details, pretty: true)})"
-          end)
+          Logger.warn([
+            "external update failed host(",
+            inspect(host, pretty: true),
+            ") ",
+            "err(",
+            inspect(err, pretty: true),
+            ") ",
+            "details(",
+            inspect(details, pretty: true),
+            ")"
+          ])
 
         :error
     end
@@ -257,9 +260,10 @@ defmodule Remote do
     log = is_map(no_match) and Map.get(no_match, :log, true)
 
     log &&
-      Logger.warn(fn ->
-        "external update received a bad map #{inspect(no_match)}"
-      end)
+      Logger.warn([
+        "external update received a bad map ",
+        inspect(no_match, pretty: true)
+      ])
 
     :error
   end
@@ -271,7 +275,7 @@ defmodule Remote do
       Keyword.take(opts, [:only]) |> Keyword.get_values(:only) |> List.flatten()
 
     if Enum.empty?(filter) do
-      Logger.warn(fn -> "get_by bad args: #{inspect(opts)}" end)
+      Logger.warn(["get_by bad args: ", inspect(opts, pretty: true)])
       []
     else
       rem = from(remote in Remote, where: ^filter) |> one()
@@ -315,7 +319,7 @@ defmodule Remote do
     update_list = remote_list(what) |> Enum.filter(fn x -> is_map(x) end)
 
     if Enum.empty?(update_list) do
-      Logger.warn(fn -> "can't do ota for: #{inspect(update_list)}" end)
+      Logger.warn(["can't do ota for: ", inspect(update_list, pretty: true)])
     else
       opts = opts ++ [update_list: update_list]
       OTA.send_cmd(opts)
@@ -336,7 +340,7 @@ defmodule Remote do
       [map]
     else
       nil ->
-        Logger.warn(fn -> "id(#{id}) not found" end)
+        Logger.warn(["id(", inspect(id), ") not found"])
         [:not_found]
     end
   end
@@ -345,15 +349,13 @@ defmodule Remote do
     q = from(remote in Remote, where: [name: ^name], or_where: [host: ^name])
     rem = one(q)
 
-    # Logger.warn(fn -> "remote_list(name) rem=#{inspect(rem)}" end)
-
     case rem do
       %Remote{} = r ->
         map = ota_update_map(r)
         [map]
 
       nil ->
-        Logger.warn(fn -> "name(#{name}) not found" end)
+        Logger.warn([inspect(name, pretty: true), " not found"])
         [:not_found]
     end
   end
@@ -366,8 +368,8 @@ defmodule Remote do
     make_list.(list) |> List.flatten()
   end
 
-  def remote_list(anything_else) do
-    Logger.warn(fn -> "unsupported: #{inspect(anything_else)}" end)
+  def remote_list(catchall) do
+    Logger.warn(["unsupported: ", inspect(catchall, pretty: true)])
     [:unsupported]
   end
 
@@ -378,7 +380,10 @@ defmodule Remote do
     restart_list = remote_list(what) |> Enum.filter(fn x -> is_map(x) end)
 
     if Enum.empty?(restart_list) do
-      Logger.warn(fn -> "can't do restart for: #{inspect(restart_list)}" end)
+      Logger.warn([
+        "can't do restart for: ",
+        inspect(restart_list, pretty: true)
+      ])
     else
       opts = opts ++ [restart_list: restart_list]
       OTA.restart(opts)
@@ -391,8 +396,6 @@ defmodule Remote do
 
   # handle boot and startup (depcreated) messages
   defp send_remote_config([%Remote{} = rem], %{type: "boot"} = eu) do
-    Logger.debug(fn -> "send_remote_config handling: #{rem.host} #{eu.type}" end)
-
     # only the feather m0 remote devices need the time
     if eu.hw in ["m0"], do: Client.send_timesync()
 
@@ -406,12 +409,23 @@ defmodule Remote do
         heap_free = (Map.get(eu, :heap_free, 0) / 1024) |> Float.round(1)
         heap_min = (Map.get(eu, :heap_min, 0) / 1024) |> Float.round(1)
 
-        "#{rem.name} BOOT " <>
-          "#{Map.get(eu, :reset_reason, "no reset reason")} " <>
-          "#{eu.vsn} " <>
-          "#{Map.get(eu, :batt_mv, "0")}mv " <>
-          "#{Map.get(eu, :ap_rssi, "0")}dB " <>
-          "heap(#{heap_min}k,#{heap_free}k) "
+        [
+          inspect(rem.name),
+          " BOOT ",
+          Map.get(eu, :reset_reason, "no reset reason"),
+          " ",
+          eu.vsn,
+          " ",
+          inspect(Map.get(eu, :batt_mv, "0")),
+          "mv ",
+          inspect(Map.get(eu, :ap_rssi, "0")),
+          "dB ",
+          "heap(",
+          inspect(heap_min),
+          "k,",
+          inspect(heap_free),
+          "k) "
+        ]
       end)
 
     StartupAnnouncement.record(host: rem.name, vsn: eu.vsn, hw: eu.hw)
@@ -431,11 +445,10 @@ defmodule Remote do
     log = Map.get(eu, :log, true)
 
     log &&
-      Logger.warn(fn ->
-        "attempt to process unknown message type: #{
-          Map.get(eu, :type, "unknown")
-        }"
-      end)
+      Logger.warn([
+        "attempt to process unknown message type: ",
+        inspect(Map.get(eu, :type, "unknown"))
+      ])
 
     {:error, "unknown message type"}
   end

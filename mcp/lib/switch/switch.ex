@@ -75,7 +75,11 @@ defmodule Switch do
         ensure_states(sw) |> ensure_cmds() |> insert!()
 
       found ->
-        Logger.warn(~s/[#{sw.device}] already exists, skipping add/)
+        Logger.warn([
+          inspect(sw.device, pretty: true),
+          " already exists, skipping add"
+        ])
+
         found
     end
   end
@@ -176,14 +180,18 @@ defmodule Switch do
         :ok
 
       {_, {_, _}} ->
-        Logger.warn("external update failed for [#{device}]")
+        Logger.warn([inspect(device, pretty: true), " external update failed "])
 
         :error
     end
   end
 
   def external_update(%{} = eu) do
-    Logger.warn("external_update received a bad map #{inspect(eu)}")
+    Logger.warn([
+      "external_update() received a bad map ",
+      inspect(eu, pretty: true)
+    ])
+
     :error
   end
 
@@ -220,7 +228,12 @@ defmodule Switch do
 
   defp ensure_cmds(%Switch{cmds: cmds, log: log} = sw) do
     if Ecto.assoc_loaded?(cmds) == false do
-      log && Logger.info("default acked cmd added for switch [#{sw.device}]")
+      log &&
+        Logger.info([
+          inspect(sw.device, pretty: true),
+          " default acked cmd added"
+        ])
+
       Map.put(sw, :cmds, create_cmds(%{}))
     else
       sw
@@ -229,7 +242,9 @@ defmodule Switch do
 
   defp ensure_states(%Switch{states: states, log: log} = sw) do
     if Ecto.assoc_loaded?(states) == false do
-      log && Logger.info("default states added for switch [#{sw.device}]")
+      log &&
+        Logger.info([inspect(sw.device, pretty: true), " default states added"])
+
       Map.put(sw, :states, create_states(%{device: sw.device, pio_count: 2}))
     else
       sw
@@ -243,7 +258,7 @@ defmodule Switch do
       Keyword.take(opts, [:only]) |> Keyword.get_values(:only) |> List.flatten()
 
     if Enum.empty?(filter) do
-      Logger.warn("get_by bad args: #{inspect(opts)}")
+      Logger.warn(["get_by bad args: ", inspect(opts, pretty: true)])
       []
     else
       sw = from(sw in Switch, where: ^filter) |> one()
@@ -300,9 +315,10 @@ defmodule Switch do
         change(sw, opts) |> update()
 
       false ->
-        Logger.warn(
-          "number of states in reading does not match switch [#{sw.device}]"
-        )
+        Logger.warn([
+          inspect(sw.device, pretty: true),
+          " number of states in reading does not match "
+        ])
 
         {:error, sw}
     end
@@ -335,14 +351,16 @@ defmodule Switch do
         # incoming state then we have a problem.  so, force an update.
         if pending == 0 do
           log &&
-            Logger.warn(
-              "[#{ss.name}] forcing to reported state=#{inspect(new.state)}"
-            )
+            Logger.warn([
+              inspect(ss.name, pretty: true),
+              " forcing to reported state ",
+              inspect(new.state, pretty: true)
+            ])
 
           log &&
-            Logger.warn(
+            Logger.warn([
               "^^^ hint: the mcr device may have lost power and restarted"
-            )
+            ])
 
           # ok, update the switch state -- it truly doesn't match
           change(ss, %{state: new.state}) |> update!()

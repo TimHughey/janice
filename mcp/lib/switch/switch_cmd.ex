@@ -61,9 +61,11 @@ defmodule SwitchCmd do
 
     case cmd do
       nil ->
-        Logger.warn(fn ->
-          "cmd for refid [#{refid}] not found, won't ack"
-        end)
+        Logger.warn([
+          "refid ",
+          inspect(refid, pretty: true),
+          " not found, won't ack"
+        ])
 
         {:not_found, refid}
 
@@ -72,19 +74,25 @@ defmodule SwitchCmd do
         rt_latency_ms = rt_latency / 1000.0
 
         log &&
-          Logger.debug(fn ->
-            "#{inspect(cmd.name)} acking refid #{inspect(refid)} rt_latency=#{
-              rt_latency_ms
-            }ms"
-          end)
+          Logger.debug([
+            inspect(cmd.name, pretty: true),
+            " acking refid ",
+            inspect(refid),
+            " rt_latency=",
+            inspect(rt_latency_ms),
+            "ms"
+          ])
 
         # log a warning for more than 150ms rt_latency, helps with tracking down prod issues
         rt_latency_ms > latency_warn_ms &&
-          Logger.warn(fn ->
-            "#{inspect(cmd.name)} rt_latency=#{rt_latency_ms}ms exceeded #{
-              latency_warn_ms
-            }ms"
-          end)
+          Logger.warn([
+            inspect(cmd.name, pretty: true),
+            " rt_latency=",
+            inspect(rt_latency_ms),
+            "ms exceeded ",
+            inspect(latency_warn_ms),
+            "ms"
+          ])
 
         opts = %{
           acked: true,
@@ -142,17 +150,20 @@ defmodule SwitchCmd do
                     Timex.diff(Timex.now(), u.sent_at, :duration)
                     |> Timex.format_duration(:humanized)
 
-                  # lower = Timex.from_now(lower_limit)
-                  # oldest = Timex.from_now(oldest)
-
-                  "#{u.name} ack'ed orphan sent #{sent_ago} ago"
+                  [
+                    inspect(u.name, pretty: true),
+                    " ack'ed orphan sent ",
+                    sent_ago,
+                    " ago"
+                  ]
                 end)
 
             {:error, changeset} ->
               log &&
-                Logger.error(fn ->
-                  "failed to ack orphan: #{inspect(changeset, pretty: true)}"
-                end)
+                Logger.error([
+                  "failed to ack orphan: ",
+                  inspect(changeset, pretty: true)
+                ])
           end
         end
 
@@ -290,11 +301,12 @@ defmodule SwitchCmd do
         # if the publish option is true or does not exist
         if publish do
           log &&
-            Logger.debug(
-              "publishing switch cmd for #{inspect(name, pretty: true)} (#{
-                inspect(device, pretty: true)
-              })"
-            )
+            Logger.debug([
+              "publishing switch cmd for ",
+              inspect(name, pretty: true),
+              " ",
+              inspect(device, pretty: true)
+            ])
 
           SetSwitch.new_cmd(device, [cmd_map], refid, opts)
           |> SetSwitch.json()
@@ -324,17 +336,22 @@ defmodule SwitchCmd do
   defp check_purge_acked_cmds({flag, e} = x) when is_atom(flag) do
     case flag do
       :unconfigured ->
-        Logger.debug(fn -> e end)
+        Logger.debug([
+          "check_purge_acked_cmds() flag: :unconfigured error: ",
+          inspect(e, pretty: true)
+        ])
 
       :error ->
-        Logger.warn(fn ->
-          ~s/command purge failed: #{inspect(e, pretty: true)} /
-        end)
+        Logger.warn([
+          "command purge failed: ",
+          inspect(e, pretty: true)
+        ])
 
       _default ->
-        Logger.warn(fn ->
-          ~s/unhandled command purge result: #{inspect(x, pretty: true)}/
-        end)
+        Logger.warn([
+          "unhandled command purge result: ",
+          inspect(x, pretty: true)
+        ])
     end
 
     # return zero messages purged
