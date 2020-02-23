@@ -13,7 +13,7 @@ defmodule MqttSetSwitchTest do
     ack = Map.get(cmd, :ack)
 
     assert is_map(cmd)
-    assert is_nil(ack)
+    assert ack
   end
 
   test "create switchcmd (ack is false)" do
@@ -33,6 +33,6 @@ defmodule MqttSetSwitchTest do
     ack = Map.get(cmd, :ack)
 
     assert is_map(cmd)
-    assert is_nil(ack)
+    assert ack
   end
 end

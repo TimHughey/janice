@@ -85,25 +85,24 @@ defmodule Dutycycle do
 
   def activate_profile(%Dutycycle{log: log} = dc, profile, _opts)
       when is_binary(profile) do
-    with {:ok, %Profile{} = next_profile} <-
-           Profile.activate(dc, profile),
+    with {:ok, %Profile{}} <- Profile.activate(dc, profile),
          {:ok, dc} <- activate(dc),
          dc <- reload(dc),
-         # use the end_of_phase function to determine the start phase
-         # when activating the profile and control the device
-         {:first_phase, {:ok, dc, _active_profile, mode}} <-
-           {:first_phase, end_of_phase(dc, next_profile)},
+         # use next_phase:2 to start the run phase and get the
+         # active profile
+         {:first_phase, {:ok, dc, active_profile, mode}} <-
+           {:first_phase, next_phase(:run, dc)},
          {:ok, {:position, true}, dc} <- control_device(dc, lazy: false) do
       log &&
         Logger.info([
           dc_name(dc),
           " activated profile ",
-          inspect(Profile.name(next_profile)),
+          inspect(Profile.name(active_profile)),
           " first phase ",
           inspect(mode, pretty: true)
         ])
 
-      {:ok, reload(dc), next_profile, mode}
+      {:ok, reload(dc), active_profile, mode}
     else
       {:none, %Profile{}} ->
         Logger.warn([dc_name(dc), " deactivated, profile none"])

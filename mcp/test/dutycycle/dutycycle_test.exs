@@ -17,7 +17,7 @@ defmodule DutycycleTest do
 
   @moduletag :dutycycle
   setup_all do
-    range = 0..9 |> Enum.to_list()
+    range = 0..10 |> Enum.to_list()
 
     for n <- range do
       new_dutycycle(n)
@@ -25,7 +25,7 @@ defmodule DutycycleTest do
     |> Dutycycle.Server.add()
 
     %Dutycycle{
-      name: name_str(10),
+      name: name_str(50),
       comment: "with an active profile",
       device: "no_device",
       active: true,
@@ -486,5 +486,27 @@ defmodule DutycycleTest do
 
     assert :error === rc
     refute cs.valid?()
+  end
+
+  @tag num: 10
+  test "dutycycle server handles activating the active profile",
+       context do
+    {dc, name} = name_from_db(context[:num])
+    {rc1, _profile} = Server.activate_profile(name, "infinity")
+
+    dc = Dutycycle.reload(dc)
+
+    %State{state: first_state, started_at: started} =
+      Server.dutycycle_state(dc.name)
+
+    Process.sleep(100)
+    {rc2, _profile} = Server.activate_profile(name, "infinity")
+    %State{state: second_state} = Server.dutycycle_state(dc.name)
+
+    assert :ok == rc1
+    assert :ok == rc2
+    assert Timex.before?(started, TimeSupport.utc_now())
+    assert first_state === "running"
+    assert second_state === "running"
   end
 end
