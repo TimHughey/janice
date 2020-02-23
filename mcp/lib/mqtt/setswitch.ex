@@ -19,22 +19,15 @@ defmodule Mqtt.SetSwitch do
   """
   def new_cmd(device, states, refid, opts \\ [])
       when is_binary(device) and is_list(states) and is_binary(refid) and
-             is_list(opts) do
-    ack = Keyword.get(opts, :ack, true)
-
-    cmd = %{
-      cmd: @setswitch_cmd,
-      mtime: TimeSupport.unix_now(:second),
-      switch: device,
-      states: states,
-      refid: refid
-    }
-
-    cmd = if ack, do: cmd, else: Map.put(cmd, :ack, false)
-
-    Logger.debug(["sw_cmd: ", inspect(cmd, pretty: true)])
-    cmd
-  end
+             is_list(opts),
+      do: %{
+        cmd: @setswitch_cmd,
+        mtime: TimeSupport.unix_now(:second),
+        switch: device,
+        states: states,
+        refid: refid,
+        ack: Keyword.get(opts, :ack, true)
+      }
 
   @doc ~S"""
   Generate JSON for a command

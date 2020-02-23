@@ -317,11 +317,11 @@ defmodule Dutycycle do
     next_phase(:run, dc)
   end
 
-  defp next_phase(mode, %Dutycycle{} = dc) do
+  defp next_phase(mode, %Dutycycle{} = dc, opts \\ []) when is_list(opts) do
     with {%Dutycycle{} = dc, {:ok, %State{}}} <-
            State.next_phase(mode, dc, log_transition: log?(dc)),
          dc <- reload(dc),
-         {:ok, {:position, _postition}, dc} <- control_device(dc) do
+         {:ok, {:position, _postition}, dc} <- control_device(dc, opts) do
       active_profile = Profile.active(dc)
       {:ok, dc, active_profile, mode}
     else
@@ -419,7 +419,7 @@ defmodule Dutycycle do
   def scheduled_work_ms(%Dutycycle{scheduled_work_ms: ms}), do: ms
 
   def shutdown(%Dutycycle{name: name, log: log} = dc) do
-    next_phase(:offline, dc)
+    next_phase(:offline, dc, ack: false)
 
     log &&
       Logger.info([inspect(name, pretty: true), "shutdown and marked offline"])
@@ -530,13 +530,16 @@ defmodule Dutycycle do
            state: %Dutycycle.State{dev_state: dev_state},
            log: log
          } = dc,
-         opts \\ []
+         opts
        )
        when is_list(opts) do
-    lazy = Keyword.get(opts, :lazy, true)
-
     sw_state =
-      Switch.position(device, position: dev_state, lazy: lazy, log: log)
+      Switch.position(device,
+        position: dev_state,
+        lazy: Keyword.get(opts, :lazy, true),
+        ack: Keyword.get(opts, :ack, true),
+        log: log
+      )
 
     case sw_state do
       {:ok, position} ->
