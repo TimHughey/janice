@@ -20,7 +20,7 @@ config :mcp,
 
 config :mcp,
   # listed in startup order
-  start_children: [
+  sup_tree: [
     {Repo, []},
     :core_supervisors,
     # TODO: once the Supervisors below are implemented remove the following
@@ -39,7 +39,7 @@ config :mcp,
     # {Misc.Supervisors, []}
   ],
   protocol_supervisors: [
-    {Fact.Supervisor, %{autostart: false}},
+    {Fact.Supervisor, %{}},
     {Mqtt.Supervisor, %{autostart: false}}
   ],
   support_workers: [
@@ -47,8 +47,8 @@ config :mcp,
   ],
   worker_supervisors: [
     # DynamicSupervisors
-    {Dutycycle.Supervisor, %{autostart: false, start_children: false}},
-    {Thermostat.Supervisor, %{autostart: false, start_servers: false}}
+    {Dutycycle.Supervisor, %{start_workers: false}},
+    {Thermostat.Supervisor, %{start_workers: false}}
   ],
   misc_workers: [
     {Janice.Scheduler, []}
@@ -112,42 +112,22 @@ config :mcp, Repo,
   hostname: "live.db.wisslanding.com",
   pool_size: 10
 
-# run_strategy = {Quantum.RunStrategy.All, [:"mcp-dev@jophiel.wisslanding.com"]}
-run_strategy = Quantum.RunStrategy.Local
-
-base_jobs = [
-  {:touch,
-   [
-     schedule: {:cron, "* * * * *"},
-     task: {Janice.Jobs, :touch_file, ["/tmp/janice-dev.touch"]},
-     run_strategy: run_strategy
-   ]}
-]
-
-additional_jobs = []
-
-# additional_jobs = [{:germination_on,
-#  [
-#    schedule: {:cron, "*/2 8-19 * * *"},
-#    task: {Janice.Jobs, :switch_control, ["germination_light", true]},
-#    run_strategy: Quantum.RunStrategy.Local
-#  ]},
-# {:germination_off,
-#  [
-#    schedule: {:cron, "*/2 20-7 * * *"},
-#    task: {Janice.Jobs, :switch_control, ["germination_light", false]},
-#    run_strategy: Quantum.RunStrategy.Local
-#  ]},
-# {:germination_heat,
-#  [
-#    schedule: {:cron, "*/2 * * * *"},
-#    task: {Janice.Jobs, :switch_control, ["germination_heat", true]},
-#    run_strategy: Quantum.RunStrategy.Local
-#  ]}]
-
-jobs = base_jobs ++ additional_jobs
-
-config :mcp, Janice.Scheduler, jobs: jobs
+config :mcp, Janice.Scheduler,
+  jobs: [
+    # Every minute
+    {:touch,
+     [
+       schedule: {:cron, "* * * * *"},
+       task: {Janice.Jobs, :touch_file, ["/tmp/janice-dev.touch"]},
+       run_strategy: Quantum.RunStrategy.Local
+     ]},
+    {:purge_readings,
+     [
+       schedule: {:cron, "22,56 * * * *"},
+       task: {Janice.Jobs, :purge_readings, [[days: -30]]},
+       run_strategy: Quantum.RunStrategy.Local
+     ]}
+  ]
 
 config :mcp, Mcp.SoakTest,
   # don't start

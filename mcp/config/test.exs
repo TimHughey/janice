@@ -20,7 +20,7 @@ config :mcp,
 
 config :mcp,
   # listed in startup order
-  start_children: [
+  sup_tree: [
     {Repo, []},
     :core_supervisors,
     # TODO: once the Supervisors below are implemented remove the following
@@ -32,14 +32,14 @@ config :mcp,
   ],
   core_supervisors: [
     # TODO: implement the Supervisors below to create a 'proper'
-    #       supervisom tree that does not restart servers uncessary
+    #       supervision tree to isolate restarts after crash
     # {Protocols.Supervisor, []},
     # {Support.Supervisor, []},
     # {Workers.Supervisor, []},
     # {Misc.Supervisors, []}
   ],
   protocol_supervisors: [
-    {Fact.Supervisor, %{autostart: true}},
+    {Fact.Supervisor, %{}},
     {Mqtt.Supervisor, %{autostart: true}}
   ],
   support_workers: [
@@ -47,8 +47,8 @@ config :mcp,
   ],
   worker_supervisors: [
     # DynamicSupervisors
-    {Dutycycle.Supervisor, %{autostart: true, start_children: false}},
-    {Thermostat.Supervisor, %{autostart: false, start_servers: false}}
+    {Dutycycle.Supervisor, %{start_workers: false}},
+    {Thermostat.Supervisor, %{start_workers: false}}
   ],
   misc_workers: [
     {Janice.Scheduler, []}
@@ -107,7 +107,6 @@ config :mcp, Repo,
   pool_size: 10
 
 config :mcp, Janice.Scheduler,
-  global: true,
   jobs: [
     # Every minute
     {:touch,
@@ -116,7 +115,9 @@ config :mcp, Janice.Scheduler,
        task: {Janice.Jobs, :touch_file, ["/tmp/janice-test.touch"]},
        run_strategy: Quantum.RunStrategy.Local
      ]}
-    # {"* * * * *", {Janice.Jobs, :touch_file, ["/tmp/janice-file"]}, Quantum.RunStrategy.Local}
+
+    # EXAMPLES:
+    #
     # Every 15 minutes
     # {"*/15 * * * *",   fn -> System.cmd("rm", ["/tmp/tmp_"]) end},
     # Runs on 18, 20, 22, 0, 2, 4, 6:

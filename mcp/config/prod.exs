@@ -16,7 +16,7 @@ config :mcp,
 
 config :mcp,
   # listed in startup order
-  start_children: [
+  sup_tree: [
     {Repo, []},
     :core_supervisors,
     # TODO: once the Supervisors below are implemented remove the following
@@ -35,7 +35,7 @@ config :mcp,
     # {Misc.Supervisors, []}
   ],
   protocol_supervisors: [
-    {Fact.Supervisor, %{autostart: true}},
+    {Fact.Supervisor, %{}},
     {Mqtt.Supervisor, %{autostart: true}}
   ],
   support_workers: [
@@ -43,8 +43,8 @@ config :mcp,
   ],
   worker_supervisors: [
     # DynamicSupervisors
-    {Dutycycle.Supervisor, %{autostart: true, start_servers: true}},
-    {Thermostat.Supervisor, %{autostart: true, start_servers: true}}
+    {Dutycycle.Supervisor, %{start_workers: true}},
+    {Thermostat.Supervisor, %{start_workers: true}}
   ],
   misc_workers: [
     {Janice.Scheduler, []}
@@ -114,7 +114,6 @@ config :mcp, Repo,
 run_strategy = {Quantum.RunStrategy.All, [:"mcp-prod@jophiel.wisslanding.com"]}
 
 config :mcp, Janice.Scheduler,
-  global: false,
   jobs: [
     # Every minute
     {:touch,
@@ -129,36 +128,9 @@ config :mcp, Janice.Scheduler,
        task: {Janice.Jobs, :purge_readings, [[days: -30]]},
        run_strategy: run_strategy
      ]}
-    # {:germination_on,
-    #  [
-    #    schedule: {:cron, "*/2 8-21 * * *"},
-    #    task: {Janice.Jobs, :switch_control, ["germination_light", true]},
-    #    run_strategy: run_strategy
-    #  ]},
-    # {:germination_off,
-    #  [
-    #    schedule: {:cron, "*/2 22-7 * * *"},
-    #    task: {Janice.Jobs, :switch_control, ["germination_light", false]},
-    #    run_strategy: run_strategy
-    #  ]}
-    # {:germination_heat,
-    #  [
-    #    schedule: {:cron, "*/2 * * * *"},
-    #    task: {Janice.Jobs, :switch_control, ["germination_heat", false]},
-    #    run_strategy: run_strategy
-    #  ]}
-    # control germination light and heat
-    # {"*/2 8-19 * * *", {Janice.Jobs, :switch_control, ["germination_light", true]}},
-    # {"*/2 20-7 * * *", {Janice.Jobs, :switch_control, ["germination_light", false]}},
-    # {"*/2 * * * *", {Janice.Jobs, :switch_control, ["germination_heat", true]}}
-    # {"*/2 21-7 * * *", {Janice.Jobs, :flush, []}},
-    # {"*/2 8-20 * * *", {Janice.Jobs, :grow, []}}
-    # SUN = 0, MON = 1, TUE = 2, WED = 3, THU = 4, FRI = 5, SAT = 6
-    # {"0 18 * * 4", {Janice.Jobs, :reefwater, [:fill_overnight]}},
-    # {"0 7 * * 5", {Janice.Jobs, :reefwater, [:fill_daytime]}},
-    # {"0 18 * * 5", {Janice.Jobs, :reefwater, [:mix]}},
-    # {"0 20 * * 0", {Janice.Jobs, :reefwater, [:eco]}}
 
+    # EXAMPLES:
+    #
     # Every 15 minutes
     # {"*/15 * * * *",   fn -> System.cmd("rm", ["/tmp/tmp_"]) end},
     # Runs on 18, 20, 22, 0, 2, 4, 6:

@@ -31,6 +31,7 @@ config :mcp, OTA,
   ]
 
 config :mcp, Janice.Scheduler,
+  global: true,
   run_strategy: Quantum.RunStrategy.Local,
   timezone: "America/New_York"
 

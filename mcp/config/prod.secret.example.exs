@@ -20,12 +20,13 @@ config :mcp, Mqtt.Client,
     password: "pass",
     # NOTE: charlist for compatibility with erlang emqttc library!
     host: 'hostname.example.com',
-    port: 18883
+    port: 18_883
   ]
 
 config :mcp, Web.Guardian, secret_key: "use mix guardian.gen.key to create one"
 
-config :mcp, Web.Endpoint, secret_key_base: "use mix phx.gen.secret to create one"
+config :mcp, Web.Endpoint,
+  secret_key_base: "use mix phx.gen.secret to create one"
 
 # visit GitHub's OAuth page to set-up your account to allow for auth
 config :ueberauth, Ueberauth.Strategy.Github.OAuth,

@@ -28,7 +28,7 @@ defmodule Dutycycle.Supervisor do
     String.contains?(str, name)
   end
 
-  def known_servers(match_name \\ "Duty_ID") do
+  def known_servers(match_name \\ "Dutycycle_ID") do
     children = Supervisor.which_children(__MODULE__)
 
     for {server_name, pid, _type, _modules} <- children,
@@ -52,7 +52,7 @@ defmodule Dutycycle.Supervisor do
   def server_name_atom(%{id: id}),
     do:
       String.to_atom(
-        "Duty_ID" <> String.pad_leading(Integer.to_string(id), 6, "0")
+        "Dutycycle_ID" <> String.pad_leading(Integer.to_string(id), 6, "0")
       )
 
   def server_name_atom(_), do: :no_server
@@ -87,7 +87,7 @@ defmodule Dutycycle.Supervisor do
     Supervisor.start_link(__MODULE__, args, name: __MODULE__)
   end
 
-  defp servers_to_start(%{start_servers: true} = args) do
+  defp servers_to_start(%{start_workers: true} = args) do
     for id <- Dutycycle.all(:ids),
         do: {Dutycycle.Server, Map.put(args, :id, id)}
   end

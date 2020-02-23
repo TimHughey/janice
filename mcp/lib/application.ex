@@ -14,7 +14,7 @@ defmodule Mcp.Application do
     put_env(:mcp, :build_env, build_env)
 
     children =
-      for i <- get_env(:mcp, :start_children) do
+      for i <- get_env(:mcp, :sup_tree) do
         if is_tuple(i), do: i, else: get_env(:mcp, i)
       end
       |> List.flatten()

@@ -22,7 +22,9 @@ defmodule Thermostat do
   require Logger
   use Ecto.Schema
 
-  import Repo, only: [one: 1, insert_or_update!: 1, preload: 3]
+  import Repo,
+    only: [one: 1, get_by: 2, insert_or_update!: 1, preload: 2, preload: 3]
+
   import Ecto.Changeset, only: [change: 2]
   import Ecto.Query, only: [from: 2]
 
@@ -92,10 +94,9 @@ defmodule Thermostat do
   def all(atom, opts \\ [])
 
   def all(:ids, opts) when is_list(opts) do
-    for t <- Repo.all(Thermostat), do: Map.get(t, :id)
+    from(th in Thermostat, select: th.id) |> Repo.all()
   end
 
-  # REFACTORED
   def delete(name) when is_binary(name) do
     th = get_by(name: name)
 
@@ -114,11 +115,15 @@ defmodule Thermostat do
       else: [server: Server.delete(th), db: elem(Repo.delete(th, opts), 0)]
   end
 
-  # REFACTORED!
-  # HAS TEST CASE
   def delete_all(:dangerous) do
     for th <- Repo.all(Thermostat), do: delete(th)
   end
+
+  def find(id) when is_integer(id),
+    do: get_by(__MODULE__, id: id) |> preload([:profiles])
+
+  def find(name) when is_binary(name),
+    do: get_by(__MODULE__, name: name) |> preload([:profiles])
 
   def get_by(opts) when is_list(opts) do
     filter = Keyword.take(opts, [:id, :device, :name])

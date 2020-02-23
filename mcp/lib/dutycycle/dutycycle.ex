@@ -33,6 +33,8 @@ defmodule Dutycycle do
       unique_constraint: 3
     ]
 
+  import Ecto.Query, only: [from: 2]
+
   import Janice.Common.DB, only: [name_regex: 0]
 
   alias Dutycycle.Profile
@@ -177,7 +179,7 @@ defmodule Dutycycle do
   def all(atom, opts \\ [])
 
   def all(:ids, opts) when is_list(opts) do
-    for d <- Repo.all(Dutycycle), do: Map.get(d, :id)
+    from(dc in Dutycycle, select: dc.id) |> Repo.all()
   end
 
   def all(:names, opts) when is_list(opts) do

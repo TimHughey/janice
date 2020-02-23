@@ -24,13 +24,13 @@ defmodule Thermostat.Server do
   end
 
   def all(:names) do
-    servers = Thermostat.Supervisor.known_servers("Thermo_ID")
+    servers = Thermostat.Supervisor.known_servers()
 
     for s <- servers, t = Thermostat.Server.thermostat(s), is_map(t), do: t.name
   end
 
   def all(:thermostats) do
-    servers = Thermostat.Supervisor.known_servers("Thermo_ID")
+    servers = Thermostat.Supervisor.known_servers()
     for s <- servers, t = Thermostat.Server.thermostat(s), is_map(t), do: t
   end
 
@@ -59,14 +59,6 @@ defmodule Thermostat.Server do
 
   def restart(name) when is_binary(name),
     do: Thermostat.Supervisor.restart_thermostat(name)
-
-  def server_name_atom(%Thermostat{id: id}),
-    do:
-      String.to_atom(
-        "Thermo_ID" <> String.pad_leading(Integer.to_string(id), 6, "0")
-      )
-
-  def server_name_atom(nil), do: nil
 
   def standby(name, opts \\ [])
       when is_binary(name) and is_list(opts) do
@@ -214,7 +206,7 @@ defmodule Thermostat.Server do
   ####
 
   def child_spec(args) do
-    {thermostat, server_name} = server_name(id: args.id)
+    {thermostat, server_name} = server_name(args.id)
     args = Map.put(args, :thermostat, thermostat)
 
     if is_nil(thermostat),
@@ -257,7 +249,7 @@ defmodule Thermostat.Server do
     Logger.debug(["start_link() args: ", inspect(args, pretty: true)])
 
     opts = Application.get_env(:mcp, Thermostat.Server, [])
-    {_, name_atom} = server_name(id: id)
+    {_, name_atom} = server_name(id)
     t = Thermostat.get_by(id: id)
 
     s =
@@ -296,7 +288,7 @@ defmodule Thermostat.Server do
   end
 
   defp call_server(name, msg) when is_binary(name) and is_map(msg) do
-    {t, server_name} = server_name(name: name)
+    {t, server_name} = server_name(name)
 
     msg = Map.put(msg, :thermostat, t)
     pid = Process.whereis(server_name)
@@ -398,19 +390,17 @@ defmodule Thermostat.Server do
   # do nothing if need_reload is false or doesn't exist
   defp reload_thermostat(%{} = s), do: s
 
-  defp server_name(opts) when is_list(opts) do
-    d = Thermostat.get_by(opts)
+  def server_name(x) when is_binary(x) or is_integer(x) do
+    th = Thermostat.find(x)
 
-    if is_nil(d) do
-      {nil, nil}
-    else
-      id_str = String.pad_leading(Integer.to_string(d.id), 6, "0")
-
-      {d, String.to_atom("Thermo_ID" <> id_str)}
-    end
+    if is_nil(th), do: {nil, nil}, else: {th, server_name_atom(th)}
   end
 
-  # start a __standalone__ thermostat (owner is nil)
+  defp server_name_atom(%{id: _} = th),
+    do: Thermostat.Supervisor.server_name_atom(th)
+
+  defp server_name_atom(_), do: :no_server
+
   defp start(%{thermostat: %Thermostat{}} = s) do
     Switch.position(Thermostat.switch(s.thermostat), position: false, lazy: true)
 
