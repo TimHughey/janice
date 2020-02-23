@@ -1,4 +1,6 @@
 defmodule Repo do
+  @moduledoc false
+
   #    Master Control Program for Wiss Landing
   #    Copyright (C) 2016  Tim Hughey (thughey)
 

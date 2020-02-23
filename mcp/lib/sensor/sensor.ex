@@ -196,8 +196,9 @@ defmodule Sensor do
   end
 
   def delete_all(:dangerous) do
-    from(s in Sensor, where: s.id >= 0)
-    |> Repo.delete_all(timeout: @delete_timeout_ms)
+    for s <- from(s in Sensor, select: [:id]) |> Repo.all() do
+      Repo.delete(s)
+    end
   end
 
   def deprecate(id) when is_integer(id) do

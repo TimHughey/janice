@@ -7,7 +7,7 @@ defmodule Mcp.Application do
   import Keyword, only: [has_key?: 2]
 
   def start(_type, args) do
-    Logger.info(["start() args: ", inspect(args, pretty: true)])
+    Logger.info(["start() ", inspect(args, pretty: true)])
 
     build_env = Keyword.get(args, :build_env, "dev")
 

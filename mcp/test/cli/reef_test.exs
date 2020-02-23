@@ -57,7 +57,7 @@ defmodule ReefTest do
         comment: "mix pump",
         device: "mix_pump",
         active: false,
-        log: true,
+        log: false,
         profiles: [
           %Dutycycle.Profile{name: "fast", run_ms: 3_000, idle_ms: 3_000},
           %Dutycycle.Profile{
@@ -74,7 +74,7 @@ defmodule ReefTest do
         comment: "mix air",
         device: "mix_air",
         active: false,
-        log: true,
+        log: false,
         profiles: [
           %Dutycycle.Profile{name: "fast", run_ms: 3_000, idle_ms: 3_000},
           %Dutycycle.Profile{
@@ -91,7 +91,7 @@ defmodule ReefTest do
         comment: "mix rodi",
         device: "mix_rodi",
         active: false,
-        log: true,
+        log: false,
         profiles: [
           %Dutycycle.Profile{name: "fast", run_ms: 3_000, idle_ms: 3_000},
           %Dutycycle.Profile{
@@ -108,7 +108,7 @@ defmodule ReefTest do
         comment: "mix rodi boost",
         device: "mix_rodi_boost",
         active: false,
-        log: true,
+        log: false,
         profiles: [
           %Dutycycle.Profile{name: "fast", run_ms: 3_000, idle_ms: 3_000},
           %Dutycycle.Profile{
@@ -125,7 +125,7 @@ defmodule ReefTest do
         comment: "display tank ato",
         device: "display tank ato",
         active: false,
-        log: true,
+        log: false,
         profiles: [
           %Dutycycle.Profile{name: "fast", run_ms: 3_000, idle_ms: 3_000},
           %Dutycycle.Profile{

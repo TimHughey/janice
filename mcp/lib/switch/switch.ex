@@ -143,8 +143,9 @@ defmodule Switch do
   end
 
   def delete_all(:dangerous) do
-    from(sw in Switch, where: sw.id >= 0)
-    |> Repo.delete_all(timeout: @delete_timeout_ms)
+    for sw <- from(sw in Switch, select: [:id]) |> Repo.all() do
+      Repo.delete(sw)
+    end
   end
 
   def external_update(%{host: host, device: device, mtime: mtime} = r) do
