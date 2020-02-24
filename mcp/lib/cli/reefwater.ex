@@ -137,9 +137,9 @@ defmodule Reef do
   def utility_pump_off, do: rmp() |> dc_halt()
 
   def water_change_begin do
-    rmp() |> dc_halt()
-    rma() |> dc_halt()
-    ato() |> dc_halt()
+    rmp() |> halt()
+    rma() |> halt()
+    ato() |> halt()
     swmt() |> THS.activate_profile(standby())
     display_tank() |> THS.activate_profile(standby())
 
@@ -147,9 +147,9 @@ defmodule Reef do
   end
 
   def water_change_end do
-    rmp() |> dc_halt()
-    rma() |> dc_halt()
-    ato() |> dc_resume()
+    rmp() |> halt()
+    rma() |> halt()
+    ato() |> resume()
     swmt() |> THS.activate_profile(standby())
     display_tank() |> THS.activate_profile("75F")
 
