@@ -111,7 +111,7 @@ defmodule Mqtt.Client do
   def publish(message) when is_binary(message) do
     {feed, qos} = get_env(:mcp, :feeds, []) |> Keyword.get(:cmd, {nil, nil})
     payload = message
-    pub_opts = [qos]
+    pub_opts = [qos: qos]
 
     opts = [feed: feed, message: payload, pub_opts: pub_opts]
     publish(opts)
@@ -152,7 +152,7 @@ defmodule Mqtt.Client do
   def publish_ota(raw) when is_binary(raw) do
     {feed, qos} = get_env(:mcp, :feeds, []) |> Keyword.get(:ota, {nil, nil})
     payload = raw
-    pub_opts = [qos]
+    pub_opts = [qos: qos]
 
     opts = [feed: feed, message: payload, pub_opts: pub_opts]
     publish(opts)
@@ -163,7 +163,7 @@ defmodule Mqtt.Client do
       :timer.tc(fn ->
         {feed, qos} = get_env(:mcp, :feeds, []) |> Keyword.get(:cmd, {nil, nil})
         payload = message
-        pub_opts = [qos]
+        pub_opts = [qos: qos]
 
         opts = [feed: feed, message: payload, pub_opts: pub_opts]
         publish(opts)
