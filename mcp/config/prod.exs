@@ -9,9 +9,9 @@ config :logger,
 
 config :mcp,
   feeds: [
-    cmd: {"prod/mcr/f/command", [qos: 1]},
-    rpt: {"prod/mcr/f/report", [qos: 0]},
-    ota: {"prod/mcr/f/ota", [qos: 0]}
+    cmd: {"prod/mcr/f/command", qos: 1},
+    rpt: {"prod/mcr/f/report", qos: 0},
+    ota: {"prod/mcr/f/ota", qos: 0}
   ]
 
 config :mcp,
