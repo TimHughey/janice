@@ -15,8 +15,8 @@ config :logger,
 config :mcp,
   feeds: [
     cmd: {"#{Mix.env()}/mcr/f/command", 1},
-    rpt: {"#{Mix.env()}prod/mcr/f/report", 0},
-    ota: {"#{Mix.env()}prod/mcr/f/ota", 0}
+    rpt: {"#{Mix.env()}/mcr/f/report", 0},
+    ota: {"#{Mix.env()}/mcr/f/ota", 0}
   ]
 
 config :mcp,
