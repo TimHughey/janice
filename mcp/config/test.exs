@@ -14,8 +14,9 @@ config :logger, level: :info
 
 config :mcp,
   feeds: [
-    cmd: {"test/mcr/f/command", 0},
-    rpt: {"test/mcr/f/report", 0}
+    cmd: {"test/mcr/f/command", [qos: 1]},
+    rpt: {"test/mcr/f/report", [qos: 0]},
+    ota: {"test/mcr/f/ota", [qos: 0]}
   ]
 
 config :mcp,

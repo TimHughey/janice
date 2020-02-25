@@ -14,8 +14,9 @@ config :logger,
 
 config :mcp,
   feeds: [
-    cmd: {"dev/mcr/f/command", :qos0},
-    rpt: {"dev/mcr/f/report", :qos0}
+    cmd: {"dev/mcr/f/command", [qos: 1]},
+    rpt: {"dev/mcr/f/report", [qos: 0]},
+    ota: {"dev/mcr/f/ota", [qos: 0]}
   ]
 
 config :mcp,

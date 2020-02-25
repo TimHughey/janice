@@ -120,7 +120,7 @@ defmodule Mqtt.Client do
   def publish(opts) when is_list(opts) do
     feed = Keyword.get(opts, :feed, nil)
     payload = Keyword.get(opts, :message, nil)
-    pub_opts = Keyword.get(opts, :pub_opts, [])
+    pub_opts = Keyword.get(opts, :pub_opts, []) |> List.flatten()
 
     MessageSave.save(:out, payload)
 
@@ -136,7 +136,14 @@ defmodule Mqtt.Client do
 
       :ok
     else
-      Logger.debug(["outbound: ", inspect(payload, pretty: true)])
+      Logger.info([
+        "publish() feed: ",
+        inspect(feed),
+        " payload: ",
+        inspect(payload, pretty: true),
+        "pub_opts: ",
+        inspect(pub_opts, pretty: true)
+      ])
 
       GenServer.call(__MODULE__, {:publish, feed, payload, pub_opts})
     end
