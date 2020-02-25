@@ -201,7 +201,6 @@ bool mcrI2c::commandAck(CmdSwitch_t &cmd) {
 }
 
 void mcrI2c::core(void *task_data) {
-  int wait_for_name_ms = 60000;
   bool driver_ready = false;
   bool net_name = false;
 
@@ -221,9 +220,8 @@ void mcrI2c::core(void *task_data) {
 
   // this is because i2c devices do not have a globally assigned
   // unique identifier (like Maxim / Dallas Semiconductors devices)
-  ESP_LOGV(tagEngine(), "waiting up to %dms for network name...",
-           wait_for_name_ms);
-  net_name = Net::waitForName(wait_for_name_ms);
+  ESP_LOGV(tagEngine(), "waiting for network name...");
+  net_name = Net::waitForName();
 
   if (net_name == false) {
     ESP_LOGW(tagEngine(), "network name not available, using host name");

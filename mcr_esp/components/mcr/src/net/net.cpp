@@ -567,7 +567,7 @@ bool Net::waitForName(uint32_t wait_ms) {
 
 // wait_ms defaults to portMAX_DELAY when not passed
 bool Net::waitForNormalOps(uint32_t wait_ms) {
-  EventBits_t wait_bit = connectedBit() | normalOpsBit();
+  EventBits_t wait_bit = connectedBit() | transportBit() | normalOpsBit();
   EventGroupHandle_t eg = instance()->eventGroup();
   uint32_t wait_ticks =
       (wait_ms == UINT32_MAX) ? portMAX_DELAY : pdMS_TO_TICKS(wait_ms);
