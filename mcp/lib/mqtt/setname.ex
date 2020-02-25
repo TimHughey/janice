@@ -5,22 +5,17 @@ defmodule Mqtt.SetName do
 
   alias Janice.TimeSupport
 
-  @setname_cmd "set.name"
-
   def new_cmd(host, name)
-      when is_binary(host) and is_binary(name) do
-    cmd =
-      %{}
-      |> Map.put(:cmd, @setname_cmd)
-      |> Map.put(:mtime, TimeSupport.unix_now(:second))
-      |> Map.put_new(:host, host)
-      |> Map.put_new(:name, String.replace_prefix(name, "mcr.", ""))
-
-    Logger.debug(["name_cmd: ", inspect(cmd, pretty: true)])
-    cmd
-  end
+      when is_binary(host) and is_binary(name),
+      do: %{
+        cmd: "set.name",
+        mtime: TimeSupport.unix_now(:second),
+        host: host,
+        name: String.replace_prefix(name, "mcr.", "")
+      }
 
   def json(%{} = c) do
+    Logger.info(["json encoding: ", inspect(c, pretty: true)])
     Jason.encode!(c)
   end
 end
