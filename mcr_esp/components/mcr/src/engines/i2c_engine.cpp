@@ -223,7 +223,7 @@ void mcrI2c::core(void *task_data) {
   // unique identifier (like Maxim / Dallas Semiconductors devices)
   ESP_LOGV(tagEngine(), "waiting up to %dms for network name...",
            wait_for_name_ms);
-  net_name = Net::waitForName(pdMS_TO_TICKS(wait_for_name_ms));
+  net_name = Net::waitForName(wait_for_name_ms);
 
   if (net_name == false) {
     ESP_LOGW(tagEngine(), "network name not available, using host name");
@@ -280,6 +280,7 @@ void mcrI2c::discover(void *data) {
 }
 
 void mcrI2c::report(void *data) {
+
   logSubTaskStart(data);
   saveTaskLastWake(REPORT);
 
