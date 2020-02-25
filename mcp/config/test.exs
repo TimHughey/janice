@@ -14,9 +14,9 @@ config :logger, level: :info
 
 config :mcp,
   feeds: [
-    cmd: {"test/mcr/f/command", [qos: 1]},
-    rpt: {"test/mcr/f/report", [qos: 0]},
-    ota: {"test/mcr/f/ota", [qos: 0]}
+    cmd: {"#{Mix.env()}/mcr/f/command", 1},
+    rpt: {"#{Mix.env()}prod/mcr/f/report", 0},
+    ota: {"#{Mix.env()}prod/mcr/f/ota", 0}
   ]
 
 config :mcp,

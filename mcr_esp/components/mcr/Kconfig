@@ -221,7 +221,7 @@ menu "IoT"
 		config MCR_MQTT_CMD_FEED
 			depends on MCR_MQTT_CONFIG
 			string "Command Subscribe Topic (Feed)"
-			default "prod/mcr/f/cmd"
+			default "prod/mcr/f/command"
 			help
 				Topic (feed) for receiving commands from the IoT endpoint
 

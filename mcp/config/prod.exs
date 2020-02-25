@@ -9,9 +9,9 @@ config :logger,
 
 config :mcp,
   feeds: [
-    cmd: {"prod/mcr/f/command", 1},
-    rpt: {"prod/mcr/f/report", 0},
-    ota: {"prod/mcr/f/ota", 0}
+    cmd: {"#{Mix.env()}/mcr/f/command", 1},
+    rpt: {"#{Mix.env()}prod/mcr/f/report", 0},
+    ota: {"#{Mix.env()}prod/mcr/f/ota", 0}
   ]
 
 config :mcp,

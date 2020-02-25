@@ -14,8 +14,5 @@ defmodule Mqtt.SetName do
         name: String.replace_prefix(name, "mcr.", "")
       }
 
-  def json(%{} = c) do
-    Logger.info(["json encoding: ", inspect(c, pretty: true)])
-    Jason.encode!(c)
-  end
+  def json(%{} = c), do: Jason.encode!(c)
 end

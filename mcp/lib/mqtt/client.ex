@@ -136,12 +136,12 @@ defmodule Mqtt.Client do
 
       :ok
     else
-      Logger.info([
+      Logger.debug([
         "publish() feed: ",
         inspect(feed),
         " payload: ",
         inspect(payload, pretty: true),
-        "pub_opts: ",
+        " pub_opts: ",
         inspect(pub_opts, pretty: true)
       ])
 

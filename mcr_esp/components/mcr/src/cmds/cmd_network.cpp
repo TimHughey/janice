@@ -11,6 +11,8 @@ mcrCmdNetwork::mcrCmdNetwork(JsonDocument &doc, elapsedMicros &e)
   if (doc.isNull() == false) {
     _host = doc[k_host] | "no_host";
     _name = doc[k_name] | "no_name";
+  } else {
+    ESP_LOGW("mcrCmdNetwork", "null json document");
   }
 }
 
@@ -19,6 +21,8 @@ bool mcrCmdNetwork::process() {
     mcr::Net::setName(_name);
     return true;
   }
+
+  ESP_LOGD(TAG, "host name did not match: %s", _host.c_str());
 
   return false;
 }

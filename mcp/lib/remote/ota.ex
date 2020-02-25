@@ -39,9 +39,9 @@ defmodule OTA do
     # be sure to filter out any :not_found
     results =
       for %{host: host, name: name} <- Keyword.get(opts, :restart_list) do
-        log && Logger.info(["send restart: ", inspect(host, pretty: true)])
+        log && Logger.info(["send restart to: ", inspect(host, pretty: true)])
 
-        rc =
+        {rc, _ref} =
           %{
             cmd: @restart_cmd,
             mtime: TimeSupport.unix_now(:second),
@@ -55,7 +55,7 @@ defmodule OTA do
         {name, host, rc}
       end
 
-    log && Logger.info(["sent ota https to: ", inspect(results, pretty: true)])
+    log && Logger.info(["sent restart to: ", inspect(results, pretty: true)])
     results
   end
 
@@ -86,12 +86,12 @@ defmodule OTA do
     # be sure to filter out any :not_found
     results =
       for %{host: host, name: name} <- Keyword.get(opts, :update_list) do
-        log && Logger.info(["send ota https ", inspect(host, pretty: true)])
+        log && Logger.info(["send ota https to: ", inspect(host, pretty: true)])
 
         # TODO: design and implement new firmware version handling
         # fw_file_version()
 
-        rc =
+        {rc, _ref} =
           %{
             cmd: @ota_https,
             mtime: TimeSupport.unix_now(:second),
@@ -106,7 +106,7 @@ defmodule OTA do
         {name, host, rc}
       end
 
-    log && Logger.info(["sent ota https to ", inspect(results, pretty: true)])
+    log && Logger.info(["sent ota https to: ", inspect(results, pretty: true)])
 
     results
   end

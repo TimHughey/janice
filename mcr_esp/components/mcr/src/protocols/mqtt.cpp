@@ -272,14 +272,18 @@ void mcrMQTT::core(void *data) {
   connect();
 
   bool startup_announced = false;
+  elapsedMillis announce_startup_delay;
 
   for (;;) {
     // send the startup announcement once the time is available.
     // this solves a race condition when mqtt connection and subscription
     // to the commend feed completes before the time is set and avoids
     // mcp receiving the announced statup time as epoch
-    if ((startup_announced == false) && (Net::isTimeSet())) {
+    if ((startup_announced == false) && (Net::isTimeSet()) &&
+        (announce_startup_delay > 300)) {
+      ESP_LOGI(tagEngine(), "announcing startup");
       announceStartup();
+
       startup_announced = true;
     }
 
