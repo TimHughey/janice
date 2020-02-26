@@ -44,6 +44,13 @@ const char *i2cDev::i2cDevDesc(uint8_t addr) {
     break;
 
   case 0x20:
+  case 0x21:
+  case 0x22:
+  case 0x23:
+  case 0x24:
+  case 0x25:
+  case 0x26:
+  case 0x27:
     return (const char *)"mcp23008";
     break;
 

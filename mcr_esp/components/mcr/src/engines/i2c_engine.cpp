@@ -431,7 +431,14 @@ bool mcrI2c::detectDevice(i2cDev_t *dev) {
 
   case 0x70: // TCA9548B - TI i2c bus multiplexer
   case 0x44: // SHT-31 humidity sensor
-  case 0x20: // MCP23008
+  case 0x20: // MCP23008 0x20 - 0x27
+  case 0x21:
+  case 0x22:
+  case 0x23:
+  case 0x24:
+  case 0x25:
+  case 0x26:
+  case 0x27:
   case 0x36: // STEMMA (seesaw based soil moisture sensor)
     esp_rc = busWrite(dev, detect_cmd, sizeof(detect_cmd));
     break;
@@ -588,7 +595,14 @@ bool mcrI2c::readDevice(i2cDev_t *dev) {
       rc = readSHT31(dev);
       break;
 
-    case 0x20:
+    case 0x20: // MCP23008 can be user configured to 0x20 + three bits
+    case 0x21:
+    case 0x22:
+    case 0x23:
+    case 0x24:
+    case 0x25:
+    case 0x26:
+    case 0x27:
       rc = readMCP23008(dev);
       break;
 

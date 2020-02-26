@@ -102,11 +102,11 @@ private:
 
 private:
   // array is zero terminated
-  mcrDevAddr_t _search_addrs[5] = {{mcrDevAddr(0x44)},
-                                   {mcrDevAddr(0x5C)},
-                                   {mcrDevAddr(0x20)},
-                                   {mcrDevAddr(0x36)},
-                                   {mcrDevAddr(0x00)}};
+  mcrDevAddr_t _search_addrs[12] = {
+      {mcrDevAddr(0x44)}, {mcrDevAddr(0x5C)}, {mcrDevAddr(0x20)},
+      {mcrDevAddr(0x21)}, {mcrDevAddr(0x22)}, {mcrDevAddr(0x23)},
+      {mcrDevAddr(0x24)}, {mcrDevAddr(0x25)}, {mcrDevAddr(0x26)},
+      {mcrDevAddr(0x27)}, {mcrDevAddr(0x36)}, {mcrDevAddr(0x00)}};
 
   mcrDevAddr_t *search_addrs() { return _search_addrs; };
   inline uint32_t search_addrs_count() {
