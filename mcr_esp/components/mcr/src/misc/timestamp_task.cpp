@@ -105,7 +105,7 @@ void TimestampTask::core(void *data) {
       last_timestamp = time(nullptr);
     }
 
-    if (max_alloc < (75 * 1024)) {
+    if (max_alloc < (5 * 1024)) {
       mcrRestart::instance()->restart("heap fragmentation", __PRETTY_FUNCTION__,
                                       3000);
     }
