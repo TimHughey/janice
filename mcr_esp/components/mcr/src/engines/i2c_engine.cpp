@@ -15,11 +15,6 @@
       You should have received a copy of the GNU General Public License
       along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-      AM2315 code was based on Matt Heitzenroder's Arduino library
-      with portions of his code inspired by Joehrg Ehrsam's am2315-python-api
-      code (http://code.google.com/p/am2315-python-api/) and
-      Sopwith's library (http://sopwith.ismellsmoke.net/?p=104).
-
       https://www.wisslanding.com
   */
 
@@ -440,15 +435,6 @@ bool mcrI2c::detectDevice(i2cDev_t *dev) {
   case 0x36: // STEMMA (seesaw based soil moisture sensor)
     esp_rc = busWrite(dev, detect_cmd, sizeof(detect_cmd));
     break;
-
-  case 0x5C: // AM2315
-             // special case: device enters sleep after 3s
-    if (wakeAM2315(dev)) {
-      delay(15);
-      esp_rc = busWrite(dev, detect_cmd, sizeof(detect_cmd));
-    }
-
-    break;
   }
 
   if (esp_rc == ESP_OK) {
@@ -597,9 +583,6 @@ bool mcrI2c::readDevice(i2cDev_t *dev) {
 
   if (selectBus(dev->bus())) {
     switch (dev->devAddr()) {
-    case 0x5C:
-      rc = readAM2315(dev);
-      break;
 
     case 0x44:
       rc = readSHT31(dev);
@@ -620,74 +603,6 @@ bool mcrI2c::readDevice(i2cDev_t *dev) {
     }
   }
 
-  return rc;
-}
-
-bool mcrI2c::readAM2315(i2cDev_t *dev, bool wake) {
-  auto rc = false;
-  esp_err_t esp_rc;
-
-  uint8_t request[] = {0x03, 0x00, 0x04};
-
-  uint8_t buff[] = {
-      0x00,       // cmd code
-      0x00,       // uint8_t count
-      0x00, 0x00, // relh high byte, low byte
-      0x00, 0x00, // tempC high byte, low byte
-      0x00, 0x00  // CRC high byte, low byte
-  };
-
-  dev->startRead();
-  if (wake) {
-    delay(10);
-    wakeAM2315(dev);
-  }
-
-  delay(10);
-
-  esp_rc = busWrite(dev, request, sizeof(request));
-
-  delay(10);
-  esp_rc = busRead(dev, buff, sizeof(buff), esp_rc);
-
-  dev->stopRead();
-
-  if (esp_rc == ESP_OK) {
-    dev->justSeen();
-
-    // verify the CRC
-    uint16_t crc = buff[7] * 256 + buff[6];
-    uint16_t crc_calc = 0xFFFF;
-
-    for (uint32_t i = 0; i < 6; i++) {
-      crc_calc = crc_calc ^ buff[i];
-
-      for (uint32_t j = 0; j < 8; j++) {
-        if (crc_calc & 0x01) {
-          crc_calc = crc_calc >> 1;
-          crc_calc = crc_calc ^ 0xA001;
-        } else {
-          crc_calc = crc_calc >> 1;
-        }
-      }
-    }
-
-    if (crc == crc_calc) {
-      float rh = (buff[2] * 256) / 10;
-      float tc = ((((buff[4] & 0x7F) * 256) + buff[5]) / 10) *
-                 ((buff[4] >> 7) ? -1 : 1);
-
-      humidityReading_t *reading = new humidityReading(
-          dev->externalName(), dev->readTimestamp(), tc, rh);
-
-      dev->setReading(reading);
-
-      rc = true;
-    } else { // crc did not match
-      ESP_LOGW(tagReadAM2315(), "crc mismatch for %s", dev->debug().get());
-      dev->crcMismatch();
-    }
-  }
   return rc;
 }
 
@@ -1041,17 +956,4 @@ bool mcrI2c::setMCP23008(CmdSwitch_t &cmd, i2cDev_t *dev) {
   return rc;
 }
 
-bool mcrI2c::wakeAM2315(i2cDev_t *dev) {
-  uint8_t wake_request[] = {dev->firstAddressByte()};
-
-  // wake up the AM2315 since it (by default) goes into low-power (sleep)
-  // mode after 3s
-
-  // NOTE: the AM2315 will not ACK the wake up request so we'll ignore
-  // ignore esp error here.  i2c errors will be detected by functions
-  // that utilize wakeAM2315()
-  busWrite(dev, wake_request, sizeof(wake_request));
-
-  return true;
-}
 } // namespace mcr

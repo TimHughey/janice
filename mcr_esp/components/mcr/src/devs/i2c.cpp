@@ -39,10 +39,6 @@ namespace mcr {
 
 const char *i2cDev::i2cDevDesc(uint8_t addr) {
   switch (addr) {
-  case 0x5C:
-    return (const char *)"am2315";
-    break;
-
   case 0x44:
     return (const char *)"sht31";
     break;
