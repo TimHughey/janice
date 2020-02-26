@@ -714,7 +714,7 @@ bool mcrI2c::readMCP23008(i2cDev_t *dev) {
 
   if (esp_rc == ESP_OK) {
     // GPIO register is little endian so no conversion is required
-    positions = all_registers[9]; // GPIO register (address 0x09)
+    positions = all_registers[0x0a]; // OLAT register (address 0x0a)
 
     dev->storeRawData(all_registers);
 
@@ -998,6 +998,8 @@ bool mcrI2c::setMCP23008(CmdSwitch_t &cmd, i2cDev_t *dev) {
 
   positionsReading_t *reading = (positionsReading_t *)dev->reading();
 
+  // if register 0x00 (IODIR) is not 0x00 (IODIR isn't output) then
+  // set it to output
   if (dev->rawData().at(0) > 0x00) {
     tx_data.insert(tx_data.end(), {0x00, 0x00});
     esp_rc = requestData(tagSetMCP23008(), dev, tx_data.data(), tx_data.size(),
@@ -1016,9 +1018,9 @@ bool mcrI2c::setMCP23008(CmdSwitch_t &cmd, i2cDev_t *dev) {
 
   // to set the GPIO we will write to two registers:
   // a. IODIR (0x00) - setting all GPIOs to output (0b00000000)
-  // b. GPIO (0x09)  - the new state
+  // b. OLAT (0x0a)  - the new state
   tx_data.clear();
-  tx_data.insert(tx_data.end(), {0x09, (uint8_t)(new_state & 0xff)});
+  tx_data.insert(tx_data.end(), {0x0a, (uint8_t)(new_state & 0xff)});
 
   esp_rc = requestData(tagSetMCP23008(), dev, tx_data.data(), tx_data.size(),
                        nullptr, 0, esp_rc);
