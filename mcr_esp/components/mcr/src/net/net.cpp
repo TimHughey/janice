@@ -21,6 +21,7 @@
 
 #include "misc/mcr_nvs.hpp"
 #include "misc/mcr_restart.hpp"
+#include "misc/status_led.hpp"
 #include "net/mcr_net.hpp"
 
 extern "C" {
@@ -56,40 +57,9 @@ Net::Net() {
   hw_conf_gpio.pull_up_en = GPIO_PULLUP_DISABLE;
   gpio_config(&hw_conf_gpio);
 
-  ledc_timer_config_t ledc_timer;
-  ledc_timer.speed_mode = LEDC_HIGH_SPEED_MODE;   // timer mode
-  ledc_timer.duty_resolution = LEDC_TIMER_13_BIT; // resolution of PWM duty
-  ledc_timer.timer_num = LEDC_TIMER_0;            // timer index
-  ledc_timer.freq_hz = 5000;                      // frequency of PWM signal
-  ledc_timer.clk_cfg = LEDC_AUTO_CLK;             // auto select the clock
-
-  esp_err_t esp_rc;
-  esp_rc = ledc_timer_config(&ledc_timer);
-  // ESP_LOGI(tagEngine(), "[%s] ledc_timer_config()", esp_err_to_name(esp_rc));
-
-  if (esp_rc == ESP_OK) {
-    esp_rc = ledc_fade_func_install(0);
-    // ESP_LOGI(tagEngine(), "[%s] ledc_fade_func_install()",
-    //          esp_err_to_name(esp_rc));
-  }
-
-  ledc_channel_config_t ledc_channel;
-  ledc_channel.channel = LEDC_CHANNEL_0;
-  ledc_channel.duty = 0;
-  ledc_channel.gpio_num = led_gpio_;
-  ledc_channel.speed_mode = LEDC_HIGH_SPEED_MODE;
-  ledc_channel.hpoint = 0;
-  ledc_channel.timer_sel = LEDC_TIMER_0;
-
-  if (esp_rc == ESP_OK) {
-    esp_rc = ledc_channel_config(&ledc_channel);
-    // ESP_LOGI(tagEngine(), "[%s] ledc_channel_config()",
-    // esp_err_to_name(esp_rc));
-  }
-
-  // set status LED to 100% to signal startup and initialization are
+  // set status LED to 8%% to signal startup and initialization are
   // underway
-  statusLED(4095);
+  StatusLED::instance()->dim();
 
   uint8_t hw_conf = 0;
   for (auto conf_bit = 0; conf_bit < 3; conf_bit++) {
@@ -325,19 +295,19 @@ void Net::ensureTimeIsSet() {
   ESP_LOGI(tagEngine(), "waiting up to %dms (checking every %dms) for SNTP...",
            total_wait_ms, check_wait_ms);
 
-  // set the status LED to 50% brightness to signal we are waiting
-  // for SNTP
-  statusLED(1024);
-
   // continue to query the system time until seconds since epoch are
   // greater than a known recent time
   while ((curr_time.tv_sec < 1554830134) && (++retry < retry_count)) {
     if ((retry > (retry_count - 5)) || ((retry % 50) == 0)) {
       ESP_LOGW(tagEngine(), "waiting for SNTP... (%d/%d)", retry, retry_count);
     }
+    StatusLED::instance()->brighter();
     vTaskDelay(pdMS_TO_TICKS(check_wait_ms));
+    StatusLED::instance()->dimmer();
     gettimeofday(&curr_time, nullptr);
   }
+
+  StatusLED::instance()->brighter();
 
   if (retry == retry_count) {
     ESP_LOGE(tagEngine(), "timeout waiting for SNTP");
@@ -455,6 +425,7 @@ bool Net::start() {
   xEventGroupSetBits(evg_, initializedBit());
 
   ::esp_wifi_start();
+  StatusLED::instance()->brighter();
 
   ESP_LOGI(tagEngine(), "standing by for IP address...");
   if (waitForIP()) {
@@ -477,27 +448,6 @@ bool Net::start() {
   return true;
 }
 
-void Net::statusLED(int duty) {
-
-  ledc_channel_config_t ledc_channel;
-  ledc_channel.channel = LEDC_CHANNEL_0;
-  ledc_channel.duty = 0;
-  ledc_channel.gpio_num = led_gpio_;
-  ledc_channel.speed_mode = LEDC_HIGH_SPEED_MODE;
-  ledc_channel.hpoint = 0;
-  ledc_channel.timer_sel = LEDC_TIMER_0;
-
-  ledc_set_fade_with_time(ledc_channel.speed_mode, ledc_channel.channel, duty,
-                          300);
-
-  ledc_fade_start(ledc_channel.speed_mode, ledc_channel.channel,
-                  LEDC_FADE_NO_WAIT);
-
-  // esp_rc = ledc_stop(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0, 0);
-  // ledc_stop(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0, 0);
-  // ESP_LOGI(tagEngine(), "[%s] ledc_stop()", esp_err_to_name(esp_rc));
-}
-
 void Net::resumeNormalOps() {
   xEventGroupSetBits(instance()->eventGroup(), Net::normalOpsBit());
 }
@@ -516,7 +466,7 @@ bool Net::waitForConnection(uint32_t wait_ms) {
   EventBits_t bits_set;
 
   // set status LED to 75% while waiting for WiFi
-  statusLED(2048);
+  StatusLED::instance()->brighter();
   bits_set = xEventGroupWaitBits(eg, wait_bit, noClearBits(), waitAllBits(),
                                  wait_ticks);
 

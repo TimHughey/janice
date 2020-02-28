@@ -69,17 +69,15 @@ mcrI2c::mcrI2c() {
   addTask(engine_name, DISCOVER, discover);
   addTask(engine_name, REPORT, report);
 
-  if (mcr::Net::hardwareConfig() == I2C_MULTIPLEXER) {
-    gpio_config_t rst_pin_cfg;
+  gpio_config_t rst_pin_cfg;
 
-    rst_pin_cfg.pin_bit_mask = RST_PIN_SEL;
-    rst_pin_cfg.mode = GPIO_MODE_OUTPUT;
-    rst_pin_cfg.pull_up_en = GPIO_PULLUP_DISABLE;
-    rst_pin_cfg.pull_down_en = GPIO_PULLDOWN_DISABLE;
-    rst_pin_cfg.intr_type = GPIO_INTR_DISABLE;
+  rst_pin_cfg.pin_bit_mask = RST_PIN_SEL;
+  rst_pin_cfg.mode = GPIO_MODE_OUTPUT;
+  rst_pin_cfg.pull_up_en = GPIO_PULLUP_DISABLE;
+  rst_pin_cfg.pull_down_en = GPIO_PULLDOWN_DISABLE;
+  rst_pin_cfg.intr_type = GPIO_INTR_DISABLE;
 
-    gpio_config(&rst_pin_cfg);
-  }
+  gpio_config(&rst_pin_cfg);
 }
 
 //

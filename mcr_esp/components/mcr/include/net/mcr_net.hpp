@@ -2,7 +2,6 @@
 
 #include <driver/adc.h>
 #include <driver/gpio.h>
-#include <driver/ledc.h>
 #include <esp_adc_cal.h>
 #include <esp_attr.h>
 #include <esp_event_loop.h>
@@ -36,7 +35,6 @@ public:
   static Net_t *instance();
   static const string_t &macAddress();
   static void setName(const string_t name);
-  static void statusLED(int on);
   static void resumeNormalOps();
   static void suspendNormalOps();
   static bool waitForConnection(uint32_t wait_ms = UINT32_MAX);

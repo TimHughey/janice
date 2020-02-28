@@ -34,6 +34,7 @@
 #include "external/mongoose.h"
 #include "misc/mcr_nvs.hpp"
 #include "misc/mcr_types.hpp"
+#include "misc/status_led.hpp"
 #include "net/mcr_net.hpp"
 #include "protocols/mqtt.hpp"
 #include "protocols/mqtt_in.hpp"
@@ -77,7 +78,7 @@ void mcrMQTT::announceStartup() {
   startupReading_t startup(batt_mv);
 
   publish(&startup);
-  Net::statusLED(0);
+  StatusLED::instance()->off();
 }
 
 void mcrMQTT::connect(int wait_ms) {
@@ -95,6 +96,7 @@ void mcrMQTT::connect(int wait_ms) {
 
   Net::waitForReady();
 
+  StatusLED::instance()->brighter();
   _connection = mg_connect(&_mgr, _endpoint.c_str(), _ev_handler);
 
   if (_connection) {
@@ -104,6 +106,7 @@ void mcrMQTT::connect(int wait_ms) {
 }
 
 void mcrMQTT::connectionClosed() {
+  StatusLED::instance()->dimmer();
   ESP_LOGW(tagEngine(), "connection closed");
   _mqtt_ready = false;
   _connection = nullptr;
@@ -337,6 +340,7 @@ void mcrMQTT::_ev_handler(struct mg_connection *nc, int ev, void *p) {
              (void *)msg, *status, strerror(*status));
 
     mcrMQTT::instance()->handshake(nc);
+    StatusLED::instance()->off();
     break;
   }
 
@@ -380,6 +384,7 @@ void mcrMQTT::_ev_handler(struct mg_connection *nc, int ev, void *p) {
     break;
 
   case MG_EV_CLOSE:
+    StatusLED::instance()->bright();
     mcrMQTT::instance()->connectionClosed();
     break;
 
