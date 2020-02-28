@@ -438,8 +438,6 @@ OneWireBus* owb_rmt_initialize( owb_rmt_driver_info *info, uint8_t gpio_num,
     if(status != OWB_STATUS_OK)
     {
         ESP_LOGE(TAG, "_init() failed with status %d", status);
-        vTaskDelay(pdMS_TO_TICKS(10000));
-        esp_restart();
     }
 
     return &(info->bus);

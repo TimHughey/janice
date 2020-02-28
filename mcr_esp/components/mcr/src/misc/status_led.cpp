@@ -3,9 +3,9 @@
 
 namespace mcr {
 static const char *TAG = "statusLED";
-static StatusLED_t *__singleton__ = nullptr;
+static statusLED_t *__singleton__ = nullptr;
 
-StatusLED::StatusLED() {
+statusLED::statusLED() {
   esp_err_t timer_rc, config_rc;
 
   timer_rc = ledc_timer_config(&ledc_timer_);
@@ -23,12 +23,12 @@ StatusLED::StatusLED() {
   }
 }
 
-void StatusLED::bright() {
+void statusLED::bright() {
   duty_ = 4095;
   activate_duty();
 }
 
-void StatusLED::brighter() {
+void statusLED::brighter() {
   duty_ += 512;
 
   if (duty_ > 4095) {
@@ -38,12 +38,12 @@ void StatusLED::brighter() {
   activate_duty();
 }
 
-void StatusLED::dim() {
+void statusLED::dim() {
   duty_ = 128;
   activate_duty();
 }
 
-void StatusLED::dimmer() {
+void statusLED::dimmer() {
   duty_ -= 0;
 
   if (duty_ < 128) {
@@ -53,18 +53,18 @@ void StatusLED::dimmer() {
   activate_duty();
 }
 
-void StatusLED::off() {
+void statusLED::off() {
   duty_ = 0;
   activate_duty();
 }
 
-void StatusLED::activate_duty() {
+void statusLED::activate_duty() {
   ledc_set_duty_and_update(ledc_channel_.speed_mode, ledc_channel_.channel,
                            duty_, 0);
 }
 
 // STATIC
-void StatusLED::duty(uint32_t new_duty) {
+void statusLED::duty(uint32_t new_duty) {
 
   if ((new_duty > 0) && (new_duty < 4096)) {
     instance()->duty_ = new_duty;
@@ -74,9 +74,9 @@ void StatusLED::duty(uint32_t new_duty) {
 }
 
 // STATIC
-StatusLED_t *StatusLED::instance() {
+statusLED_t *statusLED::instance() {
   if (__singleton__ == nullptr) {
-    __singleton__ = new StatusLED();
+    __singleton__ = new statusLED();
   }
 
   return __singleton__;

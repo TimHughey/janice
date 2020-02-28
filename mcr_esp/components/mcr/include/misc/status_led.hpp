@@ -32,11 +32,11 @@
 
 namespace mcr {
 
-typedef class StatusLED StatusLED_t;
+typedef class statusLED statusLED_t;
 
-class StatusLED {
+class statusLED {
 public:
-  static StatusLED_t *instance();
+  static statusLED_t *instance();
   static void duty(uint32_t duty);
 
   void bright();
@@ -46,7 +46,7 @@ public:
   void off();
 
 private:
-  StatusLED(); // SINGLETON!  constructor is private
+  statusLED(); // SINGLETON!  constructor is private
 
   void activate_duty();
 

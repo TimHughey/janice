@@ -59,7 +59,7 @@ Net::Net() {
 
   // set status LED to 8%% to signal startup and initialization are
   // underway
-  StatusLED::instance()->dim();
+  statusLED::instance()->dim();
 
   uint8_t hw_conf = 0;
   for (auto conf_bit = 0; conf_bit < 3; conf_bit++) {
@@ -301,13 +301,13 @@ void Net::ensureTimeIsSet() {
     if ((retry > (retry_count - 5)) || ((retry % 50) == 0)) {
       ESP_LOGW(tagEngine(), "waiting for SNTP... (%d/%d)", retry, retry_count);
     }
-    StatusLED::instance()->brighter();
+    statusLED::instance()->brighter();
     vTaskDelay(pdMS_TO_TICKS(check_wait_ms));
-    StatusLED::instance()->dimmer();
+    statusLED::instance()->dimmer();
     gettimeofday(&curr_time, nullptr);
   }
 
-  StatusLED::instance()->brighter();
+  statusLED::instance()->brighter();
 
   if (retry == retry_count) {
     ESP_LOGE(tagEngine(), "timeout waiting for SNTP");
@@ -425,7 +425,7 @@ bool Net::start() {
   xEventGroupSetBits(evg_, initializedBit());
 
   ::esp_wifi_start();
-  StatusLED::instance()->brighter();
+  statusLED::instance()->brighter();
 
   ESP_LOGI(tagEngine(), "standing by for IP address...");
   if (waitForIP()) {
@@ -466,7 +466,7 @@ bool Net::waitForConnection(uint32_t wait_ms) {
   EventBits_t bits_set;
 
   // set status LED to 75% while waiting for WiFi
-  StatusLED::instance()->brighter();
+  statusLED::instance()->brighter();
   bits_set = xEventGroupWaitBits(eg, wait_bit, noClearBits(), waitAllBits(),
                                  wait_ticks);
 

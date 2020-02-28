@@ -29,7 +29,7 @@
 #include "readings/readings.hpp"
 
 typedef class mcrRestart mcrRestart_t;
-#define DEFAULT_WAIT_MS 4000
+#define DEFAULT_WAIT_MS 0
 
 class mcrRestart {
 private:

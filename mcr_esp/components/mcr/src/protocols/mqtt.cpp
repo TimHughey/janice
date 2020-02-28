@@ -33,6 +33,7 @@
 // MCR specific includes
 #include "external/mongoose.h"
 #include "misc/mcr_nvs.hpp"
+#include "misc/mcr_restart.hpp"
 #include "misc/mcr_types.hpp"
 #include "misc/status_led.hpp"
 #include "net/mcr_net.hpp"
@@ -78,7 +79,7 @@ void mcrMQTT::announceStartup() {
   startupReading_t startup(batt_mv);
 
   publish(&startup);
-  StatusLED::instance()->off();
+  statusLED::instance()->off();
 }
 
 void mcrMQTT::connect(int wait_ms) {
@@ -96,7 +97,7 @@ void mcrMQTT::connect(int wait_ms) {
 
   Net::waitForReady();
 
-  StatusLED::instance()->brighter();
+  statusLED::instance()->brighter();
   _connection = mg_connect(&_mgr, _endpoint.c_str(), _ev_handler);
 
   if (_connection) {
@@ -106,7 +107,7 @@ void mcrMQTT::connect(int wait_ms) {
 }
 
 void mcrMQTT::connectionClosed() {
-  StatusLED::instance()->dimmer();
+  statusLED::instance()->dimmer();
   ESP_LOGW(tagEngine(), "connection closed");
   _mqtt_ready = false;
   _connection = nullptr;
@@ -161,7 +162,8 @@ void mcrMQTT::incomingMsg(struct mg_str *in_topic, struct mg_str *in_payload) {
     mcrNVS::commitMsg(tagEngine(), msg);
     free(msg);
 
-    esp_restart();
+    // pass a nullptr for the message so mcrRestart doesn't attempt to publish
+    mcrRestart::instance()->restart(nullptr, __PRETTY_FUNCTION__);
   }
 }
 
@@ -250,7 +252,8 @@ void mcrMQTT::publish(string_t *json) {
     // since mcrMQTT is broken
     mcrNVS::commitMsg(tagEngine(), msg.get());
 
-    esp_restart();
+    // pass a nullptr for the message so mcrRestart doesn't attempt to publish
+    mcrRestart::instance()->restart(nullptr, __PRETTY_FUNCTION__);
   }
 }
 
@@ -340,7 +343,7 @@ void mcrMQTT::_ev_handler(struct mg_connection *nc, int ev, void *p) {
              (void *)msg, *status, strerror(*status));
 
     mcrMQTT::instance()->handshake(nc);
-    StatusLED::instance()->off();
+    statusLED::instance()->off();
     break;
   }
 
@@ -384,7 +387,7 @@ void mcrMQTT::_ev_handler(struct mg_connection *nc, int ev, void *p) {
     break;
 
   case MG_EV_CLOSE:
-    StatusLED::instance()->bright();
+    statusLED::instance()->bright();
     mcrMQTT::instance()->connectionClosed();
     break;
 
