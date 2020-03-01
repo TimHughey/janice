@@ -1,6 +1,6 @@
 /*
-    engine.hpp - Master Control Remote Engine Reading
-    Copyright (C) 2017  Tim Hughey
+    pwm.hpp - Master Control Remote PWM Reading
+    Copyright (C) 2020  Tim Hughey
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -18,10 +18,8 @@
     https://www.wisslanding.com
 */
 
-#ifndef engine_metrics_hpp
-#define engine_metrics_hpp
-
-#include <string>
+#ifndef pwm_reading_hpp
+#define pwm_reading_hpp
 
 #include <freertos/FreeRTOS.h>
 #include <sys/time.h>
@@ -30,25 +28,22 @@
 #include "readings/reading.hpp"
 
 namespace mcr {
-typedef class EngineReading EngineReading_t;
+typedef class pwmReading pwmReading_t;
 
-class EngineReading : public Reading {
+class pwmReading : public Reading {
 private:
-  std::string engine_;
-  uint32_t discover_us_;
-  uint32_t convert_us_;
-  uint32_t report_us_;
-  uint32_t switch_cmd_us_;
+  // actual reading data
+  uint32_t duty_max_ = 4095;
+  uint32_t duty_min_ = 1;
+  uint32_t duty_ = 0;
 
 public:
-  EngineReading(const std::string &engine, uint64_t discover_us,
-                uint64_t convert_us, uint64_t report_us,
-                uint64_t switch_cmd_us_);
-  bool hasNonZeroValues();
+  pwmReading(const std::string &id, time_t mtime, uint32_t duty_max,
+             uint32_t duty_min, uint32_t duty);
 
 protected:
   virtual void populateJSON(JsonDocument &doc);
 };
-} // namespace mcr
 
-#endif // engine_metrics_hpp
+} // namespace mcr
+#endif // __cplusplus

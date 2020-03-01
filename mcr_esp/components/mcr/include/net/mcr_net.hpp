@@ -1,7 +1,6 @@
 #include <cstdlib>
 
 #include <driver/adc.h>
-#include <driver/gpio.h>
 #include <esp_adc_cal.h>
 #include <esp_attr.h>
 #include <esp_event_loop.h>
@@ -29,7 +28,6 @@ public:
 
   static void deinit();
   static EventGroupHandle_t eventGroup();
-  static mcrHardwareConfig_t hardwareConfig();
   static const string_t &getName();
   static const string_t &hostID();
   static Net_t *instance();
@@ -92,10 +90,6 @@ private:
   uint32_t batt_measurements_ = 64; // measurements to avg out noise
 
   static const adc_channel_t battery_adc_ = ADC_CHANNEL_7;
-  static const gpio_num_t led_gpio_ = GPIO_NUM_13;
-  const uint64_t hw_gpio_pin_sel_ = (GPIO_SEL_34 | GPIO_SEL_36 | GPIO_SEL_39);
-  const gpio_num_t hw_gpio_[3] = {GPIO_NUM_36, GPIO_NUM_39, GPIO_NUM_34};
-  mcrHardwareConfig_t hw_conf_ = LEGACY;
 
   string_t name_;
   bool reconnect_ = true;

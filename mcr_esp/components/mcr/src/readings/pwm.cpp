@@ -1,6 +1,6 @@
 /*
-    engine.hpp - Master Control Remote Engine Reading
-    Copyright (C) 2017  Tim Hughey
+    pwm.cpp - Master Control Remote PWM Reading
+    Copyright (C) 2020  Tim Hughey
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -18,37 +18,28 @@
     https://www.wisslanding.com
 */
 
-#ifndef engine_metrics_hpp
-#define engine_metrics_hpp
-
 #include <string>
 
-#include <freertos/FreeRTOS.h>
 #include <sys/time.h>
 #include <time.h>
 
-#include "readings/reading.hpp"
+#include "readings/pwm.hpp"
 
 namespace mcr {
-typedef class EngineReading EngineReading_t;
 
-class EngineReading : public Reading {
-private:
-  std::string engine_;
-  uint32_t discover_us_;
-  uint32_t convert_us_;
-  uint32_t report_us_;
-  uint32_t switch_cmd_us_;
+pwmReading::pwmReading(const std::string &id, time_t mtime, uint32_t duty_max,
+                       uint32_t duty_min, uint32_t duty)
+    : Reading(id, mtime) {
+  duty_max_ = duty_max;
+  duty_min_ = duty_min;
+  duty_ = duty;
 
-public:
-  EngineReading(const std::string &engine, uint64_t discover_us,
-                uint64_t convert_us, uint64_t report_us,
-                uint64_t switch_cmd_us_);
-  bool hasNonZeroValues();
+  _type = ReadingType_t::PWM;
+};
 
-protected:
-  virtual void populateJSON(JsonDocument &doc);
+void pwmReading::populateJSON(JsonDocument &doc) {
+  doc["duty"] = duty_;
+  doc["duty_max"] = duty_max_;
+  doc["duty_min"] = duty_min_;
 };
 } // namespace mcr
-
-#endif // engine_metrics_hpp

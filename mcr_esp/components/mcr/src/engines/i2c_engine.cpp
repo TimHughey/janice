@@ -1,5 +1,5 @@
 /*
-      mcpr_i2c.cpp - Master Control Remote I2C
+      i2c_engine.cpp - Master Control Remote I2C
       Copyright (C) 2017  Tim Hughey
 
       This program is free software: you can redistribute it and/or modify
@@ -35,6 +35,7 @@
 #include "devs/i2c_dev.hpp"
 #include "engines/engine.hpp"
 #include "engines/i2c_engine.hpp"
+#include "misc/hw_config.hpp"
 #include "misc/mcr_nvs.hpp"
 #include "misc/mcr_restart.hpp"
 #include "misc/mcr_types.hpp"
@@ -489,28 +490,17 @@ bool mcrI2c::detectDevicesOnBus(int bus) {
 }
 
 bool mcrI2c::detectMultiplexer(const int max_attempts) {
+  // NOTE:  as of 2019-03-10 support for old hardware that does
+  // not provide the RST pin is via 'legacy'
 
-  // will be updated below depending on detection
-  _use_multiplexer = false;
+  // _use_multiplexer initially set to hardware configuration
+  // however is updated based on actual multiplexer detection
+  _use_multiplexer = hwConfig::legacy() | hwConfig::haveMultiplexer();
 
-  switch (mcr::Net::hardwareConfig()) {
-  case LEGACY:
-    // DEPRECATED as of 2019-03-10
-    // support for old hardware that does not use the RST pin
-    if (detectDevice(&_multiplexer_dev)) {
-      ESP_LOGV(tagDetectDev(), "found TCA9548A multiplexer");
-      _use_multiplexer = true;
-    }
-    break;
-
-  case BASIC:
+  if (_use_multiplexer && detectDevice(&_multiplexer_dev)) {
+    ESP_LOGI(tagEngine(), "will use TCA9548A i2c multiplexer");
+  } else {
     _use_multiplexer = false;
-    break;
-
-  case I2C_MULTIPLEXER:
-    ESP_LOGD(tagDetectDev(), "hardware configured for multiplexer");
-    _use_multiplexer = true;
-    break;
   }
 
   return _use_multiplexer;

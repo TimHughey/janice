@@ -16,7 +16,7 @@ mcrCmdFactory::mcrCmdFactory() {
   // ESP_LOGI(TAG, "JSON static buffer capacity: %d", _jsonBufferCapacity);
 }
 
-mcrCmd_t *mcrCmdFactory::fromRaw(JsonDocument &doc, mcrRawMsg_t *raw) {
+mcrCmd_t *mcrCmdFactory::fromRaw(JsonDocument &doc, rawMsg_t *raw) {
   mcrCmd_t *cmd = nullptr;
 
   if ((raw->size() > 0) && (raw->at(0) == '{')) {
@@ -28,7 +28,7 @@ mcrCmd_t *mcrCmdFactory::fromRaw(JsonDocument &doc, mcrRawMsg_t *raw) {
   return cmd;
 }
 
-mcrCmd_t *mcrCmdFactory::fromJSON(JsonDocument &doc, mcrRawMsg_t *raw) {
+mcrCmd_t *mcrCmdFactory::fromJSON(JsonDocument &doc, rawMsg_t *raw) {
   // StaticJsonDocument<_jsonBufferCapacity> doc;
   mcrCmd_t *cmd = nullptr;
   mcrCmdType_t cmd_type = mcrCmdType::unknown;
@@ -74,6 +74,9 @@ mcrCmd_t *mcrCmdFactory::fromJSON(JsonDocument &doc, mcrRawMsg_t *raw) {
     break;
 
   case mcrCmdType::enginesSuspend:
+    break;
+
+  case mcrCmdType::pwm:
     break;
   }
 

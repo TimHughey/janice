@@ -106,7 +106,7 @@ time_t mcrDev::readTimestamp() { return _read_timestamp; }
 time_t mcrDev::timeCreated() { return _created_mtime; }
 time_t mcrDev::secondsSinceLastSeen() { return (time(nullptr) - _last_seen); }
 
-bool mcrDev::available() { return (secondsSinceLastSeen() <= 15); }
+bool mcrDev::available() { return (secondsSinceLastSeen() <= _missing_secs); }
 bool mcrDev::missing() { return (!available()); }
 
 void mcrDev::startWrite() { _write_start_us = esp_timer_get_time(); }

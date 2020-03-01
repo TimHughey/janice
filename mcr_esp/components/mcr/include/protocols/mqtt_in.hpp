@@ -40,7 +40,7 @@
 
 typedef struct {
   std::string *topic = nullptr;
-  mcrRawMsg_t *data = nullptr;
+  rawMsg_t *data = nullptr;
 } mqttInMsg_t;
 
 typedef class mcrMQTTin mcrMQTTin_t;

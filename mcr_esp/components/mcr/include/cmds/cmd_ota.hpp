@@ -42,7 +42,7 @@ using std::unique_ptr;
 typedef class mcrCmdOTA mcrCmdOTA_t;
 class mcrCmdOTA : public mcrCmd {
 private:
-  mcrRawMsg_t *_raw = nullptr;
+  rawMsg_t *_raw = nullptr;
   std::string _host;
   std::string _head;
   std::string _stable;

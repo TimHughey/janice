@@ -29,7 +29,9 @@
 
 #include "engines/ds_engine.hpp"
 #include "engines/i2c_engine.hpp"
+#include "engines/pwm_engine.hpp"
 #include "misc/mcr_nvs.hpp"
+#include "misc/status_led.hpp"
 #include "misc/timestamp_task.hpp"
 #include "net/mcr_net.hpp"
 #include "protocols/mqtt.hpp"
@@ -50,8 +52,13 @@ static TimestampTask *timestampTask = nullptr;
 static mcrMQTT *mqttTask = nullptr;
 static mcrDS *dsEngineTask = nullptr;
 static mcrI2c *i2cEngineTask = nullptr;
+static pwmEngine_t *pwmEngineTask = nullptr;
 
 void app_main() {
+  // set status LED to 8%% to signal startup and initialization are
+  // underway
+  statusLED::instance()->dim();
+
   ESP_LOGI(TAG, "%s entered", __PRETTY_FUNCTION__);
   ESP_LOGI(TAG, "portTICK_PERIOD_MS=%u and 10ms=%u tick%s", portTICK_PERIOD_MS,
            pdMS_TO_TICKS(10), (pdMS_TO_TICKS(10) > 1) ? "s" : "");
@@ -63,13 +70,16 @@ void app_main() {
   tzset();
 
   mcrNVS::init();
+  statusLED::instance()->brighter();
 
   // must create network first!
   network = mcr::Net::instance(); // singleton
   timestampTask = new TimestampTask();
-  mqttTask = mcrMQTT::instance();     // singleton
-  dsEngineTask = mcrDS::instance();   // singleton
-  i2cEngineTask = mcrI2c::instance(); // singleton
+  mqttTask = mcrMQTT::instance();        // singleton
+  dsEngineTask = mcrDS::instance();      // singleton
+  i2cEngineTask = mcrI2c::instance();    // singleton
+  pwmEngineTask = pwmEngine::instance(); // singleton
+  statusLED::instance()->brighter();
 
   // create and start our tasks
   // NOTE: each task is responsible for required coordination
@@ -78,6 +88,7 @@ void app_main() {
   mqttTask->start();
   dsEngineTask->start();
   i2cEngineTask->start();
+  pwmEngineTask->start();
 
   network->start();
 

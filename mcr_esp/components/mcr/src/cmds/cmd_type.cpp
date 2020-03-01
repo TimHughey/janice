@@ -12,7 +12,8 @@ static const std::map<std::string, mcrCmdType> _cmd_map = {
     {std::string("heartbeat"), mcrCmdType::heartbeat},
     {std::string("restart"), mcrCmdType::restart},
     {std::string("engines.suspend"), mcrCmdType::enginesSuspend},
-    {std::string("ota.https"), mcrCmdType::otaHTTPS}};
+    {std::string("ota.https"), mcrCmdType::otaHTTPS},
+    {std::string("pwm"), mcrCmdType::pwm}};
 
 static mcrCmdTypeMap_t *__singleton;
 

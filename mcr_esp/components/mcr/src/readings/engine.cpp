@@ -24,7 +24,7 @@
 #include "readings/engine.hpp"
 
 namespace mcr {
-EngineReading::EngineReading(std::string engine, uint64_t discover_us,
+EngineReading::EngineReading(const std::string &engine, uint64_t discover_us,
                              uint64_t convert_us, uint64_t report_us,
                              uint64_t switch_cmd_us)
     : Reading(), engine_(engine), discover_us_(discover_us),

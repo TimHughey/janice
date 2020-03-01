@@ -41,12 +41,12 @@
 typedef class mcrCmdFactory mcrCmdFactory_t;
 class mcrCmdFactory {
 private:
-  mcrCmd_t *fromJSON(JsonDocument &doc, mcrRawMsg_t *raw);
+  mcrCmd_t *fromJSON(JsonDocument &doc, rawMsg_t *raw);
 
 public:
   mcrCmdFactory();
 
-  mcrCmd_t *fromRaw(JsonDocument &doc, mcrRawMsg_t *raw);
+  mcrCmd_t *fromRaw(JsonDocument &doc, rawMsg_t *raw);
 };
 
 #endif

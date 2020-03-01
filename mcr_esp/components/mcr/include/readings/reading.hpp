@@ -46,7 +46,8 @@ typedef enum {
   STARTUP,
   SWITCH,
   TEMP,
-  TEXT
+  TEXT,
+  PWM
 } ReadingType_t;
 
 typedef class Reading Reading_t;

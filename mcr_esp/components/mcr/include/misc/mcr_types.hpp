@@ -53,14 +53,8 @@ typedef struct {
   QueueHandle_t q;
 } cmdQueue_t;
 
-typedef enum mcrHardwareConfig {
-  LEGACY = 0x00,
-  BASIC = 0x01,
-  I2C_MULTIPLEXER = 0x02
-} mcrHardwareConfig_t;
-
-// messages received via MQTT that are then sent for parsing by Arduino JSON
-typedef std::vector<char> mcrRawMsg_t;
+// messages received via MQTT and parsed by Arduino JSON
+typedef std::vector<char> rawMsg_t;
 
 } // namespace mcr
 #endif // mcr_type_h

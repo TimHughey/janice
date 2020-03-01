@@ -47,30 +47,6 @@ Net::Net() {
 
   adc1_config_width(ADC_WIDTH_BIT_12);
   adc1_config_channel_atten((adc1_channel_t)battery_adc_, ADC_ATTEN_DB_11);
-
-  // setup hardware configuration jumpers
-  gpio_config_t hw_conf_gpio;
-  hw_conf_gpio.intr_type = GPIO_INTR_DISABLE;
-  hw_conf_gpio.mode = GPIO_MODE_INPUT;
-  hw_conf_gpio.pin_bit_mask = hw_gpio_pin_sel_;
-  hw_conf_gpio.pull_down_en = GPIO_PULLDOWN_DISABLE;
-  hw_conf_gpio.pull_up_en = GPIO_PULLUP_DISABLE;
-  gpio_config(&hw_conf_gpio);
-
-  // set status LED to 8%% to signal startup and initialization are
-  // underway
-  statusLED::instance()->dim();
-
-  uint8_t hw_conf = 0;
-  for (auto conf_bit = 0; conf_bit < 3; conf_bit++) {
-    int level = gpio_get_level(hw_gpio_[conf_bit]);
-    ESP_LOGD(tagEngine(), "hw_gpio_[%d] = 0x%02x", conf_bit, level);
-    hw_conf |= level << conf_bit;
-  }
-
-  hw_conf_ = (mcrHardwareConfig_t)hw_conf;
-
-  ESP_LOGI(tagEngine(), "hardware jumper config [0x%02x]", hw_conf_);
 }
 
 void Net::acquiredIP(void *event_data) {
@@ -328,8 +304,6 @@ void Net::ensureTimeIsSet() {
     ESP_LOGI(tagEngine(), "SNTP complete: %s", str);
   }
 }
-
-mcrHardwareConfig_t Net::hardwareConfig() { return instance()->hw_conf_; }
 
 const string_t &Net::getName() {
   if (instance()->name_.length() == 0) {

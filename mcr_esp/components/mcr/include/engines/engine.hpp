@@ -183,7 +183,18 @@ public:
     vTaskSuspend(coretask->_handle);
   };
 
+  // determines if the engine should start or not.  the default is years.
+  // subclasses can implement their own check.  if this method returns false
+  // no tasks are created and start() quietly returns
+  virtual bool shouldStart() { return true; };
+
   void start(void *task_data = nullptr) {
+    // first things first...  check that the engine should start.  subclasses
+    // can implement their own
+    if (shouldStart() == false) {
+      return;
+    }
+
     // we make an assumption that the 'core' task was added
     auto task = _task_map[CORE];
 

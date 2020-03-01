@@ -107,7 +107,7 @@ void mcrMQTT::connect(int wait_ms) {
 }
 
 void mcrMQTT::connectionClosed() {
-  statusLED::instance()->dimmer();
+  statusLED::instance()->dim();
   ESP_LOGW(tagEngine(), "connection closed");
   _mqtt_ready = false;
   _connection = nullptr;
@@ -387,7 +387,7 @@ void mcrMQTT::_ev_handler(struct mg_connection *nc, int ev, void *p) {
     break;
 
   case MG_EV_CLOSE:
-    statusLED::instance()->bright();
+    statusLED::instance()->dim();
     mcrMQTT::instance()->connectionClosed();
     break;
 

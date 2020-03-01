@@ -90,6 +90,9 @@ public:
   time_t timeCreated();
   time_t secondsSinceLastSeen();
 
+  void setMissingSeconds(uint32_t missing_secs) {
+    _missing_secs = missing_secs;
+  };
   bool available();
   bool missing();
 
@@ -139,6 +142,8 @@ protected:
   int _read_errors = 0;
 
   int _write_errors = 0;
+
+  int _missing_secs = 15;
 };
 
 #endif // mcrDev_h

@@ -43,7 +43,8 @@ typedef enum class mcrCmdType {
   setname,
   restart,
   enginesSuspend,
-  otaHTTPS
+  otaHTTPS,
+  pwm
 } mcrCmdType_t;
 
 typedef class mcrCmdTypeMap mcrCmdTypeMap_t;
