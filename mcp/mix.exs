@@ -111,9 +111,9 @@ defmodule Mcp.Mixfile do
       "ecto.reset": [
         "ecto.drop",
         "ecto.create",
-        "ecto.load",
+        "ecto.load --dump-path priv/repo/structure-#{Mix.env()}.sql",
         "ecto.migrate",
-        "ecto.dump"
+        "ecto.dump --dump-path priv/repo/structure-#{Mix.env()}.sql"
       ],
       "mcp.deps.update": [
         "local.hex --if-missing --force",

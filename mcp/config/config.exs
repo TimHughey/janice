@@ -37,12 +37,18 @@ config :mcp, Janice.Scheduler,
 
 config :mcp, Mqtt.InboundMessage,
   additional_message_flags: [
-    log_invalid_readings: false,
-    log_roundtrip_times: false
+    log_invalid_readings: true,
+    log_roundtrip_times: true
+  ],
+  periodic_log: [
+    enable: false,
+    first: {:mins, 5},
+    repeat: {:hrs, 60}
   ],
   log_reading: false,
   temperature_msgs: {Sensor, :external_update},
   switch_msgs: {Switch, :external_update},
-  remote_msgs: {Remote, :external_update}
+  remote_msgs: {Remote, :external_update},
+  pwm_msgs: {PulseWidth, :external_update}
 
 import_config "#{Mix.env()}.exs"

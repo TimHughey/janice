@@ -41,7 +41,7 @@ config :mcp,
   ],
   protocol_supervisors: [
     {Fact.Supervisor, %{}},
-    {Mqtt.Supervisor, %{autostart: false}}
+    {Mqtt.Supervisor, %{autostart: true}}
   ],
   support_workers: [
     {Janitor, %{autostart: true}}
@@ -71,28 +71,15 @@ config :mcp, MessageSave,
 
 config :mcp, Mqtt.Client,
   log_dropped_msgs: true,
-  broker: [
-    host: 'jophiel.wisslanding.com',
+  tort_opts: [
     client_id: "janice-dev",
-    clean_sess: true,
-    # keepalive: 30_000,
-    username: "mqtt",
+    user_name: "mqtt",
     password: "mqtt",
-    auto_resub: true,
-    logger: :warning,
-    reconnect: {3, 60, 30}
+    server:
+      {Tortoise.Transport.Tcp, host: "jophiel.wisslanding.com", port: 1883},
+    keep_alive: 15
   ],
   timesync: [frequency: {:mins, 1}, loops: 5, forever: true, log: false]
-
-config :mcp, Mqtt.InboundMessage,
-  log: [
-    engine_metrics: false
-  ],
-  periodic_log: [
-    enable: false,
-    first: {:mins, 5},
-    repeat: {:hrs, 1}
-  ]
 
 config :mcp, Fact.Influx,
   database: "jan_dev",

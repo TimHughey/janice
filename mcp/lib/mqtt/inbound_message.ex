@@ -40,6 +40,7 @@ defmodule Mqtt.InboundMessage do
       |> Map.put_new(:temperature_msgs, config(:temperature_msgs))
       |> Map.put_new(:switch_msgs, config(:switch_msgs))
       |> Map.put_new(:remote_msgs, config(:remote_msgs))
+      |> Map.put_new(:pwm_msgs, config(:pwm_msgs))
       |> Map.put_new(:periodic_log, config(:periodic_log, periodic_log_default))
       |> Map.put_new(
         :additional_message_flags,
@@ -306,6 +307,9 @@ defmodule Mqtt.InboundMessage do
       Reading.switch?(r) ->
         Map.get(s, :switch_msgs, missing)
 
+      Reading.pwm?(r) ->
+        Map.get(s, :pwm_msgs, missing)
+
       true ->
         {nil, nil}
     end
@@ -321,7 +325,7 @@ defmodule Mqtt.InboundMessage do
 
       Reading.simple_text?(r) ->
         log = Map.get(r, :log, true)
-        log && Logger.warn([r.name, " --> ", r.text])
+        log && Logger.warn([r.name, " MSG: ", r.text])
 
       true ->
         Logger.warn([r.name, " unhandled reading ", inspect(r, pretty: true)])

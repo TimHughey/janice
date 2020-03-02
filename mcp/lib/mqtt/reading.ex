@@ -17,6 +17,7 @@ defmodule Mqtt.Reading do
   @remote_run_t "remote_runtime"
   @mcr_stat_t "stats"
   @simple_text_t "text"
+  @pwm_t "pwm"
 
   def boot?(%{type: @boot_t, host: host} = r) do
     Logger.debug(["detected boot message for ", inspect(host, pretty: true)])
@@ -113,6 +114,20 @@ defmodule Mqtt.Reading do
 
     r.mtime > epoch_first_year
   end
+
+  @doc ~S"""
+  Is the Reading a pwm?
+
+   ##Examples:
+    iex> json =
+    ...>   ~s({"host": "mcr.macaddr",
+    ...>       "mtime": 2106, "type": "text", "duty": 2048, "duty_min": 1,
+    ...>       "duty_max": 4095"})
+    ...> Jason.decode!(json, keys: :atoms) |> Mqtt.Reading.pwm?()
+    true
+  """
+  def pwm?(%{type: @pwm_t} = r), do: metadata?(r)
+  def pwm?(%{} = _r), do: false
 
   def remote_runtime?(%{type: @remote_run_t} = r), do: metadata?(r)
   def remote_runtime?(%{}), do: false
