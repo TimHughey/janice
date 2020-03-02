@@ -48,7 +48,7 @@ private:
   static const uint32_t pwm_max_addr_len_ = 1;
   static const uint32_t pwm_max_id_len_ = 40;
   static const uint32_t duty_max_ = 4095;
-  static const uint32_t duty_min_ = 1;
+  static const uint32_t duty_min_ = 0;
 
   const gpio_num_t pins_[4] = {GPIO_NUM_32, GPIO_NUM_15, GPIO_NUM_33,
                                GPIO_NUM_27};
