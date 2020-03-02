@@ -154,6 +154,13 @@ defmodule PulseWidth do
     find_by_device(device) |> external_update(r)
   end
 
+  def external_update(catchall),
+    do:
+      Logger.warn([
+        "external_update() unhandled msg: ",
+        inspect(catchall, pretty: true)
+      ])
+
   def find(id) when is_integer(id),
     do: get_by(__MODULE__, id: id)
 
