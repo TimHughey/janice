@@ -22,7 +22,7 @@ defmodule SwitchCmd do
     ]
 
   import Janice.TimeSupport, only: [before_time: 2, ms: 1, utc_now: 0]
-  import Mqtt.Client, only: [publish_switch_cmd: 1]
+  import Mqtt.Client, only: [publish_cmd: 1]
 
   alias Fact.RunMetric
   alias Mqtt.SetSwitch
@@ -310,7 +310,7 @@ defmodule SwitchCmd do
 
           SetSwitch.new_cmd(device, [cmd_map], refid, opts)
           |> SetSwitch.json()
-          |> publish_switch_cmd()
+          |> publish_cmd()
         end
 
         refid

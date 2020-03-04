@@ -35,7 +35,6 @@
 #include "devs/addr.hpp"
 #include "devs/pwm_dev.hpp"
 #include "engines/engine.hpp"
-#include "engines/i2c_engine.hpp"
 #include "misc/hw_config.hpp"
 #include "misc/mcr_types.hpp"
 #include "protocols/mqtt.hpp"
@@ -56,7 +55,7 @@ class pwmEngine : public mcrEngine<pwmDev_t> {
 private:
   pwmEngine();
 
-  bool commandAck(CmdSwitch_t &cmd);
+  bool commandAck(cmdPWM_t &cmd);
 
 public:
   static pwmEngine_t *instance();
@@ -91,9 +90,9 @@ private:
 
   EngineTagMap_t &localTags() {
     static std::unordered_map<string_t, string_t> tag_map = {
-        {"engine", "pwmEngine"},          {"discover", "pwmEngine discover"},
-        {"convert", "pwmEngine convert"}, {"report", "pwmEngine report"},
-        {"command", "pwmEngine command"}, {"detect", "pwmEngine detectDev"}};
+        {"engine", "mPWM"},      {"discover", "mPWM_dis"},
+        {"convert", "mPWM_cvt"}, {"report", "mPWM_rep"},
+        {"command", "mPWM_cmd"}, {"detect", "mPWM_det"}};
 
     ESP_LOGD(tag_map["engine"].c_str(), "tag_map sizeof=%u", sizeof(tag_map));
     return tag_map;

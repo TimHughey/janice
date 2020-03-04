@@ -4,7 +4,7 @@
 
 namespace mcr {
 
-CmdSwitch::CmdSwitch(JsonDocument &doc, elapsedMicros &e)
+cmdSwitch::cmdSwitch(JsonDocument &doc, elapsedMicros &e)
     : mcrCmd(mcrCmdType::setswitch, doc, e) {
   // json format of states command:
   // {"switch":"ds/29463408000000",
@@ -52,85 +52,24 @@ CmdSwitch::CmdSwitch(JsonDocument &doc, elapsedMicros &e)
   _create_elapsed.freeze();
 }
 
-bool CmdSwitch::matchExternalDevID(const string_t &match) {
-  auto match_pos = _external_dev_id.find(match);
-
-  return (match_pos == std::string::npos) ? false : true;
-}
-
-bool CmdSwitch::matchPrefix(const char *prefix) {
-  return ((_external_dev_id.substr(0, strlen(prefix))) == prefix);
-}
-
-bool CmdSwitch::process() {
+bool cmdSwitch::process() {
   for (auto cmd_q : mcrCmdQueues::all()) {
-    sendToQueue(cmd_q);
+    auto fresh_cmd = new cmdSwitch(this);
+    sendToQueue(cmd_q, fresh_cmd);
   }
 
   return true;
 }
 
-bool CmdSwitch::sendToQueue(cmdQueue_t &cmd_q) {
-  auto rc = false;
-  auto q_rc = pdTRUE;
-
-  if (matchPrefix(cmd_q.prefix)) {
-    // make a fresh copy of the cmd before pushing to the queue to ensure:
-    //   a. each queue receives it's own copy
-    //   b. we're certain each cmd is in a clean state
-    CmdSwitch_t *fresh_cmd = new CmdSwitch(this);
-
-    // pop the oldest cmd (at the front) to make space when the queue is full
-    if (uxQueueSpacesAvailable(cmd_q.q) == 0) {
-      CmdSwitch_t *old_cmd = nullptr;
-
-      q_rc = xQueueReceive(cmd_q.q, &old_cmd, pdMS_TO_TICKS(10));
-
-      if ((q_rc == pdTRUE) && (old_cmd != nullptr)) {
-        textReading_t *rlog(new textReading_t);
-        textReading_ptr_t rlog_ptr(rlog);
-        rlog->printf("[%s] queue FULL, removing oldest cmd (%s)", cmd_q.id,
-                     old_cmd->externalDevID().c_str());
-        rlog->publish();
-        delete old_cmd;
-      }
-    }
-
-    if (q_rc == pdTRUE) {
-      q_rc = xQueueSendToBack(cmd_q.q, (void *)&fresh_cmd, pdMS_TO_TICKS(10));
-
-      if (q_rc == pdTRUE) {
-        rc = true;
-      } else {
-        textReading_t *rlog(new textReading_t);
-        textReading_ptr_t rlog_ptr(rlog);
-        rlog->printf("[%s] queue FAILURE for %s", cmd_q.id,
-                     _external_dev_id.c_str());
-        rlog->publish();
-
-        delete fresh_cmd; // delete the fresh cmd since it wasn't queued
-      }
-    }
-  }
-
-  return rc;
-}
-
-void CmdSwitch::translateDevID(const string_t &str, const char *with_str) {
-
-  // update the internal dev ID (originally external ID)
-  auto pos = _internal_dev_id.find(str);
-  _internal_dev_id.replace(pos, str.length(), with_str);
-}
-
-const unique_ptr<char[]> CmdSwitch::debug() {
+const unique_ptr<char[]> cmdSwitch::debug() {
   const auto max_len = 127;
   unique_ptr<char[]> debug_str(new char[max_len + 1]);
 
-  snprintf(debug_str.get(), max_len, "CmdSwitch(%s m(0b%s) s(0b%s) %s)",
+  snprintf(debug_str.get(), max_len, "cmdSwitch(%s m(0b%s) s(0b%s) %s)",
            _external_dev_id.c_str(), _mask.to_string().c_str(),
            _state.to_string().c_str(), ((_ack) ? "ACK" : ""));
 
   return move(debug_str);
 }
+
 } // namespace mcr

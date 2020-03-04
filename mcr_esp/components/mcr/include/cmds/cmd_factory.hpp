@@ -33,6 +33,7 @@
 #include "cmds/cmd_base.hpp"
 #include "cmds/cmd_network.hpp"
 #include "cmds/cmd_ota.hpp"
+#include "cmds/cmd_pwm.hpp"
 #include "cmds/cmd_switch.hpp"
 #include "cmds/cmd_types.hpp"
 #include "external/ArduinoJson.hpp"

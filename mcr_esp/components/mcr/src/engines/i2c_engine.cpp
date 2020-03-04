@@ -88,17 +88,17 @@ mcrI2c::mcrI2c() {
 void mcrI2c::command(void *data) {
   logSubTaskStart(data);
 
-  _cmd_q = xQueueCreate(_max_queue_depth, sizeof(CmdSwitch_t *));
+  _cmd_q = xQueueCreate(_max_queue_depth, sizeof(cmdSwitch_t *));
   cmdQueue_t cmd_q = {"mcrI2c", "i2c", _cmd_q};
   mcrCmdQueues::registerQ(cmd_q);
 
   while (true) {
     BaseType_t queue_rc = pdFALSE;
-    CmdSwitch_t *cmd = nullptr;
+    cmdSwitch_t *cmd = nullptr;
 
     queue_rc = xQueueReceive(_cmd_q, &cmd, portMAX_DELAY);
     // wrap in a unique_ptr so it is freed when out of scope
-    std::unique_ptr<CmdSwitch> cmd_ptr(cmd);
+    std::unique_ptr<cmdSwitch> cmd_ptr(cmd);
     elapsedMicros process_cmd;
 
     if (queue_rc == pdFALSE) {
@@ -167,7 +167,7 @@ void mcrI2c::command(void *data) {
   }
 }
 
-bool mcrI2c::commandAck(CmdSwitch_t &cmd) {
+bool mcrI2c::commandAck(cmdSwitch_t &cmd) {
   bool rc = true;
   elapsedMicros elapsed;
   i2cDev_t *dev = findDevice(cmd.internalDevID());
@@ -891,7 +891,7 @@ bool mcrI2c::selectBus(uint32_t bus) {
   return rc;
 }
 
-bool mcrI2c::setMCP23008(CmdSwitch_t &cmd, i2cDev_t *dev) {
+bool mcrI2c::setMCP23008(cmdSwitch_t &cmd, i2cDev_t *dev) {
   bool rc = false;
   auto esp_rc = ESP_OK;
 

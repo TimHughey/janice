@@ -42,12 +42,12 @@ public:
   // construct a slightly more complex device of a multi byte address
   mcrDevAddr(uint8_t *addr, uint32_t len);
 
-  uint32_t len();
-  uint8_t firstAddressByte();
+  uint32_t len() const;
+  uint8_t firstAddressByte() const;
   // uint8_t addressByteByIndex(uint32_t index);
-  uint8_t lastAddressByte();
-  uint32_t max_len();
-  bool isValid();
+  uint8_t lastAddressByte() const;
+  uint32_t max_len() const;
+  bool isValid() const;
 
   // support type casting from mcrDevAddr to a plain ole uint8_t array
   operator uint8_t *();

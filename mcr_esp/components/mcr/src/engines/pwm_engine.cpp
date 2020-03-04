@@ -28,7 +28,7 @@ using std::unique_ptr;
 namespace mcr {
 
 static pwmEngine_t *__singleton__ = nullptr;
-static const string_t engine_name = "pwmEngine";
+static const string_t engine_name = "mcrPWM";
 
 pwmEngine::pwmEngine() {
   pwmDev::allOff(); // ensure all pins are off at initialization
@@ -55,17 +55,17 @@ pwmEngine::pwmEngine() {
 void pwmEngine::command(void *data) {
   logSubTaskStart(data);
 
-  _cmd_q = xQueueCreate(_max_queue_depth, sizeof(CmdSwitch_t *));
+  _cmd_q = xQueueCreate(_max_queue_depth, sizeof(cmdPWM_t *));
   cmdQueue_t cmd_q = {"pwmEngine", "pwm", _cmd_q};
   mcrCmdQueues::registerQ(cmd_q);
 
   while (true) {
     BaseType_t queue_rc = pdFALSE;
-    CmdSwitch_t *cmd = nullptr;
+    cmdPWM_t *cmd = nullptr;
 
     queue_rc = xQueueReceive(_cmd_q, &cmd, portMAX_DELAY);
     // wrap in a unique_ptr so it is freed when out of scope
-    std::unique_ptr<CmdSwitch> cmd_ptr(cmd);
+    std::unique_ptr<cmdPWM> cmd_ptr(cmd);
     elapsedMicros process_cmd;
 
     if (queue_rc == pdFALSE) {
@@ -73,14 +73,14 @@ void pwmEngine::command(void *data) {
       continue;
     }
 
-    ESP_LOGD(tagCommand(), "processing %s", cmd->debug().get());
-
     // is the command for this mcr?
 
     const string_t &mcr_name = Net::getName();
 
     if (cmd->matchExternalDevID(mcr_name) == false) {
       continue;
+    } else {
+      ESP_LOGI(tagCommand(), "recv'd cmd: %s", cmd->debug().get());
     }
 
     cmd->translateDevID(mcr_name, "self");
@@ -92,25 +92,26 @@ void pwmEngine::command(void *data) {
 
       trackSwitchCmd(true);
 
-      needBus();
-      ESP_LOGV(tagCommand(), "attempting to aquire bux mutex...");
-      elapsedMicros bus_wait;
-      takeBus();
+      // needBus();
+      // ESP_LOGV(tagCommand(), "attempting to aquire bux mutex...");
+      // elapsedMicros bus_wait;
+      // takeBus();
 
-      if (bus_wait < 500) {
-        ESP_LOGV(tagCommand(), "acquired bus mutex (%lluus)",
-                 (uint64_t)bus_wait);
-      } else {
-        ESP_LOGW(tagCommand(), "acquire bus mutex took %0.2fms",
-                 (float)(bus_wait / 1000.0));
-      }
+      // if (bus_wait < 500) {
+      //   ESP_LOGV(tagCommand(), "acquired bus mutex (%lluus)",
+      //            (uint64_t)bus_wait);
+      // } else {
+      //   ESP_LOGW(tagCommand(), "acquire bus mutex took %0.2fms",
+      //            (float)(bus_wait / 1000.0));
+      // }
 
       // the device write time is the total duration of all processing
       // of the write -- not just the duration on the bus
       dev->startWrite();
 
-      ESP_LOGI(tagCommand(), "received cmd for %s", dev->id().c_str());
-      set_rc = true;
+      ESP_LOGI(tagCommand(), "processing cmd for: %s", dev->id().c_str());
+
+      set_rc = dev->updateDuty(cmd->duty());
 
       if (set_rc) {
         commandAck(*cmd);
@@ -118,10 +119,8 @@ void pwmEngine::command(void *data) {
 
       trackSwitchCmd(false);
 
-      clearNeedBus();
-      giveBus();
-
-      ESP_LOGV(tagCommand(), "released bus mutex");
+      // clearNeedBus();
+      // giveBus();
     } else {
       ESP_LOGW(tagCommand(), "device %s not available",
                (const char *)cmd->internalDevID().c_str());
@@ -134,7 +133,7 @@ void pwmEngine::command(void *data) {
   }
 }
 
-bool pwmEngine::commandAck(CmdSwitch_t &cmd) {
+bool pwmEngine::commandAck(cmdPWM_t &cmd) {
   bool rc = true;
   elapsedMicros elapsed;
   pwmDev_t *dev = findDevice(cmd.internalDevID());
@@ -151,10 +150,11 @@ bool pwmEngine::commandAck(CmdSwitch_t &cmd) {
              cmd.debug().get());
   }
 
-  ESP_LOGI(tagCommand(), "completed cmd: %s", cmd.debug().get());
+  float elapsed_ms = (float)(elapsed / 1000.0);
+  ESP_LOGI(tagCommand(), "cmd took %0.3fms for: %s", elapsed_ms,
+           dev->debug().get());
 
-  if (elapsed > 100000) { // 100ms
-    float elapsed_ms = (float)(elapsed / 1000.0);
+  if (elapsed_ms > 100.0) { // 100ms
     ESP_LOGW(tagCommand(), "ACK took %0.3fms", elapsed_ms);
   }
 
@@ -205,12 +205,11 @@ void pwmEngine::discover(void *data) {
 
   while (waitForEngine()) {
 
-    takeBus();
     trackDiscover(true);
 
-    for (uint8_t i = 1; i < 5; i++) {
+    for (uint8_t i = 1; i <= 4; i++) {
       mcrDevAddr_t addr(i);
-      pwmDev_t dev(addr, mapToChannel(i));
+      pwmDev_t dev(addr);
 
       if (pwmDev_t *found = (pwmDev_t *)justSeenDevice(dev)) {
         ESP_LOGV(tagDiscover(), "already know %s", found->debug().get());
@@ -230,8 +229,6 @@ void pwmEngine::discover(void *data) {
         }
       }
     }
-
-    giveBus();
 
     trackDiscover(false);
 
@@ -265,7 +262,6 @@ void pwmEngine::report(void *data) {
                auto dev = item.second;
 
                if (dev->available()) {
-                 takeBus();
 
                  if (readDevice(dev)) {
                    publish(dev);
@@ -273,8 +269,6 @@ void pwmEngine::report(void *data) {
                  } else {
                    ESP_LOGE(tagReport(), "%s failed", dev->debug().get());
                  }
-
-                 giveBus();
 
                } else {
                  if (dev->missing()) {
@@ -319,25 +313,6 @@ pwmEngine_t *pwmEngine::instance() {
   return __singleton__;
 }
 
-ledc_channel_t pwmEngine::mapToChannel(uint8_t num) {
-  switch (num) {
-  case 1:
-    return (LEDC_CHANNEL_0);
-
-  case 2:
-    return (LEDC_CHANNEL_1);
-
-  case 3:
-    return (LEDC_CHANNEL_2);
-
-  case 4:
-    return (LEDC_CHANNEL_3);
-
-  default:
-    return (LEDC_CHANNEL_0);
-  }
-}
-
 void pwmEngine::printUnhandledDev(pwmDev_t *dev) {
   ESP_LOGW(tagEngine(), "unhandled dev %s", dev->debug().get());
 }
@@ -345,14 +320,14 @@ void pwmEngine::printUnhandledDev(pwmDev_t *dev) {
 bool pwmEngine::readDevice(pwmDev_t *dev) {
   auto rc = false;
 
-  auto duty = ledc_get_duty(dev->speed_mode(), dev->channel());
+  auto duty = ledc_get_duty(dev->speedMode(), dev->channel());
 
   if (duty == LEDC_ERR_DUTY) {
     ESP_LOGW(tagEngine(), "error reading duty");
   } else {
     pwmReading_t *reading =
-        new pwmReading(dev->externalName(), time(nullptr), dev->duty_max(),
-                       dev->duty_min(), duty);
+        new pwmReading(dev->externalName(), time(nullptr), dev->dutyMax(),
+                       dev->dutyMin(), duty);
 
     reading->setLogReading();
     dev->setReading(reading);

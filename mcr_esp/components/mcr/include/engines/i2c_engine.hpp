@@ -65,7 +65,7 @@ class mcrI2c : public mcrEngine<i2cDev_t> {
 private:
   mcrI2c();
 
-  bool commandAck(CmdSwitch_t &cmd);
+  bool commandAck(cmdSwitch_t &cmd);
 
 public:
   static mcrI2c_t *instance();
@@ -118,7 +118,7 @@ private:
 
   // specific methods to read devices
   bool readMCP23008(i2cDev_t *dev);
-  bool setMCP23008(CmdSwitch_t &cmd, i2cDev_t *dev);
+  bool setMCP23008(cmdSwitch_t &cmd, i2cDev_t *dev);
   bool readSeesawSoil(i2cDev_t *dev);
   bool readSHT31(i2cDev_t *dev);
 

@@ -121,8 +121,8 @@ defmodule Mqtt.Reading do
    ##Examples:
     iex> json =
     ...>   ~s({"host": "mcr.macaddr",
-    ...>       "mtime": 2106, "type": "text", "duty": 2048, "duty_min": 1,
-    ...>       "duty_max": 4095"})
+    ...>       "mtime": 2106, "type": "pwm", "duty": 2048, "duty_min": 1,
+    ...>       "duty_max": 4095})
     ...> Jason.decode!(json, keys: :atoms) |> Mqtt.Reading.pwm?()
     true
   """

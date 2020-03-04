@@ -40,7 +40,9 @@ typedef class pwmDev pwmDev_t;
 class pwmDev : public mcrDev {
 public:
   pwmDev() {}
-  static const char *pwmDevDesc(mcrDevAddr_t &addr);
+  static const char *pwmDevDesc(const mcrDevAddr_t &addr);
+  static gpio_num_t mapNumToGPIO(const mcrDevAddr_t &num);
+  static ledc_channel_t mapNumToChannel(const mcrDevAddr_t &num);
   static void allOff();
 
 private:
@@ -50,36 +52,33 @@ private:
   static const uint32_t duty_max_ = 4095;
   static const uint32_t duty_min_ = 0;
 
-  const gpio_num_t pins_[4] = {GPIO_NUM_32, GPIO_NUM_15, GPIO_NUM_33,
-                               GPIO_NUM_27};
-
   ledc_channel_config_t ledc_channel_ = {.gpio_num = GPIO_NUM_32,
                                          .speed_mode = LEDC_HIGH_SPEED_MODE,
-                                         .channel = LEDC_CHANNEL_0,
+                                         .channel = LEDC_CHANNEL_1,
                                          .intr_type = LEDC_INTR_DISABLE,
                                          .timer_sel = LEDC_TIMER_0,
                                          .duty = duty_,
                                          .hpoint = 0};
 
   gpio_num_t gpio_pin_;
-  uint32_t duty_ = 2048;
+  uint32_t duty_ = 0; // default to zero (off)
   esp_err_t last_rc_ = ESP_OK;
 
 public:
-  pwmDev(mcrDevAddr_t &num, ledc_channel_t channel);
+  pwmDev(mcrDevAddr_t &num);
   uint8_t devAddr();
 
   void configureChannel();
   ledc_channel_t channel() { return ledc_channel_.channel; };
-  ledc_mode_t speed_mode() { return ledc_channel_.speed_mode; };
-  uint32_t duty_max() { return duty_max_; };
-  uint32_t duty_min() { return duty_min_; };
-  gpio_num_t gpio_pin() { return gpio_pin_; };
+  ledc_mode_t speedMode() { return ledc_channel_.speed_mode; };
+  uint32_t dutyMax() { return duty_max_; };
+  uint32_t dutyMin() { return duty_min_; };
+  gpio_num_t gpioPin() { return gpio_pin_; };
+
+  bool updateDuty(uint32_t duty);
 
   const char *externalName();
   esp_err_t lastRC() { return last_rc_; };
-
-  const gpio_num_t *pins() { return pins_; }
 
   // info / debug functions
   const unique_ptr<char[]> debug();

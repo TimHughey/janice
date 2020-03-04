@@ -193,6 +193,43 @@ CREATE TABLE public.pwm (
 
 
 --
+-- Name: pwm_cmd; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.pwm_cmd (
+    id bigint NOT NULL,
+    pwm_id bigint,
+    refid character varying(40) NOT NULL,
+    acked boolean DEFAULT false NOT NULL,
+    orphan boolean DEFAULT false NOT NULL,
+    rt_latency_ms integer DEFAULT 0 NOT NULL,
+    sent_at timestamp(0) without time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+    ack_at timestamp(0) without time zone DEFAULT NULL::timestamp without time zone,
+    inserted_at timestamp(0) without time zone NOT NULL,
+    updated_at timestamp(0) without time zone NOT NULL
+);
+
+
+--
+-- Name: pwm_cmd_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.pwm_cmd_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: pwm_cmd_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.pwm_cmd_id_seq OWNED BY public.pwm_cmd.id;
+
+
+--
 -- Name: pwm_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -672,6 +709,13 @@ ALTER TABLE ONLY public.pwm ALTER COLUMN id SET DEFAULT nextval('public.pwm_id_s
 
 
 --
+-- Name: pwm_cmd id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pwm_cmd ALTER COLUMN id SET DEFAULT nextval('public.pwm_cmd_id_seq'::regclass);
+
+
+--
 -- Name: remote id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -778,6 +822,14 @@ ALTER TABLE ONLY public.dutycycle_state
 
 ALTER TABLE ONLY public.message
     ADD CONSTRAINT message_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: pwm_cmd pwm_cmd_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pwm_cmd
+    ADD CONSTRAINT pwm_cmd_pkey PRIMARY KEY (id);
 
 
 --
@@ -910,6 +962,13 @@ CREATE INDEX dutycycle_state_dutycycle_id_index ON public.dutycycle_state USING 
 --
 
 CREATE INDEX message_inserted_at_index ON public.message USING btree (inserted_at);
+
+
+--
+-- Name: pwm_cmd_refid_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX pwm_cmd_refid_index ON public.pwm_cmd USING btree (refid);
 
 
 --
@@ -1132,6 +1191,14 @@ ALTER TABLE ONLY public.dutycycle_state
 
 
 --
+-- Name: pwm_cmd pwm_cmd_pwm_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pwm_cmd
+    ADD CONSTRAINT pwm_cmd_pwm_id_fkey FOREIGN KEY (pwm_id) REFERENCES public.pwm(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
 -- Name: sensor_relhum sensor_relhum_sensor_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1183,5 +1250,5 @@ ALTER TABLE ONLY public.thermostat_profile
 -- PostgreSQL database dump complete
 --
 
-INSERT INTO public."schema_migrations" (version) VALUES (20171217150128), (20171224164529), (20171224225113), (20171228191703), (20171229001359), (20171231182344), (20180101153253), (20180102171624), (20180102175335), (20180217212153), (20180218021213), (20180222165118), (20180222184042), (20180305193804), (20180307143400), (20180517201719), (20180708221600), (20180709181021), (20190308124055), (20190316032007), (20190317155502), (20190320124824), (20190416130912), (20190417011910), (20191018110319), (20191022013914), (20200105131440), (20200115151705), (20200116024319), (20200127033742), (20200128032134), (20200210202655), (20200212175538), (20200212183409), (20200213192845), (20200215173921), (20200217154954), (20200302001850);
+INSERT INTO public."schema_migrations" (version) VALUES (20171217150128), (20171224164529), (20171224225113), (20171228191703), (20171229001359), (20171231182344), (20180101153253), (20180102171624), (20180102175335), (20180217212153), (20180218021213), (20180222165118), (20180222184042), (20180305193804), (20180307143400), (20180517201719), (20180708221600), (20180709181021), (20190308124055), (20190316032007), (20190317155502), (20190320124824), (20190416130912), (20190417011910), (20191018110319), (20191022013914), (20200105131440), (20200115151705), (20200116024319), (20200127033742), (20200128032134), (20200210202655), (20200212175538), (20200212183409), (20200213192845), (20200215173921), (20200217154954), (20200302001850), (20200302155853);
 

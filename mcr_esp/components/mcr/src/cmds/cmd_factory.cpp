@@ -61,7 +61,7 @@ mcrCmd_t *mcrCmdFactory::fromJSON(JsonDocument &doc, rawMsg_t *raw) {
     break;
 
   case mcrCmdType::setswitch:
-    cmd = new CmdSwitch(doc, parse_elapsed);
+    cmd = new cmdSwitch(doc, parse_elapsed);
     break;
 
   case mcrCmdType::setname:
@@ -77,6 +77,7 @@ mcrCmd_t *mcrCmdFactory::fromJSON(JsonDocument &doc, rawMsg_t *raw) {
     break;
 
   case mcrCmdType::pwm:
+    cmd = new cmdPWM(doc, parse_elapsed);
     break;
   }
 

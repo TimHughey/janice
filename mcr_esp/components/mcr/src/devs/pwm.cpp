@@ -36,7 +36,7 @@ using std::unique_ptr;
 
 namespace mcr {
 
-const char *pwmDev::pwmDevDesc(mcrDevAddr_t &addr) {
+const char *pwmDev::pwmDevDesc(const mcrDevAddr_t &addr) {
   switch (addr.firstAddressByte()) {
   case 0x01:
     return (const char *)"pin:1";
@@ -61,20 +61,13 @@ const char *pwmDev::pwmDevDesc(mcrDevAddr_t &addr) {
 }
 
 // construct a new pwmDev with a known address and compute the id
-pwmDev::pwmDev(mcrDevAddr_t &num, ledc_channel_t channel) : mcrDev(num) {
+pwmDev::pwmDev(mcrDevAddr_t &num) : mcrDev(num) {
   unique_ptr<char[]> id(new char[pwm_max_id_len_ + 1]);
 
-  // lookup the GPIO pin to use for this device from the pins array
-  // noting that the array is zero based and the devices are numbered starting
-  // at one
-  if ((num.firstAddressByte() > 0) && (num.firstAddressByte() <= 4)) {
-    gpio_pin_ = pins_[num.firstAddressByte() - 1];
-  } else {
-    gpio_pin_ = pins_[0];
-  }
+  gpio_pin_ = mapNumToGPIO(num);
 
   ledc_channel_.gpio_num = gpio_pin_;
-  ledc_channel_.channel = channel;
+  ledc_channel_.channel = mapNumToChannel(num);
 
   configureChannel();
 
@@ -109,6 +102,17 @@ void pwmDev::configureChannel() {
   last_rc_ = ledc_channel_config(&ledc_channel_);
 }
 
+bool pwmDev::updateDuty(uint32_t duty) {
+  auto esp_rc = ESP_OK;
+
+  duty_ = duty;
+
+  esp_rc = ledc_set_duty_and_update(ledc_channel_.speed_mode,
+                                    ledc_channel_.channel, duty_, 0);
+
+  return (esp_rc == ESP_OK) ? true : false;
+}
+
 // STATIC
 void pwmDev::allOff() {
   gpio_num_t pins[4] = {GPIO_NUM_32, GPIO_NUM_15, GPIO_NUM_33, GPIO_NUM_27};
@@ -126,6 +130,47 @@ void pwmDev::allOff() {
 
   for (int i = 0; i < 4; i++) {
     gpio_set_level(pins[i], 0);
+  }
+}
+
+// STATIC
+ledc_channel_t pwmDev::mapNumToChannel(const mcrDevAddr_t &num) {
+  switch (num.firstAddressByte()) {
+  case 0x01:
+    // NOTE: LEDC_CHANNEL_0 is used for the onboard red status led
+    return (LEDC_CHANNEL_1);
+
+  case 0x02:
+    return (LEDC_CHANNEL_2);
+
+  case 0x03:
+    return (LEDC_CHANNEL_3);
+
+  case 0x04:
+    return (LEDC_CHANNEL_4);
+
+  default:
+    return (LEDC_CHANNEL_1);
+  }
+}
+
+// STATIC
+gpio_num_t pwmDev::mapNumToGPIO(const mcrDevAddr_t &num) {
+  switch (num.firstAddressByte()) {
+  case 0x01:
+    return GPIO_NUM_32;
+
+  case 0x02:
+    return GPIO_NUM_15;
+
+  case 0x03:
+    return GPIO_NUM_33;
+
+  case 0x04:
+    return GPIO_NUM_27;
+
+  default:
+    return GPIO_NUM_32;
   }
 }
 

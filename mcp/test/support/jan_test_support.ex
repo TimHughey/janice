@@ -10,6 +10,7 @@ defmodule JanTest do
       hw: "esp32",
       vsn: preferred_vsn(),
       mtime: TimeSupport.unix_now(:second),
+      msg_recv_dt: TimeSupport.utc_now(),
       log: false
     }
 
@@ -19,7 +20,7 @@ defmodule JanTest do
   def mt_host(n), do: host("mixtank", n)
   def mt_name(n), do: name("mixtank", n)
 
-  def name(prefix, n), do: "#{prefix}#{num_str(n)}"
+  def name(prefix, n), do: [prefix, num_str(n)] |> IO.iodata_to_binary()
   def num_str(n), do: String.pad_leading(Integer.to_string(n), 3, "0")
   def preferred_vsn, do: "b4edefc"
 

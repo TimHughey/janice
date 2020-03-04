@@ -158,7 +158,7 @@ defmodule Mqtt.Client do
     publish(opts)
   end
 
-  def publish_switch_cmd(message) do
+  def publish_cmd(message) do
     {elapsed_us, _res} =
       :timer.tc(fn ->
         {feed, qos} = get_env(:mcp, :feeds, []) |> Keyword.get(:cmd, {nil, nil})
@@ -171,7 +171,7 @@ defmodule Mqtt.Client do
 
     RunMetric.record(
       module: "#{__MODULE__}",
-      metric: "publish_switch_cmd_us",
+      metric: "publish_cmd_us",
       device: "none",
       val: elapsed_us
     )

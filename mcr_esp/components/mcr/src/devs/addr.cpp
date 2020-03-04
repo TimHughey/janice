@@ -38,11 +38,11 @@ mcrDevAddr::mcrDevAddr(uint8_t *addr, uint32_t len) {
   _addr.assign(addr, addr + len);
 }
 
-uint32_t mcrDevAddr::len() { return _addr.size(); }
-uint8_t mcrDevAddr::firstAddressByte() { return _addr.front(); }
+uint32_t mcrDevAddr::len() const { return _addr.size(); }
+uint8_t mcrDevAddr::firstAddressByte() const { return _addr.front(); }
 // uint8_t mcrDevAddr::addressByteByIndex(uint32_t index) { return _addr[0]; }
-uint8_t mcrDevAddr::lastAddressByte() { return _addr.back(); }
-uint32_t mcrDevAddr::max_len() { return _max_len; }
+uint8_t mcrDevAddr::lastAddressByte() const { return _addr.back(); }
+uint32_t mcrDevAddr::max_len() const { return _max_len; }
 
 // support type casting from mcrDevAddr to a plain ole char array
 mcrDevAddr::operator uint8_t *() { return _addr.data(); }
@@ -56,7 +56,7 @@ bool mcrDevAddr::operator==(const mcrDevAddr_t &rhs) {
   return (_addr == rhs._addr);
 }
 
-bool mcrDevAddr::isValid() {
+bool mcrDevAddr::isValid() const {
   if (_addr.empty() || _addr.front() == 0x00)
     return false;
 

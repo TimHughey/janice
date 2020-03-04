@@ -51,6 +51,15 @@ private:
   void populate(JsonDocument &doc);
 
 protected:
+  // the device name as sent from mcp
+  string_t _external_dev_id;
+  // some devices have a global unique name (e.g. Dallas Semiconductor) while
+  // others don't (e.g. i2c).  this string is provided when translation is
+  // necessary.
+  string_t _internal_dev_id;
+  mcrRefID_t _refid;
+  bool _ack = true; // default to true if ack is not set
+
   elapsedMicros _parse_elapsed;
   elapsedMicros _create_elapsed;
   elapsedMicros _latency;
@@ -61,13 +70,24 @@ public:
   mcrCmd(mcrCmdType_t type, JsonDocument &doc, elapsedMicros &parse);
   virtual ~mcrCmd(){};
 
+  void ack(bool ack) { _ack = ack; }
+  bool ack() { return _ack; }
+  const string_t &externalDevID() const { return _external_dev_id; };
+  const string_t &internalDevID() const { return _internal_dev_id; };
+
+  bool matchExternalDevID(const string_t &);
+  bool IRAM_ATTR matchPrefix(const char *prefix);
+  mcrRefID_t &refID() { return _refid; };
+  virtual bool IRAM_ATTR sendToQueue(cmdQueue_t &cmd_q, mcrCmd_t *cmd);
+
   elapsedMicros &createElapsed() { return _create_elapsed; };
   bool recent() { return ((time(nullptr) - _mtime) <= 60) ? true : false; }
   virtual elapsedMicros &latency() { return _latency; };
   elapsedMicros &parseElapsed() { return _parse_elapsed; };
   virtual bool process() { return false; };
-  virtual bool sendToQueue(cmdQueue_t &cmd_q) { return false; };
+
   virtual size_t size() { return sizeof(mcrCmd_t); };
+  void translateDevID(const string_t &str, const char *with_str);
   mcrCmdType_t type() { return _type; };
 
   virtual const unique_ptr<char[]> debug();

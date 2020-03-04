@@ -40,8 +40,8 @@ namespace mcr {
 
 typedef std::bitset<8> cmd_bitset_t;
 
-typedef class CmdSwitch CmdSwitch_t;
-class CmdSwitch : public mcrCmd {
+typedef class cmdSwitch cmdSwitch_t;
+class cmdSwitch : public mcrCmd {
 private:
   // the device name as sent from mcp
   string_t _external_dev_id;
@@ -55,28 +55,19 @@ private:
   bool _ack = true; // default to true if ack is not set
 
 public:
-  CmdSwitch(const CmdSwitch_t *cmd)
+  cmdSwitch(const cmdSwitch_t *cmd)
       : mcrCmd(mcrCmdType::setswitch), _external_dev_id(cmd->_external_dev_id),
         _internal_dev_id(cmd->_internal_dev_id), _mask(cmd->_mask),
         _state(cmd->_state), _refid(cmd->_refid), _ack(cmd->_ack){};
-  CmdSwitch(JsonDocument &doc, elapsedMicros &parse);
-  CmdSwitch(const string_t &id, cmd_bitset_t mask, cmd_bitset_t state)
+  cmdSwitch(JsonDocument &doc, elapsedMicros &parse);
+  cmdSwitch(const string_t &id, cmd_bitset_t mask, cmd_bitset_t state)
       : mcrCmd(mcrCmdType::setswitch), _external_dev_id(id),
         _internal_dev_id(id), _mask(mask), _state(state){};
 
-  void ack(bool ack) { _ack = ack; }
-  bool ack() { return _ack; }
-  const string_t &externalDevID() const { return _external_dev_id; };
-  const string_t &internalDevID() const { return _internal_dev_id; };
   cmd_bitset_t mask() { return _mask; };
-  bool matchExternalDevID(const string_t &);
-  bool IRAM_ATTR matchPrefix(const char *prefix);
-  bool IRAM_ATTR process();
-  mcrRefID_t &refID() { return _refid; };
-  bool IRAM_ATTR sendToQueue(cmdQueue_t &cmd_q);
-  size_t size() { return sizeof(CmdSwitch_t); };
+  bool process();
+  size_t size() { return sizeof(cmdSwitch_t); };
   cmd_bitset_t state() { return _state; };
-  void translateDevID(const string_t &str, const char *with_str);
 
   const unique_ptr<char[]> debug();
 };

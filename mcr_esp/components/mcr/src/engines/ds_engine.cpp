@@ -103,7 +103,7 @@ bool mcrDS::checkDevicesPowered() {
 void mcrDS::command(void *data) {
   logSubTaskStart(data);
 
-  _cmd_q = xQueueCreate(_max_queue_depth, sizeof(CmdSwitch_t *));
+  _cmd_q = xQueueCreate(_max_queue_depth, sizeof(cmdSwitch_t *));
   cmdQueue_t cmd_q = {"mcrDS", "ds", _cmd_q};
   mcrCmdQueues::registerQ(cmd_q);
 
@@ -111,7 +111,7 @@ void mcrDS::command(void *data) {
 
   for (;;) {
     BaseType_t queue_rc = pdFALSE;
-    CmdSwitch_t *cmd = nullptr;
+    cmdSwitch_t *cmd = nullptr;
 
     clearNeedBus();
     queue_rc = xQueueReceive(_cmd_q, &cmd, portMAX_DELAY);
@@ -206,7 +206,7 @@ void mcrDS::command(void *data) {
   }
 }
 
-bool mcrDS::commandAck(CmdSwitch_t &cmd) {
+bool mcrDS::commandAck(cmdSwitch_t &cmd) {
   bool rc = true;
   int64_t start = esp_timer_get_time();
   dsDev_t *dev = findDevice(cmd.internalDevID());
@@ -906,7 +906,7 @@ void mcrDS::core(void *data) {
   }
 }
 
-bool mcrDS::setDS2406(CmdSwitch_t &cmd, dsDev_t *dev) {
+bool mcrDS::setDS2406(cmdSwitch_t &cmd, dsDev_t *dev) {
   owb_status owb_s;
   bool rc = false;
 
@@ -973,7 +973,7 @@ bool mcrDS::setDS2406(CmdSwitch_t &cmd, dsDev_t *dev) {
   return rc;
 }
 
-bool mcrDS::setDS2408(CmdSwitch_t &cmd, dsDev_t *dev) {
+bool mcrDS::setDS2408(cmdSwitch_t &cmd, dsDev_t *dev) {
   owb_status owb_s;
   bool rc = false;
 
@@ -1080,7 +1080,7 @@ bool mcrDS::setDS2408(CmdSwitch_t &cmd, dsDev_t *dev) {
   return rc;
 }
 
-bool mcrDS::setDS2413(CmdSwitch_t &cmd, dsDev_t *dev) {
+bool mcrDS::setDS2413(cmdSwitch_t &cmd, dsDev_t *dev) {
   owb_status owb_s;
   bool rc = false;
 
