@@ -29,6 +29,7 @@
 #include <sys/time.h>
 #include <time.h>
 
+#include "misc/elapsedMillis.hpp"
 #include "misc/mcr_types.hpp"
 
 // Possible future improvement
@@ -62,7 +63,8 @@ private:
   // tracking info
   mcrRefID_t _refid;
   bool _cmd_ack = false;
-  time_t _latency = 0;
+  uint32_t _latency_us = 0;
+
   bool _mcp_log_reading = false;
 
   int64_t _read_us = 0;
@@ -89,7 +91,7 @@ public:
   std::string *json(char *buffer = nullptr, size_t len = 0);
   virtual void publish();
   virtual void refresh() { time(&_mtime); }
-  void setCmdAck(time_t latency, mcrRefID_t &refid);
+  void setCmdAck(uint32_t latency_us, mcrRefID_t &refid);
 
   void setCRCMismatches(int crc_mismatches) {
     _crc_mismatches = crc_mismatches;

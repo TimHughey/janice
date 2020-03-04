@@ -503,7 +503,7 @@ protected:
     DEV *dev = findDevice(cmd.internalDevID());
 
     if (dev != nullptr) {
-      dev->setReadingCmdAck(cmd.latency(), cmd.refID());
+      dev->setReadingCmdAck(cmd.latency_us(), cmd.refID());
     } else {
       ESP_LOGW(tagEngine(), "device %s not found while setting cmd ack",
                cmd.internalDevID().c_str());

@@ -140,10 +140,12 @@ void mcrI2c::command(void *data) {
 
       // the device write time is the total duration of all processing
       // of the write -- not just the duration on the bus
-      dev->startWrite();
+      dev->writeStart();
 
       ESP_LOGI(tagCommand(), "received cmd for %s", dev->id().c_str());
       set_rc = setMCP23008(*cmd, dev);
+
+      dev->writeStop();
 
       if (set_rc) {
         commandAck(*cmd);
@@ -683,7 +685,7 @@ bool mcrI2c::readSeesawSoil(i2cDev_t *dev) {
   // delay (maybe?)
   // write request to read bytes of the register
 
-  dev->startRead();
+  dev->readStart();
 
   // first, request and receive the onboard temperature
   data_request[0] = 0x00; // SEESAW_STATUS_BASE
@@ -717,7 +719,7 @@ bool mcrI2c::readSeesawSoil(i2cDev_t *dev) {
   // sw_version = ((uint32_t)buff[0] << 24) | ((uint32_t)buff[1] << 16) |
   //              ((uint32_t)buff[2] << 8) | (uint32_t)buff[3];
 
-  dev->stopRead();
+  dev->readStop();
 
   if (esp_rc == ESP_OK) {
     dev->justSeen();
@@ -785,11 +787,11 @@ esp_err_t mcrI2c::requestData(const char *TAG, i2cDev_t *dev, uint8_t *send,
   i2c_cmd_handle_t cmd = nullptr;
   esp_err_t esp_rc;
 
-  dev->startRead();
+  dev->readStart();
 
   if (prev_esp_rc != ESP_OK) {
     dev->readFailure();
-    dev->stopRead();
+    dev->readStop();
     return prev_esp_rc;
   }
 
@@ -845,7 +847,7 @@ esp_err_t mcrI2c::requestData(const char *TAG, i2cDev_t *dev, uint8_t *send,
     i2c_set_timeout(I2C_NUM_0, _save_timeout);
   }
 
-  dev->stopRead();
+  dev->readStop();
 
   return esp_rc;
 }

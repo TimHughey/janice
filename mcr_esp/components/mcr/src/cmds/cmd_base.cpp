@@ -102,8 +102,8 @@ const unique_ptr<char[]> mcrCmd::debug() {
   unique_ptr<char[]> debug_str(new char[max_buf]);
 
   snprintf(debug_str.get(), max_buf,
-           "mcrCmd(latency(%0.3fs) parse(%0.3fs) create(%0.3fs)",
-           latency().asSeconds(), _parse_elapsed.asSeconds(),
+           "mcrCmd(latency_us(%0.3fs) parse(%0.3fs) create(%0.3fs)",
+           latency_us().asSeconds(), _parse_elapsed.asSeconds(),
            _create_elapsed.asSeconds());
 
   return move(debug_str);

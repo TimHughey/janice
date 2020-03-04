@@ -105,13 +105,11 @@ void pwmEngine::command(void *data) {
       //            (float)(bus_wait / 1000.0));
       // }
 
-      // the device write time is the total duration of all processing
-      // of the write -- not just the duration on the bus
-      dev->startWrite();
-
       ESP_LOGI(tagCommand(), "processing cmd for: %s", dev->id().c_str());
 
+      dev->writeStart();
       set_rc = dev->updateDuty(cmd->duty());
+      dev->writeStop();
 
       if (set_rc) {
         commandAck(*cmd);
@@ -134,8 +132,7 @@ void pwmEngine::command(void *data) {
 }
 
 bool pwmEngine::commandAck(cmdPWM_t &cmd) {
-  bool rc = true;
-  elapsedMicros elapsed;
+  bool rc = false;
   pwmDev_t *dev = findDevice(cmd.internalDevID());
 
   if (dev != nullptr) {
@@ -150,11 +147,11 @@ bool pwmEngine::commandAck(cmdPWM_t &cmd) {
              cmd.debug().get());
   }
 
-  float elapsed_ms = (float)(elapsed / 1000.0);
+  float elapsed_ms = (float)(cmd.latency_us() / 1000.0);
   ESP_LOGI(tagCommand(), "cmd took %0.3fms for: %s", elapsed_ms,
            dev->debug().get());
 
-  if (elapsed_ms > 100.0) { // 100ms
+  if (elapsed_ms > 100.0) {
     ESP_LOGW(tagCommand(), "ACK took %0.3fms", elapsed_ms);
   }
 
@@ -320,7 +317,9 @@ void pwmEngine::printUnhandledDev(pwmDev_t *dev) {
 bool pwmEngine::readDevice(pwmDev_t *dev) {
   auto rc = false;
 
+  dev->readStart();
   auto duty = ledc_get_duty(dev->speedMode(), dev->channel());
+  dev->readStop();
 
   if (duty == LEDC_ERR_DUTY) {
     ESP_LOGW(tagEngine(), "error reading duty");

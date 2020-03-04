@@ -62,7 +62,7 @@ protected:
 
   elapsedMicros _parse_elapsed;
   elapsedMicros _create_elapsed;
-  elapsedMicros _latency;
+  elapsedMicros _latency_us;
 
 public:
   mcrCmd(mcrCmdType_t type);
@@ -82,7 +82,7 @@ public:
 
   elapsedMicros &createElapsed() { return _create_elapsed; };
   bool recent() { return ((time(nullptr) - _mtime) <= 60) ? true : false; }
-  virtual elapsedMicros &latency() { return _latency; };
+  virtual elapsedMicros &latency_us() { return _latency_us; };
   elapsedMicros &parseElapsed() { return _parse_elapsed; };
   virtual bool process() { return false; };
 

@@ -33,6 +33,7 @@
 #include <time.h>
 
 #include "devs/addr.hpp"
+#include "misc/elapsedMillis.hpp"
 #include "misc/mcr_types.hpp"
 #include "readings/readings.hpp"
 
@@ -75,17 +76,16 @@ public:
   virtual const char *externalName() const { return _id.c_str(); };
 
   void setReading(Reading_t *reading);
-  void setReadingCmdAck(time_t latency, mcrRefID_t &refid);
+  void setReadingCmdAck(uint32_t latency_us, mcrRefID_t &refid);
   Reading_t *reading();
 
   // metrics functions
-  void startRead();
-  void startWrite();
-
-  time_t stopRead();
-  time_t stopWrite();
-  int64_t readUS();
-  int64_t writeUS();
+  void readStart();
+  uint64_t readStop();
+  void writeStart();
+  uint64_t writeStop();
+  uint64_t readUS();
+  uint64_t writeUS();
   time_t readTimestamp();
   time_t timeCreated();
   time_t secondsSinceLastSeen();
@@ -130,19 +130,14 @@ protected:
   time_t _created_mtime = time(nullptr);
   time_t _last_seen = 0; // mtime of last time this device was discovered
 
-  int64_t _read_start_us;
-  int64_t _read_us = 0;
-
-  int64_t _write_start_us;
-  int64_t _write_us = 0;
+  elapsedMicros _read_us;
+  elapsedMicros _write_us;
 
   time_t _read_timestamp = 0;
 
   int _crc_mismatches = 0;
   int _read_errors = 0;
-
   int _write_errors = 0;
-
   int _missing_secs = 15;
 };
 

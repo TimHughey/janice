@@ -78,9 +78,9 @@ void mcrDev::setReading(Reading_t *reading) {
   _reading = reading;
 };
 
-void mcrDev::setReadingCmdAck(time_t latency, mcrRefID_t &refid) {
+void mcrDev::setReadingCmdAck(uint32_t latency_us, mcrRefID_t &refid) {
   if (_reading != nullptr) {
-    _reading->setCmdAck(latency, refid);
+    _reading->setCmdAck(latency_us, refid);
   }
 }
 
@@ -94,14 +94,14 @@ bool mcrDev::isValid() { return firstAddressByte() != 0x00 ? true : false; };
 bool mcrDev::isNotValid() { return !isValid(); }
 
 // metrics functions
-void mcrDev::startRead() { _read_start_us = esp_timer_get_time(); }
-time_t mcrDev::stopRead() {
-  _read_us = esp_timer_get_time() - _read_start_us;
+void mcrDev::readStart() { _read_us.reset(); }
+uint64_t mcrDev::readStop() {
+  _read_us.freeze();
   _read_timestamp = time(nullptr);
 
   return _read_us;
 }
-int64_t mcrDev::readUS() { return _read_us; }
+uint64_t mcrDev::readUS() { return _read_us; }
 time_t mcrDev::readTimestamp() { return _read_timestamp; }
 time_t mcrDev::timeCreated() { return _created_mtime; }
 time_t mcrDev::secondsSinceLastSeen() { return (time(nullptr) - _last_seen); }
@@ -109,14 +109,13 @@ time_t mcrDev::secondsSinceLastSeen() { return (time(nullptr) - _last_seen); }
 bool mcrDev::available() { return (secondsSinceLastSeen() <= _missing_secs); }
 bool mcrDev::missing() { return (!available()); }
 
-void mcrDev::startWrite() { _write_start_us = esp_timer_get_time(); }
-time_t mcrDev::stopWrite() {
-  _write_us = _write_start_us;
-  _write_us = 0;
+void mcrDev::writeStart() { _write_us.reset(); }
+uint64_t mcrDev::writeStop() {
+  _write_us.freeze();
 
   return _write_us;
 }
-int64_t mcrDev::writeUS() { return _write_us; }
+uint64_t mcrDev::writeUS() { return _write_us; }
 
 void mcrDev::crcMismatch() { _crc_mismatches++; }
 void mcrDev::readFailure() { _read_errors++; }

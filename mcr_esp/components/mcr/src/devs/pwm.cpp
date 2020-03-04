@@ -107,8 +107,11 @@ bool pwmDev::updateDuty(uint32_t duty) {
 
   duty_ = duty;
 
+  writeStart();
   esp_rc = ledc_set_duty_and_update(ledc_channel_.speed_mode,
                                     ledc_channel_.channel, duty_, 0);
+
+  writeStop();
 
   return (esp_rc == ESP_OK) ? true : false;
 }

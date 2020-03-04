@@ -17,7 +17,7 @@ defmodule Repo.Migrations.AddPulseWidthCmd do
       add(:refid, :string, size: 40, null: false)
       add(:acked, :boolean, null: false, default: false)
       add(:orphan, :boolean, null: false, default: false)
-      add(:rt_latency_ms, :integer, null: false, default: 0)
+      add(:rt_latency_us, :integer, null: false, default: 0)
       add(:sent_at, :utc_datetime, null: false, default: current_time)
       add(:ack_at, :utc_datetime, null: true, default: nil)
 

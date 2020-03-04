@@ -55,7 +55,7 @@ void Reading::commonJSON(JsonDocument &doc) {
 
   if (_cmd_ack) {
     doc["cmdack"] = _cmd_ack;
-    doc["latency"] = _latency;
+    doc["latency_us"] = _latency_us;
     doc["refid"] = _refid;
   }
 
@@ -77,6 +77,7 @@ void Reading::commonJSON(JsonDocument &doc) {
 
   if (_read_us > 0) {
     doc["read_us"] = _read_us;
+    doc["dev_latency_us"] = _read_us;
   }
 
   if (_write_us > 0) {
@@ -106,9 +107,9 @@ void Reading::publish() {
   mqtt->publish(this);
 }
 
-void Reading::setCmdAck(time_t latency, mcrRefID_t &refid) {
+void Reading::setCmdAck(uint32_t latency_us, mcrRefID_t &refid) {
   _cmd_ack = true;
-  _latency = latency;
+  _latency_us = latency_us;
 
   _refid = refid;
 }

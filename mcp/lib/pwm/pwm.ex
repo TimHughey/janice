@@ -33,7 +33,7 @@ defmodule PulseWidth do
     field(:duty, :integer)
     field(:duty_max, :integer)
     field(:duty_min, :integer)
-    field(:dev_latency_ms, :integer)
+    field(:dev_latency_us, :integer)
     field(:log, :boolean, default: false)
     field(:ttl_ms, :integer, default: 60_000)
     field(:reading_at, :utc_datetime_usec)
@@ -186,7 +186,7 @@ defmodule PulseWidth do
       Enum.into(Map.take(r, external_changes()), []) ++
         [last_seen_at: msg_recv_at, reading_at: from_unix(mtime)]
 
-    update(pwm, set)
+    update(pwm, set) |> PulseWidthCmd.ack_if_needed(r)
   end
 
   # when processing an external update and pulse_width is nil this is a
@@ -320,7 +320,7 @@ defmodule PulseWidth do
       :duty,
       :duty_max,
       :duty_min,
-      :dev_latency_ms
+      :dev_latency_us
     ]
 
   defp possible_changes,
@@ -332,7 +332,7 @@ defmodule PulseWidth do
       :duty,
       :duty_max,
       :duty_min,
-      :dev_latency_ms,
+      :dev_latency_us,
       :log,
       :ttl_ms,
       :reading_at,

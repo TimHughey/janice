@@ -146,7 +146,7 @@ void mcrDS::command(void *data) {
 
       // the device write time is the total duration of all processing
       // of the write -- not just the duration on the bus
-      dev->startWrite();
+      dev->writeStart();
 
       if (dev->isDS2406()) {
         set_rc = setDS2406(*cmd, dev);
@@ -155,6 +155,8 @@ void mcrDS::command(void *data) {
       } else if (dev->isDS2413()) {
         set_rc = setDS2413(*cmd, dev);
       }
+
+      dev->writeStop();
 
       // bool ack_success = false;
       if (set_rc) {
@@ -563,9 +565,9 @@ bool mcrDS::readDevice(dsDev_t *dev) {
   case 0x10: // DS1820 (temperature sensors)
   case 0x22:
   case 0x28:
-    dev->startRead();
+    dev->readStart();
     rc = readDS1820(dev, &celsius);
-    dev->stopRead();
+    dev->readStop();
     if (rc)
       dev->setReading(celsius);
     break;
@@ -615,7 +617,7 @@ bool mcrDS::readDS1820(dsDev_t *dev, celsiusReading_t **reading) {
     type_s = false;
   }
 
-  dev->startRead();
+  dev->readStart();
   uint8_t cmd[] = {0x55, // match rom_code
                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // rom
                    0xbe}; // read scratchpad
@@ -686,13 +688,13 @@ bool mcrDS::readDS2406(dsDev_t *dev, positionsReading_t **reading) {
                     0x00, // byte 7: SRAM (channel flip-flops, power, etc.)
                     0x00, 0x00}; // byte 8-9: CRC16
 
-  dev->startRead();
+  dev->readStart();
   dev->copyAddrToCmd(cmd);
 
   owb_s = owb_write_bytes(_ds, cmd, sizeof(cmd));
 
   if (owb_s != OWB_STATUS_OK) {
-    dev->stopRead();
+    dev->readStop();
     ESP_LOGW(tagReadDS2406(), "failed to send read cmd owb_s=%d", owb_s);
     return rc;
   }
@@ -700,7 +702,7 @@ bool mcrDS::readDS2406(dsDev_t *dev, positionsReading_t **reading) {
   // fill buffer with bytes from DS2406, skipping the first byte
   // since the first byte is included in the CRC16
   owb_s = owb_read_bytes(_ds, buff, sizeof(buff));
-  dev->stopRead();
+  dev->readStop();
 
   if (owb_s != OWB_STATUS_OK) {
     ESP_LOGW(tagReadDS2406(), "failed to read cmd results owb_s=%d", owb_s);
@@ -746,14 +748,14 @@ bool mcrDS::readDS2408(dsDev_t *dev, positionsReading_t **reading) {
       0x00, 0x00, 0x00, 0x00, // channel state data
       0x00, 0x00};            // bytes 42-43: CRC16
 
-  dev->startRead();
+  dev->readStart();
   dev->copyAddrToCmd(dev_cmd);
 
   // send bytes through the Channel State Data device command
   owb_s = owb_write_bytes(_ds, dev_cmd, 10);
 
   if (owb_s != OWB_STATUS_OK) {
-    dev->stopRead();
+    dev->readStop();
     ESP_LOGW(tagReadDS2408(), "failed to send read cmd owb_s=%d", owb_s);
     return rc;
   }
@@ -761,7 +763,7 @@ bool mcrDS::readDS2408(dsDev_t *dev, positionsReading_t **reading) {
   // read 32 bytes of channel state data + 16 bits of CRC
   // into the dev_cmd
   owb_s = owb_read_bytes(_ds, (dev_cmd + 10), 34);
-  dev->stopRead();
+  dev->readStop();
 
   ESP_LOGV(tagReadDS2408(), "dev_cmd after read start of buffer dump");
   ESP_LOG_BUFFER_HEX_LEVEL(tagReadDS2408(), dev_cmd, sizeof(dev_cmd),
@@ -812,13 +814,13 @@ bool mcrDS::readDS2413(dsDev_t *dev, positionsReading_t **reading) {
 
   uint8_t buff[] = {0x00, 0x00}; // byte 0-1: pio status bit assignment (x2)
 
-  dev->startRead();
+  dev->readStart();
   dev->copyAddrToCmd(cmd);
 
   owb_s = owb_write_bytes(_ds, cmd, sizeof(cmd));
 
   if (owb_s != OWB_STATUS_OK) {
-    dev->stopRead();
+    dev->readStop();
     ESP_LOGW(tagReadDS2413(), "failed to send read cmd owb_s=%d", owb_s);
     return rc;
   }
@@ -826,7 +828,7 @@ bool mcrDS::readDS2413(dsDev_t *dev, positionsReading_t **reading) {
   // fill buffer with bytes from DS2406, skipping the first byte
   // since the first byte is included in the CRC16
   owb_s = owb_read_bytes(_ds, buff, sizeof(buff));
-  dev->stopRead();
+  dev->readStop();
 
   if (owb_s != OWB_STATUS_OK) {
     ESP_LOGW(tagReadDS2413(), "failed to read cmd results owb_s=%d", owb_s);

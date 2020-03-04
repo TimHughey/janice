@@ -32,7 +32,7 @@ defmodule PulseWidthCmd do
     field(:refid, :string)
     field(:acked, :boolean)
     field(:orphan, :boolean)
-    field(:rt_latency_ms, :integer)
+    field(:rt_latency_us, :integer)
     field(:sent_at, :utc_datetime_usec)
     field(:ack_at, :utc_datetime_usec)
     belongs_to(:pwm, PulseWidth, foreign_key: :pwm_id)
@@ -41,7 +41,7 @@ defmodule PulseWidthCmd do
   end
 
   def acked?(refid) when is_binary(refid) do
-    cmd = find(refid)
+    cmd = find_refid(refid)
 
     if is_nil(cmd), do: false, else: cmd.acked
   end
@@ -52,12 +52,28 @@ defmodule PulseWidthCmd do
     |> ack_if_needed()
   end
 
+  # primary entry point when called from PulseWidth and an ack is needed
+  # checks the return code from the update to the PulseWidth
+  def ack_if_needed(
+        {:ok, %PulseWidth{log: log}},
+        %{cmdack: true, refid: refid} = m
+      )
+      when is_binary(refid) do
+    log &&
+      Logger.info(["attempting to ack refid: ", inspect(refid, pretty: true)])
+
+    find_refid(refid) |> ack_if_needed(m)
+  end
+
+  # primary entry point when called from PulseWidth and an ack is not needed
+  def ack_if_needed({:ok, %PulseWidth{}} = rc, %{}), do: rc
+
   def ack_if_needed(
         %PulseWidthCmd{sent_at: sent_at} = cmd,
         %{msg_recv_dt: recv_dt}
       ) do
     set = [
-      Timex.diff(recv_dt, sent_at, :microseconds),
+      rt_latency_us: Timex.diff(recv_dt, sent_at, :microseconds),
       acked: true,
       ack_at: utc_now()
     ]
@@ -70,10 +86,12 @@ defmodule PulseWidthCmd do
     {:not_found, refid}
   end
 
-  def ack_if_needed(%{cmdack: true, refid: refid} = m) when is_binary(refid),
-    do: find(refid) |> ack_if_needed(m)
+  def ack_if_needed(catchall) do
+    Logger.warn(["ack_if_needed() catchall: ", inspect(catchall, pretty: true)])
+    {:error, catchall}
+  end
 
-  def find(refid) when is_binary(refid),
+  def find_refid(refid) when is_binary(refid),
     do: Repo.get_by(__MODULE__, refid: refid) |> Repo.preload([:pwm])
 
   def reload(%PulseWidthCmd{id: id}), do: reload(id)
@@ -92,7 +110,7 @@ defmodule PulseWidthCmd do
   end
 
   def update(refid, opts) when is_binary(refid) and is_list(opts) do
-    pwmc = find(refid)
+    pwmc = find_refid(refid)
 
     if is_nil(pwmc), do: {:not_found, refid}, else: Repo.update(pwmc, opts)
   end
@@ -111,7 +129,7 @@ defmodule PulseWidthCmd do
       :refid,
       :acked,
       :orphan,
-      :rt_latency_ms,
+      :rt_latency_us,
       :sent_at,
       :ack_at
     ]
