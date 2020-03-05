@@ -55,20 +55,6 @@ config :mcp,
     {Janice.Scheduler, []}
   ]
 
-config(:mcp, Janitor,
-  switch_cmds: [
-    purge: true,
-    interval: {:mins, 2},
-    older_than: {:weeks, 1},
-    log: false
-  ],
-  orphan_acks: [interval: {:mins, 1}, older_than: {:mins, 1}, log: true]
-)
-
-config :mcp, MessageSave,
-  save: true,
-  delete: [all_at_startup: false, older_than: {:hrs, 12}]
-
 config :mcp, Mqtt.Client,
   log_dropped_msgs: true,
   tort_opts: [
@@ -123,5 +109,3 @@ config :mcp, Mcp.SoakTest,
   periodic_log_first: {:mins, 30},
   periodic_log: {:hrs, 1},
   flash_led: {:secs, 3}
-
-config :mcp, Switch, logCmdAck: false

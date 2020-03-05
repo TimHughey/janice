@@ -14,6 +14,15 @@ defmodule Janitor do
   @orphan_timer :orphan_timer
   @purge_timer :purge_timer
 
+  defmacro __using__([]) do
+    quote do
+      Logger.info([
+        "Janitor using: ",
+        inspect(__MODULE__, pretty: true)
+      ])
+    end
+  end
+
   def start_link(s) do
     defs = [
       switch_cmds: [
@@ -29,6 +38,7 @@ defmodule Janitor do
     opts = Map.put(opts, :switch_cmds, Enum.into(opts.switch_cmds, %{}))
     opts = Map.put(opts, :orphan_acks, Enum.into(opts.orphan_acks, %{}))
 
+    s = Map.put_new(s, :autostart, false)
     s = Map.put(s, :opts, opts)
     s = Map.put(s, @purge_timer, nil)
     s = Map.put(s, @orphan_timer, nil)
@@ -42,16 +52,14 @@ defmodule Janitor do
 
   ## Callbacks
 
-  def init(s)
-      when is_map(s) do
-    case Map.get(s, :autostart, false) do
-      true -> send_after(self(), {:startup}, 0)
-      false -> nil
-    end
+  # when autostart is true leverage handle_continue() to complete
+  # startup activities
+  def init(%{autostart: autostart} = s) do
+    Logger.info(["init(): ", inspect(s, pretty: true)])
 
-    Logger.info(["init()"])
-
-    {:ok, s}
+    if autostart == true,
+      do: {:ok, s, {:continue, {:startup}}},
+      else: {:ok, s}
   end
 
   @log_purge_cmd_msg :log_cmd_purge_msg
@@ -102,16 +110,17 @@ defmodule Janitor do
     {:reply, result, s}
   end
 
-  def handle_info({:startup}, s)
-      when is_map(s) do
-    opts = Map.get(s, :opts)
-
-    Logger.debug(["startup(), opts: ", inspect(opts, pretty: true)])
-
+  def handle_continue({:startup}, %{opts: _opts} = s) do
     Process.flag(:trap_exit, true)
 
     s = schedule_orphan(s, 0)
     s = schedule_purge(s, 0)
+
+    {:noreply, s}
+  end
+
+  def handle_continue(catchall, s) do
+    Logger.warn(["handle_continue(catchall): ", inspect(catchall, pretty: true)])
 
     {:noreply, s}
   end
@@ -133,13 +142,20 @@ defmodule Janitor do
     {:noreply, s}
   end
 
-  def handle_info({:EXIT, _pid, _reason} = msg, state) do
+  def handle_info({:EXIT, _pid, reason} = msg, state) do
     Logger.info([
       ":EXIT msg: ",
-      inspect(msg, pretty: true)
+      inspect(msg, pretty: true),
+      " reason: ",
+      inspect(reason, pretty: true)
     ])
 
     {:noreply, state}
+  end
+
+  def handle_info(catchall, s) do
+    Logger.warn(["handle_info(catchall): ", inspect(catchall, pretty: true)])
+    {:noreply, s}
   end
 
   #

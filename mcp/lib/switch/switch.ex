@@ -309,7 +309,7 @@ defmodule Switch do
         opts = %{last_seen_at: TimeSupport.from_unix(r.mtime)}
 
         opts =
-          if Map.get(r, :latency, 0) > 0,
+          if Map.get(r, :dev_latency_us, 0) > 0,
             do: Map.put(opts, :dev_latency, r.latency),
             else: opts
 

@@ -65,10 +65,6 @@ config(:mcp, Janitor,
   orphan_acks: [interval: {:mins, 1}, older_than: {:mins, 1}, log: true]
 )
 
-config :mcp, MessageSave,
-  save: true,
-  delete: [all_at_startup: true, older_than: {:hrs, 12}]
-
 config :mcp, Mqtt.Client,
   log_dropped_msg: true,
   runtime_metrics: true,

@@ -23,17 +23,26 @@ config :mcp,
     ota: {"prod/mcr/f/ota", 0}
   ]
 
-config :mcp, OTA,
-  url: [
-    host: "www.wisslanding.com",
-    uri: "janice/mcr_esp/firmware",
-    fw_file: "latest-mcr_esp.bin"
-  ]
-
 config :mcp, Janice.Scheduler,
   global: true,
   run_strategy: Quantum.RunStrategy.Local,
   timezone: "America/New_York"
+
+config(:mcp, Janitor,
+  # modules to call at startup (typically to purge cmds or ack orphans)
+  at_startup: [{PulseWidthCmd, :purge_cmds}],
+  switch_cmds: [
+    purge: true,
+    interval: {:mins, 2},
+    older_than: {:weeks, 1},
+    log: false
+  ],
+  orphan_acks: [interval: {:mins, 1}, older_than: {:mins, 1}, log: true]
+)
+
+config :mcp, MessageSave,
+  save: true,
+  purge: [all_at_startup: true, older_than: [minutes: 3]]
 
 config :mcp, Mqtt.InboundMessage,
   additional_message_flags: [
@@ -50,5 +59,19 @@ config :mcp, Mqtt.InboundMessage,
   switch_msgs: {Switch, :external_update},
   remote_msgs: {Remote, :external_update},
   pwm_msgs: {PulseWidth, :external_update}
+
+config :mcp, OTA,
+  url: [
+    host: "www.wisslanding.com",
+    uri: "janice/mcr_esp/firmware",
+    fw_file: "latest-mcr_esp.bin"
+  ]
+
+config :mcp, PulseWidthCmd,
+  log: [cmd_ack: false],
+  # the acked_before and sent_before lists are passed to Timex
+  # to created a shifted Timex.DateTime in UTC
+  purge: [acked_before: [days: 1]],
+  orphan: [sent_before: [seconds: 3], log: true]
 
 import_config "#{Mix.env()}.exs"

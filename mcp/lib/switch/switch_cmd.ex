@@ -70,8 +70,8 @@ defmodule SwitchCmd do
         {:not_found, refid}
 
       cmd ->
-        rt_latency = Timex.diff(recv_dt, cmd.sent_at, :microseconds)
-        rt_latency_ms = rt_latency / 1000.0
+        rt_latency_us = Timex.diff(recv_dt, cmd.sent_at, :microseconds)
+        rt_latency_ms = rt_latency_us / 1000.0
 
         log &&
           Logger.debug([
@@ -96,13 +96,13 @@ defmodule SwitchCmd do
 
         opts = %{
           acked: true,
-          rt_latency: rt_latency,
+          rt_latency: rt_latency_us,
           ack_at: utc_now()
         }
 
         RunMetric.record(
           module: "#{__MODULE__}",
-          metric: "switch_cmd_rt_latency_ms",
+          metric: "switch_cmd_rt_latency_us",
           device: cmd.name,
           val: opts.rt_latency,
           record: Map.get(m, :log_roundtrip_times, false)

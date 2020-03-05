@@ -554,7 +554,7 @@ defmodule Sensor do
        dev_latency:
          Map.get(
            r,
-           :read_us,
+           :dev_latency_us,
            Timex.diff(r.msg_recv_dt, TimeSupport.from_unix(r.mtime))
          )
      })
@@ -572,7 +572,7 @@ defmodule Sensor do
        dev_latency:
          Map.get(
            r,
-           :read_us,
+           :dev_latency_us,
            Timex.diff(r.msg_recv_dt, TimeSupport.from_unix(r.mtime))
          )
      })
@@ -589,7 +589,7 @@ defmodule Sensor do
        dev_latency:
          Map.get(
            r,
-           :read_us,
+           :dev_latency_us,
            Timex.diff(r.msg_recv_dt, TimeSupport.from_unix(r.mtime))
          )
      })

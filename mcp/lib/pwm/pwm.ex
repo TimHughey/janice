@@ -68,16 +68,16 @@ defmodule PulseWidth do
     end
   end
 
-  def add(%PulseWidth{name: _name, device: _device} = p) do
+  def add(%PulseWidth{name: _name, device: device} = p) do
     cs = changeset(p, Map.take(p, possible_changes()))
 
     with {:cs_valid, true} <- {:cs_valid, cs.valid?()},
-         {:ok, %PulseWidth{id: id}} <-
+         {:ok, %PulseWidth{id: _id}} <-
            Repo.insert(cs,
              on_conflict: :replace_all,
              conflict_target: :device
            ),
-         %PulseWidth{} = pwm <- find(id) do
+         %PulseWidth{} = pwm <- find_by_device(device) do
       {:ok, pwm}
     else
       {:cs_valid, false} ->

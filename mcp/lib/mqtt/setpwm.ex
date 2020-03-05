@@ -10,7 +10,7 @@ defmodule Mqtt.SetPulseWidth do
 
    ##Examples:
     iex> c = Mqtt.SetPulseWidth.new_cmd("device", 2048, "uuid")
-    ...> %Mqtt.SetPulseWidth{cmd: "pwm", mtime: cmd_time} = c
+    ...> %{cmd: "pwm", mtime: cmd_time} = c
     ...> (cmd_time > 0) and Map.has_key?(c, :duty)
     true
   """

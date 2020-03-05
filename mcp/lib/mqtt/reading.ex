@@ -277,13 +277,13 @@ defmodule Mqtt.Reading do
     ...>        "states": [{"pio": 0, "state": true},
     ...>                      {"pio": 1, "state": false}],
     ...>        "pio_count": 2,
-    ...>        "cmdack": true, "latency": 10, "refid": "uuid"})
+    ...>        "cmdack": true, "latency_us": 10, "refid": "uuid"})
     ...> Jason.decode!(json, keys: :atoms) |> Mqtt.Reading.cmdack?()
     true
   """
   def cmdack?(%{} = r) do
     cmdack = Map.get(r, :cmdack)
-    latency = Map.get(r, :latency)
+    latency = Map.get(r, :latency_us)
     refid = Map.get(r, :refid)
 
     switch?(r) and cmdack === true and latency > 0 and is_binary(refid)

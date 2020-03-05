@@ -46,12 +46,6 @@ defmodule PulseWidthCmd do
     if is_nil(cmd), do: false, else: cmd.acked
   end
 
-  def ack_now(refid, opts \\ []) when is_binary(refid) do
-    %{cmdack: true, refid: refid, msg_recv_dt: utc_now()}
-    |> Map.merge(Enum.into(opts, %{}))
-    |> ack_if_needed()
-  end
-
   # primary entry point when called from PulseWidth and an ack is needed
   # checks the return code from the update to the PulseWidth
   def ack_if_needed(
@@ -68,6 +62,7 @@ defmodule PulseWidthCmd do
   # primary entry point when called from PulseWidth and an ack is not needed
   def ack_if_needed({:ok, %PulseWidth{}} = rc, %{}), do: rc
 
+  # handles acking once the PulseWidthCmd has been retrieved
   def ack_if_needed(
         %PulseWidthCmd{sent_at: sent_at} = cmd,
         %{msg_recv_dt: recv_dt}
@@ -81,6 +76,7 @@ defmodule PulseWidthCmd do
     update(cmd, set)
   end
 
+  # error / unmatched function call handling
   def ack_if_needed(nil, %{refid: refid}) when is_binary(refid) do
     Logger.warn(["ack_if_needed() could not find refid: ", inspect(refid)])
     {:not_found, refid}
@@ -89,6 +85,12 @@ defmodule PulseWidthCmd do
   def ack_if_needed(catchall) do
     Logger.warn(["ack_if_needed() catchall: ", inspect(catchall, pretty: true)])
     {:error, catchall}
+  end
+
+  def ack_now(refid, opts \\ []) when is_binary(refid) do
+    %{cmdack: true, refid: refid, msg_recv_dt: utc_now()}
+    |> Map.merge(Enum.into(opts, %{}))
+    |> ack_if_needed()
   end
 
   def find_refid(refid) when is_binary(refid),

@@ -5,7 +5,10 @@ defmodule TimeSupportTest do
   use ExUnit.Case, async: false
   import ExUnit.CaptureLog
 
-  import Janice.TimeSupport, only: [ms: 1]
+  use Timex
+
+  import Janice.TimeSupport, only: [ms: 1, utc_now: 0, utc_shift: 1]
+  alias Janice.TimeSupport
 
   setup do
     :ok
@@ -73,5 +76,17 @@ defmodule TimeSupportTest do
 
     assert msg1 =~ "not supported"
     assert msg2 =~ "not supported"
+  end
+
+  test "can create a shifted UTC Timex.DateTime" do
+    shifted = utc_shift(hours: -1)
+
+    assert Timex.before?(shifted, utc_now())
+  end
+
+  test "can create a Duration from a list of opts" do
+    d = TimeSupport.list_to_duration(minutes: 1, seconds: 1)
+
+    assert Duration.to_seconds(d, truncate: true) == 61
   end
 end

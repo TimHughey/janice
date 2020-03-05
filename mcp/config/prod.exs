@@ -62,7 +62,7 @@ config :mcp, Janitor,
 
 config :mcp, MessageSave,
   save: false,
-  delete: [all_at_startup: true, older_than: {:days, 2}]
+  purge: [all_at_startup: true, older_than: [minutes: 3]]
 
 config :mcp, Mqtt.Client,
   log_dropped_msgs: true,

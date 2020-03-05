@@ -3,6 +3,7 @@ defmodule Mcp.ReadingTest do
   use ExUnit.Case, async: true
   import ExUnit.CaptureLog
   doctest Mqtt.Reading
+  doctest Mqtt.SetPulseWidth
 
   setup_all do
     :ok
@@ -12,7 +13,9 @@ defmodule Mcp.ReadingTest do
     json = ~s({"host": "other-macaddr", "device": "ds/28.0000",
         "mtime": 1506867918, "type": "temp", "tc": 20.0, "tf": 80.0})
 
-    fun = fn -> Jason.decode!(json, keys: :atoms) |> Mqtt.Reading.metadata?() end
+    fun = fn ->
+      Jason.decode!(json, keys: :atoms) |> Mqtt.Reading.metadata?()
+    end
 
     msg = capture_log(fun)
 
