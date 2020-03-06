@@ -43,26 +43,24 @@ typedef std::bitset<8> cmd_bitset_t;
 typedef class cmdSwitch cmdSwitch_t;
 class cmdSwitch : public mcrCmd {
 private:
-  // the device name as sent from mcp
-  string_t _external_dev_id;
-  // some devices have a global unique name (e.g. Dallas Semiconductor) while
-  // others don't (e.g. i2c).  this string is provided when translation is
-  // necessary.
-  string_t _internal_dev_id;
   cmd_bitset_t _mask;
   cmd_bitset_t _state;
-  mcrRefID_t _refid;
-  bool _ack = true; // default to true if ack is not set
 
 public:
   cmdSwitch(const cmdSwitch_t *cmd)
-      : mcrCmd(mcrCmdType::setswitch), _external_dev_id(cmd->_external_dev_id),
-        _internal_dev_id(cmd->_internal_dev_id), _mask(cmd->_mask),
-        _state(cmd->_state), _refid(cmd->_refid), _ack(cmd->_ack){};
+      : mcrCmd(mcrCmdType::setswitch), _mask(cmd->_mask), _state(cmd->_state) {
+    _external_dev_id = cmd->_external_dev_id;
+    _internal_dev_id = cmd->_internal_dev_id;
+
+    _refid = cmd->_refid;
+    _ack = cmd->_ack;
+  };
   cmdSwitch(JsonDocument &doc, elapsedMicros &parse);
   cmdSwitch(const string_t &id, cmd_bitset_t mask, cmd_bitset_t state)
-      : mcrCmd(mcrCmdType::setswitch), _external_dev_id(id),
-        _internal_dev_id(id), _mask(mask), _state(state){};
+      : mcrCmd(mcrCmdType::setswitch), _mask(mask), _state(state) {
+    _external_dev_id = id;
+    _internal_dev_id = id;
+  };
 
   cmd_bitset_t mask() { return _mask; };
   bool process();
