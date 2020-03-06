@@ -10,6 +10,7 @@ defmodule PulseWidthCmd do
 
   # import Ecto.Query, only: [from: 2]
 
+  import Application, only: [get_env: 3]
   import Ecto.Changeset
 
   #   only: [
@@ -67,12 +68,13 @@ defmodule PulseWidthCmd do
         %{msg_recv_dt: recv_dt}
       ) do
     set = [
-      rt_latency_us: Timex.diff(recv_dt, sent_at, :microseconds),
+      rt_latency_us: Timex.diff(recv_dt, sent_at, :microsecond),
       acked: true,
       ack_at: utc_now()
     ]
 
     update(cmd, set)
+    |> Janitor.untrack()
   end
 
   # error / unmatched function call handling
@@ -92,6 +94,24 @@ defmodule PulseWidthCmd do
     |> ack_if_needed()
   end
 
+  def add(%PulseWidth{} = pwm, %DateTime{} = dt) do
+    opts =
+      get_env(:mcp, PulseWidthCmd,
+        # default config in case unset in Application env
+        orphan: [sent_before: [seconds: 5], log: true]
+      )
+      |> Keyword.put(:possible_orphaned_fn, &possible_orphan/1)
+
+    Ecto.build_assoc(
+      pwm,
+      :cmds,
+      sent_at: dt
+    )
+    |> Repo.insert!()
+    |> PulseWidthCmd.reload()
+    |> Janitor.track(opts)
+  end
+
   def find_refid(refid),
     do: Repo.get_by(__MODULE__, refid: refid) |> Repo.preload([:pwm])
 
@@ -108,6 +128,19 @@ defmodule PulseWidthCmd do
     |> cast(params, possible_changes())
     |> validate_required(possible_changes())
     |> unique_constraint(:refid, name: :pwm_cmd_refid_index)
+  end
+
+  # if the cmd has not been acked then it is an orphan
+  def orphan(%PulseWidthCmd{acked: false} = cmd) do
+    {:orphan, update(cmd, acked: true, ack_at: utc_now(), orphan: true)}
+  end
+
+  def orphan(%PulseWidthCmd{acked: true} = cmd) do
+    {:acked, {:ok, cmd}}
+  end
+
+  def possible_orphan(%PulseWidthCmd{} = cmd) do
+    cmd |> reload() |> orphan()
   end
 
   def update(refid, opts) when is_binary(refid) and is_list(opts) do

@@ -6,8 +6,13 @@ defmodule Mcp.Application do
   import Application, only: [get_env: 2, get_env: 3, put_env: 3]
   import Keyword, only: [has_key?: 2]
 
+  @log_opts get_env(:mcp, Mcp.Application, []) |> Keyword.get(:log, [])
+
   def start(_type, args) do
-    Logger.info(["start() ", inspect(args, pretty: true)])
+    log = Keyword.get(@log_opts, :init, true)
+
+    log &&
+      Logger.info(["start() ", inspect(args, pretty: true)])
 
     build_env = Keyword.get(args, :build_env, "dev")
 
@@ -19,7 +24,8 @@ defmodule Mcp.Application do
       end
       |> List.flatten()
 
-    Logger.info(["will start: ", inspect(children, pretty: true)])
+    log &&
+      Logger.info(["will start: ", inspect(children, pretty: true)])
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options

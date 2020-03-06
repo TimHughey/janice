@@ -65,7 +65,10 @@ defmodule MessageSave do
   end
 
   def init(%{autostart: autostart, opts: opts} = s) do
-    Logger.info(["init() state: ", inspect(s, pretty: true)])
+    log = Keyword.get(opts, :log, []) |> Keyword.get(:init, true)
+
+    log &&
+      Logger.info(["init() state: ", inspect(s, pretty: true)])
 
     delete_all = get_in(opts, [:purge, :all_at_startup])
 
@@ -134,11 +137,14 @@ defmodule MessageSave do
   end
 
   defp log_delete(r) when is_list(r) do
+    log =
+      get_env(:mcp, MessageSave, purge: [log: false]) |> get_in([:purge, :log])
+
     prepend = Keyword.get(r, :prepend, "<unspecified>")
     deleted = Keyword.get(r, :deleted, 0)
     failed = Keyword.get(r, :failed, 0)
 
-    if deleted > 0 or failed > 0,
+    if log == true and (deleted > 0 or failed > 0),
       do:
         Logger.info([
           prepend,

@@ -7,17 +7,24 @@ defmodule Janice.TimeSupport do
     utc_now() |> Timex.shift(milliseconds: ms(x) * -1)
   end
 
+  def duration_from_list(opts), do: list_to_duration(opts)
+
   def from_unix(mtime) do
     {:ok, dt} = DateTime.from_unix(mtime)
     Timex.shift(dt, microseconds: 1) |> Timex.shift(microseconds: -1)
   end
 
   def list_to_duration(opts) when is_list(opts) do
+    # since there wasn't a capability with Timex.Duration, that I could
+    # find after hours of research, we use multiple Timex functions to
+    # create the Duration
     ~U[0000-01-01 00:00:00Z]
     |> Timex.shift(Keyword.take(opts, valid_duration_opts()))
     |> Timex.to_gregorian_microseconds()
     |> Duration.from_microseconds()
   end
+
+  def list_to_duration(_anything), do: 0
 
   def ms({:ms, x}) when is_number(x), do: x |> round()
   def ms({:secs, x}) when is_number(x), do: (x * 1000) |> round()
@@ -34,21 +41,21 @@ defmodule Janice.TimeSupport do
 
   def ttl_expired?(at, ttl_ms) when is_integer(ttl_ms) do
     shift_ms = ttl_ms * -1
-    ttl_dt = DateTime.utc_now() |> Timex.shift(milliseconds: shift_ms)
+    ttl_dt = Timex.now() |> Timex.shift(milliseconds: shift_ms)
 
     Timex.before?(at, ttl_dt)
   end
 
   def unix_now do
-    DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+    Timex.now() |> DateTime.to_unix(:microsecond)
   end
 
   def unix_now(unit) when is_atom(unit) do
-    DateTime.utc_now() |> DateTime.to_unix(unit)
+    Timex.now() |> DateTime.to_unix(unit)
   end
 
   def utc_now do
-    DateTime.utc_now()
+    Timex.now()
   end
 
   def utc_shift(opts) when is_list(opts) do

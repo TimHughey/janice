@@ -23,12 +23,15 @@ config :mcp,
     ota: {"prod/mcr/f/ota", 0}
   ]
 
+config :mcp, Mcp.Application, log: [init: false]
+
 config :mcp, Janice.Scheduler,
   global: true,
   run_strategy: Quantum.RunStrategy.Local,
   timezone: "America/New_York"
 
 config(:mcp, Janitor,
+  log: [init: false],
   # modules to call at startup (typically to purge cmds or ack orphans)
   at_startup: [{PulseWidthCmd, :purge_cmds}],
   switch_cmds: [
@@ -41,8 +44,9 @@ config(:mcp, Janitor,
 )
 
 config :mcp, MessageSave,
+  log: [init: false],
   save: true,
-  purge: [all_at_startup: true, older_than: [minutes: 3]]
+  purge: [all_at_startup: true, older_than: [minutes: 3], log: false]
 
 config :mcp, Mqtt.InboundMessage,
   additional_message_flags: [
@@ -72,6 +76,6 @@ config :mcp, PulseWidthCmd,
   # the acked_before and sent_before lists are passed to Timex
   # to created a shifted Timex.DateTime in UTC
   purge: [acked_before: [days: 1]],
-  orphan: [sent_before: [seconds: 3], log: true]
+  orphan: [sent_before: [seconds: 3], log: false]
 
 import_config "#{Mix.env()}.exs"

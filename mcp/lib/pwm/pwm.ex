@@ -105,14 +105,7 @@ defmodule PulseWidth do
   def add(catchall), do: {:bad_args, catchall}
 
   def add_cmd(%PulseWidth{} = pwm, %DateTime{} = dt) do
-    cmd =
-      Ecto.build_assoc(
-        pwm,
-        :cmds,
-        sent_at: dt
-      )
-      |> Repo.insert!()
-      |> PulseWidthCmd.reload()
+    cmd = PulseWidthCmd.add(pwm, dt)
 
     {rc, pwm} = update(pwm, last_cmd_at: dt)
 
