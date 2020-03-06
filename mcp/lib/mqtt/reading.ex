@@ -283,7 +283,7 @@ defmodule Mqtt.Reading do
   """
   def cmdack?(%{} = r) do
     cmdack = Map.get(r, :cmdack)
-    latency = Map.get(r, :latency_us)
+    latency = Map.get(r, :dev_latency_us)
     refid = Map.get(r, :refid)
 
     switch?(r) and cmdack === true and latency > 0 and is_binary(refid)
