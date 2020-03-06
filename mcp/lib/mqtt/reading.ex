@@ -277,7 +277,7 @@ defmodule Mqtt.Reading do
     ...>        "states": [{"pio": 0, "state": true},
     ...>                      {"pio": 1, "state": false}],
     ...>        "pio_count": 2,
-    ...>        "cmdack": true, "latency_us": 10, "refid": "uuid"})
+    ...>        "cmdack": true, "dev_latency_us": 10, "refid": "uuid"})
     ...> Jason.decode!(json, keys: :atoms) |> Mqtt.Reading.cmdack?()
     true
   """

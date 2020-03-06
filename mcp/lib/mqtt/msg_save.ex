@@ -99,7 +99,7 @@ defmodule MessageSave do
     do: {:reply, opts, s}
 
   def handle_call({@set_save_msg, x}, _from, %{opts: opts} = s),
-    do: {:reply, :ok, Map.put(opts, :save, x) |> Map.put(s, :opts)}
+    do: {:reply, :ok, Keyword.put(opts, :save, x) |> Map.put(s, :opts)}
 
   def handle_cast(
         {@save_msg, direction, payload, dropped},
