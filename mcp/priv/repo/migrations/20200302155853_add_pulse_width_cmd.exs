@@ -7,6 +7,7 @@ defmodule Repo.Migrations.AddPulseWidthCmd do
     current_time = fragment(~s/(now() at time zone 'utc')/)
 
     drop_if_exists(table(:pwm_cmd))
+    drop_if_exists(index(:pwm_cmd, [:acked]))
 
     create_if_not_exists table(:pwm_cmd) do
       add(
@@ -14,7 +15,7 @@ defmodule Repo.Migrations.AddPulseWidthCmd do
         references(:pwm, on_delete: :delete_all, on_update: :update_all)
       )
 
-      add(:refid, :string, size: 40, null: false)
+      add(:refid, :uuid)
       add(:acked, :boolean, null: false, default: false)
       add(:orphan, :boolean, null: false, default: false)
       add(:rt_latency_us, :integer, null: false, default: 0)
@@ -24,6 +25,7 @@ defmodule Repo.Migrations.AddPulseWidthCmd do
       timestamps()
     end
 
+    create_if_not_exists(index(:pwm_cmd, [:acked]))
     create_if_not_exists(index(:pwm_cmd, [:refid], unique: true))
   end
 end

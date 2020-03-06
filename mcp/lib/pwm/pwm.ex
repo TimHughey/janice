@@ -17,7 +17,6 @@ defmodule PulseWidth do
     ]
 
   import Ecto.Query, only: [from: 2]
-  import UUID, only: [uuid1: 0]
 
   import Janice.Common.DB, only: [name_regex: 0]
   import Janice.TimeSupport, only: [from_unix: 1, ttl_expired?: 2, utc_now: 0]
@@ -106,19 +105,18 @@ defmodule PulseWidth do
   def add(catchall), do: {:bad_args, catchall}
 
   def add_cmd(%PulseWidth{} = pwm, %DateTime{} = dt) do
-    refid = uuid1()
-
-    Ecto.build_assoc(
-      pwm,
-      :cmds,
-      refid: refid,
-      sent_at: dt
-    )
-    |> Repo.insert!()
+    cmd =
+      Ecto.build_assoc(
+        pwm,
+        :cmds,
+        sent_at: dt
+      )
+      |> Repo.insert!()
+      |> PulseWidthCmd.reload()
 
     {rc, pwm} = update(pwm, last_cmd_at: dt)
 
-    cmd_query = from(c in PulseWidthCmd, where: c.refid == ^refid)
+    cmd_query = from(c in PulseWidthCmd, where: c.refid == ^cmd.refid)
 
     if rc == :ok,
       do: {:ok, Repo.preload(pwm, cmds: cmd_query)},

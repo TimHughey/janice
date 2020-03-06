@@ -29,7 +29,7 @@ defmodule PulseWidthCmd do
   # alias Mqtt.SetSwitch
 
   schema "pwm_cmd" do
-    field(:refid, :string)
+    field(:refid, Ecto.UUID, autogenerate: true)
     field(:acked, :boolean)
     field(:orphan, :boolean)
     field(:rt_latency_us, :integer)
@@ -40,7 +40,7 @@ defmodule PulseWidthCmd do
     timestamps(usec: true)
   end
 
-  def acked?(refid) when is_binary(refid) do
+  def acked?(refid) do
     cmd = find_refid(refid)
 
     if is_nil(cmd), do: false, else: cmd.acked
@@ -51,8 +51,7 @@ defmodule PulseWidthCmd do
   def ack_if_needed(
         {:ok, %PulseWidth{log: log}},
         %{cmdack: true, refid: refid} = m
-      )
-      when is_binary(refid) do
+      ) do
     log &&
       Logger.info(["attempting to ack refid: ", inspect(refid, pretty: true)])
 
@@ -77,7 +76,7 @@ defmodule PulseWidthCmd do
   end
 
   # error / unmatched function call handling
-  def ack_if_needed(nil, %{refid: refid}) when is_binary(refid) do
+  def ack_if_needed(nil, %{refid: refid}) do
     Logger.warn(["ack_if_needed() could not find refid: ", inspect(refid)])
     {:not_found, refid}
   end
@@ -87,13 +86,13 @@ defmodule PulseWidthCmd do
     {:error, catchall}
   end
 
-  def ack_now(refid, opts \\ []) when is_binary(refid) do
+  def ack_now(refid, opts \\ []) do
     %{cmdack: true, refid: refid, msg_recv_dt: utc_now()}
     |> Map.merge(Enum.into(opts, %{}))
     |> ack_if_needed()
   end
 
-  def find_refid(refid) when is_binary(refid),
+  def find_refid(refid),
     do: Repo.get_by(__MODULE__, refid: refid) |> Repo.preload([:pwm])
 
   def reload(%PulseWidthCmd{id: id}), do: reload(id)
