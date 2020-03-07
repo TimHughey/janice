@@ -1,4 +1,6 @@
-#include "cmds/cmd_factory.hpp"
+#include "cmds/factory.hpp"
+
+namespace mcr {
 
 // {"switch":"ds/12328621000000",
 // "states":[{"state":false,"pio":1}],
@@ -83,3 +85,4 @@ mcrCmd_t *mcrCmdFactory::fromJSON(JsonDocument &doc, rawMsg_t *raw) {
 
   return cmd;
 }
+} // namespace mcr

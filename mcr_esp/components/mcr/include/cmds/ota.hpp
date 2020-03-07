@@ -1,5 +1,5 @@
 /*
-    cmd_base.hpp - Master Control Command Queues Class
+    ota.hpp - Master Control Command OTA Class
     Copyright (C) 2017  Tim Hughey
 
     This program is free software: you can redistribute it and/or modify
@@ -18,41 +18,56 @@
     https://www.wisslanding.com
 */
 
-#ifndef mcr_cmd_queues_h
-#define mcr_cmd_queues_h
+#ifndef mcr_cmd_ota_h
+#define mcr_cmd_ota_h
 
 #include <cstdlib>
 #include <memory>
 #include <string>
 
-#include <esp_log.h>
+#include <esp_http_client.h>
+#include <esp_https_ota.h>
+#include <esp_ota_ops.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
 #include <sys/time.h>
 #include <time.h>
 
+#include "cmds/base.hpp"
+#include "cmds/types.hpp"
 #include "misc/mcr_types.hpp"
 
 using std::unique_ptr;
 
 namespace mcr {
 
-typedef class mcrCmdQueues mcrCmdQueues_t;
-class mcrCmdQueues {
+typedef class mcrCmdOTA mcrCmdOTA_t;
+class mcrCmdOTA : public mcrCmd {
 private:
-  std::vector<cmdQueue_t> _queues;
+  rawMsg_t *_raw = nullptr;
+  std::string _host;
+  std::string _head;
+  std::string _stable;
+  std::string _partition;
+  std::string _fw_url;
+  int _delay_ms = 0;
+  int _start_delay_ms = 0;
+  int _reboot_delay_ms = 0;
 
-  mcrCmdQueues(){}; // SINGLETON!
+  void doUpdate();
+
+  static esp_err_t httpEventHandler(esp_http_client_event_t *evt);
 
 public:
-  void add(cmdQueue_t &cmd_q) { _queues.push_back(cmd_q); };
-  static std::vector<cmdQueue_t> &all() { return instance()->queues(); };
-  static mcrCmdQueues_t *instance();
-  std::vector<cmdQueue_t> &queues() { return _queues; };
-  static void registerQ(cmdQueue_t &cmd_q);
+  mcrCmdOTA(mcrCmdType_t type, JsonDocument &doc, elapsedMicros &parse);
+  ~mcrCmdOTA(){};
+
+  bool process();
+  uint32_t reboot_delay_ms() { return _reboot_delay_ms; };
 
   const unique_ptr<char[]> debug();
 };
+
 } // namespace mcr
 
 #endif

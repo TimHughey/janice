@@ -1,6 +1,6 @@
 /*
-    cmd_base.hpp - Master Control Command Factory Class
-    Copyright (C) 2017  Tim Hughey
+    cmd_pwm.hpp - Master Control Remote Command PWM Class
+    Copyright (C) 2020  Tim Hughey
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -18,36 +18,48 @@
     https://www.wisslanding.com
 */
 
-#ifndef mcr_cmd_factory_h
-#define mcr_cmd_factory_h
+#ifndef mcr_cmd_pwm_hpp
+#define mcr_cmd_pwm_hpp
 
 #include <cstdlib>
+#include <memory>
 #include <string>
-#include <vector>
 
-#include <esp_log.h>
 #include <freertos/FreeRTOS.h>
 #include <sys/time.h>
 #include <time.h>
 
-#include "cmds/cmd_base.hpp"
-#include "cmds/cmd_network.hpp"
-#include "cmds/cmd_ota.hpp"
-#include "cmds/cmd_pwm.hpp"
-#include "cmds/cmd_switch.hpp"
-#include "cmds/cmd_types.hpp"
-#include "external/ArduinoJson.hpp"
+#include "cmds/base.hpp"
+#include "misc/elapsedMillis.hpp"
 #include "misc/mcr_types.hpp"
 
-typedef class mcrCmdFactory mcrCmdFactory_t;
-class mcrCmdFactory {
+using std::unique_ptr;
+
+namespace mcr {
+
+typedef class cmdPWM cmdPWM_t;
+class cmdPWM : public mcrCmd {
 private:
-  mcrCmd_t *fromJSON(JsonDocument &doc, rawMsg_t *raw);
+  uint32_t _duty;
 
 public:
-  mcrCmdFactory();
+  cmdPWM(const cmdPWM_t *cmd) : mcrCmd{cmd}, _duty(cmd->_duty){};
 
-  mcrCmd_t *fromRaw(JsonDocument &doc, rawMsg_t *raw);
+  cmdPWM(JsonDocument &doc, elapsedMicros &parse);
+  cmdPWM(const string_t &id, uint32_t duty)
+      : mcrCmd(mcrCmdType::pwm), _duty(duty) {
+    _external_dev_id = id;
+    _internal_dev_id = id;
+  };
+
+  uint32_t duty() { return _duty; };
+
+  bool IRAM_ATTR process();
+
+  size_t size() { return sizeof(cmdPWM_t); };
+
+  const unique_ptr<char[]> debug();
 };
+} // namespace mcr
 
 #endif

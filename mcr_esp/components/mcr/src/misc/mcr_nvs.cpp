@@ -21,6 +21,7 @@
 #include "misc/mcr_nvs.hpp"
 #include "protocols/mqtt.hpp"
 
+namespace mcr {
 static mcrNVS_t *__singleton__ = nullptr;
 static const char TAG[] = "mcrNVS";
 
@@ -214,3 +215,4 @@ void mcrNVS::zeroBuffers() {
   if (_time_str != nullptr)
     bzero(_time_str, _time_str_max_len);
 }
+} // namespace mcr

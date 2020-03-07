@@ -1,5 +1,5 @@
 /*
-    cmd_base.hpp - Master Control Command Base Class
+    queues.hpp - Master Control Command Queues Class
     Copyright (C) 2017  Tim Hughey
 
     This program is free software: you can redistribute it and/or modify
@@ -18,51 +18,41 @@
     https://www.wisslanding.com
 */
 
-#ifndef mcr_cmd_types_h
-#define mcr_cmd_types_h
+#ifndef mcr_cmd_queues_h
+#define mcr_cmd_queues_h
 
-#include <bitset>
 #include <cstdlib>
-#include <map>
+#include <memory>
 #include <string>
 
 #include <esp_log.h>
 #include <freertos/FreeRTOS.h>
+#include <freertos/queue.h>
 #include <sys/time.h>
 #include <time.h>
 
-#include "devs/base.hpp"
 #include "misc/mcr_types.hpp"
 
-typedef enum class mcrCmdType {
-  unknown,
-  none,
-  timesync,
-  setswitch,
-  heartbeat,
-  setname,
-  restart,
-  enginesSuspend,
-  otaHTTPS,
-  pwm
-} mcrCmdType_t;
+using std::unique_ptr;
 
-typedef class mcrCmdTypeMap mcrCmdTypeMap_t;
-class mcrCmdTypeMap {
-public:
-  static mcrCmdTypeMap_t *instance();
-  static mcrCmdType_t fromByte(char byte) {
-    return instance()->decodeByte(byte);
-  }
-  static mcrCmdType_t fromString(const std::string &cmd) {
-    return instance()->find(cmd);
-  }
+namespace mcr {
 
+typedef class mcrCmdQueues mcrCmdQueues_t;
+class mcrCmdQueues {
 private:
-  mcrCmdTypeMap();
+  std::vector<cmdQueue_t> _queues;
 
-  mcrCmdType_t decodeByte(char byte);
-  mcrCmdType_t find(const std::string &cmd);
+  mcrCmdQueues(){}; // SINGLETON!
+
+public:
+  void add(cmdQueue_t &cmd_q) { _queues.push_back(cmd_q); };
+  static std::vector<cmdQueue_t> &all() { return instance()->queues(); };
+  static mcrCmdQueues_t *instance();
+  std::vector<cmdQueue_t> &queues() { return _queues; };
+  static void registerQ(cmdQueue_t &cmd_q);
+
+  const unique_ptr<char[]> debug();
 };
+} // namespace mcr
 
 #endif

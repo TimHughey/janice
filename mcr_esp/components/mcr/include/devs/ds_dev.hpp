@@ -28,6 +28,8 @@
 
 using std::unique_ptr;
 
+namespace mcr {
+
 typedef class dsDev dsDev_t;
 
 class dsDev : public mcrDev {
@@ -76,5 +78,7 @@ public:
 };
 
 typedef class dsDev dsDev_t;
+
+} // namespace mcr
 
 #endif // ds_dev_h

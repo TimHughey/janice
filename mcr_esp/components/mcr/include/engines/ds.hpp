@@ -18,8 +18,8 @@
     https://www.wisslanding.com
 */
 
-#ifndef mcr_ds_engine_h
-#define mcr_ds_engine_h
+#ifndef mcr_ds_engine_hpp
+#define mcr_ds_engine_hpp
 
 #include <cstdlib>
 #include <map>
@@ -33,13 +33,11 @@
 #include <freertos/task.h>
 #include <sdkconfig.h>
 
-#include "cmds/cmd_switch.hpp"
 #include "devs/ds_dev.hpp"
 #include "drivers/owb.h"
+// #include "drivers/owb_gpio.h"
 #include "drivers/owb_rmt.h"
 #include "engines/engine.hpp"
-#include "misc/mcr_types.hpp"
-#include "protocols/mqtt.hpp"
 
 namespace mcr {
 

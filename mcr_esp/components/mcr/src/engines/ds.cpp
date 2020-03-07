@@ -32,18 +32,7 @@
 #include <freertos/task.h>
 #include <sdkconfig.h>
 
-#include "cmds/cmd_queues.hpp"
-#include "cmds/cmd_switch.hpp"
-#include "devs/base.hpp"
-#include "devs/ds_dev.hpp"
-#include "drivers/owb.h"
-#include "drivers/owb_gpio.h"
-#include "engines/ds_engine.hpp"
-#include "engines/engine.hpp"
-#include "misc/elapsedMillis.hpp"
-#include "misc/mcr_types.hpp"
-#include "net/mcr_net.hpp"
-#include "protocols/mqtt.hpp"
+#include "engines/ds.hpp"
 
 namespace mcr {
 

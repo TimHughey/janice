@@ -31,11 +31,13 @@
 #include <freertos/queue.h>
 
 // MCR specific includes
-#include "cmds/cmd_factory.hpp"
+#include "cmds/factory.hpp"
 #include "misc/mcr_types.hpp"
 #include "net/mcr_net.hpp"
 #include "protocols/mqtt_in.hpp"
 #include "readings/readings.hpp"
+
+namespace mcr {
 
 static char TAG[] = "mcrMQTTin";
 
@@ -105,3 +107,4 @@ void mcrMQTTin::core(void *data) {
     }
   } // infinite loop to process inbound MQTT messages
 }
+} // namespace mcr

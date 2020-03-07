@@ -1,5 +1,7 @@
-#include "cmds/cmd_network.hpp"
+#include "cmds/network.hpp"
 #include "net/mcr_net.hpp"
+
+namespace mcr {
 
 static const char *TAG = "mcrCmdNetwork";
 static const char *k_host = "host";
@@ -34,3 +36,4 @@ const unique_ptr<char[]> mcrCmdNetwork::debug() {
 
   return move(debug_str);
 }
+} // namespace mcr

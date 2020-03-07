@@ -1,7 +1,9 @@
-#include "cmds/cmd_base.hpp"
+#include "cmds/base.hpp"
 
 using std::move;
 using std::unique_ptr;
+
+namespace mcr {
 
 // static const char *TAG = "mcrCmd";
 static const char *k_mtime = "mtime";
@@ -14,6 +16,22 @@ mcrCmd::mcrCmd(JsonDocument &doc, elapsedMicros &e) : _parse_elapsed(e) {
 mcrCmd::mcrCmd(mcrCmdType_t type) {
   _mtime = time(nullptr);
   _type = type;
+}
+
+// BASE CLASS copy from a pointer to a mcrCmd_t
+mcrCmd::mcrCmd(const mcrCmd_t *cmd) {
+  // PRIVATE MEMBERS
+  _mtime = cmd->_mtime;
+  _type = cmd->_type;
+
+  // PROTECTED MEMBERS
+  _external_dev_id = cmd->_external_dev_id;
+  _internal_dev_id = cmd->_internal_dev_id;
+  _refid = cmd->_refid;
+  _ack = cmd->_ack;
+  _parse_elapsed = cmd->_parse_elapsed;
+  _create_elapsed = cmd->_create_elapsed;
+  _latency_us = cmd->_latency_us;
 }
 
 mcrCmd::mcrCmd(mcrCmdType_t type, JsonDocument &doc, elapsedMicros &e)
@@ -108,3 +126,4 @@ const unique_ptr<char[]> mcrCmd::debug() {
 
   return move(debug_str);
 }
+} // namespace mcr

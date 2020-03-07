@@ -32,12 +32,8 @@
 #include <freertos/task.h>
 #include <sdkconfig.h>
 
-#include "devs/addr.hpp"
 #include "devs/i2c_dev.hpp"
 #include "engines/engine.hpp"
-#include "engines/i2c_engine.hpp"
-#include "misc/mcr_types.hpp"
-#include "protocols/mqtt.hpp"
 
 namespace mcr {
 

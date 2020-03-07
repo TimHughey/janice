@@ -30,12 +30,16 @@
 #include <freertos/task.h>
 #include <sdkconfig.h>
 
-#include "cmds/cmd_queues.hpp"
-#include "cmds/cmd_switch.hpp"
+#include "cmds/queues.hpp"
+#include "cmds/switch.hpp"
 #include "devs/base.hpp"
 #include "engines/types.hpp"
 #include "misc/elapsedMillis.hpp"
+#include "misc/hw_config.hpp"
+#include "misc/mcr_nvs.hpp"
+#include "misc/mcr_restart.hpp"
 #include "misc/mcr_types.hpp"
+#include "net/mcr_net.hpp"
 #include "protocols/mqtt.hpp"
 #include "readings/readings.hpp"
 

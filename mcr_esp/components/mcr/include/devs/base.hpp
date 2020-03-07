@@ -38,7 +38,8 @@
 #include "readings/readings.hpp"
 
 using std::unique_ptr;
-using namespace mcr;
+
+namespace mcr {
 
 typedef class mcrDev mcrDev_t;
 class mcrDev {
@@ -140,5 +141,6 @@ protected:
   int _write_errors = 0;
   int _missing_secs = 15;
 };
+} // namespace mcr
 
 #endif // mcrDev_h

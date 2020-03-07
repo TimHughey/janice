@@ -1,5 +1,5 @@
 /*
-    cmd_base.hpp - Master Control Command Network Class
+    factory.hpp - Master Control Command Factory Class
     Copyright (C) 2017  Tim Hughey
 
     This program is free software: you can redistribute it and/or modify
@@ -18,37 +18,40 @@
     https://www.wisslanding.com
 */
 
-#ifndef mcr_cmd_network_h
-#define mcr_cmd_network_h
+#ifndef mcr_cmd_factory_h
+#define mcr_cmd_factory_h
 
 #include <cstdlib>
-#include <memory>
 #include <string>
+#include <vector>
 
+#include <esp_log.h>
 #include <freertos/FreeRTOS.h>
-#include <freertos/queue.h>
 #include <sys/time.h>
 #include <time.h>
 
-#include "cmds/cmd_base.hpp"
-#include "cmds/cmd_types.hpp"
+#include "cmds/base.hpp"
+#include "cmds/network.hpp"
+#include "cmds/ota.hpp"
+#include "cmds/pwm.hpp"
+#include "cmds/switch.hpp"
+#include "cmds/types.hpp"
+#include "external/ArduinoJson.hpp"
 #include "misc/mcr_types.hpp"
 
-using std::unique_ptr;
+namespace mcr {
 
-typedef class mcrCmdNetwork mcrCmdNetwork_t;
-class mcrCmdNetwork : public mcrCmd {
+typedef class mcrCmdFactory mcrCmdFactory_t;
+class mcrCmdFactory {
 private:
-  string_t _host;
-  string_t _name;
+  mcrCmd_t *fromJSON(JsonDocument &doc, rawMsg_t *raw);
 
 public:
-  mcrCmdNetwork(JsonDocument &doc, elapsedMicros &e);
-  ~mcrCmdNetwork(){};
+  mcrCmdFactory();
 
-  bool process();
-  virtual size_t size() { return sizeof(mcrCmdNetwork_t); };
-  const unique_ptr<char[]> debug();
+  mcrCmd_t *fromRaw(JsonDocument &doc, rawMsg_t *raw);
 };
+
+} // namespace mcr
 
 #endif

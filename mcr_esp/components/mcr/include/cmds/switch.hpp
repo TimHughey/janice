@@ -1,5 +1,5 @@
 /*
-    cmd_base.hpp - Master Control Command Switch Class
+    switch.hpp - Master Control Command Switch Class
     Copyright (C) 2017  Tim Hughey
 
     This program is free software: you can redistribute it and/or modify
@@ -18,8 +18,8 @@
     https://www.wisslanding.com
 */
 
-#ifndef mcr_cmd_switch_h
-#define mcr_cmd_switch_h
+#ifndef mcr_cmd_switch_hpp
+#define mcr_cmd_switch_hpp
 
 #include <bitset>
 #include <cstdlib>
@@ -30,7 +30,7 @@
 #include <sys/time.h>
 #include <time.h>
 
-#include "cmds/cmd_base.hpp"
+#include "cmds/base.hpp"
 #include "misc/elapsedMillis.hpp"
 #include "misc/mcr_types.hpp"
 
@@ -47,14 +47,13 @@ private:
   cmd_bitset_t _state;
 
 public:
+  // DERIVED CLASS copy from a pointer to a cmdSwitch_t
+  // NOTE:  the BASE CLASS is leveraged for base class members
+  //        and is called (mcrCmd{cmd}) before setting the DERIVED class
+  //        members via the initialization list
   cmdSwitch(const cmdSwitch_t *cmd)
-      : mcrCmd(mcrCmdType::setswitch), _mask(cmd->_mask), _state(cmd->_state) {
-    _external_dev_id = cmd->_external_dev_id;
-    _internal_dev_id = cmd->_internal_dev_id;
+      : mcrCmd{cmd}, _mask(cmd->_mask), _state(cmd->_state){};
 
-    _refid = cmd->_refid;
-    _ack = cmd->_ack;
-  };
   cmdSwitch(JsonDocument &doc, elapsedMicros &parse);
   cmdSwitch(const string_t &id, cmd_bitset_t mask, cmd_bitset_t state)
       : mcrCmd(mcrCmdType::setswitch), _mask(mask), _state(state) {

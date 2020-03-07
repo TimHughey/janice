@@ -34,6 +34,8 @@
 #include "drivers/owb.h"
 #include "misc/mcr_types.hpp"
 
+namespace mcr {
+
 dsDev::dsDev(mcrDevAddr_t &addr, bool power) : mcrDev(addr) {
   char buff[_id_len] = {0x00};
   // byte   0: 8-bit family code
@@ -179,3 +181,4 @@ const unique_ptr<char[]> dsDev::debug() {
 
   return move(debug_str);
 }
+} // namespace mcr

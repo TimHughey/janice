@@ -1,6 +1,6 @@
 
-#include "cmds/cmd_pwm.hpp"
-#include "cmds/cmd_queues.hpp"
+#include "cmds/pwm.hpp"
+#include "cmds/queues.hpp"
 
 namespace mcr {
 

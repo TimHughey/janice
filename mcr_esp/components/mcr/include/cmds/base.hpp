@@ -1,5 +1,5 @@
 /*
-    cmd_base.hpp - Master Control Command Base Class
+    base.hpp - Master Control Command Base Class
     Copyright (C) 2017  Tim Hughey
 
     This program is free software: you can redistribute it and/or modify
@@ -31,12 +31,13 @@
 #include <sys/time.h>
 #include <time.h>
 
-#include "cmds/cmd_types.hpp"
+#include "cmds/types.hpp"
 #include "misc/elapsedMillis.hpp"
 #include "misc/mcr_types.hpp"
 
 using std::unique_ptr;
-using namespace mcr;
+
+namespace mcr {
 
 enum CmdMetrics { CREATE = 0, PARSE = 1 };
 typedef enum CmdMetrics CmdMetrics_t;
@@ -66,6 +67,7 @@ protected:
 
 public:
   mcrCmd(mcrCmdType_t type);
+  mcrCmd(const mcrCmd_t *cmd);
   mcrCmd(JsonDocument &doc, elapsedMicros &parse);
   mcrCmd(mcrCmdType_t type, JsonDocument &doc, elapsedMicros &parse);
   virtual ~mcrCmd(){};
@@ -92,5 +94,6 @@ public:
 
   virtual const unique_ptr<char[]> debug();
 };
+} // namespace mcr
 
 #endif

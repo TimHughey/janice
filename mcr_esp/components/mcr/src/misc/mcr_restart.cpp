@@ -27,6 +27,7 @@
 #include "net/mcr_net.hpp"
 #include "protocols/mqtt.hpp"
 
+namespace mcr {
 static mcrRestart_t *__singleton__ = nullptr;
 
 mcrRestart::mcrRestart() {}
@@ -77,3 +78,4 @@ void mcrRestart::restart(const char *text, const char *func,
 
   esp_restart();
 }
+} // namespace mcr

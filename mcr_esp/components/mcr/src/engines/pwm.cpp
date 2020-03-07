@@ -18,10 +18,7 @@
       https://www.wisslanding.com
   */
 
-#include "engines/pwm_engine.hpp"
-#include "devs/pwm_dev.hpp"
-#include "engines/engine.hpp"
-#include "net/mcr_net.hpp"
+#include "engines/pwm.hpp"
 
 using std::unique_ptr;
 

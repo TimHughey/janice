@@ -28,6 +28,8 @@
 #include "devs/addr.hpp"
 #include "misc/mcr_types.hpp"
 
+namespace mcr {
+
 mcrDevAddr::mcrDevAddr(uint8_t addr) {
   _addr.resize(1);
   _addr.assign(&addr, &addr + 1);
@@ -85,3 +87,5 @@ const std::unique_ptr<char[]> mcrDevAddr::debug() {
   // move (return) the newly created string to the caller
   return move(debug_str);
 }
+
+} // namespace mcr

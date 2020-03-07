@@ -34,9 +34,11 @@
 #include <freertos/queue.h>
 #include <freertos/task.h>
 
-#include "cmds/cmd_factory.hpp"
+#include "cmds/factory.hpp"
 #include "misc/mcr_types.hpp"
 #include "readings/readings.hpp"
+
+namespace mcr {
 
 typedef struct {
   std::string *topic = nullptr;
@@ -97,5 +99,6 @@ public:
 
   static const char *tagEngine() { return "mcrMQTTin"; };
 };
+} // namespace mcr
 
 #endif // mqtt_in_h

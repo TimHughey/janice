@@ -1,6 +1,6 @@
 
-#include "cmds/cmd_switch.hpp"
-#include "cmds/cmd_queues.hpp"
+#include "cmds/switch.hpp"
+#include "cmds/queues.hpp"
 
 namespace mcr {
 

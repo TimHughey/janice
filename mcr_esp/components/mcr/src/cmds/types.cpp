@@ -1,5 +1,7 @@
 
-#include "cmds/cmd_types.hpp"
+#include "cmds/types.hpp"
+
+namespace mcr {
 
 static const char *TAG = "mcrCmdTypeMap";
 
@@ -41,3 +43,4 @@ mcrCmdType_t mcrCmdTypeMap::find(const std::string &cmd) {
 
   return mcrCmdType::unknown;
 }
+} // namespace mcr

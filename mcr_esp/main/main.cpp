@@ -27,14 +27,16 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 
-#include "engines/ds_engine.hpp"
-#include "engines/i2c_engine.hpp"
-#include "engines/pwm_engine.hpp"
+#include "engines/ds.hpp"
+#include "engines/i2c.hpp"
+#include "engines/pwm.hpp"
 #include "misc/mcr_nvs.hpp"
 #include "misc/status_led.hpp"
 #include "misc/timestamp_task.hpp"
 #include "net/mcr_net.hpp"
 #include "protocols/mqtt.hpp"
+
+using namespace mcr;
 
 extern "C" {
 void app_main(void);

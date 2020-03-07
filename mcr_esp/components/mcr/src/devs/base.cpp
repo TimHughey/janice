@@ -40,6 +40,8 @@
 using std::move;
 using std::unique_ptr;
 
+namespace mcr {
+
 // construct a new mcrDev with only an address
 mcrDev::mcrDev(mcrDevAddr_t &addr) { _addr = addr; }
 
@@ -166,3 +168,4 @@ const unique_ptr<char[]> mcrDev::debug() {
 
   return move(debug_str);
 }
+} // namespace mcr

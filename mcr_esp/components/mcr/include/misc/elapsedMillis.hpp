@@ -30,6 +30,8 @@
 #include <esp_log.h>
 #include <esp_timer.h>
 
+namespace mcr {
+
 class elapsedMillis {
 private:
   uint64_t ms;
@@ -197,6 +199,8 @@ public:
     return r;
   }
 };
+
+} // namespace mcr
 
 #endif // __cplusplus
 #endif // elapsedMillis_h

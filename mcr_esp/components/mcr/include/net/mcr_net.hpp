@@ -1,3 +1,6 @@
+#ifndef mcr_net_hpp
+#define mcr_net_hpp
+
 #include <cstdlib>
 
 #include <driver/adc.h>
@@ -95,3 +98,5 @@ private:
   bool reconnect_ = true;
 };
 } // namespace mcr
+
+#endif

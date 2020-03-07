@@ -5,13 +5,13 @@
 #include <esp_partition.h>
 #include <esp_spi_flash.h>
 
-#include "cmds/cmd_ota.hpp"
-#include "engines/ds_engine.hpp"
-#include "engines/i2c_engine.hpp"
+#include "cmds/ota.hpp"
 #include "misc/elapsedMillis.hpp"
 #include "misc/mcr_restart.hpp"
 #include "net/mcr_net.hpp"
 #include "protocols/mqtt.hpp"
+
+namespace mcr {
 
 static const char *TAG = "mcrCmdOTA";
 static const char *k_host = "host";
@@ -54,9 +54,6 @@ void mcrCmdOTA::doUpdate() {
   }
 
   _ota_in_progress = true;
-  // mcrI2c::instance()->suspend();
-  // mcrDS::instance()->suspend();
-  // mcr::Net::suspendNormalOps();
 
   mcrMQTT::otaPrep();
 
@@ -156,3 +153,4 @@ esp_err_t mcrCmdOTA::httpEventHandler(esp_http_client_event_t *evt) {
   }
   return ESP_OK;
 }
+} // namespace mcr

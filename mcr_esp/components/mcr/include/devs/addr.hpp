@@ -27,6 +27,8 @@
 
 using std::unique_ptr;
 
+namespace mcr {
+
 typedef class mcrDevAddr mcrDevAddr_t;
 
 class mcrDevAddr {
@@ -60,5 +62,6 @@ public:
 
 private:
 };
+} // namespace mcr
 
 #endif // dev_addr_hpp
