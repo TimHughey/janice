@@ -321,7 +321,7 @@ defmodule Janitor do
 
     RunMetric.record(
       module: "#{__MODULE__}",
-      metric: "purged_sw_cmd_ack",
+      metric: "sw_cmds_purged",
       val: purged
     )
 

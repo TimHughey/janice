@@ -171,7 +171,7 @@ defmodule Mqtt.Client do
 
     RunMetric.record(
       module: "#{__MODULE__}",
-      metric: "publish_cmd_us",
+      metric: "cmd_publish_us",
       device: "none",
       val: elapsed_us
     )

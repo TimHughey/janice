@@ -60,9 +60,8 @@ config :mcp, Janitor,
   ],
   orphan_acks: [interval: {:mins, 1}, older_than: {:mins, 1}, log: true]
 
-config :mcp, MessageSave,
-  save: true,
-  purge: [all_at_startup: true, older_than: [minutes: 10]]
+# NOTE: uncomment to enable saving of messages sent and recv'd via MQTT
+# import_config "modules/msg_save_enable.exs"
 
 config :mcp, Mqtt.Client,
   log_dropped_msgs: true,
