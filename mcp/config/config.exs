@@ -6,7 +6,11 @@ use Mix.Config
 config :logger,
   console: [metadata: [:module], format: "$time $metadata$message\n"],
   backends: [:console],
-  level: :info
+  level: :info,
+  compile_time_purge_matching: [
+    [application: :mcp, level_lower_than: :info],
+    [application: :swarm, level_lower_than: :error]
+  ]
 
 config :scribe, style: Scribe.Style.Psql
 

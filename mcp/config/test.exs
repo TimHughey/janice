@@ -7,11 +7,6 @@ use Mix.Config
 seconds = fn x -> x * 1000 end
 minutes = fn x -> seconds.(60 * x) end
 
-config :logger, level: :info
-
-# level: :warn
-# level: :info
-
 config :mcp,
   feeds: [
     cmd: {"#{Mix.env()}/mcr/f/command", 1},
