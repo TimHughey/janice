@@ -43,7 +43,8 @@ static char TAG[] = "mcrMQTTin";
 
 static mcrMQTTin_t *__singleton = nullptr;
 
-mcrMQTTin::mcrMQTTin(QueueHandle_t q_in) : _q_in(q_in) {
+mcrMQTTin::mcrMQTTin(QueueHandle_t q_in, const char *cmd_feed)
+    : _q_in(q_in), _cmd_feed(cmd_feed) {
   esp_log_level_set(TAG, ESP_LOG_INFO);
 
   ESP_LOGI(TAG, "task created, queue(%p)", (void *)_q_in);
@@ -85,15 +86,16 @@ void mcrMQTTin::core(void *data) {
       // msg->data);
 
       // reminder:  must do a != to test for equality
-      if (msg->topic->find("command") != std::string::npos) {
+      if (msg->topic->find(_cmd_feed) != std::string::npos) {
         mcrCmd_t *cmd = factory.fromRaw(doc, msg->data);
         mcrCmd_t_ptr cmd_ptr(cmd);
 
-        if ((cmd != nullptr) && cmd->recent()) {
+        if ((cmd != nullptr) && cmd->recent() && cmd->forThisHost()) {
+          ESP_LOGD(TAG, "%s %s", msg->topic->c_str(), cmd->debug().get());
           cmd->process();
         }
       } else {
-        ESP_LOGI(TAG, "ignoring topic(%s)", msg->topic->c_str());
+        ESP_LOGD(TAG, "ignoring topic(%s)", msg->topic->c_str());
       }
 
       // ok, we're done with the contents of the previously allocated msg

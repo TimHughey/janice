@@ -34,7 +34,9 @@
 #include "cmds/types.hpp"
 #include "misc/elapsedMillis.hpp"
 #include "misc/mcr_types.hpp"
+#include "net/mcr_net.hpp"
 
+using std::string;
 using std::unique_ptr;
 
 namespace mcr {
@@ -48,8 +50,10 @@ class mcrCmd {
 private:
   mcrCmdType_t _type;
   time_t _mtime = time(nullptr);
+  string_t _host;
 
   void populate(JsonDocument &doc);
+  void populate(JsonDocument &doc, const char *dev_name_key);
 
 protected:
   // the device name as sent from mcp
@@ -59,25 +63,39 @@ protected:
   // necessary.
   string_t _internal_dev_id;
   mcrRefID_t _refid;
-  bool _ack = true; // default to true if ack is not set
+  // if this commmand should be ack'ed by publishing by a return msg
+  bool _ack = true;
 
   elapsedMicros _parse_elapsed;
   elapsedMicros _create_elapsed;
   elapsedMicros _latency_us;
 
+  virtual void populateInternalDevice(JsonDocument &doc);
+  virtual void translateExternalDeviceID(const char *replacement);
+
 public:
-  mcrCmd(mcrCmdType_t type);
+  mcrCmd() = delete; // never create a default cmd
   mcrCmd(const mcrCmd_t *cmd);
-  mcrCmd(JsonDocument &doc, elapsedMicros &parse);
-  mcrCmd(mcrCmdType_t type, JsonDocument &doc, elapsedMicros &parse);
+  // mcrCmd(JsonDocument &doc, elapsedMicros &parse);
+  mcrCmd(JsonDocument &doc,     // common case for cmds that
+         elapsedMicros &parse); // do not reference a
+  // specific device
+
+  mcrCmd(JsonDocument &doc,         // common case for cmds that
+         elapsedMicros &parse,      // do reference a
+         const char *dev_name_key); // specific device
+
   virtual ~mcrCmd(){};
 
   void ack(bool ack) { _ack = ack; }
   bool ack() { return _ack; }
   const string_t &externalDevID() const { return _external_dev_id; };
   const string_t &internalDevID() const { return _internal_dev_id; };
+  bool forThisHost() const;
 
-  bool matchExternalDevID(const string_t &);
+  const string_t &host() const { return _host; };
+
+  bool matchExternalDevID();
   bool IRAM_ATTR matchPrefix(const char *prefix);
   mcrRefID_t &refID() { return _refid; };
   virtual bool IRAM_ATTR sendToQueue(cmdQueue_t &cmd_q, mcrCmd_t *cmd);
@@ -88,8 +106,7 @@ public:
   elapsedMicros &parseElapsed() { return _parse_elapsed; };
   virtual bool process() { return false; };
 
-  virtual size_t size() { return sizeof(mcrCmd_t); };
-  void translateDevID(const string_t &str, const char *with_str);
+  virtual size_t size() const { return sizeof(mcrCmd_t); };
   mcrCmdType_t type() { return _type; };
 
   virtual const unique_ptr<char[]> debug();

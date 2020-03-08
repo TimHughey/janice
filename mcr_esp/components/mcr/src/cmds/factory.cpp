@@ -47,7 +47,7 @@ mcrCmd_t *mcrCmdFactory::fromJSON(JsonDocument &doc, rawMsg_t *raw) {
     return cmd;
   }
 
-  auto cmd_str = doc["cmd"].as<std::string>();
+  auto cmd_str = doc["cmd"].as<string_t>();
   cmd_type = mcrCmdTypeMap::fromString(cmd_str);
 
   switch (cmd_type) {
@@ -72,7 +72,7 @@ mcrCmd_t *mcrCmdFactory::fromJSON(JsonDocument &doc, rawMsg_t *raw) {
 
   case mcrCmdType::otaHTTPS:
   case mcrCmdType::restart:
-    cmd = new mcrCmdOTA(cmd_type, doc, parse_elapsed);
+    cmd = new mcrCmdOTA(doc, parse_elapsed);
     break;
 
   case mcrCmdType::enginesSuspend:

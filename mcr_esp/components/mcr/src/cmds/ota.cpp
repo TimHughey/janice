@@ -1,20 +1,12 @@
 
-#include <esp_http_client.h>
-#include <esp_https_ota.h>
-#include <esp_ota_ops.h>
-#include <esp_partition.h>
-#include <esp_spi_flash.h>
 
 #include "cmds/ota.hpp"
-#include "misc/elapsedMillis.hpp"
 #include "misc/mcr_restart.hpp"
-#include "net/mcr_net.hpp"
 #include "protocols/mqtt.hpp"
 
 namespace mcr {
 
 static const char *TAG = "mcrCmdOTA";
-static const char *k_host = "host";
 static const char *k_reboot_delay_ms = "reboot_delay_ms";
 static const char *k_fw_url = "fw_url";
 
@@ -23,13 +15,10 @@ static bool _ota_in_progress = false;
 extern const uint8_t ca_start[] asm("_binary_ca_pem_start");
 extern const uint8_t ca_end[] asm("_binary_ca_pem_end");
 
-mcrCmdOTA::mcrCmdOTA(mcrCmdType_t type, JsonDocument &doc, elapsedMicros &e)
-    : mcrCmd(type, doc, e) {
-  if (doc.isNull() == false) {
-    _host = doc[k_host] | "no_host";
-    _fw_url = doc[k_fw_url] | "none";
-    _reboot_delay_ms = doc[k_reboot_delay_ms] | 0;
-  }
+mcrCmdOTA::mcrCmdOTA(JsonDocument &doc, elapsedMicros &e) : mcrCmd(doc, e) {
+
+  _fw_url = doc[k_fw_url] | "none";
+  _reboot_delay_ms = doc[k_reboot_delay_ms] | 0;
 }
 
 void mcrCmdOTA::doUpdate() {
@@ -84,11 +73,8 @@ void mcrCmdOTA::doUpdate() {
 }
 
 bool mcrCmdOTA::process() {
-  using mcr::Net;
 
-  bool this_host = (_host.compare(Net::hostID()) == 0) ? true : false;
-
-  if (this_host == false) {
+  if (forThisHost() == false) {
     ESP_LOGD(TAG, "OTA command not for us, ignoring.");
     return true;
   }

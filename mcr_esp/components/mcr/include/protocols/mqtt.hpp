@@ -101,7 +101,7 @@ private:
                      .priority = CONFIG_MCR_MQTT_TASK_PRIORITY,
                      .stackSize = (4 * 1024)};
 
-  struct mg_mgr _mgr;
+  struct mg_mgr _mgr = {};
   struct mg_connection *_connection = nullptr;
   uint16_t _msg_id = 0;
   bool _mqtt_ready = false;

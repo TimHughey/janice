@@ -46,6 +46,7 @@ public:
   static bool isTimeSet();
   static bool waitForReady(uint32_t wait_ms = UINT32_MAX);
   static bool waitForTimeset(uint32_t wait_ms = UINT32_MAX);
+  static void clearTransportReady() { setTransportReady(false); };
   static void setTransportReady(bool val = true);
 
   static inline bool clearBits() { return true; };

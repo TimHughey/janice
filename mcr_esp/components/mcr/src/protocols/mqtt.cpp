@@ -112,6 +112,8 @@ void mcrMQTT::connectionClosed() {
   _mqtt_ready = false;
   _connection = nullptr;
 
+  Net::clearTransportReady();
+
   connect(5 * 1000); // wait five seconds before reconnect
 }
 
@@ -119,6 +121,8 @@ void mcrMQTT::handshake(struct mg_connection *nc) {
   struct mg_send_mqtt_handshake_opts opts;
   bzero(&opts, sizeof(opts));
 
+  opts.flags =
+      MG_MQTT_CLEAN_SESSION | MG_MQTT_HAS_PASSWORD | MG_MQTT_HAS_USER_NAME;
   opts.user_name = _user;
   opts.password = _passwd;
 
@@ -197,7 +201,7 @@ void mcrMQTT::outboundMsg() {
 
   q_rc = xQueueReceive(_q_out, &entry, _outbound_msg_ticks);
 
-  while (q_rc == pdTRUE) {
+  while ((q_rc == pdTRUE) && Net::waitForReady(0)) {
     elapsedMicros publish_elapse;
 
     const auto *json = entry->data;
@@ -262,7 +266,7 @@ void mcrMQTT::core(void *data) {
 
   esp_log_level_set(tagEngine(), ESP_LOG_INFO);
 
-  _mqtt_in = new mcrMQTTin(_q_in);
+  _mqtt_in = new mcrMQTTin(_q_in, _cmd_feed);
   ESP_LOGI(tagEngine(), "started, created mcrMQTTin task %p", (void *)_mqtt_in);
   _mqtt_in->start();
 
@@ -298,14 +302,16 @@ void mcrMQTT::core(void *data) {
     //  2. wait in outboundMsg (send)
     mg_mgr_poll(&_mgr, _inbound_msg_ms);
 
-    if (isReady()) {
+    if (isReady() && _connection) {
       outboundMsg();
     }
   }
 }
 
 void mcrMQTT::subACK(struct mg_mqtt_message *msg) {
-  ESP_LOGV(tagEngine(), "suback msg_id=%d", msg->message_id);
+  ESP_LOGI(tagEngine(), "suback msg_id(%d) qos(%d) topic(%.4s)",
+           msg->message_id, msg->qos,
+           ((msg->topic.p == nullptr) ? "NULL" : msg->topic.p));
 
   if (msg->message_id == _cmd_feed_msg_id) {
     ESP_LOGI(tagEngine(), "subscribed to CMD feed");
@@ -324,7 +330,7 @@ void mcrMQTT::subACK(struct mg_mqtt_message *msg) {
 }
 
 void mcrMQTT::subscribeCommandFeed(struct mg_connection *nc) {
-  struct mg_mqtt_topic_expression sub = {.topic = _cmd_feed, .qos = 0};
+  struct mg_mqtt_topic_expression sub = {.topic = _cmd_feed, .qos = 1};
 
   _cmd_feed_msg_id = _msg_id++;
   ESP_LOGI(tagEngine(), "subscribe feed=%s msg_id=%d", sub.topic,

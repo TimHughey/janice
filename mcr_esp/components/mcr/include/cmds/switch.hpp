@@ -21,18 +21,7 @@
 #ifndef mcr_cmd_switch_hpp
 #define mcr_cmd_switch_hpp
 
-#include <bitset>
-#include <cstdlib>
-#include <memory>
-#include <string>
-
-#include <freertos/FreeRTOS.h>
-#include <sys/time.h>
-#include <time.h>
-
 #include "cmds/base.hpp"
-#include "misc/elapsedMillis.hpp"
-#include "misc/mcr_types.hpp"
 
 using std::unique_ptr;
 
@@ -55,15 +44,15 @@ public:
       : mcrCmd{cmd}, _mask(cmd->_mask), _state(cmd->_state){};
 
   cmdSwitch(JsonDocument &doc, elapsedMicros &parse);
-  cmdSwitch(const string_t &id, cmd_bitset_t mask, cmd_bitset_t state)
-      : mcrCmd(mcrCmdType::setswitch), _mask(mask), _state(state) {
-    _external_dev_id = id;
-    _internal_dev_id = id;
-  };
+  // cmdSwitch(const string_t &id, cmd_bitset_t mask, cmd_bitset_t state)
+  //     : mcrCmd(mcrCmdType::setswitch), _mask(mask), _state(state) {
+  //   _external_dev_id = id;
+  //   _internal_dev_id = id;
+  // };
 
   cmd_bitset_t mask() { return _mask; };
   bool process();
-  size_t size() { return sizeof(cmdSwitch_t); };
+  size_t size() const { return sizeof(cmdSwitch_t); };
   cmd_bitset_t state() { return _state; };
 
   const unique_ptr<char[]> debug();

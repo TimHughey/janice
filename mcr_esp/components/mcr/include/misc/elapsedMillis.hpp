@@ -42,7 +42,10 @@ private:
 public:
   elapsedMillis(void) { ms = millis(); }
   // elapsedMillis(uint64_t val) { ms = millis() - val; }
-  elapsedMillis(const elapsedMillis &orig) { ms = orig.ms; }
+  elapsedMillis(const elapsedMillis &orig) {
+    ms = orig.ms;
+    _freeze = orig._freeze;
+  }
   float asSeconds() {
     return (_freeze) ? (float)(ms / 1000.0)
                      : ((float)((millis() - ms) / 1000.0));

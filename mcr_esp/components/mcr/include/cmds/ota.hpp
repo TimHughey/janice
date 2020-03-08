@@ -21,21 +21,13 @@
 #ifndef mcr_cmd_ota_h
 #define mcr_cmd_ota_h
 
-#include <cstdlib>
-#include <memory>
-#include <string>
-
 #include <esp_http_client.h>
 #include <esp_https_ota.h>
 #include <esp_ota_ops.h>
-#include <freertos/FreeRTOS.h>
-#include <freertos/queue.h>
-#include <sys/time.h>
-#include <time.h>
+#include <esp_partition.h>
+#include <esp_spi_flash.h>
 
 #include "cmds/base.hpp"
-#include "cmds/types.hpp"
-#include "misc/mcr_types.hpp"
 
 using std::unique_ptr;
 
@@ -45,11 +37,10 @@ typedef class mcrCmdOTA mcrCmdOTA_t;
 class mcrCmdOTA : public mcrCmd {
 private:
   rawMsg_t *_raw = nullptr;
-  std::string _host;
-  std::string _head;
-  std::string _stable;
-  std::string _partition;
-  std::string _fw_url;
+  string_t _head;
+  string_t _stable;
+  string_t _partition;
+  string_t _fw_url;
   int _delay_ms = 0;
   int _start_delay_ms = 0;
   int _reboot_delay_ms = 0;
@@ -59,11 +50,12 @@ private:
   static esp_err_t httpEventHandler(esp_http_client_event_t *evt);
 
 public:
-  mcrCmdOTA(mcrCmdType_t type, JsonDocument &doc, elapsedMicros &parse);
+  mcrCmdOTA(JsonDocument &doc, elapsedMicros &parse);
   ~mcrCmdOTA(){};
 
   bool process();
   uint32_t reboot_delay_ms() { return _reboot_delay_ms; };
+  size_t size() const { return sizeof(mcrCmdOTA_t); };
 
   const unique_ptr<char[]> debug();
 };

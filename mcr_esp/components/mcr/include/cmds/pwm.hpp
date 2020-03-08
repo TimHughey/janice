@@ -43,20 +43,14 @@ private:
   uint32_t _duty;
 
 public:
-  cmdPWM(const cmdPWM_t *cmd) : mcrCmd{cmd}, _duty(cmd->_duty){};
-
   cmdPWM(JsonDocument &doc, elapsedMicros &parse);
-  cmdPWM(const string_t &id, uint32_t duty)
-      : mcrCmd(mcrCmdType::pwm), _duty(duty) {
-    _external_dev_id = id;
-    _internal_dev_id = id;
-  };
+  cmdPWM(const cmdPWM_t *cmd) : mcrCmd{cmd}, _duty(cmd->_duty){};
 
   uint32_t duty() { return _duty; };
 
   bool IRAM_ATTR process();
 
-  size_t size() { return sizeof(cmdPWM_t); };
+  size_t size() const { return sizeof(cmdPWM_t); };
 
   const unique_ptr<char[]> debug();
 };

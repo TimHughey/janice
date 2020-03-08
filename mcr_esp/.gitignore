@@ -14,3 +14,4 @@ ldgen_*
 project_description.json
 config
 Makefile
+kconfig_bin

@@ -54,6 +54,7 @@ private:
                      .priority = CONFIG_MCR_MQTT_INBOUND_TASK_PRIORITY,
                      .stackSize = (5 * 1024)};
   QueueHandle_t _q_in;
+  string_t _cmd_feed;
   void *_task_data = nullptr;
 
   time_t _lastLoop;
@@ -66,7 +67,7 @@ private:
   }
 
 public:
-  mcrMQTTin(QueueHandle_t q);
+  mcrMQTTin(QueueHandle_t q, const char *cmd_feed);
   static mcrMQTTin_t *instance();
 
   UBaseType_t changePriority(UBaseType_t priority);

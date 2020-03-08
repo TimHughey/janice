@@ -5,17 +5,17 @@ namespace mcr {
 
 static const char *TAG = "mcrCmdTypeMap";
 
-static const std::map<std::string, mcrCmdType> _cmd_map = {
-    {std::string("unknown"), mcrCmdType::unknown},
-    {std::string("none"), mcrCmdType::none},
-    {std::string("time.sync"), mcrCmdType::timesync},
-    {std::string("set.switch"), mcrCmdType::setswitch},
-    {std::string("set.name"), mcrCmdType::setname},
-    {std::string("heartbeat"), mcrCmdType::heartbeat},
-    {std::string("restart"), mcrCmdType::restart},
-    {std::string("engines.suspend"), mcrCmdType::enginesSuspend},
-    {std::string("ota.https"), mcrCmdType::otaHTTPS},
-    {std::string("pwm"), mcrCmdType::pwm}};
+static const std::map<string_t, mcrCmdType> _cmd_map = {
+    {string_t("unknown"), mcrCmdType::unknown},
+    {string_t("none"), mcrCmdType::none},
+    {string_t("time.sync"), mcrCmdType::timesync},
+    {string_t("set.switch"), mcrCmdType::setswitch},
+    {string_t("set.name"), mcrCmdType::setname},
+    {string_t("heartbeat"), mcrCmdType::heartbeat},
+    {string_t("restart"), mcrCmdType::restart},
+    {string_t("engines.suspend"), mcrCmdType::enginesSuspend},
+    {string_t("ota.https"), mcrCmdType::otaHTTPS},
+    {string_t("pwm"), mcrCmdType::pwm}};
 
 static mcrCmdTypeMap_t *__singleton;
 
@@ -32,7 +32,7 @@ mcrCmdTypeMap_t *mcrCmdTypeMap::instance() {
   return __singleton;
 }
 
-mcrCmdType_t mcrCmdTypeMap::find(const std::string &cmd) {
+mcrCmdType_t mcrCmdTypeMap::find(const string_t &cmd) {
   auto search = _cmd_map.find(cmd);
 
   if (search != _cmd_map.end()) {

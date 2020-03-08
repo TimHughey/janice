@@ -99,14 +99,9 @@ void mcrI2c::command(void *data) {
     ESP_LOGD(tagCommand(), "processing %s", cmd->debug().get());
 
     // is the command for this mcr?
-
-    const string_t &mcr_name = Net::getName();
-
-    if (cmd->matchExternalDevID(mcr_name) == false) {
+    if (cmd->matchExternalDevID() == false) {
       continue;
     }
-
-    cmd->translateDevID(mcr_name, "self");
 
     i2cDev_t *dev = findDevice(cmd->internalDevID());
 

@@ -1,38 +1,31 @@
 #include "cmds/network.hpp"
-#include "net/mcr_net.hpp"
 
 namespace mcr {
 
-static const char *TAG = "mcrCmdNetwork";
-static const char *k_host = "host";
+// static const char *TAG = "mcrCmdNetwork";
 static const char *k_name = "name";
 
 mcrCmdNetwork::mcrCmdNetwork(JsonDocument &doc, elapsedMicros &e)
-    : mcrCmd(mcrCmdType::setname, doc, e) {
-
-  if (doc.isNull() == false) {
-    _host = doc[k_host] | "no_host";
-    _name = doc[k_name] | "no_name";
-  } else {
-    ESP_LOGW("mcrCmdNetwork", "null json document");
-  }
+    : mcrCmd{doc, e} {
+  _name = doc[k_name] | "";
 }
 
 bool mcrCmdNetwork::process() {
-  if (_host == mcr::Net::hostID()) {
-    mcr::Net::setName(_name);
+  if (forThisHost() && (_name.empty() == false)) {
+    Net::setName(_name);
     return true;
   }
-
-  ESP_LOGD(TAG, "host name did not match: %s", _host.c_str());
 
   return false;
 }
 
 const unique_ptr<char[]> mcrCmdNetwork::debug() {
-  unique_ptr<char[]> debug_str(new char[strlen(TAG) + 1]);
+  const auto max_buf = 128;
+  unique_ptr<char[]> debug_str(new char[max_buf]);
 
-  strcpy(debug_str.get(), TAG);
+  snprintf(debug_str.get(), max_buf,
+           "mcrCmdNetwork(host(%s) name(%s)) parse(%lldus)", host().c_str(),
+           _name.c_str(), (uint64_t)_parse_elapsed);
 
   return move(debug_str);
 }

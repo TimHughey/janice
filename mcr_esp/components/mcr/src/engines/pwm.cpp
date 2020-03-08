@@ -72,15 +72,11 @@ void pwmEngine::command(void *data) {
 
     // is the command for this mcr?
 
-    const string_t &mcr_name = Net::getName();
-
-    if (cmd->matchExternalDevID(mcr_name) == false) {
+    if (cmd->matchExternalDevID() == false) {
       continue;
     } else {
       ESP_LOGI(tagCommand(), "recv'd cmd: %s", cmd->debug().get());
     }
-
-    cmd->translateDevID(mcr_name, "self");
 
     pwmDev_t *dev = findDevice(cmd->internalDevID());
 

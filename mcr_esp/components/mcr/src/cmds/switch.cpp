@@ -5,20 +5,22 @@
 namespace mcr {
 
 cmdSwitch::cmdSwitch(JsonDocument &doc, elapsedMicros &e)
-    : mcrCmd(mcrCmdType::setswitch, doc, e) {
+    : mcrCmd(doc, e, "switch") {
   // json format of states command:
   // {"switch":"ds/29463408000000",
   //   "states":[{"state":false,"pio":3}],
   //   "refid":"0fc4417c-f1bb-11e7-86bd-6cf049e7139f",
   //   "mtime":1515117138,
   //   "cmd":"set.switch"}
-  _create_elapsed.reset();
 
-  _external_dev_id = doc["switch"].as<std::string>();
-  _internal_dev_id = _external_dev_id; // default to external name
-  _refid = doc["refid"].as<std::string>();
+  // switch cmds for i2c devices require the internal device id
+  // to be translated
+  auto i2c_str = _internal_dev_id.find("i2c");
+  if (i2c_str != std::string::npos) {
+    translateExternalDeviceID("self");
+  }
+
   const JsonArray states = doc["states"].as<JsonArray>();
-  const JsonVariant ack_flag = doc["ack"];
   uint32_t mask = 0x00;
   uint32_t tobe_state = 0x00;
 
@@ -38,11 +40,6 @@ cmdSwitch::cmdSwitch(JsonDocument &doc, elapsedMicros &e)
     // otherwise leave it unset
     if (state) {
       tobe_state |= (0x01 << bit);
-    }
-
-    // set the ack flag if it's in the json
-    if (ack_flag.isNull() == false) {
-      _ack = ack_flag.as<bool>();
     }
   }
 

@@ -34,21 +34,22 @@
 #include "misc/mcr_types.hpp"
 
 using std::unique_ptr;
+using std::vector;
 
 namespace mcr {
 
 typedef class mcrCmdQueues mcrCmdQueues_t;
 class mcrCmdQueues {
 private:
-  std::vector<cmdQueue_t> _queues;
+  vector<cmdQueue_t> _queues;
 
   mcrCmdQueues(){}; // SINGLETON!
 
 public:
   void add(cmdQueue_t &cmd_q) { _queues.push_back(cmd_q); };
-  static std::vector<cmdQueue_t> &all() { return instance()->queues(); };
+  static vector<cmdQueue_t> &all() { return instance()->queues(); };
   static mcrCmdQueues_t *instance();
-  std::vector<cmdQueue_t> &queues() { return _queues; };
+  vector<cmdQueue_t> &queues() { return _queues; };
   static void registerQ(cmdQueue_t &cmd_q);
 
   const unique_ptr<char[]> debug();

@@ -4,26 +4,18 @@
 
 namespace mcr {
 
-cmdPWM::cmdPWM(JsonDocument &doc, elapsedMicros &e)
-    : mcrCmd(mcrCmdType::pwm, doc, e) {
+cmdPWM::cmdPWM(JsonDocument &doc, elapsedMicros &e) : mcrCmd(doc, e, "device") {
   // json format of states command:
   // {"device":"pwm/mcr.xxx.pin:n",
   //   "duty":2048,
   //   "refid":"0fc4417c-f1bb-11e7-86bd-6cf049e7139f",
   //   "mtime":1515117138,
   //   "cmd":"pwm"}
-  _create_elapsed.reset();
 
-  _external_dev_id = doc["device"].as<std::string>();
-  _internal_dev_id = _external_dev_id; // default to external name
-  _refid = doc["refid"].as<std::string>();
+  // overrides the default of internal name == external name
+  translateExternalDeviceID("self");
+
   _duty = doc["duty"].as<uint32_t>();
-  const JsonVariant ack_flag = doc["ack"];
-
-  // set the ack flag if it's in the json
-  if (ack_flag.isNull() == false) {
-    _ack = ack_flag.as<bool>();
-  }
 
   _create_elapsed.freeze();
 }

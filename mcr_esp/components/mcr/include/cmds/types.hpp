@@ -26,13 +26,7 @@
 #include <map>
 #include <string>
 
-#include <esp_log.h>
-#include <freertos/FreeRTOS.h>
-#include <sys/time.h>
-#include <time.h>
-
 #include "devs/base.hpp"
-#include "misc/mcr_types.hpp"
 
 namespace mcr {
 
@@ -56,7 +50,7 @@ public:
   static mcrCmdType_t fromByte(char byte) {
     return instance()->decodeByte(byte);
   }
-  static mcrCmdType_t fromString(const std::string &cmd) {
+  static mcrCmdType_t fromString(const string_t &cmd) {
     return instance()->find(cmd);
   }
 
@@ -64,7 +58,7 @@ private:
   mcrCmdTypeMap();
 
   mcrCmdType_t decodeByte(char byte);
-  mcrCmdType_t find(const std::string &cmd);
+  mcrCmdType_t find(const string_t &cmd);
 };
 
 } // namespace mcr

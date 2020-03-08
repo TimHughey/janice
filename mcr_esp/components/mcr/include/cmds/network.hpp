@@ -18,21 +18,10 @@
     https://www.wisslanding.com
 */
 
-#ifndef mcr_cmd_network_h
-#define mcr_cmd_network_h
-
-#include <cstdlib>
-#include <memory>
-#include <string>
-
-#include <freertos/FreeRTOS.h>
-#include <freertos/queue.h>
-#include <sys/time.h>
-#include <time.h>
+#ifndef mcr_cmd_network_hpp
+#define mcr_cmd_network_hpp
 
 #include "cmds/base.hpp"
-#include "cmds/types.hpp"
-#include "misc/mcr_types.hpp"
 
 using std::unique_ptr;
 
@@ -41,15 +30,15 @@ namespace mcr {
 typedef class mcrCmdNetwork mcrCmdNetwork_t;
 class mcrCmdNetwork : public mcrCmd {
 private:
-  string_t _host;
   string_t _name;
 
 public:
   mcrCmdNetwork(JsonDocument &doc, elapsedMicros &e);
+  mcrCmdNetwork(mcrCmd *cmd) : mcrCmd(cmd) { _name = this->_name; };
   ~mcrCmdNetwork(){};
 
   bool process();
-  virtual size_t size() { return sizeof(mcrCmdNetwork_t); };
+  size_t size() const { return sizeof(mcrCmdNetwork_t); };
   const unique_ptr<char[]> debug();
 };
 
