@@ -40,7 +40,7 @@ namespace mcr {
 
 typedef struct {
   size_t len = 0;
-  std::string *data = nullptr;
+  string_t *data = nullptr;
 } mqttOutMsg_t;
 
 typedef class mcrMQTT mcrMQTT_t;
@@ -93,8 +93,8 @@ private:
   mcrMQTT(); // singleton, constructor is private
   static void _ev_handler(struct mg_connection *nc, int ev, void *p);
 
-  std::string _client_id;
-  std::string _endpoint;
+  string_t _client_id;
+  string_t _endpoint;
   mcrTask_t _task = {.handle = nullptr,
                      .data = nullptr,
                      .lastWake = 0,
@@ -124,7 +124,7 @@ private:
   mcrMQTTin_t *_mqtt_in = nullptr;
 
   // const char *_dns_server = CONFIG_MCR_DNS_SERVER;
-  const std::string _host = CONFIG_MCR_MQTT_HOST;
+  const string_t _host = CONFIG_MCR_MQTT_HOST;
   const int _port = CONFIG_MCR_MQTT_PORT;
   const char *_user = CONFIG_MCR_MQTT_USER;
   const char *_passwd = CONFIG_MCR_MQTT_PASSWD;
@@ -142,7 +142,7 @@ private:
   void __otaPrep();
   void outboundMsg();
 
-  void publish(std::string *json);
+  void publish(string_t *json);
 
   // Task implementation
   static void runEngine(void *task_instance) {

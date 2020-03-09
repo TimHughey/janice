@@ -39,7 +39,7 @@ if [[ -x ${IDF_PATH}/add-path.sh ]]; then
 	${IDF_PATH}/add-path.sh 1> /dev/null
 fi
 
-run_cmd idf.py build 
+run_cmd idf.py build
 
 # echo "deploying mcr_esp.{bin,elf} to $htdocs"
 for suffix in "${fw_suffixes[@]}"; do

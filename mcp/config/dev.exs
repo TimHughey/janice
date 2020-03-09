@@ -62,7 +62,7 @@ config :mcp, Mqtt.Client,
     user_name: "mqtt",
     password: "mqtt",
     server:
-      {Tortoise.Transport.Tcp, host: "jophiel.wisslanding.com", port: 1883},
+      {Tortoise.Transport.Tcp, host: "gabriel.wisslanding.com", port: 1883},
     keep_alive: 15
   ],
   timesync: [frequency: {:mins, 1}, loops: 5, forever: true, log: false]

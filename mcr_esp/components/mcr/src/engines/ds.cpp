@@ -214,7 +214,7 @@ bool mcrDS::commandAck(cmdSwitch_t &cmd) {
              cmd.debug().get());
   }
 
-  ESP_LOGI(tagCommand(), "completed cmd: %s", cmd.debug().get());
+  ESP_LOGD(tagCommand(), "completed cmd: %s", cmd.debug().get());
 
   int64_t elapsed_us = esp_timer_get_time() - start;
   if (elapsed_us > 100000) { // 100ms
@@ -402,7 +402,7 @@ void mcrDS::discover(void *data) {
         ESP_LOGV(tagDiscover(), "previously seen %s", dev.debug().get());
       } else {
         dsDev_t *new_dev = new dsDev(dev);
-        ESP_LOGI(tagDiscover(), "%s is new (%p)", dev.debug().get(),
+        ESP_LOGD(tagDiscover(), "%s is new (%p)", dev.debug().get(),
                  (void *)new_dev);
         addDevice(new_dev);
       }
