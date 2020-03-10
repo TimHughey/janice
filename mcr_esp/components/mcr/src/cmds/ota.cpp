@@ -72,6 +72,33 @@ void mcrCmdOTA::doUpdate() {
                                   reboot_delay_ms());
 }
 
+// STATIC
+void mcrCmdOTA::markPartitionValid() {
+  static bool ota_marked_valid = false; // only do this once
+
+  if (ota_marked_valid == true) {
+    return;
+  }
+
+  const esp_partition_t *run_part = esp_ota_get_running_partition();
+  esp_ota_img_states_t ota_state;
+  if (esp_ota_get_state_partition(run_part, &ota_state) == ESP_OK) {
+    if (ota_state == ESP_OTA_IMG_PENDING_VERIFY) {
+      esp_err_t mark_valid_rc = esp_ota_mark_app_valid_cancel_rollback();
+
+      if (mark_valid_rc == ESP_OK) {
+        ESP_LOGI(TAG, "[%s] ota partition marked as valid",
+                 esp_err_to_name(mark_valid_rc));
+      } else {
+        ESP_LOGW(TAG, "[%s] failed to mark app partition as valid",
+                 esp_err_to_name(mark_valid_rc));
+      }
+    }
+  }
+
+  ota_marked_valid = true;
+}
+
 bool mcrCmdOTA::process() {
 
   if (forThisHost() == false) {

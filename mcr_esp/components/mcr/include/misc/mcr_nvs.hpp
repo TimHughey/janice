@@ -62,6 +62,8 @@ private:
                                    "mcrI2c",  "mcrMQTT", "hostname",
                                    "END_KEYS"};
 
+  bool _committed_msgs_processed = false;
+
   mcrNVS();
   ~mcrNVS();
 

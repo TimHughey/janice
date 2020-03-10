@@ -53,6 +53,8 @@ public:
   mcrCmdOTA(JsonDocument &doc, elapsedMicros &parse);
   ~mcrCmdOTA(){};
 
+  static void markPartitionValid();
+
   bool process();
   uint32_t reboot_delay_ms() { return _reboot_delay_ms; };
   size_t size() const { return sizeof(mcrCmdOTA_t); };

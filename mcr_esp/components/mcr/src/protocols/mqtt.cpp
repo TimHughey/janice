@@ -114,7 +114,7 @@ void mcrMQTT::connectionClosed() {
 
   Net::clearTransportReady();
 
-  connect(5 * 1000); // wait five seconds before reconnect
+  connect(500); // wait five seconds before reconnect
 }
 
 void mcrMQTT::handshake(struct mg_connection *nc) {

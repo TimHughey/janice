@@ -51,6 +51,9 @@ mcrRestart::~mcrRestart() {
   }
 }
 
+// STATIC
+void mcrRestart::now() { instance()->restart(nullptr, nullptr, 0); }
+
 void mcrRestart::restart(const char *text, const char *func,
                          uint32_t reboot_delay_ms) {
 

@@ -41,6 +41,7 @@ public:
 
   ~mcrRestart();
 
+  static void now();
   void restart(const char *text = nullptr, const char *func = nullptr,
                uint32_t reboot_delay_ms = DEFAULT_WAIT_MS);
 };

@@ -23,10 +23,11 @@
 #include <driver/periph_ctrl.h>
 #include <esp_log.h>
 #include <esp_spi_flash.h>
-#include <esp_system.h>
+// #include <esp_system.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 
+#include "cmds/ota.hpp"
 #include "engines/ds.hpp"
 #include "engines/i2c.hpp"
 #include "engines/pwm.hpp"
@@ -97,39 +98,49 @@ void app_main() {
   // now that all tasks are started signal to begin watching task stacks
   timestampTask->watchTaskStacks();
 
-  network->waitForNormalOps();
-  mcr::Net::waitForName(30000);
-
-  const esp_partition_t *run_part = esp_ota_get_running_partition();
-  esp_ota_img_states_t ota_state;
-  if (esp_ota_get_state_partition(run_part, &ota_state) == ESP_OK) {
-    if (ota_state == ESP_OTA_IMG_PENDING_VERIFY) {
-      esp_err_t mark_valid_rc = esp_ota_mark_app_valid_cancel_rollback();
-
-      if (mark_valid_rc == ESP_OK) {
-        ESP_LOGI(TAG, "[%s] ota partition marked as valid",
-                 esp_err_to_name(mark_valid_rc));
-      } else {
-        ESP_LOGW(TAG, "[%s] failed to mark app partition as valid",
-                 esp_err_to_name(mark_valid_rc));
-      }
-    }
-  }
-
-  UBaseType_t stack_high_water = uxTaskGetStackHighWaterMark(nullptr);
-  UBaseType_t num_tasks = uxTaskGetNumberOfTasks();
-
-  ESP_LOGI(TAG, "boot complete [stack high water: %d, num of tasks: %d]",
-           stack_high_water, num_tasks);
-
-  ESP_LOGI(TAG, "certificate authority pem available [%d bytes]",
-           ca_end - ca_start);
-
-  mcrNVS::processCommittedMsgs();
-  mcrNVS::commitMsg("BOOT", "LAST SUCCESSUL BOOT");
-
+  // the main loop is a safety net for overall platform failures
   for (;;) {
-    // just sleep
-    vTaskDelay(pdMS_TO_TICKS(15 * 60 * 1000));
+    bool boot_complete = false;
+
+    // safety net 1:
+    //    wait for the name to be set for 90 seconds, if the name is not
+    //    set within in 90 seconds then there's some problem (e.g. mcp or mqtt
+    //    are done) so reboot
+    if (Net::waitForName(90000) == false) {
+      mcrRestart::now();
+    }
+
+    // safety net 2:
+    //    wait for the transport to be ready for up to 60 seconds (60000ms).
+    //    if transport does not become ready then a problem has occurred
+    //    after startup (since we wouldn't be here if transport never
+    //    became available)
+    if (Net::waitForReady(60000) == false) {
+      mcrRestart::now();
+    }
+
+    // safety net 3:
+    //    only after the above two checks succeed mark the ota partition
+    //    valid after an ota update
+    mcrCmdOTA::markPartitionValid();
+
+    // boot up is successful, process any previously committed NVS messages
+    // and record the successful boot
+    if (boot_complete == false) {
+      ESP_LOGI(TAG, "certificate authority pem available [%d bytes]",
+               ca_end - ca_start);
+
+      UBaseType_t stack_high_water = uxTaskGetStackHighWaterMark(nullptr);
+      UBaseType_t num_tasks = uxTaskGetNumberOfTasks();
+
+      ESP_LOGI(TAG, "boot complete [stack high water: %d, num of tasks: %d]",
+               stack_high_water, num_tasks);
+
+      mcrNVS::processCommittedMsgs();
+      mcrNVS::commitMsg("BOOT", "LAST SUCCESSUL BOOT");
+    }
+
+    // sleep for 60 seconds
+    vTaskDelay(pdMS_TO_TICKS(60 * 1000));
   }
 }
