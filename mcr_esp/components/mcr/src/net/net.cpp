@@ -250,7 +250,7 @@ void Net::init() {
                                     instance());
   checkError(__PRETTY_FUNCTION__, rc);
 
-  rc = ::esp_wifi_set_storage(WIFI_STORAGE_RAM);
+  rc = ::esp_wifi_set_storage(WIFI_STORAGE_FLASH);
   checkError(__PRETTY_FUNCTION__, rc);
 
   // finally, check the rc.  if any of the API calls above failed

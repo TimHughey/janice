@@ -6,7 +6,6 @@ using std::unique_ptr;
 
 namespace mcr {
 
-// static const char *TAG = "mcrCmd";
 static const char *k_mtime = "mtime";
 static const char *k_cmd = "cmd";
 
@@ -46,9 +45,9 @@ mcrCmd::mcrCmd(JsonDocument &doc, elapsedMicros &e, const char *dev_name_key)
 }
 
 bool mcrCmd::forThisHost() const {
-  const string_t &mcr_name = Net::getName();
+  const string_t &mac_addr = Net::macAddress();
 
-  auto found = _host.find(mcr_name);
+  auto found = _host.find(mac_addr);
 
   // didn't match, check for '<any>'
   if (found == string::npos) {

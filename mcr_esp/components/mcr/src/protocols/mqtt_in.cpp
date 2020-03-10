@@ -90,12 +90,14 @@ void mcrMQTTin::core(void *data) {
         mcrCmd_t *cmd = factory.fromRaw(doc, msg->data);
         mcrCmd_t_ptr cmd_ptr(cmd);
 
-        if ((cmd != nullptr) && cmd->recent() && cmd->forThisHost()) {
-          ESP_LOGD(TAG, "%s %s", msg->topic->c_str(), cmd->debug().get());
+        if (cmd_ptr == nullptr) {
+          ESP_LOGW(TAG, "unable could not create cmd from feed %s",
+                   msg->topic->c_str());
+        } else if (cmd->recent() && cmd->forThisHost()) {
           cmd->process();
+        } else {
+          ESP_LOGD(TAG, "ignoring topic(%s)", msg->topic->c_str());
         }
-      } else {
-        ESP_LOGD(TAG, "ignoring topic(%s)", msg->topic->c_str());
       }
 
       // ok, we're done with the contents of the previously allocated msg

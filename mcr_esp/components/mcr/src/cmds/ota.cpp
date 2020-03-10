@@ -129,9 +129,11 @@ bool mcrCmdOTA::process() {
 }
 
 const unique_ptr<char[]> mcrCmdOTA::debug() {
-  unique_ptr<char[]> debug_str(new char[strlen(TAG) + 1]);
-
-  strcpy(debug_str.get(), TAG);
+  const size_t max_buf = 256;
+  unique_ptr<char[]> debug_str(new char[max_buf]);
+  snprintf(debug_str.get(), max_buf,
+           "mcrCmd(host(%s) fw_url(%s) start_delay_ms(%dms))", host().c_str(),
+           _fw_url.c_str(), _start_delay_ms);
 
   return move(debug_str);
 }

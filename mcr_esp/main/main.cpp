@@ -99,8 +99,8 @@ void app_main() {
   timestampTask->watchTaskStacks();
 
   // the main loop is a safety net for overall platform failures
+  bool boot_complete = false;
   for (;;) {
-    bool boot_complete = false;
 
     // safety net 1:
     //    wait for the name to be set for 90 seconds, if the name is not
@@ -138,6 +138,8 @@ void app_main() {
 
       mcrNVS::processCommittedMsgs();
       mcrNVS::commitMsg("BOOT", "LAST SUCCESSUL BOOT");
+
+      boot_complete = true;
     }
 
     // sleep for 60 seconds

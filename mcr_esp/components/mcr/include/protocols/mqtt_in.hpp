@@ -41,7 +41,7 @@
 namespace mcr {
 
 typedef struct {
-  std::string *topic = nullptr;
+  string_t *topic = nullptr;
   rawMsg_t *data = nullptr;
 } mqttInMsg_t;
 
