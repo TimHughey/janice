@@ -3,6 +3,7 @@ defmodule SensorTest do
 
   use ExUnit.Case, async: true
   import JanTest
+
   # import ExUnit.CaptureLog
 
   @moduletag :sensor

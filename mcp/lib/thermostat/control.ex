@@ -5,6 +5,52 @@ defmodule Thermostat.Control do
 
   alias Thermostat.Profile
 
+  def confirm_switch_position(%Thermostat{switch: switch} = t) do
+    sw_pos = Switch.position(switch)
+    confirm_switch_position(t, sw_pos, state_to_position(t))
+  end
+
+  def confirm_switch_position(%Thermostat{}, {:ok, sw_pos} = rc, state_pos)
+      when sw_pos == state_pos,
+      do: rc
+
+  def confirm_switch_position(
+        %Thermostat{name: name, switch: switch},
+        {:ok, sw_pos},
+        state_pos
+      )
+      when sw_pos != state_pos do
+    Logger.warn([
+      inspect(name),
+      " switch ",
+      inspect(switch),
+      " does not match state, force attempted"
+    ])
+
+    Switch.position(switch,
+      position: state_to_position(state_pos),
+      lazy: false
+    )
+  end
+
+  def confirm_switch_position(
+        %Thermostat{name: name, switch: switch},
+        sw_pos,
+        state_pos
+      ) do
+    Logger.warn([
+      inspect(name),
+      " switch ",
+      inspect(switch),
+      " position ",
+      inspect(sw_pos, pretty: true),
+      " does not match state ",
+      inspect(state_pos)
+    ])
+
+    sw_pos
+  end
+
   def current_val(%Thermostat{sensor: sensor}) do
     Sensor.fahrenheit(name: sensor, since_secs: 30)
   end
@@ -45,9 +91,6 @@ defmodule Thermostat.Control do
   def next_state(%{}, state, set_pt, val) do
     next_state(%{low_offset: 0.0, high_offset: 0.0}, state, set_pt, val)
   end
-
-  def state_to_position("on"), do: true
-  def state_to_position(_other), do: false
 
   def temperature(%Thermostat{name: name, active_profile: profile} = t)
       when is_nil(profile) do
@@ -103,4 +146,10 @@ defmodule Thermostat.Control do
 
     Thermostat.state(t, "off")
   end
+
+  defp state_to_position(%Thermostat{state: state}),
+    do: state_to_position(state)
+
+  defp state_to_position("on"), do: true
+  defp state_to_position(_other), do: false
 end

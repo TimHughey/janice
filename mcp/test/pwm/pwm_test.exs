@@ -34,7 +34,7 @@ defmodule PulseWidthTest do
     assert is_binary(hd(pwm.cmds) |> Map.get(:refid))
   end
 
-  test "can the duty of a PulseWidth" do
+  test "can set the duty of a PulseWidth" do
     device = device(2, 1)
 
     PulseWidth.duty(device, duty: :rand.uniform(4095))

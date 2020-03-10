@@ -208,9 +208,16 @@ defmodule PulseWidth do
   def find_by_device(device) when is_binary(device),
     do: Repo.get_by(__MODULE__, device: device)
 
+  def reload({:ok, %PulseWidth{id: id}}), do: reload(id)
+
   def reload(%PulseWidth{id: id}), do: reload(id)
 
   def reload(id) when is_number(id), do: Repo.get!(__MODULE__, id)
+
+  def reload(catchall) do
+    Logger.warn(["update() failed: ", inspect(catchall, pretty: true)])
+    {:error, catchall}
+  end
 
   def update(name, opts) when is_binary(name) and is_list(opts) do
     pwm = find(name)
@@ -224,7 +231,7 @@ defmodule PulseWidth do
     cs = changeset(pwm, set)
 
     if cs.valid?,
-      do: {:ok, Repo.update!(cs) |> reload()},
+      do: {:ok, Repo.update(cs, stale_error_field: :stale_error) |> reload()},
       else: {:invalid_changes, cs}
   end
 

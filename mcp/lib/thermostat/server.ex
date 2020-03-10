@@ -102,19 +102,18 @@ defmodule Thermostat.Server do
 
   def handle_call(%{:msg => :activate_profile} = msg, _from, s) do
     {rc, t} = handle_activate_profile(msg, s)
-    active = Profile.active(t)
 
-    timer = Map.get(s, :timer, nil)
-    if is_reference(timer), do: Process.cancel_timer(timer)
+    for x <- [
+          Map.get(s, :phase_timer, nil)
+        ],
+        is_reference(x),
+        do: Process.cancel_timer(x)
 
-    timer =
-      if rc == :ok and active != :none,
-        do: next_check_timer(s),
-        else: nil
-
-    s = Map.put(s, :thermostat, t) |> Map.put(:phase_timer, timer)
-
-    {:reply, rc, s}
+    {:reply, rc,
+     Map.merge(s, %{
+       phase_timer: next_check_timer(s),
+       thermostat: t
+     })}
   end
 
   def handle_call(%{:msg => :add_profile, profile: p}, _from, s) do
@@ -177,9 +176,16 @@ defmodule Thermostat.Server do
     {:reply, res, s}
   end
 
-  def handle_info(%{:msg => :next_check, :ms => _ms} = msg, s) do
+  def handle_info(%{:msg => {:next_check, :temperature}, :ms => _ms} = msg, s) do
     s = handle_check(msg, s)
     {:noreply, s}
+  end
+
+  def handle_info(
+        %{:msg => {:next_check, :switch}, :ms => _ms},
+        %{thermostat: %Thermostat{}} = s
+      ) do
+    {:noreply, next_switch_check_timer(s)}
   end
 
   def handle_info(
@@ -195,6 +201,15 @@ defmodule Thermostat.Server do
   def handle_info({:EXIT, _pid, _reason} = msg, state) do
     Logger.info([
       ":EXIT msg: ",
+      inspect(msg, pretty: true)
+    ])
+
+    {:noreply, state}
+  end
+
+  def handle_info(msg, state) do
+    Logger.warn([
+      "handle_info() unhandled msg: ",
       inspect(msg, pretty: true)
     ])
 
@@ -219,21 +234,39 @@ defmodule Thermostat.Server do
       }
   end
 
-  def init(%{server_name: server_name} = s) do
+  def init(
+        %{
+          server_name: server_name,
+          thermostat: %{switch_check_ms: switch_check_ms} = t
+        } = s
+      ) do
     Process.flag(:trap_exit, true)
     Process.send_after(server_name, %{:msg => :scheduled_work}, 100)
-    {rc1, t} = Control.stop(s.thermostat)
+    {rc1, t} = Control.stop(t)
+
+    switch_check_timer =
+      Process.send_after(
+        server_name,
+        %{:msg => {:next_check, :switch}, :ms => switch_check_ms},
+        switch_check_ms
+      )
+
+    s =
+      Map.merge(s, %{
+        switch_check_timer: switch_check_timer,
+        switch_check_rc: {:before_first_check}
+      })
 
     if rc1 == :ok do
       s = Map.put(s, :thermostat, t) |> start()
 
       {rc2, t} = first_check({rc1, s.thermostat})
 
-      s = Map.put(s, :thermostat, t)
-
-      timer = next_check_timer(s)
-
-      s = Map.put(s, :timer, timer)
+      s =
+        Map.merge(s, %{
+          thermostat: t,
+          phase_timer: next_check_timer(s)
+        })
 
       if rc2 === :nil_active_profile or rc2 === :ok do
         {:ok, s}
@@ -332,8 +365,11 @@ defmodule Thermostat.Server do
     end
   end
 
-  defp handle_check(%{:msg => :next_check, :ms => _ms}, s) do
-    {rc, t} = Control.temperature(s.thermostat)
+  defp handle_check(
+         %{:msg => {:next_check, :temperature}, :ms => _ms},
+         %{thermostat: %Thermostat{} = t} = s
+       ) do
+    {rc, t} = Control.temperature(t)
 
     timer = next_check_timer(s)
 
@@ -362,16 +398,30 @@ defmodule Thermostat.Server do
     Profile.update(t, profile, opts)
   end
 
-  defp next_check_timer(s) when is_map(s) do
-    profile = Profile.active(s.thermostat)
-
-    if profile === :none do
+  defp next_check_timer(%{server_name: server_name, thermostat: t}) do
+    if Profile.active(t) === :none do
       nil
     else
-      ms = Profile.check_ms(profile)
-      msg = %{:msg => :next_check, :ms => ms}
-      Process.send_after(s.server_name, msg, ms)
+      ms = Profile.active(t) |> Profile.check_ms()
+      msg = %{:msg => {:next_check, :temperature}, :ms => ms}
+      Process.send_after(server_name, msg, ms)
     end
+  end
+
+  defp next_switch_check_timer(
+         %{
+           server_name: server_name,
+           thermostat: %Thermostat{switch_check_ms: switch_check_ms} = t
+         } = s
+       ) do
+    msg = %{msg: {:next_check, :switch}, ms: switch_check_ms}
+
+    %{
+      s
+      | switch_check_rc: Control.confirm_switch_position(t),
+        switch_check_timer:
+          Process.send_after(server_name, msg, switch_check_ms)
+    }
   end
 
   defp reload_thermostat(%{thermostat_id: id, need_reload: true} = s) do

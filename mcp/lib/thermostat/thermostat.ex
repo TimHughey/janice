@@ -42,6 +42,7 @@ defmodule Thermostat do
     field(:state)
     field(:state_at, :utc_datetime_usec)
     field(:log, :boolean)
+    field(:switch_check_ms, :integer, default: 15 * 60 * 1000)
 
     has_many(:profiles, Profile)
 

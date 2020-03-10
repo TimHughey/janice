@@ -2,6 +2,7 @@ defmodule ThermostatTest do
   @moduledoc false
 
   use ExUnit.Case, async: true
+
   # import ExUnit.CaptureLog
 
   import JanTest, only: [create_switch: 5, create_temp_sensor: 4, device: 2]
@@ -40,9 +41,12 @@ defmodule ThermostatTest do
       description: "test thermostat " <> num_str,
       switch: sw_name,
       sensor: sensor,
-      log: true,
+      log: false,
       profiles: [
-        %Profile{name: "follow", ref_sensor: follow_sensor},
+        %Profile{
+          name: "follow",
+          ref_sensor: follow_sensor
+        },
         %Profile{name: "fixed_25", fixed_setpt: 25.0},
         %Profile{
           name: "fixed_26",
@@ -152,7 +156,7 @@ defmodule ThermostatTest do
     assert t2.state === new_state
   end
 
-  test "can activate profile directly on a %Thermostat{} and check profile exists" do
+  test "can activate profile %Thermostat{} and check profile exists" do
     t = Thermostat.get_by(name: name_str(6))
 
     {rc1, t2} = Thermostat.activate_profile(t, "fixed_26")
@@ -227,7 +231,9 @@ defmodule ThermostatTest do
       name: "defaults",
       switch: "default_sw",
       sensor: "default_sensor",
-      description: "default description"
+      description: "default description",
+      switch_check_ms: 5000,
+      log: true
     }
 
     rc = Thermostat.add(t)

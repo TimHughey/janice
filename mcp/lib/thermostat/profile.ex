@@ -5,6 +5,7 @@ defmodule Thermostat.Profile do
   use Ecto.Schema
 
   import Ecto.Changeset, only: [change: 2]
+
   # import Repo, only: [one: 1, update!: 1]
   # import Ecto.Query, only: [from: 2]
 
@@ -15,10 +16,8 @@ defmodule Thermostat.Profile do
     field(:low_offset, :float)
     field(:high_offset, :float)
     field(:check_ms, :integer)
-
     field(:ref_sensor)
     field(:ref_offset, :float)
-
     field(:fixed_setpt, :float)
 
     belongs_to(:thermostat, Thermostat)
