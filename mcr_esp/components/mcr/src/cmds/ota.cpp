@@ -2,7 +2,6 @@
 
 #include "cmds/ota.hpp"
 #include "misc/mcr_restart.hpp"
-#include "protocols/mqtt.hpp"
 
 namespace mcr {
 
@@ -43,8 +42,6 @@ void mcrCmdOTA::doUpdate() {
   }
 
   _ota_in_progress = true;
-
-  mcrMQTT::otaPrep();
 
   textReading_t *rlog = new textReading_t;
   textReading_ptr_t rlog_ptr(rlog);

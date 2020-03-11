@@ -62,37 +62,6 @@ idf_component_register(
   EMBED_FILES
     ca.pem)
 
-# build up the compile options
-if(DEFINED ENV{MCR_ENV})
-  message(STATUS "Using MCR_ENV=" $ENV{MCR_ENV} " from the env")
-else()
-  set(ENV{MCR_ENV} "dev")
-  message(STATUS "MCR_ENV not set in env, defaulting to MCR_ENV=$ENV{MCR_ENV}")
-endif()
-
-set(
-  MG_DEFINES
-    "-DMG_LOCALS -DMG_ENABLE_HTTP=0")
-
-set(
-  ARDUINOJSON_DEFINES
-    "-DARDUINOJSON_ENABLE_STD_STREAM -DARDUINOJSON_USE_LONG_LONG")
-
-if(DEFINED ENV{MCR_MQTT_HOST})
-  message(STATUS "Using MCR_MQTT_HOST=" $ENV{MCR_MQTT_HOST} " from the env")
-  set(
-    MCR_DEFINES
-      "-DMCR_ENV=$ENV{MCR_ENV} -DMCR_MQTT_HOST=\"$ENV{MCR_MQTT_HOST}\"")
-else()
-  set(
-    MCR_DEFINES
-      "-DMCR_ENV=$ENV{MCR_ENV}")
-endif()
-
-set(
-  COMPILE_DEFINES
-    "${MG_DEFINES} ${ARDUINOJSON_DEFINES} ${MCR_DEFINES}")
-
-
-target_compile_options(${COMPONENT_LIB} PRIVATE -DMG_LOCALS -DMG_ENABLE_HTTP=0
-  -DARDUINOJSON_ENABLE_STD_STREAM -DARDUINOJSON_USE_LONG_LONG)
+target_compile_definitions(${COMPONENT_LIB} PRIVATE
+  MG_LOCALS MG_ENABLE_HTTP=0 ARDUINOJSON_ENABLE_STD_STREAM
+  ARDUINOJSON_USE_LONG_LONG)

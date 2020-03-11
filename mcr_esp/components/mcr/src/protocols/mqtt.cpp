@@ -171,11 +171,6 @@ void mcrMQTT::incomingMsg(struct mg_str *in_topic, struct mg_str *in_payload) {
   }
 }
 
-void mcrMQTT::__otaPrep() {
-  ESP_LOGI(tagEngine(), "increasing mcrMQTTin task priority");
-  _mqtt_in->changePriority(_task.priority + 1);
-}
-
 void mcrMQTT::publish(Reading_t *reading) {
   auto *json = reading->json();
 
@@ -319,11 +314,6 @@ void mcrMQTT::subACK(struct mg_mqtt_message *msg) {
     Net::setTransportReady();
     // NOTE: do not announce startup here.  doing so creates a race condition
     // that results in occasionally using epoch as the startup time
-
-  } else if (msg->message_id == _ota_feed_msg_id) {
-    ESP_LOGI(tagEngine(), "subscribed to OTA feed");
-    _ota_subscribed = true;
-
   } else {
     ESP_LOGW(tagEngine(), "suback did not match known subscription requests");
   }

@@ -54,12 +54,10 @@ public:
   void handshake(struct mg_connection *nc);
   void incomingMsg(struct mg_str *topic, struct mg_str *payload);
   bool isReady() { return _mqtt_ready; };
-  static void otaPrep() { instance()->__otaPrep(); };
   void publish(Reading_t *reading);
   void publish(Reading_t &reading);
   void publish(std::unique_ptr<Reading_t> reading);
   void core(void *data);
-  void setSubscribedOTA() { _ota_subscribed = true; };
   void subACK(struct mg_mqtt_message *msg);
   void subscribeCommandFeed(struct mg_connection *nc);
 
@@ -117,7 +115,6 @@ private:
       (sizeof(mqttOutMsg_t) * CONFIG_MCR_MQTT_RINGBUFFER_PENDING_MSGS);
   const size_t _q_in_len =
       ((sizeof(mqttInMsg_t) * CONFIG_MCR_MQTT_RINGBUFFER_PENDING_MSGS) / 2);
-  bool _ota_overload = false;
   QueueHandle_t _q_out = nullptr;
   QueueHandle_t _q_in = nullptr;
 
@@ -131,15 +128,9 @@ private:
   const char *_rpt_feed = CONFIG_MCR_MQTT_RPT_FEED;
 
   const char *_cmd_feed = CONFIG_MCR_MQTT_CMD_FEED;
-  uint16_t _cmd_feed_msg_id = 0;
-
-  const char *_ota_feed = CONFIG_MCR_MQTT_OTA_FEED;
-  uint16_t _ota_feed_msg_id = 0;
-  bool _ota_subscribed = false;
-  time_t _ota_start_time = 0;
+  uint16_t _cmd_feed_msg_id = 1;
 
   void announceStartup();
-  void __otaPrep();
   void outboundMsg();
 
   void publish(string_t *json);

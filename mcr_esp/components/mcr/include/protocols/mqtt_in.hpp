@@ -28,7 +28,6 @@
 #include <vector>
 
 #include <esp_log.h>
-#include <esp_ota_ops.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/event_groups.h>
 #include <freertos/queue.h>

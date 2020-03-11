@@ -1,5 +1,9 @@
 menu "MCR"
 
+config MG_ENABLE_SYNC_RESOLVER
+	bool "Use Mongoose synchronous DNS resolver"
+	default true
+
 menu "Network"
 	config WIFI_SSID
 	    string "WiFi SSID"
@@ -225,16 +229,6 @@ menu "IoT"
 			help
 				Topic (feed) for receiving commands from the IoT endpoint
 
-		config MCR_MQTT_OTA_FEED
-			depends on MCR_MQTT_CONFIG
-			string "Over-The-Air (OTA) Subscribe Topc (Feed)"
-			default "prod/mcr/f/ota"
-			help
-				MCR devices can receive firmware upgrades OTA.  This is the feed (topic)
-				that will be used exclusively for the firmware binary.
-
-
-
 
 			config MCR_MQTT_RINGBUFFER_PENDING_MSGS
 				depends on MCR_IOT_TASKS
@@ -291,16 +285,6 @@ menu "IoT"
 					It is advisable to match this value with the inbound message wait to best balance the
 					processing of inbound and outbound messages.
 	endmenu
-
-	config PROD_BUILD
-		bool "Build for Production"
-		default true
-		help
-			Set to true to indicate this is a production build
-
-	config MG_ENABLE_SYNC_RESOLVER
-		bool "Use Mongoose synchronous DNS resolver"
-		default true
 
 menu "Task Priorities"
 	config MCR_TASK_PRIORITIES
