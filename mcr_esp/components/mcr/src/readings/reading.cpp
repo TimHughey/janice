@@ -97,7 +97,7 @@ std::string *Reading::json(char *buffer, size_t len) {
   commonJSON(doc);
   populateJSON(doc);
 
-  serializeJson(doc, *json_string);
+  serializeMsgPack(doc, *json_string);
 
   return json_string;
 }

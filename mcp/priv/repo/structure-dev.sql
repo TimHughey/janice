@@ -139,10 +139,13 @@ ALTER SEQUENCE public.dutycycle_state_id_seq OWNED BY public.dutycycle_state.id;
 CREATE TABLE public.message (
     id bigint NOT NULL,
     direction character varying(15) NOT NULL,
-    payload text,
+    src_host text DEFAULT ' '::text NOT NULL,
+    msgpack bytea DEFAULT '\x00'::bytea NOT NULL,
+    json text DEFAULT ' '::text NOT NULL,
     dropped boolean DEFAULT false NOT NULL,
-    inserted_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
+    keep_for_testing boolean DEFAULT false NOT NULL,
+    inserted_at timestamp(0) without time zone NOT NULL,
+    updated_at timestamp(0) without time zone NOT NULL
 );
 
 
@@ -612,7 +615,8 @@ CREATE TABLE public.thermostat (
     state_at timestamp without time zone,
     log boolean DEFAULT false NOT NULL,
     inserted_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
+    updated_at timestamp without time zone NOT NULL,
+    switch_check_ms integer DEFAULT 900000
 );
 
 
@@ -965,6 +969,13 @@ CREATE INDEX message_inserted_at_index ON public.message USING btree (inserted_a
 
 
 --
+-- Name: message_keep_for_testing_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX message_keep_for_testing_index ON public.message USING btree (keep_for_testing);
+
+
+--
 -- Name: pwm_cmd_acked_index; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1257,5 +1268,5 @@ ALTER TABLE ONLY public.thermostat_profile
 -- PostgreSQL database dump complete
 --
 
-INSERT INTO public."schema_migrations" (version) VALUES (20171217150128), (20171224164529), (20171224225113), (20171228191703), (20171229001359), (20171231182344), (20180101153253), (20180102171624), (20180102175335), (20180217212153), (20180218021213), (20180222165118), (20180222184042), (20180305193804), (20180307143400), (20180517201719), (20180708221600), (20180709181021), (20190308124055), (20190316032007), (20190317155502), (20190320124824), (20190416130912), (20190417011910), (20191018110319), (20191022013914), (20200105131440), (20200115151705), (20200116024319), (20200127033742), (20200128032134), (20200210202655), (20200212175538), (20200212183409), (20200213192845), (20200215173921), (20200217154954), (20200302001850), (20200302155853);
+INSERT INTO public."schema_migrations" (version) VALUES (20171217150128), (20171224164529), (20171224225113), (20171228191703), (20171229001359), (20171231182344), (20180101153253), (20180102171624), (20180102175335), (20180217212153), (20180218021213), (20180222165118), (20180222184042), (20180305193804), (20180307143400), (20180517201719), (20180708221600), (20180709181021), (20190308124055), (20190316032007), (20190317155502), (20190320124824), (20190416130912), (20190417011910), (20191018110319), (20191022013914), (20200105131440), (20200115151705), (20200116024319), (20200127033742), (20200128032134), (20200210202655), (20200212175538), (20200212183409), (20200213192845), (20200215173921), (20200217154954), (20200302001850), (20200302155853), (20200309213120), (20200311130709);
 

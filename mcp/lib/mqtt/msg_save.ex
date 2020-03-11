@@ -7,17 +7,28 @@ defmodule MessageSave do
   use Timex
 
   import Application, only: [get_env: 3]
+
+  import Ecto.Changeset,
+    only: [
+      cast: 3,
+      validate_required: 2
+    ]
+
   import Ecto.Query, only: [from: 2]
-  import Repo, only: [one!: 1, insert!: 1]
+  import Repo, only: [one!: 1]
 
   import Janice.TimeSupport, only: [list_to_duration: 1, utc_shift: 1]
 
+  alias Mqtt.Reading
   alias Timex.Format.Duration.Formatter, as: DurationFormat
 
   schema "message" do
-    field(:direction, :string)
-    field(:payload, :string)
-    field(:dropped, :boolean)
+    field(:direction, :string, null: false)
+    field(:src_host, :string, null: false, default: " ")
+    field(:msgpack, :binary, null: false)
+    field(:json, :string, null: false, default: " ")
+    field(:dropped, :boolean, null: false, default: false)
+    field(:keep_for_testing, :boolean, null: false, default: false)
 
     timestamps(usec: true)
   end
@@ -77,6 +88,17 @@ defmodule MessageSave do
       else: {:ok, s}
   end
 
+  def last_saved_msg do
+    msg =
+      from(ms in MessageSave, order_by: [desc: ms.inserted_at], limit: 1)
+      |> Repo.all()
+      |> hd()
+
+    if is_nil(msg),
+      do: [msg: nil, decoded: nil],
+      else: [msg: msg, decoded: Reading.decode(Map.get(msg, :msgpack))]
+  end
+
   def start_link(args) do
     defs = [
       save: false,
@@ -106,9 +128,13 @@ defmodule MessageSave do
         %{opts: opts} = s
       )
       when is_list(opts) do
-    {:noreply,
-     save_msg(s, direction, payload, dropped, Keyword.get(opts, :save, true))
-     |> purge_msgs(opts)}
+    opts = [dropped: dropped] ++ opts
+
+    s =
+      save_msg(s, direction, payload, opts)
+      |> purge_msgs(opts)
+
+    {:noreply, s}
   end
 
   def handle_cast(catchall, s) do
@@ -134,6 +160,38 @@ defmodule MessageSave do
   defp calculate_next_purge(%{} = s, opts) do
     duration = list_to_duration(get_in(opts, [:purge, :older_than]))
     Map.put(s, :next_purge, utc_shift(duration))
+  end
+
+  defp changes_possible,
+    do: [:direction, :dropped, :json, :msgpack, :keep_for_testing, :src_host]
+
+  defp changes_required,
+    do: [:direction]
+
+  defp changeset(x, params) when is_list(params),
+    do: changeset(x, Enum.into(params, %{}))
+
+  defp changeset(x, params) when is_map(params) do
+    x
+    |> cast(params, changes_possible())
+    |> validate_required(changes_required())
+  end
+
+  defp insert_msg(s, %MessageSave{} = msg_save, opts) do
+    cs = changeset(msg_save, opts)
+
+    with {:cs_valid, true} <- {:cs_valid, cs.valid?()},
+         {:ok, %MessageSave{id: _id}} = rc <- Repo.insert(cs) do
+      Map.put(s, :last_msg_rc, rc)
+    else
+      {:cs_valid, false} ->
+        Logger.warn(["save_msg() invalid changes: ", inspect(cs, pretty: true)])
+        Map.put(s, :last_msg_rc, {:invalid_changes, cs})
+
+      error ->
+        Logger.warn(["save_msg() error: ", inspect(error, pretty: true)])
+        Map.put(s, :last_msg_rc, {:error, error})
+    end
   end
 
   defp log_delete(r) when is_list(r) do
@@ -197,15 +255,62 @@ defmodule MessageSave do
     calculate_next_purge(s, opts)
   end
 
-  defp save_msg(s, direction, payload, dropped, save) do
-    if save == true,
-      do:
-        %MessageSave{
-          direction: Atom.to_string(direction),
-          payload: payload,
-          dropped: dropped
-        }
-        |> insert!()
+  # should this message be saved?
+  defp save_msg(s, direction, payload, opts) when is_list(opts) do
+    if Keyword.get(opts, :save, false),
+      do: save_msg(s, direction, payload, true, opts),
+      else: s
+  end
+
+  # save JSON messages
+  defp save_msg(
+         s,
+         direction,
+         <<0x7B::utf8, _rest::binary>> = payload,
+         true = _save,
+         opts
+       ) do
+    opts = [direction: Atom.to_string(direction), json: payload] ++ opts
+
+    insert_msg(s, %MessageSave{}, opts)
+  end
+
+  # save MsgPack messages
+  defp save_msg(
+         s,
+         direction,
+         <<first_byte::size(1), _rest::bitstring>> = payload,
+         true = _save,
+         opts
+       )
+       # first byte isn't null and not '{'
+       when first_byte > 0x00 and first_byte != 0x7B do
+    opts = [direction: Atom.to_string(direction), msgpack: payload] ++ opts
+
+    with {:direction, :in} <- {:direction, direction},
+         {:ok, msg_map} <- Reading.decode(payload),
+         {:host, true, host} <-
+           {:host, Map.has_key?(msg_map, :host), Map.get(msg_map, :host, false)} do
+      opts = [src_host: host] ++ opts
+      insert_msg(s, %MessageSave{}, opts)
+    else
+      {:direction, :out} ->
+        opts = [src_host: "<mcp>"] ++ opts
+        insert_msg(s, %MessageSave{}, opts)
+
+      _anything ->
+        opts = [src_host: "<unknown>"] ++ opts
+        insert_msg(s, %MessageSave{}, opts)
+    end
+  end
+
+  defp save_msg(s, direction, payload, _save, _opts) do
+    Logger.warn([
+      "save_msg() dropping: ",
+      inspect(direction),
+      " ",
+      inspect(payload, pretty: true)
+    ])
 
     s
   end

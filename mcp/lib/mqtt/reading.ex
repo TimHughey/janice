@@ -60,7 +60,7 @@ defmodule Mqtt.Reading do
         # NOTE: Msgpax.unpack() returns maps with binaries as keys so let's
         #       convert them to atoms
         map_keys_as_atoms = fn {k, v}, x ->
-          Map.put(x, String.to_existing_atom(k), v)
+          Map.put(x, String.to_atom(k), v)
         end
 
         {:ok,
