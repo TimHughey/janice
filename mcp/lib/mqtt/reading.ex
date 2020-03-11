@@ -59,12 +59,9 @@ defmodule Mqtt.Reading do
       {:ok, r} ->
         # NOTE: Msgpax.unpack() returns maps with binaries as keys so let's
         #       convert them to atoms
-        map_keys_as_atoms = fn {k, v}, x ->
-          Map.put(x, String.to_atom(k), v)
-        end
 
         {:ok,
-         Enum.reduce(r, %{}, map_keys_as_atoms)
+         atomize_keys(r)
          |> Map.merge(%{msgpack: msg, msg_recv_dt: TimeSupport.utc_now()})
          |> check_metadata()}
 
@@ -304,4 +301,20 @@ defmodule Mqtt.Reading do
       do: switch?(r)
 
   def cmdack(_anything), do: false
+
+  defp atomize_keys(%{} = map) do
+    map
+    |> Enum.map(fn {k, v} -> {String.to_atom(k), atomize_keys(v)} end)
+    |> Enum.into(%{})
+  end
+
+  # Walk the list and atomize the keys of
+  # of any map members
+  defp atomize_keys([head | rest]) do
+    [atomize_keys(head) | atomize_keys(rest)]
+  end
+
+  defp atomize_keys(not_a_map) do
+    not_a_map
+  end
 end

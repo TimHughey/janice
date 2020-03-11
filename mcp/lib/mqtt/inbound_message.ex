@@ -325,7 +325,7 @@ defmodule Mqtt.InboundMessage do
 
       Reading.simple_text?(r) ->
         log = Map.get(r, :log, true)
-        log && Logger.warn([r.name, " MSG: ", r.text])
+        log && Logger.info([r.name, " ", r.text])
 
       true ->
         Logger.warn([r.name, " unhandled reading ", inspect(r, pretty: true)])

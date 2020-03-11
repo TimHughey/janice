@@ -405,7 +405,7 @@ defmodule Remote do
     log = Map.get(eu, :log, true)
 
     log &&
-      Logger.warn(fn ->
+      Logger.info(fn ->
         heap_free = (Map.get(eu, :heap_free, 0) / 1024) |> Float.round(1)
         heap_min = (Map.get(eu, :heap_min, 0) / 1024) |> Float.round(1)
 
