@@ -3,7 +3,7 @@ defmodule ThermostatTest do
 
   use ExUnit.Case, async: true
 
-  # import ExUnit.CaptureLog
+  import ExUnit.CaptureLog
 
   import JanTest, only: [create_switch: 5, create_temp_sensor: 4, device: 2]
 
@@ -224,6 +224,25 @@ defmodule ThermostatTest do
 
     assert rc === :ok
     assert state in ["stopped", "off"]
+  end
+
+  test "can update a Themostat via the server" do
+    {rc, res} = Thermostat.Server.update(name_str(13), switch_check_ms: 200)
+
+    assert rc === :ok
+    assert is_map(res)
+    assert Map.has_key?(res, :thermostat)
+    assert %Thermostat{} = Map.get(res, :thermostat)
+  end
+
+  test "can handle bad opts to Thermostat update via server" do
+    func = fn ->
+      {_rc, _res} = Thermostat.Server.update(name_str(13), switch_check_ms: 0)
+    end
+
+    msg = capture_log(func)
+
+    assert msg =~ "must be greater than"
   end
 
   test "can create default Thermostat" do

@@ -38,7 +38,7 @@ defmodule Mqtt.Reading do
     ...> Jason.decode!(json, keys: :atoms) |> Mqtt.Reading.metadata?()
     true
   """
-  def decode(json) do
+  def decode(<<123::utf8, _rest::binary>> = json) do
     case Jason.decode(json, keys: :atoms) do
       {:ok, r} ->
         r =
@@ -54,6 +54,25 @@ defmodule Mqtt.Reading do
     end
   end
 
+  def decode(msg) do
+    case Msgpax.unpack(msg) do
+      {:ok, r} ->
+        # NOTE: Msgpax.unpack() returns maps with binaries as keys so let's
+        #       convert them to atoms
+        map_keys_as_atoms = fn {k, v}, x ->
+          Map.put(x, String.to_existing_atom(k), v)
+        end
+
+        {:ok,
+         Enum.reduce(r, %{}, map_keys_as_atoms)
+         |> Map.merge(%{msgpack: msg, msg_recv_dt: TimeSupport.utc_now()})
+         |> check_metadata()}
+
+      {:error, error} ->
+        {:error, error}
+    end
+  end
+
   @doc ~S"""
   Does the Reading have the base metadata?
 
@@ -62,7 +81,6 @@ defmodule Mqtt.Reading do
         2. We also check the mtime to confirm it is greater than epoch + 1 year.
            This is a safety check for situations where a host is reporting
            readings without the time set
-        3. As of 2019-04-16 vsn is only sent as part of a startup mesg
 
    ##Examples:
     iex> json =
@@ -281,11 +299,9 @@ defmodule Mqtt.Reading do
     ...> Jason.decode!(json, keys: :atoms) |> Mqtt.Reading.cmdack?()
     true
   """
-  def cmdack?(%{} = r) do
-    cmdack = Map.get(r, :cmdack)
-    latency = Map.get(r, :dev_latency_us)
-    refid = Map.get(r, :refid)
+  def cmdack?(%{cmdack: true, dev_latency_us: latency, refid: refid} = r)
+      when latency > 0 and is_binary(refid),
+      do: switch?(r)
 
-    switch?(r) and cmdack === true and latency > 0 and is_binary(refid)
-  end
+  def cmdack(_anything), do: false
 end

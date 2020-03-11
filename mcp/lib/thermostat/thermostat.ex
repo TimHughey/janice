@@ -25,9 +25,19 @@ defmodule Thermostat do
   import Repo,
     only: [one: 1, get_by: 2, insert_or_update!: 1, preload: 2, preload: 3]
 
-  import Ecto.Changeset, only: [change: 2]
+  import Ecto.Changeset,
+    only: [
+      cast: 3,
+      change: 2,
+      unique_constraint: 3,
+      validate_format: 3,
+      validate_number: 3,
+      validate_required: 2
+    ]
+
   import Ecto.Query, only: [from: 2]
 
+  import Janice.Common.DB, only: [name_regex: 0]
   alias Janice.TimeSupport
 
   alias Thermostat.Profile
@@ -167,6 +177,13 @@ defmodule Thermostat do
     end
   end
 
+  def reload(%Thermostat{id: id}), do: reload(id)
+
+  def reload(id) when is_number(id),
+    do:
+      Repo.get!(Thermostat, id)
+      |> preload([:profiles], force: true)
+
   def state(%Thermostat{state: curr_state}), do: curr_state
 
   def state(%Thermostat{} = t, new_state) when is_binary(new_state) do
@@ -178,4 +195,58 @@ defmodule Thermostat do
   end
 
   def switch(%Thermostat{switch: sw}), do: sw
+
+  def update(name, opts) when is_binary(name) and is_list(opts) do
+    with x <- find(name),
+         {true, _name} <- {%Thermostat{} = x, name} do
+      update(x, opts)
+    else
+      {false, name} ->
+        Logger.warn([
+          inspect(name, pretty: true),
+          "does not exist, can't update"
+        ])
+
+        {:not_found, name}
+    end
+  end
+
+  def update(%Thermostat{name: name, log: log} = x, opts) when is_list(opts) do
+    set = Keyword.take(opts, possible_changes()) |> Enum.into(%{})
+
+    cs = changeset(x, set)
+
+    if cs.valid? do
+      x = Repo.update!(cs) |> reload()
+
+      log &&
+        Logger.info([
+          inspect(name, pretty: true),
+          " updated ",
+          inspect(opts, pretty: true)
+        ])
+
+      {:ok, x}
+    else
+      {:invalid_changes, cs}
+    end
+  end
+
+  defp changeset(x, params) when is_list(params),
+    do: changeset(x, Enum.into(params, %{}))
+
+  defp changeset(x, params) when is_map(params) do
+    x
+    |> cast(params, possible_changes())
+    |> validate_required(required_changes())
+    |> validate_format(:name, name_regex())
+    |> validate_number(:switch_check_ms, greater_than_or_equal_to: 100)
+    |> unique_constraint(:name, name: :thermostat_name_index)
+  end
+
+  defp possible_changes,
+    do: [:name, :description, :switch, :sensor, :log, :switch_check_ms]
+
+  defp required_changes,
+    do: [:name, :switch, :sensor, :log, :switch_check_ms]
 end

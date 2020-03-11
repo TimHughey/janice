@@ -90,6 +90,11 @@ defmodule Thermostat.Server do
     if is_pid(pid), do: GenServer.call(server_name, msg), else: :no_server
   end
 
+  def update(name, opts \\ []) when is_list(opts) do
+    msg = %{:msg => :update, opts: opts}
+    call_server(name, msg)
+  end
+
   def update_profile(name, %{name: profile} = map, opts \\ [])
       when is_binary(profile) do
     msg = %{:msg => :update_profile, :profile => map, opts: opts}
@@ -161,6 +166,42 @@ defmodule Thermostat.Server do
   end
 
   def handle_call(
+        %{msg: :update, opts: opts},
+        _from,
+        %{thermostat: %Thermostat{name: name} = th} = s
+      ) do
+    with %Thermostat{} = x <- Thermostat.reload(th),
+         {:update, {:ok, %Thermostat{} = x}} <-
+           {:update, Thermostat.update(x, opts)} do
+      # success, update the state with the thermostat and
+      # invoke handle_continue() to apply the thermostat updates
+
+      {:reply, {:ok, %{thermostat: x}}, %{s | thermostat: x},
+       {:continue, {:apply_thermostat_updates, opts}}}
+    else
+      # since the update failed there are no updates to apply to the server
+      # so just return the error
+      {:update, error} ->
+        Logger.warn([
+          inspect(name),
+          " update failed ",
+          inspect(error, pretty: true)
+        ])
+
+        {:reply, {:failed, error}, s}
+
+      error ->
+        Logger.warn([
+          inspect(name),
+          " update error ",
+          inspect(error, pretty: true)
+        ])
+
+        {:reply, {:error, error}, s}
+    end
+  end
+
+  def handle_call(
         %{:msg => :update_profile, :profile => profile, :opts => opts},
         _from,
         s
@@ -174,6 +215,25 @@ defmodule Thermostat.Server do
       |> reload_thermostat()
 
     {:reply, res, s}
+  end
+
+  def handle_call(catchall, _from, s) do
+    Logger.warn([
+      "handle_call() unhandled msg: ",
+      inspect(catchall, pretty: true)
+    ])
+
+    {:reply, :unhandled_msg, s}
+  end
+
+  def handle_continue({:apply_thermostat_updates, opts}, %{thermostat: _} = s) do
+    switch_check_ms = Keyword.get(opts, :switch_check_ms, false)
+
+    if switch_check_ms do
+      {:noreply, next_switch_check_timer(s)}
+    else
+      {:noreply, s}
+    end
   end
 
   def handle_info(%{:msg => {:next_check, :temperature}, :ms => _ms} = msg, s) do
@@ -411,9 +471,12 @@ defmodule Thermostat.Server do
   defp next_switch_check_timer(
          %{
            server_name: server_name,
-           thermostat: %Thermostat{switch_check_ms: switch_check_ms} = t
+           thermostat: %Thermostat{switch_check_ms: switch_check_ms} = t,
+           switch_check_timer: timer
          } = s
        ) do
+    if is_reference(timer), do: Process.cancel_timer(timer)
+
     msg = %{msg: {:next_check, :switch}, ms: switch_check_ms}
 
     %{
@@ -423,6 +486,13 @@ defmodule Thermostat.Server do
           Process.send_after(server_name, msg, switch_check_ms)
     }
   end
+
+  # if switch_check_timer isn't in the state then add it
+  defp next_switch_check_timer(%{} = s),
+    do:
+      Map.put_new(s, :switch_check_timer, nil)
+      |> Map.put_new(:switch_check_rc, false)
+      |> next_switch_check_timer()
 
   defp reload_thermostat(%{thermostat_id: id, need_reload: true} = s) do
     t = Thermostat.get_by(id: id)
