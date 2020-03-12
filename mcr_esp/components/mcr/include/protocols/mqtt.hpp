@@ -100,7 +100,7 @@ private:
 
   struct mg_mgr _mgr = {};
   struct mg_connection *_connection = nullptr;
-  uint16_t _msg_id = 0;
+  uint16_t _msg_id = (uint16_t)esp_random() + 1;
   bool _mqtt_ready = false;
 
   const string_t _env = CONFIG_MCR_ENV;

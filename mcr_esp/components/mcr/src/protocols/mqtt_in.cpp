@@ -86,7 +86,7 @@ void mcrMQTTin::core(void *data) {
       // msg->data);
 
       // reminder:  must do a != to test for equality
-      if (msg->topic->find(_cmd_feed) != std::string::npos) {
+      if (msg->topic->find(_cmd_feed) != string_t::npos) {
         mcrCmd_t *cmd = factory.fromRaw(doc, msg->data);
         mcrCmd_t_ptr cmd_ptr(cmd);
 

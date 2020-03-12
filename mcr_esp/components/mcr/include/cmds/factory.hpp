@@ -44,7 +44,7 @@ namespace mcr {
 typedef class mcrCmdFactory mcrCmdFactory_t;
 class mcrCmdFactory {
 private:
-  mcrCmd_t *fromJSON(JsonDocument &doc, rawMsg_t *raw);
+  mcrCmd_t *manufacture(JsonDocument &doc, elapsedMicros &parse_elapsed);
 
 public:
   mcrCmdFactory();

@@ -12,40 +12,54 @@ static const char *TAG = "mcrCmdFactory";
 static const int _jsonBufferCapacity =
     JSON_OBJECT_SIZE(10) + JSON_ARRAY_SIZE(8) + JSON_OBJECT_SIZE(2) * 8;
 
-// static const DynamicJsonDocument doc(1024);
-
 mcrCmdFactory::mcrCmdFactory() {
   // ESP_LOGI(TAG, "JSON static buffer capacity: %d", _jsonBufferCapacity);
 }
 
 mcrCmd_t *mcrCmdFactory::fromRaw(JsonDocument &doc, rawMsg_t *raw) {
   mcrCmd_t *cmd = nullptr;
+  elapsedMicros parse_elapsed;
 
-  if ((raw->size() > 0) && (raw->at(0) == '{')) {
-    cmd = fromJSON(doc, raw);
+  // if the payload is empty there's nothing to do, return a nullptr
+  if (raw->empty()) {
+    ESP_LOGW(TAG, "payload is zero length, ignoring");
+    return cmd;
+  }
+
+  DeserializationError err;
+
+  if (raw->at(0) == '{') {
+    // this looks like a JSON payload, let's deseralize it
+    raw->push_back(0x00); // ensure payload is null terminated
+    err = deserializeJson(doc, (const char *)raw->data());
+
+  } else if (raw->at(0) > 0) {
+    // this might be a MsgPack payload, let's deseralize it
+    err = deserializeMsgPack(doc, (const char *)raw->data());
+
   } else {
-    ESP_LOGW(TAG, "ignoring json (zero length or malformed)");
+    ESP_LOGW(TAG, "payload is not MsgPack or JSON, ignoring");
+  }
+
+  // parsing complete, freeze the elapsed timer
+  parse_elapsed.freeze();
+
+  // did the deserailization succeed?
+  // if so, manufacture the derived cmd
+  if (err) {
+    ESP_LOGW(TAG, "[%s] JSON parse failure", err.c_str());
+  } else {
+    // deserialization success, manufacture the derived cmd
+    cmd = manufacture(doc, parse_elapsed);
   }
 
   return cmd;
 }
 
-mcrCmd_t *mcrCmdFactory::fromJSON(JsonDocument &doc, rawMsg_t *raw) {
-  // StaticJsonDocument<_jsonBufferCapacity> doc;
+mcrCmd_t *mcrCmdFactory::manufacture(JsonDocument &doc,
+                                     elapsedMicros &parse_elapsed) {
   mcrCmd_t *cmd = nullptr;
   mcrCmdType_t cmd_type = mcrCmdType::unknown;
-
-  // ensure the raw data is null terminated
-  raw->push_back(0x00);
-
-  elapsedMicros parse_elapsed;
-  auto err = deserializeJson(doc, (const char *)raw->data());
-  parse_elapsed.freeze();
-
-  if (err) { // bail if json parse failed
-    ESP_LOGW(TAG, "[%s] JSON parse failure", err.c_str());
-    return cmd;
-  }
 
   auto cmd_str = doc["cmd"].as<string_t>();
   cmd_type = mcrCmdTypeMap::fromString(cmd_str);
