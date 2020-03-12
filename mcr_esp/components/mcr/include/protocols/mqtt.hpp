@@ -30,7 +30,6 @@
 #include <freertos/event_groups.h>
 #include <freertos/queue.h>
 #include <freertos/task.h>
-#include <sdkconfig.h>
 
 #include "external/mongoose.h"
 #include "protocols/mqtt_in.hpp"
@@ -104,6 +103,7 @@ private:
   uint16_t _msg_id = 0;
   bool _mqtt_ready = false;
 
+  const string_t _env = CONFIG_MCR_ENV;
   // mg_mgr uses LWIP and the timeout is specified in ms
   int _inbound_msg_ms = CONFIG_MCR_MQTT_INBOUND_MSG_WAIT_MS;
   TickType_t _inbound_rb_wait_ticks =

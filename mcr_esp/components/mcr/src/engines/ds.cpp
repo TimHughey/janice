@@ -30,7 +30,6 @@
 #include <freertos/event_groups.h>
 #include <freertos/queue.h>
 #include <freertos/task.h>
-#include <sdkconfig.h>
 
 #include "engines/ds.hpp"
 

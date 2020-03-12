@@ -28,7 +28,6 @@
 #include <esp_log.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
-#include <sdkconfig.h>
 
 #include "cmds/queues.hpp"
 #include "cmds/switch.hpp"

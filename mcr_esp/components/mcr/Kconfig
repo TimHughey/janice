@@ -2,7 +2,13 @@ menu "MCR"
 
 config MG_ENABLE_SYNC_RESOLVER
 	bool "Use Mongoose synchronous DNS resolver"
-	default true
+	default false
+
+config MCR_ENV
+	string "MCR Execution Environment"
+	default "prod"
+	help
+		Build MCR for operation in a specific environment.
 
 menu "Network"
 	config WIFI_SSID

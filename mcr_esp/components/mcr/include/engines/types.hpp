@@ -28,7 +28,6 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/event_groups.h>
 #include <freertos/task.h>
-#include <sdkconfig.h>
 
 #include "misc/elapsedMillis.hpp"
 #include "misc/mcr_types.hpp"

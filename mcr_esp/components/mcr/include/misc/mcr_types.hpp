@@ -28,7 +28,8 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
 #include <freertos/task.h>
-#include <sdkconfig.h>
+
+namespace mcr {
 
 // just in case we ever want to change
 // TODO:  roll this out across the entire project
@@ -36,7 +37,6 @@ using string_t = std::string;
 
 typedef std::unique_ptr<char[]> msg_buff_t;
 
-namespace mcr {
 typedef struct {
   TaskHandle_t handle;
   void *data;

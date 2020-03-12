@@ -30,7 +30,6 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/event_groups.h>
 #include <freertos/task.h>
-#include <sdkconfig.h>
 
 #include "devs/pwm_dev.hpp"
 #include "engines/engine.hpp"

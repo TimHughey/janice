@@ -12,7 +12,6 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/event_groups.h>
 #include <freertos/task.h>
-#include <sdkconfig.h>
 #include <sys/time.h>
 #include <time.h>
 
