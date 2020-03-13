@@ -54,6 +54,9 @@ config :mcp,
     {Janice.Scheduler, []}
   ]
 
+# NOTE: uncomment to enable saving of messages sent and recv'd via MQTT
+import_config "modules/msg_save_enable.exs"
+
 config :mcp, Mqtt.Client,
   log_dropped_msgs: true,
   tort_opts: [
