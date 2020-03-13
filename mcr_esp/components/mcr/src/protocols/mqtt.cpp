@@ -307,33 +307,35 @@ void mcrMQTT::core(void *data) {
 }
 
 void mcrMQTT::subACK(struct mg_mqtt_message *msg) {
-  ESP_LOGI(tagEngine(), "suback msg_id(%d) qos(%d) topic(%.4s)",
-           msg->message_id, msg->qos,
-           ((msg->topic.p == nullptr) ? "NULL" : msg->topic.p));
 
   if (msg->message_id == _cmd_feed_msg_id) {
-    ESP_LOGI(tagEngine(), "subscribed to CMD feed");
+    ESP_LOGI(tagEngine(), "subscribed to CMD feed (suback msg_id(%d))",
+             msg->message_id);
     _mqtt_ready = true;
     Net::setTransportReady();
     // NOTE: do not announce startup here.  doing so creates a race condition
     // that results in occasionally using epoch as the startup time
   } else {
-    ESP_LOGW(tagEngine(), "suback did not match known subscription requests");
+    ESP_LOGW(tagEngine(),
+             "suback msg_id(%d) did not match known subscription requests",
+             msg->message_id);
   }
 }
 
 void mcrMQTT::subscribeCommandFeed(struct mg_connection *nc) {
-  struct mg_mqtt_topic_expression sub = {.topic = _cmd_feed.c_str(), .qos = 1};
+  struct mg_mqtt_topic_expression sub[] = {
+      {.topic = _cmd_feed.c_str(), .qos = 1}};
 
   _cmd_feed_msg_id = _msg_id++;
-  ESP_LOGI(tagEngine(), "subscribe feed=%s msg_id=%d", sub.topic,
+  ESP_LOGI(tagEngine(), "subscribe feed=%s msg_id=%d", sub[0].topic,
            _cmd_feed_msg_id);
-  mg_mqtt_subscribe(nc, &sub, 1, _cmd_feed_msg_id);
+  mg_mqtt_subscribe(nc, sub, 1, _cmd_feed_msg_id);
 }
 
 // STATIC
 void mcrMQTT::_ev_handler(struct mg_connection *nc, int ev, void *p) {
   auto *msg = (struct mg_mqtt_message *)p;
+  // string_t topic;
 
   switch (ev) {
   case MG_EV_CONNECT: {
@@ -374,7 +376,10 @@ void mcrMQTT::_ev_handler(struct mg_connection *nc, int ev, void *p) {
     break;
 
   case MG_EV_MQTT_PUBLISH:
+    // topic.assign(msg->topic.p, msg->topic.len);
+    // ESP_LOGI(mcrMQTT::tagEngine(), "%s qos(%d)", topic.c_str(), msg->qos);
     if (msg->qos == 1) {
+
       mg_mqtt_puback(mcrMQTT::instance()->_connection, msg->message_id);
     }
 

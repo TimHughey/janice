@@ -85,8 +85,8 @@ void mcrMQTTin::core(void *data) {
       // ESP_LOGI(TAG, "msg(%p) topic(%p) data(%p)", msg, msg->topic,
       // msg->data);
 
-      // reminder:  must do a != to test for equality
-      if (msg->topic->find(_cmd_feed) != string_t::npos) {
+      // reminder:  compare() == 0 is equals to
+      if (msg->topic->compare(_cmd_feed) == 0) {
         mcrCmd_t *cmd = factory.fromRaw(doc, msg->data);
         mcrCmd_t_ptr cmd_ptr(cmd);
 
