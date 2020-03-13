@@ -50,7 +50,7 @@ defmodule MqttClientTest do
     MessageSave.enable(false)
 
     assert rc1 == :ok
-    assert Keyword.get(res1, :is)
+    assert is_boolean(Keyword.get(res1, :is))
 
     assert rc2 == :ok
     assert is_boolean(Keyword.get(res2, :is, nil))
