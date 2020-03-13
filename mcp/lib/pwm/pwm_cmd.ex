@@ -1,27 +1,16 @@
 defmodule PulseWidthCmd do
   @moduledoc """
-    The SwithCommand module provides the database schema for tracking
-    commands sent for a Switch.
+    The PulseWidthCmd module provides the database schema for tracking
+    commands sent for a PulseWidth.
   """
 
   require Logger
   use Timex
   use Ecto.Schema
 
-  # import Ecto.Query, only: [from: 2]
-
   import Application, only: [get_env: 3]
   import Ecto.Changeset
 
-  #   only: [
-  #     all: 1,
-  #     all: 2,
-  #     delete_all: 2,
-  #     one: 1,
-  #     preload: 2,
-  #     update: 1
-  #   ]
-  #
   import Janice.TimeSupport, only: [utc_now: 0]
 
   schema "pwm_cmd" do

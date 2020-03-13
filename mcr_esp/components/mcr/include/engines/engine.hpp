@@ -210,7 +210,7 @@ public:
     // method
     ::xTaskCreate(&runCore, task->_name.c_str(), task->_stackSize, this,
                   task->_priority, &task->_handle);
-    ESP_LOGI(task->_name.c_str(), "core(%p) priority(%d) stack(%d)",
+    ESP_LOGD(task->_name.c_str(), "core(%p) priority(%d) stack(%d)",
              task->_handle, task->_priority, task->_stackSize);
 
     // now start any sub-tasks added
@@ -370,7 +370,7 @@ protected:
   }
 
   void logSubTaskStart(EngineTask_ptr_t task_info) {
-    ESP_LOGI(task_info->_name.c_str(),
+    ESP_LOGD(task_info->_name.c_str(),
              "subtask(%p) running, priority(%d) stack(%d)", task_info->_handle,
              task_info->_priority, task_info->_stackSize);
   }
@@ -555,7 +555,7 @@ protected:
       string_t &key = item.first;
       string_t &tag_text = item.second;
 
-      ESP_LOGI(_tags["engine"].c_str(), "key(%s) tag(%s) %s logging",
+      ESP_LOGD(_tags["engine"].c_str(), "key(%s) tag(%s) %s logging",
                key.c_str(), tag_text.c_str(), logLevelAsText(level));
       esp_log_level_set(tag_text.c_str(), level);
     });

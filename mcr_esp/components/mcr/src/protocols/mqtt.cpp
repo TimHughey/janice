@@ -18,8 +18,6 @@
      https://www.wisslanding.com
  */
 
-// #define VERBOSE 1
-
 #include <array>
 #include <cstdlib>
 #include <memory>
@@ -27,6 +25,7 @@
 
 #include <esp_log.h>
 #include <freertos/FreeRTOS.h>
+
 #include <freertos/event_groups.h>
 #include <freertos/task.h>
 
@@ -57,6 +56,10 @@ mcrMQTT_t *mcrMQTT::instance() {
 
 // SINGLETON! constructor is private
 mcrMQTT::mcrMQTT() {
+  // create the report and command feed topics using the configured
+  // MCR_ENV and MCR_MQTT_RPT_FEED and MCR_MQTT_CMD_FEED
+  _rpt_feed.append(CONFIG_MCR_MQTT_RPT_FEED);
+  _cmd_feed.append(CONFIG_MCR_MQTT_CMD_FEED);
 
   // create the endpoint URI
   const auto max_endpoint = 127;
@@ -101,7 +104,7 @@ void mcrMQTT::connect(int wait_ms) {
   _connection = mg_connect(&_mgr, _endpoint.c_str(), _ev_handler);
 
   if (_connection) {
-    ESP_LOGI(tagEngine(), "created pending mongoose connection(%p) for %s",
+    ESP_LOGD(tagEngine(), "created pending mongoose connection(%p) for %s",
              _connection, _endpoint.c_str());
   }
 }
@@ -204,7 +207,7 @@ void mcrMQTT::outboundMsg() {
 
     ESP_LOGV(tagEngine(), "send msg(len=%u), payload(len=%u)", len, json_len);
 
-    mg_mqtt_publish(_connection, _rpt_feed, _msg_id++, MG_MQTT_QOS(1),
+    mg_mqtt_publish(_connection, _rpt_feed.c_str(), _msg_id++, MG_MQTT_QOS(1),
                     json->data(), json_len);
 
     delete json;
@@ -261,8 +264,8 @@ void mcrMQTT::core(void *data) {
 
   esp_log_level_set(tagEngine(), ESP_LOG_INFO);
 
-  _mqtt_in = new mcrMQTTin(_q_in, _cmd_feed);
-  ESP_LOGI(tagEngine(), "started, created mcrMQTTin task %p", (void *)_mqtt_in);
+  _mqtt_in = new mcrMQTTin(_q_in, _cmd_feed.c_str());
+  ESP_LOGD(tagEngine(), "started, created mcrMQTTin task %p", (void *)_mqtt_in);
   _mqtt_in->start();
 
   // wait for network to be ready to ensure dns resolver is available
@@ -320,7 +323,7 @@ void mcrMQTT::subACK(struct mg_mqtt_message *msg) {
 }
 
 void mcrMQTT::subscribeCommandFeed(struct mg_connection *nc) {
-  struct mg_mqtt_topic_expression sub = {.topic = _cmd_feed, .qos = 1};
+  struct mg_mqtt_topic_expression sub = {.topic = _cmd_feed.c_str(), .qos = 1};
 
   _cmd_feed_msg_id = _msg_id++;
   ESP_LOGI(tagEngine(), "subscribe feed=%s msg_id=%d", sub.topic,

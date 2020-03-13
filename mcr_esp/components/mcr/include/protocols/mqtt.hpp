@@ -30,6 +30,7 @@
 #include <freertos/event_groups.h>
 #include <freertos/queue.h>
 #include <freertos/task.h>
+#include <sdkconfig.h>
 
 #include "external/mongoose.h"
 #include "protocols/mqtt_in.hpp"
@@ -104,6 +105,7 @@ private:
   bool _mqtt_ready = false;
 
   const string_t _env = CONFIG_MCR_ENV;
+
   // mg_mgr uses LWIP and the timeout is specified in ms
   int _inbound_msg_ms = CONFIG_MCR_MQTT_INBOUND_MSG_WAIT_MS;
   TickType_t _inbound_rb_wait_ticks =
@@ -125,9 +127,12 @@ private:
   const int _port = CONFIG_MCR_MQTT_PORT;
   const char *_user = CONFIG_MCR_MQTT_USER;
   const char *_passwd = CONFIG_MCR_MQTT_PASSWD;
-  const char *_rpt_feed = CONFIG_MCR_MQTT_RPT_FEED;
 
-  const char *_cmd_feed = CONFIG_MCR_MQTT_CMD_FEED;
+  // actual feeds are built in the constructor however always begin
+  // with the configured environment
+  string_t _rpt_feed = CONFIG_MCR_ENV "/";
+  string_t _cmd_feed = CONFIG_MCR_ENV "/";
+
   uint16_t _cmd_feed_msg_id = 1;
 
   void announceStartup();

@@ -1,9 +1,12 @@
 
 # Name,Type,SubType,Offset,Size,Flags
+# bootloader:  32k
 nvs,data,nvs,0x9000,16K,
 otadata,data,ota,0xd000,8K,
 phy_init,data,phy,0xf000,4K,
 ota_0,app,ota_0,0x10000,1800k,
 ota_1,app,ota_1,,1800k,
 coredump,data,coredump,,128K
+# boot loader reserved: 32k
+
 # unallocated:  340k

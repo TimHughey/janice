@@ -47,7 +47,7 @@ mcrMQTTin::mcrMQTTin(QueueHandle_t q_in, const char *cmd_feed)
     : _q_in(q_in), _cmd_feed(cmd_feed) {
   esp_log_level_set(TAG, ESP_LOG_INFO);
 
-  ESP_LOGI(TAG, "task created, queue(%p)", (void *)_q_in);
+  ESP_LOGD(TAG, "task created, queue(%p)", (void *)_q_in);
   __singleton = this;
 }
 
@@ -73,7 +73,7 @@ void mcrMQTTin::core(void *data) {
   //
   //        said differently, this task will not execute until another task
   //        sends it something through the queue.
-  ESP_LOGI(TAG, "started, entering run loop");
+  ESP_LOGD(TAG, "started, entering run loop");
 
   for (;;) {
     BaseType_t q_rc = pdFALSE;
