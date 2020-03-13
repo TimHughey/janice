@@ -49,8 +49,7 @@ defmodule OTA do
             name: name,
             reboot_delay_ms: Keyword.get(opts, :reboot_delay_ms, 0)
           }
-          |> json()
-          |> Client.publish()
+          |> Client.publish_cmd()
 
         {name, host, rc}
       end
@@ -100,8 +99,7 @@ defmodule OTA do
             fw_url: Keyword.get(opts, :url),
             reboot_delay_ms: Keyword.get(opts, :reboot_delay_ms, 0)
           }
-          |> json()
-          |> Client.publish()
+          |> Client.publish_cmd()
 
         {name, host, rc}
       end
@@ -129,9 +127,5 @@ defmodule OTA do
       not is_map(hd(update_list)) -> false
       true -> true
     end
-  end
-
-  defp json(%{} = c) do
-    Jason.encode!(c)
   end
 end

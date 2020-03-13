@@ -13,11 +13,17 @@ defmodule Mcp.ReadingTest do
 
   @moduletag :reading
   test "detect bad metadata" do
-    json = ~s({"host": "other-macaddr", "device": "ds/28.0000",
-        "mtime": 1506867918, "type": "temp", "tc": 20.0, "tf": 80.0})
+    bad_msg = %{
+      host: "other-macaddr",
+      device: "ds/28.000",
+      mtime: 1_506_867_918,
+      type: "temp",
+      tc: 20.1,
+      tf: 80.1
+    }
 
     fun = fn ->
-      Jason.decode!(json, keys: :atoms) |> Mqtt.Reading.metadata?()
+      bad_msg |> Mqtt.Reading.metadata?()
     end
 
     msg = capture_log(fun)

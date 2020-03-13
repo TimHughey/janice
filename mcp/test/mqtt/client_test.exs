@@ -20,12 +20,6 @@ defmodule MqttClientTest do
     assert msg =~ "report"
   end
 
-  test "send timesync" do
-    rc = Mqtt.Client.send_timesync()
-
-    assert rc == {:ok}
-  end
-
   test "toggle runtime metrics" do
     rc = Mqtt.Client.runtime_metrics(:toggle)
 

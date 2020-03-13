@@ -9,7 +9,8 @@ defmodule Mqtt.InboundMessage do
 
   alias Fact.EngineMetric
   alias Fact.FreeRamStat
-  alias Fact.RunMetric
+
+  # alias Fact.RunMetric
 
   alias Mqtt.Reading
 
@@ -36,7 +37,6 @@ defmodule Mqtt.InboundMessage do
     s =
       Map.put_new(s, :log_reading, config(:log_reading))
       |> Map.put_new(:messages_dispatched, 0)
-      |> Map.put_new(:json_log, nil)
       |> Map.put_new(:temperature_msgs, config(:temperature_msgs))
       |> Map.put_new(:switch_msgs, config(:switch_msgs))
       |> Map.put_new(:remote_msgs, config(:remote_msgs))
@@ -53,12 +53,6 @@ defmodule Mqtt.InboundMessage do
     end
 
     {:ok, s}
-  end
-
-  @log_json_msg :log_json
-  def log_json(args) when is_list(args) do
-    rc = GenServer.call(Mqtt.InboundMessage, {@log_json_msg, args})
-    if is_pid(rc), do: :log_open, else: :log_closed
   end
 
   # internal work functions
@@ -99,43 +93,6 @@ defmodule Mqtt.InboundMessage do
 
   def handle_call({:incoming_message, msg, opts}, _from, s) do
     {:reply, :ok, incoming_msg(msg, s, opts)}
-  end
-
-  def handle_call({@log_json_msg, opts}, _from, %{json_log: pid} = s) do
-    log = Keyword.get(opts, :log, false)
-
-    json_log =
-      cond do
-        # log start requested, it isn't open so open it
-        log and is_nil(pid) ->
-          {_, json_log} =
-            File.open("/tmp/json.log", [:append, :utf8, :delayed_write])
-
-          # wrap this in square brackets to create a list of json strings
-          IO.puts(json_log, "[")
-
-          json_log
-
-        # log stop requested and it is open, close it
-        not log and is_pid(pid) ->
-          # since the last json string would have a comma after it
-          # put an empty list here before closing the list, then flattn it
-          IO.puts(pid, "[] ] |> List.flatten()")
-          File.close(pid)
-          nil
-
-        # log start requested and it's already open
-        log and is_pid(pid) ->
-          pid
-
-        # log stop requested and it isn't open
-        not log and is_nil(pid) ->
-          nil
-      end
-
-    s = %{s | json_log: json_log}
-
-    {:reply, json_log, s}
   end
 
   def handle_call(catch_all, _from, s) do
@@ -187,49 +144,9 @@ defmodule Mqtt.InboundMessage do
   end
 
   defp incoming_msg(msg, s, opts) do
-    {elapsed_us, log_task} =
-      :timer.tc(fn ->
-        log_opt = :as_elixir
+    msg |> Reading.decode() |> msg_decode(s, opts)
 
-        task =
-          if is_pid(s.json_log) do
-            Task.async(fn ->
-              out =
-                if log_opt == :as_elixir,
-                  do: ["~S(", msg, "), "],
-                  else: [msg]
-
-              IO.puts(s.json_log, out)
-            end)
-          else
-            nil
-          end
-
-        Reading.decode(msg) |> msg_decode(s, opts)
-        task
-      end)
-
-    s = %{s | messages_dispatched: s.messages_dispatched + 1}
-
-    RunMetric.record(
-      module: "#{__MODULE__}",
-      application: "janice",
-      metric: "msgs_dispatched",
-      val: s.messages_dispatched,
-      record: Keyword.get(opts, :runtime_metrics, false)
-    )
-
-    RunMetric.record(
-      module: "#{__MODULE__}",
-      metric: "mqtt_process_inbound_msg_us",
-      device: "none",
-      val: elapsed_us,
-      record: Keyword.get(opts, :runtime_metrics, false)
-    )
-
-    if log_task, do: Task.await(log_task)
-
-    s
+    %{s | messages_dispatched: s.messages_dispatched + 1}
   end
 
   defp msg_ensure_flags(%{} = s, %{} = r, opts) when is_list(opts) do
@@ -270,7 +187,7 @@ defmodule Mqtt.InboundMessage do
           inspect(r.type, pretty: true)
         ])
 
-      # reading needs to be processed, sould we do it async?
+      # reading needs to be processed, should we do it async?
       async ->
         Task.start(mod, func, [r])
 

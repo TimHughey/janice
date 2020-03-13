@@ -25,11 +25,4 @@ defmodule Mqtt.SetPulseWidth do
         refid: refid,
         ack: Keyword.get(opts, :ack, true)
       }
-
-  @doc ~S"""
-  Generate JSON for a command
-  """
-  def json(%{} = c) do
-    Jason.encode!(c)
-  end
 end

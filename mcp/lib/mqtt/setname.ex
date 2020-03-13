@@ -13,6 +13,4 @@ defmodule Mqtt.SetName do
         host: host,
         name: String.replace_prefix(name, "mcr.", "")
       }
-
-  def json(%{} = c), do: Jason.encode!(c)
 end

@@ -115,7 +115,6 @@ defmodule MqttInboundMessageTest do
   end
 
   setup_all do
-    Mqtt.InboundMessage.log_json(log: true)
     :ok
   end
 
@@ -208,12 +207,4 @@ defmodule MqttInboundMessageTest do
 
     assert rc == :bad_opts
   end
-
-  # test "inbound message logging" do
-  #   start = Mqtt.InboundMessage.log_json(log: true)
-  #   switch_ext_msg(1)
-  #   stop = Mqtt.InboundMessage.log_json(log: false)
-  #
-  #   assert start === :log_open and stop === :log_closed
-  # end
 end

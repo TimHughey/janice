@@ -287,10 +287,8 @@ defmodule PulseWidth do
     with {:ok, %PulseWidth{device: device} = pwm} <- add_cmd(pwm, utc_now()),
          {:cmd, %PulseWidthCmd{} = cmd} <- {:cmd, hd(pwm.cmds)},
          {:refid, refid} <- {:refid, Map.get(cmd, :refid)},
-         {:publish, true} <- {:publish, publish},
-         %{cmd: _} = cmd <-
-           SetPulseWidth.new_cmd(device, duty, refid, opts) do
-      rc = SetPulseWidth.json(cmd) |> publish_cmd()
+         {:publish, true} <- {:publish, publish} do
+      rc = SetPulseWidth.new_cmd(device, duty, refid, opts) |> publish_cmd()
 
       log &&
         Logger.info([

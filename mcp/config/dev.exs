@@ -15,8 +15,7 @@ config :logger,
 config :mcp,
   feeds: [
     cmd: {"#{Mix.env()}/mcr/f/command", 1},
-    rpt: {"#{Mix.env()}/mcr/f/report", 0},
-    ota: {"#{Mix.env()}/mcr/f/ota", 0}
+    rpt: {"#{Mix.env()}/mcr/f/report", 0}
   ]
 
 config :mcp,
@@ -58,7 +57,7 @@ config :mcp,
 config :mcp, Mqtt.Client,
   log_dropped_msgs: true,
   tort_opts: [
-    client_id: "janice-dev",
+    client_id: "janice-#{Mix.env()}",
     user_name: "mqtt",
     password: "mqtt",
     server:
