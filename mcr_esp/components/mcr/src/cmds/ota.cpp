@@ -84,11 +84,11 @@ void mcrCmdOTA::markPartitionValid() {
       esp_err_t mark_valid_rc = esp_ota_mark_app_valid_cancel_rollback();
 
       if (mark_valid_rc == ESP_OK) {
-        ESP_LOGI(TAG, "[%s] ota partition marked as valid",
-                 esp_err_to_name(mark_valid_rc));
+        ESP_LOGI(TAG, "[%s] partition [%s] marked as valid",
+                 esp_err_to_name(mark_valid_rc), run_part->label);
       } else {
-        ESP_LOGW(TAG, "[%s] failed to mark app partition as valid",
-                 esp_err_to_name(mark_valid_rc));
+        ESP_LOGW(TAG, "[%s] failed to mark partition [%s] as valid",
+                 esp_err_to_name(mark_valid_rc), run_part->label);
       }
     }
   }
