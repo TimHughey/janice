@@ -22,9 +22,8 @@ config :mcp,
   generators: [context_app: false],
   # default settings for dev and test, must override in prod
   feeds: [
-    cmd: {"dev/mcr/f/command", 0},
-    rpt: {"dev/mcr/f/report", 0},
-    ota: {"prod/mcr/f/ota", 0}
+    cmd: {"dev/mcr/f/command", 1},
+    rpt: {"dev/mcr/f/report", 0}
   ]
 
 config :mcp, Mcp.Application, log: [init: false]

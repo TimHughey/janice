@@ -309,7 +309,6 @@ defmodule SwitchCmd do
             ])
 
           SetSwitch.new_cmd(device, [cmd_map], refid, opts)
-          |> SetSwitch.json()
           |> publish_cmd()
         end
 

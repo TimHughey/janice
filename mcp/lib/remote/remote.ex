@@ -170,8 +170,7 @@ defmodule Remote do
           if res == :ok,
             do:
               SetName.new_cmd(rem.host, rem.name)
-              |> SetName.json()
-              |> Client.publish()
+              |> Client.publish_cmd()
 
           res
 
@@ -233,8 +232,11 @@ defmodule Remote do
           # use the local name
           device: rem.name,
           val: t,
-          record: Map.get(eu, :runtime_metrics, false)
+          record: false
+          # record: Map.get(eu, :runtime_metrics, false)
         )
+
+        Fact.Remote.record(eu)
 
         :ok
 
@@ -396,11 +398,9 @@ defmodule Remote do
 
   # handle boot and startup (depcreated) messages
   defp send_remote_config([%Remote{} = rem], %{type: "boot"} = eu) do
-    # only the feather m0 remote devices need the time
-    if eu.hw in ["m0"], do: Client.send_timesync()
-
     # all devices are sent their name
-    SetName.new_cmd(rem.host, rem.name) |> SetName.json() |> Client.publish()
+    SetName.new_cmd(rem.host, rem.name)
+    |> Client.publish_cmd()
 
     log = Map.get(eu, :log, true)
 

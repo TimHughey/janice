@@ -6,8 +6,9 @@ defmodule Mqtt.Timesync do
   require Logger
   use Task
 
-  import Mqtt.Client, only: [publish: 1]
   import Janice.TimeSupport, only: [ms: 1, unix_now: 1]
+
+  alias Mqtt.Client
 
   @timesync_cmd "time.sync"
 
@@ -19,11 +20,8 @@ defmodule Mqtt.Timesync do
     log = Map.get(opts, :log, false)
     single = Map.get(opts, :single, false)
 
-    # construct the timesync message
-    msg = Timesync.new_cmd() |> Timesync.json()
-
-    # publish it!
-    res = publish(msg)
+    # construct the timesync message and publish it
+    res = Timesync.new_cmd() |> Client.publish_cmd()
 
     log && Logger.info(["published timesync ", inspect(res, pretty: true)])
 
@@ -60,20 +58,5 @@ defmodule Mqtt.Timesync do
     %{}
     |> Map.put(:mtime, unix_now(:second))
     |> Map.put(:cmd, @timesync_cmd)
-  end
-
-  @doc ~S"""
-  Generate JSON for a command
-
-  ##Examples:
-   iex> c = Command.Timesync.setswitch([%{p0: true}, %{p1: false}], "uuid")
-   ...> json = Command.Timesync.json(c)
-   ...> parsed_cmd = Jason.Parser.parse!(json, [keys: :atoms!,
-                                          as: Command.Timesync])
-   ...> parsed_cmd === Map.from_struct(c)
-   true
-  """
-  def json(%{} = c) do
-    Jason.encode!(c)
   end
 end

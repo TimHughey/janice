@@ -21,6 +21,8 @@ defmodule Mqtt.Client do
   #    }
   #  end
 
+  @cmd_feed get_env(:mcp, :feeds, []) |> Keyword.get(:cmd, {nil, nil})
+
   def start_link(s) when is_map(s) do
     GenServer.start_link(__MODULE__, s, name: __MODULE__)
   end
@@ -84,10 +86,6 @@ defmodule Mqtt.Client do
     GenServer.call(__MODULE__, {:runtime_metrics, flag})
   end
 
-  def send_timesync do
-    GenServer.call(__MODULE__, {:timesync_msg})
-  end
-
   def subscribe(feed) when is_nil(feed) do
     Logger.warn(["can't subscribe to nil feed"])
     Logger.warn(["hint: check :feeds are defined in the configuration"])
@@ -108,73 +106,54 @@ defmodule Mqtt.Client do
     :ok
   end
 
-  def publish(message) when is_binary(message) do
-    {feed, qos} = get_env(:mcp, :feeds, []) |> Keyword.get(:cmd, {nil, nil})
-    payload = message
-    pub_opts = [qos: qos]
+  def publish_cmd(msg_map, opts \\ []) when is_map(msg_map) and is_list(opts) do
+    with {feed, qos} when is_binary(feed) and qos in 0..2 <-
+           Keyword.get(opts, :feed, @cmd_feed),
+         {:ok, payload} <- Msgpax.pack(msg_map) do
+      pub_opts = Keyword.get(opts, :pub_opts, []) ++ [qos: qos]
 
-    opts = [feed: feed, message: payload, pub_opts: pub_opts]
-    publish(opts)
-  end
+      {elapsed_us, res} =
+        :timer.tc(fn ->
+          GenServer.call(__MODULE__, {:publish, feed, payload, pub_opts})
+        end)
 
-  def publish(opts) when is_list(opts) do
-    feed = Keyword.get(opts, :feed, nil)
-    payload = Keyword.get(opts, :message, nil)
-    pub_opts = Keyword.get(opts, :pub_opts, []) |> List.flatten()
+      RunMetric.record(
+        module: "#{__MODULE__}",
+        metric: "cmd_publish_us",
+        device: "none",
+        val: elapsed_us
+      )
 
-    MessageSave.save(:out, payload)
-
-    if is_nil(feed) or is_nil(payload) do
-      Logger.warn([
-        "can't publish: feed=",
-        inspect(feed, pretty: true),
-        " payload=",
-        inspect(payload, pretty: true)
-      ])
-
-      Logger.warn(["hint: check :feeds are defined in the configuration"])
-
-      :ok
+      res
     else
-      Logger.debug([
-        "publish() feed: ",
-        inspect(feed),
-        " payload: ",
-        inspect(payload, pretty: true),
-        " pub_opts: ",
-        inspect(pub_opts, pretty: true)
-      ])
+      {_feed, _qos} = bad_feed ->
+        Logger.warn([
+          "publish() bad feed: ",
+          inspect(bad_feed, pretty: true)
+        ])
 
-      GenServer.call(__MODULE__, {:publish, feed, payload, pub_opts})
+        Logger.warn(["hint: check :feeds are defined in the configuration"])
+
+        {:bad_args, :feed_config_missing}
+
+      {rc, error} ->
+        Logger.warn([
+          "publish() unable to pack payload: ",
+          inspect(rc),
+          " ",
+          inspect(error, pretty: true)
+        ])
+
+        {rc, error}
+
+      catchall ->
+        Logger.warn([
+          "publish() unhandled error: ",
+          inspect(catchall, pretty: true)
+        ])
+
+        {:error, catchall}
     end
-  end
-
-  def publish_ota(raw) when is_binary(raw) do
-    {feed, qos} = get_env(:mcp, :feeds, []) |> Keyword.get(:ota, {nil, nil})
-    payload = raw
-    pub_opts = [qos: qos]
-
-    opts = [feed: feed, message: payload, pub_opts: pub_opts]
-    publish(opts)
-  end
-
-  def publish_cmd(message) do
-    {elapsed_us, _res} =
-      :timer.tc(fn ->
-        {feed, qos} = get_env(:mcp, :feeds, []) |> Keyword.get(:cmd, {nil, nil})
-        payload = message
-        pub_opts = [qos: qos]
-
-        opts = [feed: feed, message: payload, pub_opts: pub_opts]
-        publish(opts)
-      end)
-
-    RunMetric.record(
-      module: "#{__MODULE__}",
-      metric: "cmd_publish_us",
-      device: "none",
-      val: elapsed_us
-    )
   end
 
   def handle_call(
@@ -182,7 +161,7 @@ defmodule Mqtt.Client do
         _from,
         %{autostart: true} = s
       )
-      when is_binary(feed) and is_binary(payload) and is_list(pub_opts) do
+      when is_binary(feed) and is_list(pub_opts) do
     {elapsed_us, res} =
       :timer.tc(fn ->
         Tortoise.publish(s.client_id, feed, payload, pub_opts)
@@ -204,7 +183,7 @@ defmodule Mqtt.Client do
         _from,
         %{autostart: false} = s
       )
-      when is_binary(feed) and is_binary(payload) and is_list(pub_opts) do
+      when is_binary(feed) and is_list(pub_opts) do
     Logger.debug(["not started, dropping ", inspect(payload, pretty: true)])
     {:reply, :not_started, s}
   end
@@ -240,21 +219,6 @@ defmodule Mqtt.Client do
     {:reply, %{was: was, is: s.runtime_metrics}, s}
   end
 
-  def handle_call({:timesync_msg}, _from, s) do
-    {feed, qos} = get_env(:mcp, :feeds, []) |> Keyword.get(:cmd, {nil, nil})
-
-    if is_nil(feed) or is_nil(qos) do
-      Logger.warn(["can't send timesync, feed configuration missing"])
-      {:reply, {:failed}, s}
-    else
-      payload = Timesync.new_cmd() |> Timesync.json()
-      pub_opts = [qos]
-
-      res = Tortoise.publish(s.client_id, feed, payload, pub_opts)
-      {:reply, {res}, s}
-    end
-  end
-
   def handle_call(unhandled_msg, _from, s) do
     log_unhandled("call", unhandled_msg)
     {:reply, :ok, s}
@@ -282,20 +246,9 @@ defmodule Mqtt.Client do
   end
 
   def handle_cast({:inbound_msg, _topic, message}, s) do
-    {elapsed_us, _res} =
-      :timer.tc(fn ->
-        MessageSave.save(:in, message)
+    MessageSave.save(:in, message)
 
-        Mqtt.InboundMessage.process(message, runtime_metrics: s.runtime_metrics)
-      end)
-
-    RunMetric.record(
-      module: "#{__MODULE__}",
-      metric: "mqtt_recv_msg_us",
-      device: "none",
-      val: elapsed_us,
-      record: s.runtime_metrics
-    )
+    Mqtt.InboundMessage.process(message, runtime_metrics: s.runtime_metrics)
 
     {:noreply, s}
   end

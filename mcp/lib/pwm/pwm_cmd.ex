@@ -24,11 +24,6 @@ defmodule PulseWidthCmd do
   #
   import Janice.TimeSupport, only: [utc_now: 0]
 
-  # import Mqtt.Client, only: [publish_cmd: 1]
-  #
-  # alias Fact.RunMetric
-  # alias Mqtt.SetSwitch
-
   schema "pwm_cmd" do
     field(:refid, Ecto.UUID, autogenerate: true)
     field(:acked, :boolean)
