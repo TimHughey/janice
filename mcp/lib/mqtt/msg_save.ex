@@ -57,6 +57,11 @@ defmodule MessageSave do
     log_delete([prepend: "delete_all()", elapsed: elapsed] ++ results)
   end
 
+  def enable(val \\ :current)
+      when is_boolean(val) or val in [:current, :toggle] do
+    GenServer.call(MessageSave, {:enable, val})
+  end
+
   def message_count do
     from(ms in MessageSave, select: count(ms.id)) |> one!()
   end
@@ -68,11 +73,6 @@ defmodule MessageSave do
   def save(direction, payload, dropped \\ false)
       when direction in [:in, :out] do
     GenServer.cast(MessageSave, {@save_msg, direction, payload, dropped})
-  end
-
-  @set_save_msg :set_save_msg
-  def set_save(val) when is_boolean(val) do
-    GenServer.call(MessageSave, {@set_save_msg, val})
   end
 
   def init(%{autostart: autostart, opts: opts} = s) do
@@ -120,8 +120,29 @@ defmodule MessageSave do
   def handle_call({@runtime_opts_msg}, _from, %{opts: opts} = s),
     do: {:reply, opts, s}
 
-  def handle_call({@set_save_msg, x}, _from, %{opts: opts} = s),
-    do: {:reply, :ok, Map.put(s, :opts, Keyword.put(opts, :save, x))}
+  def handle_call({:enable, x}, _from, %{opts: opts} = s) do
+    was = Keyword.get(opts, :save)
+
+    case x do
+      :current ->
+        {:reply, {:ok, is: was}, s}
+
+      :toggle ->
+        is = not was
+
+        {:reply, {:ok, was: was, is: is},
+         Map.put(s, :opts, Keyword.put(opts, :save, is))}
+
+      x when is_boolean(x) ->
+        is = x
+
+        {:reply, {:ok, was: was, is: is},
+         Map.put(s, :opts, Keyword.put(opts, :save, is))}
+
+      catchall ->
+        {:reply, {:bad_arg, catchall}, s}
+    end
+  end
 
   def handle_cast(
         {@save_msg, direction, payload, dropped},
@@ -278,30 +299,46 @@ defmodule MessageSave do
   # save MsgPack messages
   defp save_msg(
          s,
-         direction,
+         :in = direction,
          <<first_byte::size(1), _rest::bitstring>> = payload,
          true = _save,
          opts
        )
        # first byte isn't null and not '{'
        when first_byte > 0x00 and first_byte != 0x7B do
-    opts = [direction: Atom.to_string(direction), msgpack: payload] ++ opts
+    opts =
+      [direction: Atom.to_string(direction), msgpack: payload] ++
+        opts
 
-    with {:direction, :in} <- {:direction, direction},
-         {:ok, msg_map} <- Reading.decode(payload),
+    with {:ok, msg_map} <- Reading.decode(payload),
          {:host, true, host} <-
            {:host, Map.has_key?(msg_map, :host), Map.get(msg_map, :host, false)} do
       opts = [src_host: host] ++ opts
       insert_msg(s, %MessageSave{}, opts)
     else
-      {:direction, :out} ->
-        opts = [src_host: "<mcp>"] ++ opts
-        insert_msg(s, %MessageSave{}, opts)
-
       _anything ->
         opts = [src_host: "<unknown>"] ++ opts
         insert_msg(s, %MessageSave{}, opts)
     end
+  end
+
+  defp save_msg(
+         s,
+         :out = direction,
+         [first_byte | _rest] = payload,
+         true = _save,
+         opts
+       )
+       # first byte isn't null and not '{'
+       when first_byte > 0x00 and first_byte != 0x7B do
+    opts =
+      [
+        direction: Atom.to_string(direction),
+        msgpack: IO.iodata_to_binary(payload),
+        src_host: "<mcp>"
+      ] ++ opts
+
+    insert_msg(s, %MessageSave{}, opts)
   end
 
   defp save_msg(s, direction, payload, _save, _opts) do

@@ -110,7 +110,7 @@ defmodule Mqtt.Client do
     with {feed, qos} when is_binary(feed) and qos in 0..2 <-
            Keyword.get(opts, :feed, @cmd_feed),
          {:ok, payload} <- Msgpax.pack(msg_map) do
-      pub_opts = Keyword.get(opts, :pub_opts, []) ++ [qos: qos]
+      pub_opts = [qos: qos] ++ Keyword.get(opts, :pub_opts, [])
 
       {elapsed_us, res} =
         :timer.tc(fn ->
@@ -164,6 +164,7 @@ defmodule Mqtt.Client do
       when is_binary(feed) and is_list(pub_opts) do
     {elapsed_us, res} =
       :timer.tc(fn ->
+        MessageSave.save(:out, payload)
         Tortoise.publish(s.client_id, feed, payload, pub_opts)
       end)
 

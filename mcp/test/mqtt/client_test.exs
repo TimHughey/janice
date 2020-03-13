@@ -43,4 +43,17 @@ defmodule MqttClientTest do
 
     assert is_boolean(rc)
   end
+
+  test "can get and toggle MessageSave enable" do
+    {rc1, res1} = MessageSave.enable()
+    {rc2, res2} = MessageSave.enable(:toggle)
+    MessageSave.enable(false)
+
+    assert rc1 == :ok
+    assert Keyword.get(res1, :is)
+
+    assert rc2 == :ok
+    assert is_boolean(Keyword.get(res2, :is, nil))
+    assert is_boolean(Keyword.get(res2, :was, nil))
+  end
 end
