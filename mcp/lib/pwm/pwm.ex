@@ -100,6 +100,8 @@ defmodule PulseWidth do
           inspect(rc, pretty: true)
         ])
 
+        {:error, rc}
+
       error ->
         Logger.warn(["add() failure: ", inspect(error, pretty: true)])
 
