@@ -191,7 +191,8 @@ CREATE TABLE public.pwm (
     discovered_at timestamp without time zone,
     last_cmd_at timestamp without time zone,
     inserted_at timestamp(0) without time zone NOT NULL,
-    updated_at timestamp(0) without time zone NOT NULL
+    updated_at timestamp(0) without time zone NOT NULL,
+    runtime_metrics jsonb DEFAULT '{"cmd_rt": true, "external_update": false}'::jsonb NOT NULL
 );
 
 
@@ -283,7 +284,8 @@ CREATE TABLE public.remote (
     secure_vsn integer,
     bssid character varying(255) DEFAULT 'xx:xx:xx:xx:xx:xx'::character varying,
     metric_freq_secs integer DEFAULT 60,
-    metric_at timestamp(0) without time zone DEFAULT NULL::timestamp without time zone
+    metric_at timestamp(0) without time zone DEFAULT NULL::timestamp without time zone,
+    runtime_metrics jsonb DEFAULT '{"cmd_rt": true, "external_update": false}'::jsonb NOT NULL
 );
 
 
@@ -332,7 +334,8 @@ CREATE TABLE public.sensor (
     inserted_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
     metric_freq_secs integer DEFAULT 60,
-    metric_at timestamp(0) without time zone DEFAULT NULL::timestamp without time zone
+    metric_at timestamp(0) without time zone DEFAULT NULL::timestamp without time zone,
+    runtime_metrics jsonb DEFAULT '{"cmd_rt": true, "external_update": false}'::jsonb NOT NULL
 );
 
 
@@ -468,7 +471,8 @@ CREATE TABLE public.switch (
     last_seen_at timestamp without time zone DEFAULT timezone('utc'::text, now()),
     inserted_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
-    log boolean DEFAULT false
+    log boolean DEFAULT false,
+    runtime_metrics jsonb DEFAULT '{"cmd_rt": true, "external_update": false}'::jsonb NOT NULL
 );
 
 
@@ -577,7 +581,8 @@ CREATE TABLE public.switch_state (
     inserted_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
     log boolean DEFAULT false,
-    invert_state boolean DEFAULT false
+    invert_state boolean DEFAULT false,
+    runtime_metrics jsonb DEFAULT '{"cmd_rt": true, "external_update": false}'::jsonb NOT NULL
 );
 
 
@@ -1268,5 +1273,5 @@ ALTER TABLE ONLY public.thermostat_profile
 -- PostgreSQL database dump complete
 --
 
-INSERT INTO public."schema_migrations" (version) VALUES (20171217150128), (20171224164529), (20171224225113), (20171228191703), (20171229001359), (20171231182344), (20180101153253), (20180102171624), (20180102175335), (20180217212153), (20180218021213), (20180222165118), (20180222184042), (20180305193804), (20180307143400), (20180517201719), (20180708221600), (20180709181021), (20190308124055), (20190316032007), (20190317155502), (20190320124824), (20190416130912), (20190417011910), (20191018110319), (20191022013914), (20200105131440), (20200115151705), (20200116024319), (20200127033742), (20200128032134), (20200210202655), (20200212175538), (20200212183409), (20200213192845), (20200215173921), (20200217154954), (20200302001850), (20200302155853), (20200309213120), (20200311130709), (20200313132136), (20200314125818);
+INSERT INTO public."schema_migrations" (version) VALUES (20171217150128), (20171224164529), (20171224225113), (20171228191703), (20171229001359), (20171231182344), (20180101153253), (20180102171624), (20180102175335), (20180217212153), (20180218021213), (20180222165118), (20180222184042), (20180305193804), (20180307143400), (20180517201719), (20180708221600), (20180709181021), (20190308124055), (20190316032007), (20190317155502), (20190320124824), (20190416130912), (20190417011910), (20191018110319), (20191022013914), (20200105131440), (20200115151705), (20200116024319), (20200127033742), (20200128032134), (20200210202655), (20200212175538), (20200212183409), (20200213192845), (20200215173921), (20200217154954), (20200302001850), (20200302155853), (20200309213120), (20200311130709), (20200313132136), (20200314125818), (20200314144615), (20200314152346);
 

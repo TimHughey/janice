@@ -48,6 +48,11 @@ defmodule Remote do
     field(:heap_min, :integer)
     field(:uptime_us, :integer)
 
+    field(:runtime_metrics, :map,
+      null: false,
+      default: %{external_update: false, cmd_rt: true}
+    )
+
     timestamps(usec: true)
   end
 

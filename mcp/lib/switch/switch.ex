@@ -46,6 +46,12 @@ defmodule Switch do
     field(:discovered_at, :utc_datetime_usec)
     field(:last_cmd_at, :utc_datetime_usec)
     field(:last_seen_at, :utc_datetime_usec)
+
+    field(:runtime_metrics, :map,
+      null: false,
+      default: %{external_update: false, cmd_rt: true}
+    )
+
     has_many(:states, SwitchState)
     has_many(:cmds, SwitchCmd)
 

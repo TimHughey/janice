@@ -29,6 +29,11 @@ defmodule SwitchState do
     field(:ttl_ms, :integer)
     field(:log, :boolean, default: false)
 
+    field(:runtime_metrics, :map,
+      null: false,
+      default: %{external_update: false, cmd_rt: true}
+    )
+
     belongs_to(:switch, Switch)
 
     timestamps(usec: true)
