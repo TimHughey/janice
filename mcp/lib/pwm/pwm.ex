@@ -76,6 +76,8 @@ defmodule PulseWidth do
     cs = changeset(p, Map.take(p, possible_changes()))
 
     with {:cs_valid, true} <- {:cs_valid, cs.valid?()},
+         # the on_conflict: and conflict_target: indicate the insert
+         # is an "upsert"
          {:ok, %PulseWidth{id: _id}} <-
            Repo.insert(cs,
              on_conflict: :replace_all,
