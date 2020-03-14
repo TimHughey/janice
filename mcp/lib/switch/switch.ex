@@ -28,7 +28,6 @@ defmodule Switch do
 
   import Repo,
     only: [
-      all: 2,
       insert: 1,
       insert!: 1,
       one: 1,
@@ -42,7 +41,7 @@ defmodule Switch do
 
   schema "switch" do
     field(:device, :string)
-    field(:dev_latency, :integer)
+    field(:dev_latency_us, :integer)
     field(:log, :boolean, default: false)
     field(:discovered_at, :utc_datetime_usec)
     field(:last_cmd_at, :utc_datetime_usec)
@@ -50,7 +49,7 @@ defmodule Switch do
     has_many(:states, SwitchState)
     has_many(:cmds, SwitchCmd)
 
-    timestamps()
+    timestamps(usec: true)
   end
 
   # 15 minutes (as millesconds)
@@ -101,36 +100,6 @@ defmodule Switch do
     # return the newly created refid
     refid
   end
-
-  def all(:everything) do
-    last_cmds =
-      from(
-        sc in SwitchCmd,
-        group_by: sc.switch_id,
-        select: %{switch_id: sc.switch_id, last_cmd_id: max(sc.id)}
-      )
-
-    from(
-      sw in Switch,
-      join: cmds in subquery(last_cmds),
-      on: cmds.last_cmd_id == sw.id,
-      join: states in assoc(sw, :states),
-      preload: [:states, :cmds]
-    )
-    |> all(timeout: 100)
-  end
-
-  def all(:devices) do
-    from(sw in Switch, select: sw.device)
-    |> all(timeout: 100)
-  end
-
-  def all(:names) do
-    from(ss in SwitchState, order_by: [asc: ss.name], select: ss.name)
-    |> all(timeout: 100)
-  end
-
-  def browse, do: SwitchState.browse()
 
   def delete(id) when is_integer(id) do
     from(s in Switch, where: s.id == ^id)
@@ -188,13 +157,14 @@ defmodule Switch do
     end
   end
 
-  def external_update(%{} = eu) do
+  # REFACTOR
+  def external_update(catchall) do
     Logger.warn([
-      "external_update() received a bad map ",
-      inspect(eu, pretty: true)
+      "external_update() unhandled msg: ",
+      inspect(catchall, pretty: true)
     ])
 
-    :error
+    {:error, :unhandled_msg, catchall}
   end
 
   def last_seen_at(%Switch{last_seen_at: last_seen_at}), do: last_seen_at
@@ -313,7 +283,7 @@ defmodule Switch do
 
         opts =
           if dev_latency_us > 0,
-            do: Map.put(opts, :dev_latency, dev_latency_us),
+            do: Map.put(opts, :dev_latency_us, dev_latency_us),
             else: opts
 
         change(sw, opts) |> update()
@@ -372,4 +342,24 @@ defmodule Switch do
       end
     end
   end
+
+  defp possible_changes,
+    do: [
+      :name,
+      :description,
+      :device,
+      :host,
+      :duty,
+      :duty_max,
+      :duty_min,
+      :dev_latency_us,
+      :log,
+      :ttl_ms,
+      :reading_at,
+      :last_seen_at,
+      :metric_at,
+      :metric_freq_secs,
+      :discovered_at,
+      :last_cmd_at
+    ]
 end

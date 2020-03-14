@@ -9,7 +9,7 @@ defmodule Sensor do
 
   import Ecto.Changeset
   import Ecto.Query, only: [from: 2]
-  import Repo, only: [all: 2, insert!: 1, update: 1, update!: 1, one: 1]
+  import Repo, only: [insert!: 1, update: 1, update!: 1, one: 1]
 
   import Janice.Common.DB, only: [name_regex: 0]
   alias Janice.TimeSupport
@@ -24,7 +24,7 @@ defmodule Sensor do
     field(:description, :string)
     field(:device, :string)
     field(:type, :string)
-    field(:dev_latency, :integer)
+    field(:dev_latency_us, :integer)
     field(:reading_at, :utc_datetime_usec)
     field(:last_seen_at, :utc_datetime_usec)
     field(:metric_at, :utc_datetime_usec, default: nil)
@@ -33,7 +33,7 @@ defmodule Sensor do
     has_many(:relhum, SensorRelHum)
     has_many(:soil, SensorSoil)
 
-    timestamps()
+    timestamps(usec: true)
   end
 
   # 15 minutes (as millesconds)
@@ -97,37 +97,6 @@ defmodule Sensor do
 
         %Sensor{device: device, name: device, type: "unknown"} |> insert!()
     end
-  end
-
-  def all(:devices) do
-    from(s in Sensor, order_by: [asc: s.device], select: s.device)
-    |> all(timeout: 100)
-  end
-
-  def all(:names) do
-    from(s in Sensor, order_by: [asc: s.name], select: s.name)
-    |> all(timeout: 100)
-  end
-
-  def all(:everything) do
-    from(
-      s in Sensor,
-      order_by: [asc: s.name]
-    )
-    |> all(timeout: 100)
-  end
-
-  def browse do
-    sorted = all(:everything) |> Enum.sort(fn a, b -> a.name <= b.name end)
-
-    Scribe.console(sorted,
-      data: [
-        {"ID", :id},
-        {"Name", :name},
-        {"Device", :device},
-        {"Last Seen", fn x -> Timex.format!(x.last_seen_at, "{RFC3339z}") end}
-      ]
-    )
   end
 
   def celsius(name) when is_binary(name), do: celsius(name: name)
@@ -256,6 +225,15 @@ defmodule Sensor do
 
   def fahrenheit(nil), do: nil
 
+  def find(id) when is_integer(id),
+    do: Repo.get_by(__MODULE__, id: id)
+
+  def find(name) when is_binary(name),
+    do: Repo.get_by(__MODULE__, name: name)
+
+  def find_by_device(device) when is_binary(device),
+    do: Repo.get_by(__MODULE__, device: device)
+
   def get_by(opts) when is_list(opts) do
     filter = Keyword.take(opts, [:id, :device, :name, :type])
 
@@ -311,26 +289,40 @@ defmodule Sensor do
 
   def replace(:help) do
     IO.puts("Sensor.replace(name, new_id)")
-    IO.puts("  name  : sensor name to replace")
-    IO.puts("  new_id: sensor id of replacement")
+    IO.puts("  name  : name to replace")
+    IO.puts("  new_id: id of replacement")
   end
 
   def replace(name, new_id) when is_binary(name) and is_integer(new_id) do
-    old = get_by(name: name)
-    new = get_by(id: new_id)
-
-    if is_nil(old) or is_nil(new) do
-      Logger.warn([
-        "error finding sensors: old(",
-        inspect(old),
-        ") new(",
-        inspect(new),
-        ")"
-      ])
-
-      {:failed, old, new}
+    with {:old_sensor, %Sensor{id: old_id}} <- {:old_sensor, find(name)},
+         {:replacement, %Sensor{id: new_id}} <- {:replacement, find(new_id)} do
+      {:ok, deprecate(old_id), change_name(new_id, name, "replacement")}
     else
-      {:ok, deprecate(old.id), change_name(new.id, name, "replacement")}
+      {:old_sensor, nil} ->
+        Logger.warn([
+          "replace() existing sensor ",
+          inspect(name),
+          " doesn't exist"
+        ])
+
+        {:failed, name, new_id}
+
+      {:replacement, nil} ->
+        Logger.warn([
+          "replace() replacement sensor id ",
+          inspect(new_id),
+          " doesn't exist"
+        ])
+
+        {:failed, name, new_id}
+
+      catchall ->
+        Logger.warn([
+          "replace() unhandled error: ",
+          inspect(catchall, pretty: true)
+        ])
+
+        {:error, catchall}
     end
   end
 
@@ -551,7 +543,7 @@ defmodule Sensor do
     {change(s, %{
        last_seen_at: TimeSupport.from_unix(r.mtime),
        reading_at: TimeSupport.utc_now(),
-       dev_latency:
+       dev_latency_us:
          Map.get(
            r,
            :dev_latency_us,
@@ -569,7 +561,7 @@ defmodule Sensor do
     {change(s, %{
        last_seen_at: TimeSupport.from_unix(r.mtime),
        reading_at: TimeSupport.utc_now(),
-       dev_latency:
+       dev_latency_us:
          Map.get(
            r,
            :dev_latency_us,
@@ -586,7 +578,7 @@ defmodule Sensor do
     {change(s, %{
        last_seen_at: TimeSupport.from_unix(r.mtime),
        reading_at: TimeSupport.utc_now(),
-       dev_latency:
+       dev_latency_us:
          Map.get(
            r,
            :dev_latency_us,

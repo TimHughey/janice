@@ -48,7 +48,7 @@ defmodule Remote do
     field(:heap_min, :integer)
     field(:uptime_us, :integer)
 
-    timestamps()
+    timestamps(usec: true)
   end
 
   # 15 minutes (as millesconds)

@@ -14,7 +14,7 @@ defmodule SensorSoil do
     field(:ttl_ms, :integer)
     belongs_to(:sensor, Sensor)
 
-    timestamps()
+    timestamps(usec: true)
   end
 
   # 15 minutes (as milliseconds)

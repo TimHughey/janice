@@ -45,7 +45,7 @@ defmodule SwitchStateTest do
     eu = %{host: host("switch", 1), log: false}
     msg = capture_log(fn -> Switch.external_update(eu) end)
 
-    assert msg =~ "bad map"
+    assert msg =~ "unhandled"
   end
 
   @tag num: 0
@@ -126,21 +126,6 @@ defmodule SwitchStateTest do
     pending = Switch.pending_cmds(ss, milliseconds: -10)
 
     assert pending >= 1
-  end
-
-  test "get all SwitchState (names and everything)" do
-    names = SwitchState.all(:names)
-    everything = SwitchState.all(:everything)
-
-    is_struct =
-      if Enum.empty?(everything),
-        do: false,
-        else: %SwitchState{} = hd(everything)
-
-    refute Enum.empty?(names)
-    refute Enum.empty?(everything)
-    assert is_binary(hd(names))
-    assert is_struct
   end
 
   @tag num: 6

@@ -7,7 +7,7 @@ defmodule SwitchGroup do
   use Ecto.Schema
 
   import Ecto.Query, only: [from: 2]
-  import Repo, only: [all: 2, get_by: 2]
+  import Repo, only: [get_by: 2]
 
   schema "switch_group" do
     field(:name, :string)
@@ -24,12 +24,6 @@ defmodule SwitchGroup do
       {:bad_members, nil}
     end
   end
-
-  def all(:names),
-    do: from(sg in SwitchGroup, select: sg.name) |> all(timeout: 100)
-
-  def all(:everything),
-    do: from(sg in SwitchGroup, order_by: [sg.name]) |> all(timeout: 100)
 
   def delete_all(:dangerous) do
     from(sg in SwitchGroup, where: sg.id >= 0) |> Repo.delete_all()

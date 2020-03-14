@@ -14,8 +14,7 @@ defmodule SwitchState do
       unique_constraint: 2
     ]
 
-  import Ecto.Query, only: [from: 2]
-  import Repo, only: [all: 2, get_by: 2, preload: 2, update!: 1, update: 1]
+  import Repo, only: [get_by: 2, preload: 2, update!: 1, update: 1]
 
   use Janice.Common.DB
   # import Janice.Common.DB, only: [deprecated_name: 1, name_regex: 0]
@@ -33,34 +32,6 @@ defmodule SwitchState do
     belongs_to(:switch, Switch)
 
     timestamps(usec: true)
-  end
-
-  def all(:names) do
-    from(ss in SwitchState, select: ss.name) |> all(timeout: 100)
-  end
-
-  def all(:everything) do
-    from(
-      ss in SwitchState,
-      join: sw in assoc(ss, :switch),
-      order_by: [ss.name],
-      preload: [switch: sw]
-    )
-    |> all(timeout: 100)
-  end
-
-  def browse do
-    sorted = all(:everything) |> Enum.sort(fn a, b -> a.name <= b.name end)
-
-    Scribe.console(sorted,
-      data: [
-        {"ID", :id},
-        {"Name", :name},
-        {"Device", fn x -> x.switch.device end},
-        {"Last Seen",
-         fn x -> Timex.format!(x.switch.last_seen_at, "{RFC3339z}") end}
-      ]
-    )
   end
 
   def changeset(ss, params) do
