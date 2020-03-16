@@ -24,6 +24,25 @@ defmodule Reef do
   #   |> IO.puts()
   # end
 
+  @add_salt "add salt"
+  def add_salt do
+    rmp() |> dc_activate_profile(@add_salt)
+    rma() |> DCS.activate_profile(@add_salt)
+    rmrf() |> dc_halt()
+    swmt() |> THS.activate_profile(standby())
+  end
+
+  def air(profile) when is_binary(profile),
+    do: dc_activate_profile(rma(), profile)
+
+  def air(_), do: print_usage("mix_air", "profile)")
+
+  def air_pause,
+    do: dc_halt(rma())
+
+  def air_resume,
+    do: dc_resume(rma())
+
   def heat_standby do
     [
       {swmt(), swmt() |> THS.activate_profile(standby())},
@@ -36,46 +55,26 @@ defmodule Reef do
     dc_activate_profile(rma(), "keep fresh")
   end
 
-  def mix_add_salt do
-    rmp() |> dc_activate_profile(add_salt())
-    rma() |> DCS.activate_profile(add_salt())
-    swmt() |> THS.activate_profile(standby())
-  end
+  def heat(p) when is_binary(p), do: THS.activate_profile(swmt(), p)
 
-  def mix_air(profile) when is_binary(profile),
-    do: dc_activate_profile(rma(), profile)
+  def heat(_), do: print_usage("mix_heat", "profile")
 
-  def mix_air(_), do: print_usage("mix_air", "profile)")
-
-  def mix_air_pause,
-    do: dc_halt(rma())
-
-  def mix_air_resume,
-    do: dc_resume(rma())
-
-  def mix_heat_standby, do: THS.activate_profile(swmt(), standby())
-
-  def mix_heat(p) when is_binary(p), do: THS.activate_profile(swmt(), p)
-
-  def mix_heat(_), do: print_usage("mix_heat", "profile")
-
-  def mix_match_display_tank do
+  def match_display_tank do
     THS.activate_profile(swmt(), "prep for change")
-    dc_activate_profile(rma(), "keep fresh")
-    dc_activate_profile(rmp(), "eco")
+    dc_activate_profile(rma(), "salt mix")
+    dc_activate_profile(rmp(), "salt mix")
     status()
   end
 
-  def mix_pump(p) when is_binary(p), do: utility_pump(p)
-  def mix_pump(_), do: print_usage("mix_pump", "profile")
-  def mix_pump_off, do: utility_pump_off()
+  def pump(p) when is_binary(p), do: utility_pump(p)
+  def pump(_), do: print_usage("mix_pump", "profile")
+  def pump_off, do: utility_pump_off()
 
-  def mix_pump_pause, do: dc_halt(rmp())
-  def mix_pump_resume, do: dc_resume(rmp())
+  def pump_pause, do: dc_halt(rmp())
+  def pump_resume, do: dc_resume(rmp())
 
-  def mix_rodi(p) when is_binary(p), do: dc_activate_profile(rmrf(), p)
-  def mix_rodi_boost, do: dc_activate_profile(rmrf(), "boost")
-  def mix_rodi_halt, do: dc_halt(rmrf())
+  def rodi_boost, do: dc_activate_profile(rmrf(), "boost")
+  def rodi_halt, do: dc_halt(rmrf())
 
   def mix_standby do
     dc_halt(rma())
@@ -222,7 +221,6 @@ defmodule Reef do
     }
 
   # constants
-  defp add_salt, do: "add salt"
   defp ato, do: "display tank ato"
   defp display_tank, do: "display tank"
   defp dt, do: display_tank()
