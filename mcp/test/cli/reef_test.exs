@@ -43,7 +43,7 @@ defmodule ReefTest do
   end
 
   test "mix_air()" do
-    Reef.mix_air("fast")
+    Reef.air("fast")
     assert true
   end
 
