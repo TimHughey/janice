@@ -114,37 +114,21 @@ defmodule SwitchState do
   def replace(x, y)
       when is_integer(x) or (is_binary(x) and is_integer(y)) or
              is_binary(y) do
-    with {:was, %SwitchState{id: was_id, name: name, log: log}} <-
+    with {:was, %SwitchState{id: was_id, name: name}} <-
            {:was, find(x)},
          {:tobe, %SwitchState{id: tobe_id}} <- {:tobe, find(y)},
          {:ok, _name, _opts} <-
            update(was_id, name: deprecated_name(name), comment: "replaced"),
          {:ok, _name, _opts} <- update(tobe_id, name: name) do
-      log &&
-        Logger.info([
-          inspect(was_id, pretty: true),
-          " replaced by ",
-          inspect(tobe_id, pretty: true)
-        ])
-
       {:ok, name, [was_id: was_id, is_id: tobe_id]}
     else
-      {:was, {:not_found, x} = rc} ->
-        Logger.warn([inspect(x, pretty: true), " not found, nothing changed"])
+      {:was, nil} ->
+        {:not_found, {:was, x}}
 
-        rc
-
-      {:tobe, {:not_found, y} = rc} ->
-        Logger.warn([
-          "replacement ",
-          inspect(y, pretty: true),
-          " not found, nothing changed"
-        ])
-
-        rc
+      {:tobe, nil} ->
+        {:not_found, {:tobe, y}}
 
       rc ->
-        Logger.warn(["unhandled error ", inspect(rc, pretty: true)])
         rc
     end
   end

@@ -349,23 +349,23 @@ defmodule Switch do
     end
   end
 
-  defp possible_changes,
-    do: [
-      :name,
-      :description,
-      :device,
-      :host,
-      :duty,
-      :duty_max,
-      :duty_min,
-      :dev_latency_us,
-      :log,
-      :ttl_ms,
-      :reading_at,
-      :last_seen_at,
-      :metric_at,
-      :metric_freq_secs,
-      :discovered_at,
-      :last_cmd_at
-    ]
+  # defp possible_changes,
+  #   do: [
+  #     :name,
+  #     :description,
+  #     :device,
+  #     :host,
+  #     :duty,
+  #     :duty_max,
+  #     :duty_min,
+  #     :dev_latency_us,
+  #     :log,
+  #     :ttl_ms,
+  #     :reading_at,
+  #     :last_seen_at,
+  #     :metric_at,
+  #     :metric_freq_secs,
+  #     :discovered_at,
+  #     :last_cmd_at
+  #   ]
 end
