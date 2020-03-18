@@ -39,6 +39,13 @@ defmodule Janice.TimeSupport do
     nil
   end
 
+  def ttl_check(at, val, ttl_ms, opts) do
+    # ttl_ms in opts overrides passed in ttl_ms
+    ms = Keyword.get(opts, :ttl_ms, ttl_ms)
+
+    if ttl_expired?(at, ms), do: {:ttl_expired, val}, else: {:ok, val}
+  end
+
   def ttl_expired?(at, ttl_ms) when is_integer(ttl_ms) do
     shift_ms = ttl_ms * -1
     ttl_dt = Timex.now() |> Timex.shift(milliseconds: shift_ms)

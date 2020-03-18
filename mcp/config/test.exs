@@ -9,9 +9,8 @@ minutes = fn x -> seconds.(60 * x) end
 
 config :mcp,
   feeds: [
-    cmd: {"#{Mix.env()}/mcr/f/command", 1},
-    rpt: {"#{Mix.env()}/mcr/f/report", 0},
-    ota: {"#{Mix.env()}/mcr/f/ota", 0}
+    cmd: {"test/mcr/f/command", 1},
+    rpt: {"prod/mcr/f/report", 0}
   ]
 
 config :mcp,
@@ -60,8 +59,12 @@ config(:mcp, Janitor,
   orphan_acks: [interval: {:mins, 1}, older_than: {:mins, 1}, log: true]
 )
 
-# NOTE: uncomment to enable saving of messages sent and recv'd via MQTT
+#
+# NOTE: uncomment to enable saving/forwarding of messages sent and/or
+#       recv'd via MQTT
+#
 # import_config "modules/msg_save_enable.exs"
+import_config "modules/msg_save_forward.exs"
 
 config :mcp, Mqtt.Client,
   log_dropped_msg: true,
@@ -93,8 +96,6 @@ config :mcp, Fact.Influx,
   writer: Instream.Writer.Line
 
 config :mcp, Repo,
-  adapter: Ecto.Adapters.Postgres,
-  migration_timestamps: [:utc_datetime_usec],
   username: "jan_test",
   password: "jan_test",
   database: "jan_test",

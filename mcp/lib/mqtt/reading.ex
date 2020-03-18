@@ -302,6 +302,9 @@ defmodule Mqtt.Reading do
 
   def cmdack(_anything), do: false
 
+  # don't attempt to atomize structs
+  defp atomize_keys(%{} = x) when is_struct(x), do: x
+
   defp atomize_keys(%{} = map) do
     map
     |> Enum.map(fn {k, v} -> {String.to_atom(k), atomize_keys(v)} end)

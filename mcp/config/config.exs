@@ -49,6 +49,7 @@ config(:mcp, Janitor,
 config :mcp, MessageSave,
   log: [init: false],
   save: false,
+  forward: [],
   purge: [all_at_startup: true, older_than: [minutes: 3], log: false]
 
 config :mcp, Mqtt.InboundMessage,
@@ -80,5 +81,9 @@ config :mcp, PulseWidthCmd,
   # to created a shifted Timex.DateTime in UTC
   purge: [acked_before: [days: 1]],
   orphan: [sent_before: [seconds: 3], log: false]
+
+config :mcp, Repo,
+  migration_timestamps: [type: :utc_datetime_usec],
+  adapter: Ecto.Adapters.Postgres
 
 import_config "#{Mix.env()}.exs"

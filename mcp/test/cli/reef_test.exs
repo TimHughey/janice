@@ -30,18 +30,21 @@ defmodule ReefTest do
     :ok
   end
 
+  @tag :skip
   test "Reef CLI" do
     rc = Reef.status(clear_screen: false)
 
     assert :ok == rc
   end
 
+  @tag :skip
   test "keep_fresh()" do
     Reef.keep_fresh()
 
     assert true
   end
 
+  @tag :skip
   test "mix_air()" do
     Reef.air("fast")
     assert true

@@ -57,13 +57,15 @@ defmodule Mqtt.InboundMessage do
 
   # internal work functions
 
-  def process(msg, opts \\ [])
-      when is_binary(msg) and is_list(opts) do
+  def process(%{direction: _, payload: payload}, opts \\ [])
+      when is_bitstring(payload) and is_list(opts) do
     async = Keyword.get(opts, :async, true)
 
     if async,
-      do: GenServer.cast(Mqtt.InboundMessage, {:incoming_message, msg, opts}),
-      else: GenServer.call(Mqtt.InboundMessage, {:incoming_message, msg, opts})
+      do:
+        GenServer.cast(Mqtt.InboundMessage, {:incoming_message, payload, opts}),
+      else:
+        GenServer.call(Mqtt.InboundMessage, {:incoming_message, payload, opts})
   end
 
   # GenServer callbacks

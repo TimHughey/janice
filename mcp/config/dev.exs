@@ -14,8 +14,8 @@ config :logger,
 
 config :mcp,
   feeds: [
-    cmd: {"#{Mix.env()}/mcr/f/command", 1},
-    rpt: {"#{Mix.env()}/mcr/f/report", 0}
+    cmd: {"dev/mcr/f/command", 1},
+    rpt: {"dev/mcr/f/report", 0}
   ]
 
 config :mcp,
@@ -64,7 +64,7 @@ config :mcp, Mqtt.Client,
     user_name: "mqtt",
     password: "mqtt",
     server:
-      {Tortoise.Transport.Tcp, host: "gabriel.wisslanding.com", port: 1883},
+      {Tortoise.Transport.Tcp, host: "jophiel.wisslanding.com", port: 1883},
     keep_alive: 15
   ],
   timesync: [frequency: {:mins, 1}, loops: 5, forever: true, log: false]
@@ -80,7 +80,6 @@ config :mcp, Fact.Influx,
   writer: Instream.Writer.Line
 
 config :mcp, Repo,
-  migration_timestamps: [:utc_datetime_usec],
   database: "jan_dev",
   username: "jan_dev",
   password: "jan_dev",

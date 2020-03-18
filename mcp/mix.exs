@@ -86,7 +86,8 @@ defmodule Mcp.Mixfile do
       {:scribe, "~> 0.10"},
       {:msgpax, "~> 2.0"},
       {:credo, "> 0.0.0", only: [:dev, :test], runtime: false},
-      {:coverex, "~> 1.0", only: :test}
+      {:coverex, "~> 1.0", only: :test},
+      {:deep_merge, "~> 1.0"}
       # {:phoenix, "~> 1.4.0"},
       # {:phoenix_pubsub, "~> 1.0"},
       # {:phoenix_ecto, "~> 4.0"},
@@ -111,7 +112,7 @@ defmodule Mcp.Mixfile do
       "ecto.reset": [
         "ecto.drop",
         "ecto.create",
-        "ecto.load --dump-path priv/repo/structure-#{Mix.env()}.sql",
+        "ecto.load --dump-path priv/repo/structure-prod.sql",
         "ecto.migrate",
         "ecto.dump --dump-path priv/repo/structure-#{Mix.env()}.sql"
       ],

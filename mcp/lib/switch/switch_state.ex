@@ -120,13 +120,13 @@ defmodule SwitchState do
          {:ok, _name, _opts} <-
            update(was_id, name: deprecated_name(name), comment: "replaced"),
          {:ok, _name, _opts} <- update(tobe_id, name: name) do
-      {:ok, name, [was_id: was_id, is_id: tobe_id]}
+      {:ok, [name: name, was_id: was_id, is_id: tobe_id]}
     else
       {:was, nil} ->
-        {:not_found, {:was, x}}
+        {:not_found, [was: x]}
 
       {:tobe, nil} ->
-        {:not_found, {:tobe, y}}
+        {:not_found, [tobe: y]}
 
       rc ->
         rc

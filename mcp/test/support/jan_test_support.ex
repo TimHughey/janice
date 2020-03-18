@@ -57,11 +57,16 @@ defmodule JanTest do
     n = n + 50
 
     relhum_ext(n)
-    |> Jason.encode!()
-    |> Mqtt.InboundMessage.process(async: false)
+    |> Msgpax.pack!(iodata: false)
+    |> send()
   end
 
   def relhum_name(n), do: name("relhum", n + 50)
+
+  defp send(msg) do
+    %{payload: msg, topic: "test/mcr/f/report", direction: :in}
+    |> Mqtt.InboundMessage.process(async: false)
+  end
 
   def sen_dev(n), do: device("sensor", n)
   def sen_host(n), do: host("sensor", n)
@@ -85,8 +90,8 @@ defmodule JanTest do
 
   def soil_ext_msg(n, opts \\ []) do
     soil_ext(n, opts)
-    |> Jason.encode!()
-    |> Mqtt.InboundMessage.process(async: false)
+    |> Msgpax.pack!(iodata: false)
+    |> send()
   end
 
   def temp_ext(num, opts \\ []) do
@@ -105,8 +110,8 @@ defmodule JanTest do
 
   def temp_ext_msg(n, opts \\ []) do
     temp_ext(n, opts)
-    |> Jason.encode!()
-    |> Mqtt.InboundMessage.process(async: false)
+    |> Msgpax.pack!(iodata: false)
+    |> send()
   end
 
   def create_temp_sensor(sub, name, num, opts \\ []) do
@@ -116,8 +121,8 @@ defmodule JanTest do
     sensor = %{type: "temp", device: name, tc: tc}
 
     Map.merge(base, sensor)
-    |> Jason.encode!()
-    |> Mqtt.InboundMessage.process(async: false)
+    |> Msgpax.pack!(iodata: false)
+    |> send()
   end
 
   ####

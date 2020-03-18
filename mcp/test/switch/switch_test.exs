@@ -180,7 +180,8 @@ defmodule SwitchStateTest do
 
     %SwitchState{name: name, ttl_ms: ttl_ms} = load_ss(name: device_pio(n, pio))
 
-    {rc1, update_rc, opts} = SwitchState.update(name, ttl_ms: 1000)
+    {rc1, update_rc, opts} =
+      SwitchState.update(name, ttl_ms: :rand.uniform(9999))
 
     assert rc1 == :ok
     assert update_rc === name
@@ -206,11 +207,13 @@ defmodule SwitchStateTest do
     old_name = device_pio(context[:num], context[:pio])
     new_name = device_pio(context[:num], context[:pio] + 1)
 
-    {rc, name, opts} = SwitchState.replace(old_name, new_name)
+    {rc, res} = SwitchState.replace(old_name, new_name)
 
     assert :ok == rc
-    assert name === old_name
-    assert is_list(opts)
+    assert is_list(res)
+    assert Keyword.has_key?(res, :name)
+    assert Keyword.has_key?(res, :was_id)
+    assert Keyword.has_key?(res, :is_id)
   end
 
   test "can detect SwitchState not found" do

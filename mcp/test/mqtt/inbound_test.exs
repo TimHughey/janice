@@ -36,7 +36,8 @@ defmodule MqttInboundMessageTest do
   end
 
   def freeram_ext_msg(n) do
-    freeram_ext(n) |> Jason.encode!() |> Mqtt.InboundMessage.process()
+    %{direction: :in, payload: freeram_ext(n) |> Jason.encode!()}
+    |> Mqtt.InboundMessage.process()
   end
 
   def random_float do
@@ -59,7 +60,8 @@ defmodule MqttInboundMessageTest do
   end
 
   def rh_ext_msg(n \\ 0) do
-    rh_ext(n) |> Jason.encode!() |> Mqtt.InboundMessage.process()
+    %{direction: :in, payload: rh_ext(n) |> Jason.encode!()}
+    |> Mqtt.InboundMessage.process()
   end
 
   def simple_text_ext(num) do
@@ -75,7 +77,8 @@ defmodule MqttInboundMessageTest do
   end
 
   def simple_text_ext_msg(n \\ 0) do
-    simple_text_ext(n) |> Jason.encode!() |> Mqtt.InboundMessage.process()
+    %{direction: :in, payload: simple_text_ext(n) |> Jason.encode!()}
+    |> Mqtt.InboundMessage.process()
   end
 
   def switch_ext(num, num_pios, pos) do
@@ -92,7 +95,8 @@ defmodule MqttInboundMessageTest do
   end
 
   def switch_ext_msg(n \\ 0) do
-    switch_ext(n, 8, false) |> Jason.encode!() |> Mqtt.InboundMessage.process()
+    %{direction: :in, payload: switch_ext(n, 8, false) |> Jason.encode!()}
+    |> Mqtt.InboundMessage.process()
   end
 
   def temp_ext(num) do
@@ -111,7 +115,8 @@ defmodule MqttInboundMessageTest do
   end
 
   def temp_ext_msg(n \\ 0) do
-    temp_ext(n) |> Jason.encode!() |> Mqtt.InboundMessage.process()
+    %{direction: :in, payload: temp_ext(n) |> Jason.encode!()}
+    |> Mqtt.InboundMessage.process()
   end
 
   setup_all do

@@ -37,6 +37,23 @@ defmodule Mqtt.Client do
     GenServer.cast(__MODULE__, {:disconnected})
   end
 
+  #
+  # forward/2:
+  #   -publish a msg_map to the :feed in opts
+  #   -does NOT call MessageSave
+  #
+  def forward(%{payload: payload, direction: :in, opts: opts} = inflight)
+      when is_bitstring(payload) and is_list(opts) do
+    # Logger.info(["forward/1 ", inspect(inflight, pretty: true)])
+    GenServer.cast(__MODULE__, {:forward, inflight})
+    {:ok}
+  end
+
+  def forward(bad_args) do
+    Logger.warn(["forward/1 bad args: ", inspect(bad_args, pretty: true)])
+    {:bad_args, bad_args}
+  end
+
   def inbound_msg(topic, payload) do
     GenServer.cast(__MODULE__, {:inbound_msg, topic, payload})
   end
@@ -55,12 +72,13 @@ defmodule Mqtt.Client do
       # populate the state and construct init() return
       new_state = %{
         mqtt_pid: mqtt_pid,
-        client_id: Keyword.get(opts, :client_id)
+        client_id: Keyword.get(opts, :client_id),
+        opts: opts
       }
 
       s = Map.merge(s, new_state)
 
-      Logger.info(["tortoise ", inspect(mqtt_pid)])
+      Logger.info(["MQTT via tortoise ", inspect(mqtt_pid)])
 
       {:ok, s}
     else
@@ -73,6 +91,34 @@ defmodule Mqtt.Client do
     # init() return is calculated above in if block
     # at the conclusion of init() we have a running InboundMessage GenServer and
     # potentially a connection to MQTT
+  end
+
+  def publish_cmd(msg_map, opts \\ []) when is_map(msg_map) and is_list(opts) do
+    feed = Keyword.get(opts, :feed, @cmd_feed)
+
+    with {:ok, {feed, qos}} <- get_feed(feed),
+         {:ok, payload} <- Msgpax.pack(msg_map),
+         save_msg <- %{payload: payload, direction: :out},
+         %{payload: payload} <- MessageSave.save(save_msg) do
+      pub_opts = [qos: qos] ++ Keyword.get(opts, :pub_opts, [])
+
+      {elapsed_us, res} =
+        :timer.tc(fn ->
+          GenServer.call(__MODULE__, {:publish, feed, payload, pub_opts})
+        end)
+
+      RunMetric.record(
+        module: "#{__MODULE__}",
+        metric: "cmd_publish_us",
+        device: "none",
+        val: elapsed_us
+      )
+
+      res
+    else
+      e ->
+        report_publish_error(e)
+    end
   end
 
   def report_subscribe do
@@ -106,77 +152,32 @@ defmodule Mqtt.Client do
     :ok
   end
 
-  def publish_cmd(msg_map, opts \\ []) when is_map(msg_map) and is_list(opts) do
-    with {feed, qos} when is_binary(feed) and qos in 0..2 <-
-           Keyword.get(opts, :feed, @cmd_feed),
-         {:ok, payload} <- Msgpax.pack(msg_map) do
-      pub_opts = [qos: qos] ++ Keyword.get(opts, :pub_opts, [])
-
-      {elapsed_us, res} =
-        :timer.tc(fn ->
-          GenServer.call(__MODULE__, {:publish, feed, payload, pub_opts})
-        end)
-
-      RunMetric.record(
-        module: "#{__MODULE__}",
-        metric: "cmd_publish_us",
-        device: "none",
-        val: elapsed_us
-      )
-
-      res
-    else
-      {_feed, _qos} = bad_feed ->
-        Logger.warn([
-          "publish() bad feed: ",
-          inspect(bad_feed, pretty: true)
-        ])
-
-        Logger.warn(["hint: check :feeds are defined in the configuration"])
-
-        {:bad_args, :feed_config_missing}
-
-      {rc, error} ->
-        Logger.warn([
-          "publish() unable to pack payload: ",
-          inspect(rc),
-          " ",
-          inspect(error, pretty: true)
-        ])
-
-        {rc, error}
-
-      catchall ->
-        Logger.warn([
-          "publish() unhandled error: ",
-          inspect(catchall, pretty: true)
-        ])
-
-        {:error, catchall}
-    end
-  end
-
   def handle_call(
         {:publish, feed, payload, pub_opts},
         _from,
-        %{autostart: true} = s
+        %{autostart: true, client_id: client_id} = s
       )
       when is_binary(feed) and is_list(pub_opts) do
-    {elapsed_us, res} =
+    {elapsed_us, pub_rc} =
       :timer.tc(fn ->
-        MessageSave.save(:out, payload)
-        Tortoise.publish(s.client_id, feed, payload, pub_opts)
+        Tortoise.publish(client_id, feed, payload, pub_opts)
       end)
 
-    RunMetric.record(
-      module: "#{__MODULE__}",
-      metric: "mqtt_pub_msg_us",
-      device: "none",
-      val: elapsed_us,
-      record: s.runtime_metrics
-    )
+    # Logger.info([
+    #   ":publish ",
+    #   inspect(pub_rc),
+    #   " client_id: ",
+    #   inspect(client_id),
+    #   " feed: ",
+    #   inspect(feed),
+    #   " payload: ",
+    #   inspect(payload, pretty: true),
+    #   " pub_opts: ",
+    #   inspect(pub_opts, pretty: true)
+    # ])
 
-    {:reply, res, s}
+    {:reply, pub_rc,
+     Map.put(s, :last_pub_rc, elapsed_us: elapsed_us, rc: pub_rc)}
   end
 
   def handle_call(
@@ -246,10 +247,51 @@ defmodule Mqtt.Client do
     {:noreply, s}
   end
 
-  def handle_cast({:inbound_msg, _topic, message}, s) do
-    MessageSave.save(:in, message)
+  def handle_cast(
+        {:forward,
+         %{payload: payload, direction: direction, opts: opts} = inflight},
+        %{client_id: client_id} = s
+      ) do
+    forward_feed = get_in(opts, [:forward, direction, :feed])
 
-    Mqtt.InboundMessage.process(message, runtime_metrics: s.runtime_metrics)
+    # forward_config = Keyword.get(opts, :forward, [])
+    # direction_config = Keyword.get(forward_config, direction, [])
+    # forward_feed = Keyword.get(direction_config, :feed, [])
+    #
+    # Logger.info([
+    #   "forward: ",
+    #   inspect([forward_config, direction_config, forward_feed], pretty: true)
+    # ])
+
+    rc =
+      with {:ok, {feed, qos}} <- get_feed(forward_feed),
+           pub_opts <- [qos: qos] ++ Keyword.get(opts, :pub_opts, []) do
+        pub_rc = Tortoise.publish(client_id, feed, payload, pub_opts)
+
+        Logger.debug([
+          "handle_cast(:forward) pub_rc: ",
+          inspect(pub_rc),
+          " client_id: ",
+          inspect(client_id),
+          " feed: ",
+          inspect(feed),
+          " pub_opts: ",
+          inspect(pub_opts, pretty: true),
+          "\ninflight: ",
+          inspect(inflight, pretty: true)
+        ])
+      else
+        e ->
+          report_publish_error(e)
+      end
+
+    {:noreply, Map.put(s, :last_forward_rc, rc)}
+  end
+
+  def handle_cast({:inbound_msg, topic, payload}, s) do
+    %{direction: :in, payload: payload, topic: topic}
+    |> MessageSave.save()
+    |> Mqtt.InboundMessage.process(runtime_metrics: s.runtime_metrics)
 
     {:noreply, s}
   end
@@ -320,6 +362,10 @@ defmodule Mqtt.Client do
     {:noreply, s}
   end
 
+  #
+  # PRIVATE
+  #
+
   defp config(key)
        when is_atom(key) do
     get_env(:mcp, Mqtt.Client) |> Keyword.get(key)
@@ -332,6 +378,52 @@ defmodule Mqtt.Client do
       " message ",
       inspect(message, pretty: true)
     ])
+  end
+
+  defp get_feed(feed_opt) do
+    case feed_opt do
+      {feed, qos} when is_binary(feed) and qos in 0..2 ->
+        {:ok, {feed, qos}}
+
+      feed ->
+        {:bad_feed, feed}
+    end
+  end
+
+  defp report_publish_error(e) do
+    case e do
+      # {:ok, _res} ->
+      #   # not an error, pass through "error"
+      #   e
+
+      {:bad_feed, bad_feed} ->
+        Logger.warn([
+          "publish() bad feed: ",
+          inspect(bad_feed, pretty: true)
+        ])
+
+        Logger.warn(["hint: check :feeds are defined in the configuration"])
+
+        {:bad_args, :feed_config_missing}
+
+      {rc, error} ->
+        Logger.warn([
+          "publish() unable to pack payload: ",
+          inspect(rc),
+          " ",
+          inspect(error, pretty: true)
+        ])
+
+        {rc, error}
+
+      catchall ->
+        Logger.warn([
+          "publish() unhandled error: ",
+          inspect(catchall, pretty: true)
+        ])
+
+        {:error, catchall}
+    end
   end
 
   defp start_timesync_task(s) do
