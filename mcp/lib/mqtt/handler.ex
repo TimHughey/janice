@@ -32,23 +32,23 @@ defmodule Mqtt.Handler do
     {:ok, state}
   end
 
-  def handle_message([@build_env | _resr] = topic, payload, state) do
+  def handle_message(topic, payload, state) do
     Client.inbound_msg(topic, payload)
 
     {:ok, state}
   end
 
-  def handle_message(topic, _payload, state) do
-    Logger.warn([
-      Module.split(__MODULE__),
-      " mqtt msg recv'd mismatch, build_env: ",
-      inspect(@build_env),
-      " topic: ",
-      inspect(Path.join(topic))
-    ])
-
-    {:ok, state}
-  end
+  # def handle_message(topic, _payload, state) do
+  #   Logger.warn([
+  #     Module.split(__MODULE__),
+  #     " mqtt msg recv'd mismatch, build_env: ",
+  #     inspect(@build_env),
+  #     " topic: ",
+  #     inspect(Path.join(topic))
+  #   ])
+  #
+  #   {:ok, state}
+  # end
 
   def subscription(status, topic_filter, state) do
     log = Keyword.get(state, :log_subscriptions, false)

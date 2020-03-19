@@ -91,7 +91,7 @@ defmodule Mqtt.Reading do
   def metadata(%{mtime: mtime, type: type, host: <<"mcr.", _rest::binary>>} = r)
       when is_integer(mtime) and
              is_binary(type),
-      do: Map.put(r, :metadata, :ok)
+      do: Map.merge(r, %{metadata: :ok, processed: false})
 
   def metadata(bad) do
     Logger.warn(["bad metadata ", inspect(bad, pretty: true)])

@@ -136,8 +136,12 @@ defmodule MessageSave do
         %{opts: opts} = s
       ) do
     new_opts = DeepMerge.deep_merge(opts, new_opts)
+    keys_to_return = Keyword.keys(new_opts)
 
-    {:reply, {:ok, [was: opts, is: new_opts]}, %{s | opts: new_opts}}
+    was_rc = Keyword.take(opts, keys_to_return)
+    is_rc = Keyword.take(new_opts, keys_to_return)
+
+    {:reply, {:ok, [was: was_rc, is: is_rc]}, %{s | opts: new_opts}}
   end
 
   def handle_cast(%{action: :save_msg} = msg, %{opts: opts} = s) do

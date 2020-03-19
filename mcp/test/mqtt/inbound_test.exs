@@ -88,7 +88,8 @@ defmodule MqttInboundMessageTest do
       type: "switch",
       device: device(num),
       pio_count: num_pios,
-      states: pios(8, pos)
+      states: pios(8, pos),
+      dev_latency_us: :rand.uniform(1024) + 3000
     }
 
     Map.merge(base, sw)
@@ -186,8 +187,7 @@ defmodule MqttInboundMessageTest do
   end
 
   test "can set additional message flags" do
-    {rc, new_flags} =
-      Mqtt.Inbound.additional_message_flags(set: [foobar: true])
+    {rc, new_flags} = Mqtt.Inbound.additional_message_flags(set: [foobar: true])
 
     assert rc == :ok
     assert is_map(new_flags)
@@ -195,8 +195,7 @@ defmodule MqttInboundMessageTest do
   end
 
   test "can merge additional message flags" do
-    initial_flag_count =
-      Mqtt.Inbound.additional_message_flags() |> Enum.count()
+    initial_flag_count = Mqtt.Inbound.additional_message_flags() |> Enum.count()
 
     {rc, new_flags} =
       Mqtt.Inbound.additional_message_flags(merge: [another_flag: true])

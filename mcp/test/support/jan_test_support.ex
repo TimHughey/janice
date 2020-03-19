@@ -163,6 +163,7 @@ defmodule JanTest do
       states: pios(num_pios, pos),
       vsn: preferred_vsn(),
       mtime: TimeSupport.unix_now(:second),
-      log: false
+      log: false,
+      dev_latency_us: :rand.uniform(1024) + 3000
     }
 end
