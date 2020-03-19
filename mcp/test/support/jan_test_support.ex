@@ -65,7 +65,7 @@ defmodule JanTest do
 
   defp send(msg) do
     %{payload: msg, topic: "test/mcr/f/report", direction: :in}
-    |> Mqtt.InboundMessage.process(async: false)
+    |> Mqtt.Inbound.process(async: false)
   end
 
   def sen_dev(n), do: device("sensor", n)

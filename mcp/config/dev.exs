@@ -54,8 +54,29 @@ config :mcp,
     {Janice.Scheduler, []}
   ]
 
-# NOTE: uncomment to enable saving of messages sent and recv'd via MQTT
-import_config "modules/msg_save_enable.exs"
+#
+# NOTE: uncomment to enable saving/forwarding of messages sent and/or
+#       recv'd via MQTT
+#
+# import_config "modules/msg_save_enable.exs"
+# import_config "modules/msg_save_forward.exs"
+
+config :mcp, Fact.Influx,
+  database: "jan_dev",
+  host: "jophiel.wisslanding.com",
+  auth: [method: :basic, username: "jan_test", password: "jan_test"],
+  http_opts: [insecure: true],
+  pool: [max_overflow: 10, size: 5, timeout: 150_000, max_connections: 10],
+  port: 8086,
+  scheme: "http",
+  writer: Instream.Writer.Line
+
+config :mcp, Mcp.SoakTest,
+  # don't start
+  startup_delay: {:ms, 0},
+  periodic_log_first: {:mins, 30},
+  periodic_log: {:hrs, 1},
+  flash_led: {:secs, 3}
 
 config :mcp, Mqtt.Client,
   log_dropped_msgs: true,
@@ -68,16 +89,6 @@ config :mcp, Mqtt.Client,
     keep_alive: 15
   ],
   timesync: [frequency: {:mins, 1}, loops: 5, forever: true, log: false]
-
-config :mcp, Fact.Influx,
-  database: "jan_dev",
-  host: "jophiel.wisslanding.com",
-  auth: [method: :basic, username: "jan_test", password: "jan_test"],
-  http_opts: [insecure: true],
-  pool: [max_overflow: 10, size: 5, timeout: 150_000, max_connections: 10],
-  port: 8086,
-  scheme: "http",
-  writer: Instream.Writer.Line
 
 config :mcp, Repo,
   database: "jan_dev",
@@ -103,10 +114,3 @@ config :mcp, Janice.Scheduler,
        run_strategy: Quantum.RunStrategy.Local
      ]}
   ]
-
-config :mcp, Mcp.SoakTest,
-  # don't start
-  startup_delay: {:ms, 0},
-  periodic_log_first: {:mins, 30},
-  periodic_log: {:hrs, 1},
-  flash_led: {:secs, 3}

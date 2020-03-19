@@ -4,6 +4,8 @@ defmodule Mqtt.Handler do
 
   alias Mqtt.Client
 
+  @build_env Application.compile_env(:mcp, :build_env)
+
   def init(args) do
     {:ok, args}
   end
@@ -30,11 +32,20 @@ defmodule Mqtt.Handler do
     {:ok, state}
   end
 
-  def handle_message(topic, payload, state) do
-    # unhandled message! You will crash if you subscribe to something
-    # and you don't have a 'catch all' matcher; crashing on unexpected
-    # messages could be a strategy though.
+  def handle_message([@build_env | _resr] = topic, payload, state) do
     Client.inbound_msg(topic, payload)
+
+    {:ok, state}
+  end
+
+  def handle_message(topic, _payload, state) do
+    Logger.warn([
+      Module.split(__MODULE__),
+      " mqtt msg recv'd mismatch, build_env: ",
+      inspect(@build_env),
+      " topic: ",
+      inspect(Path.join(topic))
+    ])
 
     {:ok, state}
   end

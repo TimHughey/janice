@@ -37,7 +37,7 @@ defmodule MqttInboundMessageTest do
 
   def freeram_ext_msg(n) do
     %{direction: :in, payload: freeram_ext(n) |> Jason.encode!()}
-    |> Mqtt.InboundMessage.process()
+    |> Mqtt.Inbound.process()
   end
 
   def random_float do
@@ -61,7 +61,7 @@ defmodule MqttInboundMessageTest do
 
   def rh_ext_msg(n \\ 0) do
     %{direction: :in, payload: rh_ext(n) |> Jason.encode!()}
-    |> Mqtt.InboundMessage.process()
+    |> Mqtt.Inbound.process()
   end
 
   def simple_text_ext(num) do
@@ -78,7 +78,7 @@ defmodule MqttInboundMessageTest do
 
   def simple_text_ext_msg(n \\ 0) do
     %{direction: :in, payload: simple_text_ext(n) |> Jason.encode!()}
-    |> Mqtt.InboundMessage.process()
+    |> Mqtt.Inbound.process()
   end
 
   def switch_ext(num, num_pios, pos) do
@@ -96,7 +96,7 @@ defmodule MqttInboundMessageTest do
 
   def switch_ext_msg(n \\ 0) do
     %{direction: :in, payload: switch_ext(n, 8, false) |> Jason.encode!()}
-    |> Mqtt.InboundMessage.process()
+    |> Mqtt.Inbound.process()
   end
 
   def temp_ext(num) do
@@ -116,7 +116,7 @@ defmodule MqttInboundMessageTest do
 
   def temp_ext_msg(n \\ 0) do
     %{direction: :in, payload: temp_ext(n) |> Jason.encode!()}
-    |> Mqtt.InboundMessage.process()
+    |> Mqtt.Inbound.process()
   end
 
   setup_all do
@@ -153,7 +153,7 @@ defmodule MqttInboundMessageTest do
   end
 
   test "GenServer can handle unknown handle_call() msg" do
-    fun = fn -> Mqtt.InboundMessage.handle_call({:bad_msg}, :from, %{}) end
+    fun = fn -> Mqtt.Inbound.handle_call({:bad_msg}, :from, %{}) end
     msg = capture_log(fun)
 
     # assert msg =~ host(1)
@@ -162,7 +162,7 @@ defmodule MqttInboundMessageTest do
   end
 
   test "GenServer can handle unknown handle_cast() msg" do
-    fun = fn -> Mqtt.InboundMessage.handle_cast({:bad_msg}, %{}) end
+    fun = fn -> Mqtt.Inbound.handle_cast({:bad_msg}, %{}) end
     msg = capture_log(fun)
 
     # assert msg =~ host(1)
@@ -171,7 +171,7 @@ defmodule MqttInboundMessageTest do
   end
 
   test "GenServer can handle unknown handle_info() msg" do
-    fun = fn -> Mqtt.InboundMessage.handle_info({:bad_msg}, %{}) end
+    fun = fn -> Mqtt.Inbound.handle_info({:bad_msg}, %{}) end
     msg = capture_log(fun)
 
     # assert msg =~ host(1)
@@ -180,14 +180,14 @@ defmodule MqttInboundMessageTest do
   end
 
   test "can get additional message flags" do
-    rc = Mqtt.InboundMessage.additional_message_flags()
+    rc = Mqtt.Inbound.additional_message_flags()
 
     assert is_map(rc)
   end
 
   test "can set additional message flags" do
     {rc, new_flags} =
-      Mqtt.InboundMessage.additional_message_flags(set: [foobar: true])
+      Mqtt.Inbound.additional_message_flags(set: [foobar: true])
 
     assert rc == :ok
     assert is_map(new_flags)
@@ -196,10 +196,10 @@ defmodule MqttInboundMessageTest do
 
   test "can merge additional message flags" do
     initial_flag_count =
-      Mqtt.InboundMessage.additional_message_flags() |> Enum.count()
+      Mqtt.Inbound.additional_message_flags() |> Enum.count()
 
     {rc, new_flags} =
-      Mqtt.InboundMessage.additional_message_flags(merge: [another_flag: true])
+      Mqtt.Inbound.additional_message_flags(merge: [another_flag: true])
 
     assert rc == :ok
     assert is_map(new_flags)
@@ -208,7 +208,7 @@ defmodule MqttInboundMessageTest do
   end
 
   test "setting additional message flags detects bad opts" do
-    rc = Mqtt.InboundMessage.additional_message_flags(foobar: [hello: true])
+    rc = Mqtt.Inbound.additional_message_flags(foobar: [hello: true])
 
     assert rc == :bad_opts
   end

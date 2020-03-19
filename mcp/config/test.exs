@@ -79,7 +79,7 @@ config :mcp, Mqtt.Client,
   ],
   timesync: [frequency: {:secs, 5}, loops: 5, forever: false, log: false]
 
-config :mcp, Mqtt.InboundMessage,
+config :mcp, Mqtt.Inbound,
   log: [
     engine_metrics: false
   ],

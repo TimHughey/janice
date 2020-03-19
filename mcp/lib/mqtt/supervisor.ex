@@ -20,7 +20,7 @@ defmodule Mqtt.Supervisor do
     children = [
       {MessageSave, args},
       {Mqtt.Client, args},
-      {Mqtt.InboundMessage, args}
+      {Mqtt.Inbound, args}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

@@ -54,7 +54,7 @@ config :mcp, MessageSave,
   forward_opts: [in: [feed: {"dev/mcr/f/report", 0}]],
   purge: [all_at_startup: true, older_than: [minutes: 20], log: false]
 
-config :mcp, Mqtt.InboundMessage,
+config :mcp, Mqtt.Inbound,
   additional_message_flags: [
     log_invalid_readings: true,
     log_roundtrip_times: true

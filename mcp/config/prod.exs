@@ -80,7 +80,7 @@ config :mcp, Mqtt.Client,
   # the MQTT spec requires both sending and receiving to prevent disconnects
   timesync: [frequency: {:mins, 2}, loops: 0, forever: true, log: false]
 
-config :mcp, Mqtt.InboundMessage,
+config :mcp, Mqtt.Inbound,
   additional_message_flags: [
     log_invalid_readings: true,
     log_roundtrip_times: true

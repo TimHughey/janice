@@ -282,7 +282,7 @@ defmodule Mqtt.Client do
   def handle_cast({:inbound_msg, topic, payload}, s) do
     %{direction: :in, payload: payload, topic: topic}
     |> MessageSave.save()
-    |> Mqtt.InboundMessage.process(runtime_metrics: s.runtime_metrics)
+    |> Mqtt.Inbound.process(runtime_metrics: s.runtime_metrics)
 
     {:noreply, s}
   end

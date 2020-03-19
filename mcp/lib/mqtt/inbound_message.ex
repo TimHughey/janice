@@ -1,4 +1,4 @@
-defmodule Mqtt.InboundMessage do
+defmodule Mqtt.Inbound do
   @moduledoc false
 
   require Logger
@@ -15,7 +15,7 @@ defmodule Mqtt.InboundMessage do
   alias Mqtt.Reading
 
   def start_link(s) do
-    GenServer.start_link(Mqtt.InboundMessage, s, name: Mqtt.InboundMessage)
+    GenServer.start_link(Mqtt.Inbound, s, name: Mqtt.Inbound)
   end
 
   ## Callbacks
@@ -49,7 +49,7 @@ defmodule Mqtt.InboundMessage do
 
     if Map.get(s, :autostart, false) do
       first = s.periodic_log |> Keyword.get(:first)
-      send_after(Mqtt.InboundMessage, {:periodic, :first}, ms(first))
+      send_after(Mqtt.Inbound, {:periodic, :first}, ms(first))
     end
 
     {:ok, s}
@@ -63,9 +63,9 @@ defmodule Mqtt.InboundMessage do
 
     if async,
       do:
-        GenServer.cast(Mqtt.InboundMessage, {:incoming_message, payload, opts}),
+        GenServer.cast(Mqtt.Inbound, {:incoming_message, payload, opts}),
       else:
-        GenServer.call(Mqtt.InboundMessage, {:incoming_message, payload, opts})
+        GenServer.call(Mqtt.Inbound, {:incoming_message, payload, opts})
   end
 
   # GenServer callbacks
@@ -142,7 +142,7 @@ defmodule Mqtt.InboundMessage do
 
   defp config(key, default \\ [])
        when is_atom(key) do
-    get_env(:mcp, Mqtt.InboundMessage) |> Keyword.get(key, default)
+    get_env(:mcp, Mqtt.Inbound) |> Keyword.get(key, default)
   end
 
   defp incoming_msg(msg, s, opts) do
