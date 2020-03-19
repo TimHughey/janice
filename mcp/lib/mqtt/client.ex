@@ -252,16 +252,7 @@ defmodule Mqtt.Client do
          %{payload: payload, direction: direction, opts: opts} = inflight},
         %{client_id: client_id} = s
       ) do
-    forward_feed = get_in(opts, [:forward, direction, :feed])
-
-    # forward_config = Keyword.get(opts, :forward, [])
-    # direction_config = Keyword.get(forward_config, direction, [])
-    # forward_feed = Keyword.get(direction_config, :feed, [])
-    #
-    # Logger.info([
-    #   "forward: ",
-    #   inspect([forward_config, direction_config, forward_feed], pretty: true)
-    # ])
+    forward_feed = get_in(opts, [:forward_opts, direction, :feed])
 
     rc =
       with {:ok, {feed, qos}} <- get_feed(forward_feed),

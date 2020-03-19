@@ -64,7 +64,7 @@ config :mcp, Janitor,
 #       recv'd via MQTT
 #
 # import_config "modules/msg_save_enable.exs"
-import_config "modules/msg_save_forward.exs"
+# import_config "modules/msg_save_forward.exs"
 
 config :mcp, Mqtt.Client,
   log_dropped_msgs: true,

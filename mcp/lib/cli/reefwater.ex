@@ -148,7 +148,7 @@ defmodule Reef do
   def water_change_end do
     rmp() |> halt()
     rma() |> halt()
-    ato() |> resume()
+    ato() |> halt()
     swmt() |> THS.activate_profile(standby())
     display_tank() |> THS.activate_profile("75F")
 

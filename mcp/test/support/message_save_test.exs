@@ -34,8 +34,10 @@ defmodule MessageSaveTest do
 
     assert is_list(opts)
     assert is_boolean(Keyword.get(opts, :save, nil))
+    assert is_list(Keyword.get(opts, :save_opts, nil))
 
-    assert is_list(Keyword.get(opts, :forward, nil))
+    assert is_boolean(Keyword.get(opts, :forward, nil))
+    assert is_list(Keyword.get(opts, :forward_opts, nil))
   end
 
   test "can update server opts" do
@@ -66,7 +68,7 @@ defmodule MessageSaveTest do
     counts = MessageSave.counts()
 
     assert is_list(counts)
-    assert is_integer(Keyword.get(counts, :forwarded))
+    assert Keyword.get(counts, :forwarded) > 0
     assert is_integer(Keyword.get(counts, :deleted))
     assert Keyword.get(counts, :deleted) > 0
     assert is_integer(Keyword.get(counts, :saved))

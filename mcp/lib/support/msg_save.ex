@@ -109,9 +109,11 @@ defmodule MessageSave do
 
   def start_link(args) do
     defs = [
+      forward: false,
+      forward_opts: [in: [feed: {"dev/mcr/f/report", 0}]],
       save: false,
-      purge: [all_at_startup: false, older_than: [hours: 12]],
-      forward: []
+      save_opts: [],
+      purge: [all_at_startup: false, older_than: [hours: 12]]
     ]
 
     args =
@@ -142,7 +144,7 @@ defmodule MessageSave do
     inflight =
       msg
       |> Map.put(:save, Keyword.get(opts, :save, false))
-      |> Map.put(:forward, length(Keyword.get(opts, :forward, [])) > 0)
+      |> Map.put(:forward, Keyword.get(opts, :forward, false))
       |> Map.put(:opts, opts)
 
     #
