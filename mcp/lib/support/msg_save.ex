@@ -68,7 +68,6 @@ defmodule MessageSave do
   def last_saved_msg(opts \\ []) when is_list(opts) do
     limit = Keyword.get(opts, :limit, 1)
     only_decoded = Keyword.get(opts, :only_decoded, true)
-    payload_type = Keyword.get(opts, :payload_type, :msgpack)
 
     msgs =
       from(ms in MessageSave, order_by: [desc: ms.inserted_at], limit: ^limit)
@@ -79,11 +78,12 @@ defmodule MessageSave do
         [msg: nil, decoded: nil]
 
       only_decoded ->
-        for x <- msgs, do: Reading.decode(Map.get(x, payload_type))
+        for x <- decode_msgs(msgs) do
+          Map.get(x, :decoded, %{})
+        end
 
       true ->
-        for x <- msgs,
-            do: %{msg: x, decoded: Reading.decode(Map.get(x, :msgpack))}
+        decode_msgs(msgs)
     end
   end
 
@@ -135,8 +135,8 @@ defmodule MessageSave do
         _from,
         %{opts: opts} = s
       ) do
-    new_opts = DeepMerge.deep_merge(opts, new_opts)
     keys_to_return = Keyword.keys(new_opts)
+    new_opts = DeepMerge.deep_merge(opts, new_opts)
 
     was_rc = Keyword.take(opts, keys_to_return)
     is_rc = Keyword.take(new_opts, keys_to_return)
@@ -223,6 +223,18 @@ defmodule MessageSave do
     |> cast(params, changes_possible())
     |> validate_required(changes_required())
   end
+
+  def decode_msgs([%MessageSave{} | _rest] = msgs) do
+    for %MessageSave{msgpack: msg} <- msgs do
+      {rc, map} = Msgpax.unpack(msg)
+
+      if rc == :ok,
+        do: %{msg: msg, decoded: Reading.atomize_keys(map)},
+        else: %{msg: msg, decoded: %{}}
+    end
+  end
+
+  def decode_msgs(_anything), do: []
 
   defp forward_msg(
          %{inflight: %{forward: true, direction: :in, opts: _opts} = inflight} =
@@ -364,14 +376,18 @@ defmodule MessageSave do
        )
        # first byte isn't null and not '{'
        when direction == :in and first_byte > 0x00 and first_byte != 0x7B do
+    inflight = Map.put(inflight, :msgpack, payload)
+
     with {:ok, msg_map} <- Reading.decode(payload),
-         {host} when is_binary(host) <- {Map.get(msg_map, :host)} do
-      %{s | inflight: Map.put(inflight, :src_host, host)}
+         host when is_binary(host) <-
+           Map.get(msg_map, :host, "<undefined>"),
+         inflight <- Map.put(inflight, :src_host, host) do
+      Map.put(s, :inflight, inflight)
     else
       _anything ->
-        %{s | inflight: Map.put(inflight, :src_host, "<unknown>")}
+        inflight = Map.put(inflight, :src_host, "<bad msg>")
+        Map.put(s, :inflight, inflight)
     end
-    |> Map.put(:msgpack, payload)
     |> insert_msg()
   end
 

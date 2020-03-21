@@ -19,6 +19,25 @@ defmodule Mqtt.Reading do
   @simple_text_t "text"
   @pwm_t "pwm"
 
+  # don't attempt to atomize structs
+  def atomize_keys(%{} = x) when is_struct(x), do: x
+
+  def atomize_keys(%{} = map) do
+    map
+    |> Enum.map(fn {k, v} -> {String.to_atom(k), atomize_keys(v)} end)
+    |> Enum.into(%{})
+  end
+
+  # Walk the list and atomize the keys of
+  # of any map members
+  def atomize_keys([head | rest]) do
+    [atomize_keys(head) | atomize_keys(rest)]
+  end
+
+  def atomize_keys(not_a_map) do
+    not_a_map
+  end
+
   def boot?(%{type: @boot_t, host: host} = r) do
     Logger.debug(["detected boot message for ", inspect(host, pretty: true)])
     metadata?(r)
@@ -301,23 +320,4 @@ defmodule Mqtt.Reading do
       do: switch?(r)
 
   def cmdack(_anything), do: false
-
-  # don't attempt to atomize structs
-  defp atomize_keys(%{} = x) when is_struct(x), do: x
-
-  defp atomize_keys(%{} = map) do
-    map
-    |> Enum.map(fn {k, v} -> {String.to_atom(k), atomize_keys(v)} end)
-    |> Enum.into(%{})
-  end
-
-  # Walk the list and atomize the keys of
-  # of any map members
-  defp atomize_keys([head | rest]) do
-    [atomize_keys(head) | atomize_keys(rest)]
-  end
-
-  defp atomize_keys(not_a_map) do
-    not_a_map
-  end
 end
