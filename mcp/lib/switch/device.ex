@@ -44,7 +44,9 @@ defmodule Switch.Device do
       field(:dev_latency, :boolean, default: false)
     end
 
-    has_many(:cmds, Switch.Command, foreign_key: :dev_id, on_delete: :delete_all)
+    has_many(:cmds, Switch.Command, foreign_key: :device_id, references: :id)
+
+    has_many(:aliases, Switch.Alias, foreign_key: :device_id, references: :id)
 
     timestamps()
   end
@@ -67,11 +69,17 @@ defmodule Switch.Device do
     if rc in [:ok, :ttl_expired], do: true, else: false
   end
 
-  def find(id) when is_integer(id),
-    do: Repo.get_by(__MODULE__, id: id)
+  def find(id) when is_integer(id) do
+    Repo.get_by(__MODULE__, id: id)
+    |> preload_unacked_cmds()
+    |> Repo.preload(:aliases)
+  end
 
-  def find(device) when is_binary(device),
-    do: Repo.get_by(__MODULE__, device: device)
+  def find(device) when is_binary(device) do
+    Repo.get_by(__MODULE__, device: device)
+    |> preload_unacked_cmds()
+    |> Repo.preload(:aliases)
+  end
 
   def pio_count(device) when is_binary(device) do
     sd = find(device)
@@ -103,6 +111,14 @@ defmodule Switch.Device do
         {:bad_args, {:pio_state, :state_must_be_boolean, new_state}}
     end
   end
+
+  def reload(%Device{id: id}) do
+    Repo.get_by!(__MODULE__, id: id)
+    |> preload_unacked_cmds()
+    |> Repo.preload(:aliases)
+  end
+
+  def reload(nil), do: nil
 
   # Readings from External Sources
 
@@ -154,7 +170,15 @@ defmodule Switch.Device do
   # Device.update/2 will update a %Device{} using the map passed in
   def upsert(%Device{} = x, params) when is_map(params) do
     cs = changeset(x, Map.take(params, possible_changes()))
-    replace_cols = [:host, :states, :dev_latency_us, :last_seen_at, :updated_at]
+
+    replace_cols = [
+      :host,
+      :states,
+      :dev_latency_us,
+      :last_seen_at,
+      :updated_at,
+      :ttl_ms
+    ]
 
     with {:cs_valid, true} <- {:cs_valid, cs.valid?()},
          # the keys on_conflict: and conflict_target: indicate the insert
@@ -259,6 +283,15 @@ defmodule Switch.Device do
 
   defp caller(%{function: {func, arity}}),
     do: [Atom.to_string(func), "/", Integer.to_string(arity)]
+
+  defp preload_unacked_cmds(sd, limit \\ 1)
+       when is_integer(limit) and limit >= 1 do
+    alias Switch.Command
+
+    Repo.preload(sd,
+      cmds: from(sc in Command, where: sc.acked == false, limit: ^limit)
+    )
+  end
 
   #
   # Changeset Functions

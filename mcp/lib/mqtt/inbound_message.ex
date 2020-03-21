@@ -62,10 +62,8 @@ defmodule Mqtt.Inbound do
     async = Keyword.get(opts, :async, true)
 
     if async,
-      do:
-        GenServer.cast(Mqtt.Inbound, {:incoming_message, payload, opts}),
-      else:
-        GenServer.call(Mqtt.Inbound, {:incoming_message, payload, opts})
+      do: GenServer.cast(Mqtt.Inbound, {:incoming_message, payload, opts}),
+      else: GenServer.call(Mqtt.Inbound, {:incoming_message, payload, opts})
   end
 
   # GenServer callbacks
@@ -191,6 +189,11 @@ defmodule Mqtt.Inbound do
 
       # reading needs to be processed, should we do it async?
       async ->
+        # NOTE: temporary processing for redesign of Switch
+        #       set switch_redesign: true in additional msg flags to enable
+        if Map.get(r, :switch_redesign, false),
+          do: Task.start(Switch.Device, :upsert, [r])
+
         Task.start(mod, func, [r])
 
       # process msg inline

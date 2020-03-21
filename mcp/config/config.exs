@@ -57,7 +57,8 @@ config :mcp, MessageSave,
 config :mcp, Mqtt.Inbound,
   additional_message_flags: [
     log_invalid_readings: true,
-    log_roundtrip_times: true
+    log_roundtrip_times: true,
+    switch_redesign: false
   ],
   periodic_log: [
     enable: false,

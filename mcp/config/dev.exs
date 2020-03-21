@@ -90,6 +90,11 @@ config :mcp, Mqtt.Client,
   ],
   timesync: [frequency: {:mins, 1}, loops: 5, forever: true, log: false]
 
+config :mcp, Mqtt.Inbound,
+  additional_message_flags: [
+    switch_redesign: true
+  ]
+
 config :mcp, Repo,
   database: "jan_dev",
   username: "jan_dev",

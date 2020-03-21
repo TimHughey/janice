@@ -18,6 +18,8 @@ defmodule SwitchAliasTest do
     num_sw_states = Map.get(context, :num_sw_states, 3)
     num_str = ["0x", Integer.to_string(num, 16)] |> IO.iodata_to_binary()
     alias_name = ["swalias_", num_str] |> IO.iodata_to_binary()
+    add_alias = Map.get(context, :add_alias, false)
+    alias_pio = Map.get(context, :alias_pio, 1)
 
     host =
       Map.get(
@@ -59,12 +61,21 @@ defmodule SwitchAliasTest do
     }
 
     {sd_rc, sd} =
+      sd_res =
       if Map.get(context, :insert, true),
         do: Device.upsert(r) |> Map.get(:processed),
         else: nil
 
     assert sd_rc == :ok
     assert %Device{} = sd
+
+    sa_res =
+      add_alias(%{
+        add_alias: add_alias,
+        sd: {sd_rc, sd},
+        name: alias_name,
+        pio: 1
+      })
 
     # pio = context[:pio]
     # device_pio = if pio, do: device_pio(n, pio), else: device_pio(n, 0)
@@ -74,8 +85,31 @@ defmodule SwitchAliasTest do
      host: host,
      rem_name: rem_name,
      device: device,
-     sd: sd,
-     alias_name: alias_name}
+     device_id: Map.get(sd, :id),
+     sd: sd_res,
+     alias_name: alias_name,
+     add_alias: add_alias,
+     alias_pio: alias_pio,
+     sa: sa_res}
+  end
+
+  defp add_alias(%{
+         add_alias: true,
+         name: name,
+         pio: pio,
+         sd: {:ok, %Device{id: device_id}}
+       }) do
+    {rc, sa} =
+      sa_rc = Alias.upsert(%{device_id: device_id, name: name, pio: pio})
+
+    assert rc == :ok
+    assert %Alias{} = sa
+
+    sa_rc
+  end
+
+  defp add_alias(%{add_alias: _, device: _device, sd: _sd}) do
+    {:not_added, %Alias{}}
   end
 
   @moduletag :switch_alias
@@ -90,12 +124,11 @@ defmodule SwitchAliasTest do
   end
 
   @tag alias_num: 1
-  test "can add a new alias", %{device: device, alias_name: name} do
-    new_alias_map = %{device: device, name: name, pio: 1}
-
-    {rc, sw_al} = Alias.upsert(new_alias_map)
-
-    assert rc == :ok
-    assert %Alias{} = sw_al
+  @tag add_alias: true
+  test "can add a new alias", %{
+    sa: {sa_rc, sa}
+  } do
+    assert sa_rc == :ok
+    assert %Alias{} = sa
   end
 end

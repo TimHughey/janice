@@ -191,4 +191,17 @@ defmodule SwitchDeviceTest do
     refute Device.exists?(device, 4)
     refute Device.exists?("foobar", 0)
   end
+
+  @tag sd_num: 9
+  @tag insert: true
+  test "can do general updates to a device", %{device: _device, sd: {_rc, sd}} do
+    new_ttl_ms = 1000
+
+    sd = Device.reload(sd)
+    {rc, updated} = Device.upsert(sd, ttl_ms: new_ttl_ms)
+
+    assert rc == :ok
+    assert %Device{} = updated
+    assert Map.get(updated, :ttl_ms) == new_ttl_ms
+  end
 end

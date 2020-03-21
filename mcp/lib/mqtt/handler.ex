@@ -4,7 +4,7 @@ defmodule Mqtt.Handler do
 
   alias Mqtt.Client
 
-  @build_env Application.compile_env(:mcp, :build_env)
+  # @build_env Application.compile_env(:mcp, :build_env)
 
   def init(args) do
     {:ok, args}

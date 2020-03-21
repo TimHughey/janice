@@ -19,14 +19,13 @@ defmodule Switch.Alias do
 
   # alias Janice.TimeSupport
   alias __MODULE__
-  alias Switch.Device
 
   @timestamps_opts [type: :utc_datetime_usec]
 
   schema "switch_alias" do
     field(:name, :string)
+    field(:device_id, :integer)
     field(:description, :string, default: "<none>")
-    field(:device, :string)
     field(:pio, :integer)
     field(:invert_state, :boolean, default: false)
     field(:ttl_ms, :integer, default: 60_000)
@@ -38,6 +37,13 @@ defmodule Switch.Alias do
       field(:dev_latency, :boolean, default: false)
     end
 
+    belongs_to(:device, Switch.Device,
+      source: :device_id,
+      references: :id,
+      foreign_key: :device_id,
+      define_field: false
+    )
+
     timestamps()
   end
 
@@ -48,20 +54,17 @@ defmodule Switch.Alias do
   end
 
   def find(id) when is_integer(id),
-    do: Repo.get_by(__MODULE__, id: id)
+    do: Repo.get_by(__MODULE__, id: id) |> Repo.preload(:device)
 
   def find(name) when is_binary(name),
-    do: Repo.get_by(__MODULE__, name: name)
-
-  def find_by_device(device) when is_binary(device),
-    do: Repo.get_by(__MODULE__, device: device)
+    do: Repo.get_by(__MODULE__, name: name) |> Repo.preload(:device)
 
   def upsert(l) when is_list(l), do: upsert(Enum.into(l, %{}))
 
   # upsert/1 confirms the minimum keys required and if the device to alias
   # exists
-  def upsert(%{name: _, device: device, pio: pio} = m) do
-    upsert(%Alias{}, Map.put(m, :device_checked, Device.exists?(device, pio)))
+  def upsert(%{name: _, device_id: _, pio: _} = m) do
+    upsert(%Alias{}, Map.put(m, :device_checked, true))
   end
 
   def upsert(catchall) do
@@ -72,13 +75,13 @@ defmodule Switch.Alias do
   # Alias.upsert/2 will update (or insert) an %Alias{} using the map passed in
   def upsert(
         %Alias{} = x,
-        %{device_checked: true, name: _, device: _, pio: _pio} = params
+        %{device_checked: true, name: _, device_id: _, pio: _pio} = params
       ) do
     cs = changeset(x, Map.take(params, possible_changes()))
 
     replace_cols = [
       :description,
-      :device,
+      :device_id,
       :pio,
       :invert_state,
       :ttl_ms,
@@ -110,7 +113,13 @@ defmodule Switch.Alias do
 
   def upsert(
         %Alias{},
-        %{device_checked: false, name: _, device: device, pio: pio}
+        %{
+          device_checked: false,
+          name: _,
+          device: device,
+          device_id: _device_id,
+          pio: pio
+        }
       ),
       do: {:device_not_found, {device, pio}}
 
@@ -131,7 +140,6 @@ defmodule Switch.Alias do
       required: true
     )
     |> validate_required(possible_changes())
-    |> validate_format(:device, name_regex())
     |> validate_format(:name, name_regex())
     |> validate_number(:pio,
       greater_than_or_equal_to: 0
@@ -207,7 +215,7 @@ defmodule Switch.Alias do
     do: [
       :name,
       :description,
-      :device,
+      :device_id,
       :pio,
       :invert_state,
       :ttl_ms
@@ -217,7 +225,7 @@ defmodule Switch.Alias do
     do: [
       :name,
       :description,
-      :device,
+      :device_id,
       :pio,
       :invert_state,
       :ttl_ms
