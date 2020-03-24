@@ -451,7 +451,7 @@ defmodule Janitor do
       if metric == :all,
         do: Keyword.get(opts, :metrics_frequency, []),
         else: [
-          Keyword.get(opts, :metrics_frequency, []) |> Keyword.take(metric)
+          Keyword.get(opts, :metrics_frequency, []) |> Keyword.take([metric])
         ]
 
     for {metric, duration_opts} <- metrics do
