@@ -14,7 +14,6 @@ defmodule Switch.Alias do
       unique_constraint: 3
     ]
 
-  import Ecto.Query, only: [from: 2]
   import Janice.Common.DB, only: [name_regex: 0]
 
   # alias Janice.TimeSupport
@@ -47,10 +46,16 @@ defmodule Switch.Alias do
     timestamps()
   end
 
-  def delete_all(:dangerous) do
-    for x <- from(y in __MODULE__, select: [:id]) |> Repo.all() do
-      Repo.delete(x)
-    end
+  def create(%Device{id: id}, name, pio, opts \\ [])
+      when is_binary(name) and is_integer(pio) and pio >= 0 and is_list(opts) do
+    #
+    # grab keys of interest for the schema (if they exist) and populate the
+    # required parameters from the function call
+    #
+    Keyword.take(opts, [:description, :invert_state, :ttl_ms])
+    |> Enum.into(%{})
+    |> Map.merge(%{device_id: id, name: name, pio: pio, device_checked: true})
+    |> upsert()
   end
 
   def find(id) when is_integer(id),

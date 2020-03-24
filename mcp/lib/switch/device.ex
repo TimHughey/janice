@@ -76,9 +76,26 @@ defmodule Switch.Device do
       else: {rc, sd}
   end
 
-  def delete_all(:dangerous) do
-    for x <- from(y in __MODULE__, select: [:id]) |> Repo.all() do
-      Repo.delete(x)
+  def dev_alias(device, opts) when is_binary(device) and is_list(opts) do
+    sd = find(device)
+
+    if is_nil(sd), do: {:not_found, device}, else: dev_alias(sd, opts)
+  end
+
+  def dev_alias(%Device{} = sd, opts) when is_list(opts) do
+    create = Keyword.get(opts, :create, false)
+    alias_name = Keyword.get(opts, :name)
+    pio = Keyword.get(opts, :pio)
+
+    cond do
+      create and is_binary(alias_name) and is_integer(pio) ->
+        Alias.create(sd, alias_name, pio, opts)
+
+      is_binary(alias_name) and is_integer(pio) ->
+        find_alias(sd, alias_name, pio, opts)
+
+      true ->
+        {:bad_args, sd, opts}
     end
   end
 
@@ -98,6 +115,23 @@ defmodule Switch.Device do
     Repo.get_by(__MODULE__, device: device)
     |> preload_unacked_cmds()
     |> Repo.preload(:aliases)
+  end
+
+  def find_alias(
+        %Device{aliases: aliases},
+        alias_name,
+        alias_pio,
+        _opts \\ []
+      )
+      when is_binary(alias_name) and is_integer(alias_pio) and alias_pio >= 0 do
+    found =
+      for %Alias{name: name, pio: pio} = x
+          when name == alias_name and pio == alias_pio <- aliases,
+          do: x
+
+    if Enum.empty?(found),
+      do: {:not_found, {alias_name, alias_pio}},
+      else: hd(found)
   end
 
   def log?(%Device{log_opts: %{log: log}}), do: log
