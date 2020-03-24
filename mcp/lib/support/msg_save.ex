@@ -283,26 +283,6 @@ defmodule MessageSave do
     end
   end
 
-  defp log_delete(r) when is_list(r) do
-    log =
-      get_env(:mcp, MessageSave, purge: [log: false]) |> get_in([:purge, :log])
-
-    prepend = Keyword.get(r, :prepend, "<unspecified>")
-    deleted = Keyword.get(r, :deleted, []) |> length()
-
-    if log == true and deleted > 0,
-      do:
-        Logger.info([
-          prepend,
-          " queued ",
-          Integer.to_string(deleted),
-          " messages for delete in ",
-          humanize_duration(Keyword.get(r, :elapsed, Duration.zero()))
-        ])
-
-    r
-  end
-
   # if the state contains the key :next_purge than a purge has been done
   # previously so use it decided if a purge should be done now
   defp purge_msgs(%{next_purge: next_purge, opts: opts} = s) do
@@ -311,18 +291,13 @@ defmodule MessageSave do
     before = duration(older_than_opts) |> Duration.invert() |> utc_shift()
 
     if Timex.after?(Timex.now(), next_purge) do
-      {elapsed, results} =
-        Duration.measure(fn ->
-          Repo.all(
-            from(ms in MessageSave,
-              where: ms.inserted_at < ^before,
-              select: [:id]
-            )
-          )
-          |> delete()
-        end)
-
-      log_delete(prepend: "purge_msgs()", elapsed: elapsed, deleted: results)
+      Repo.all(
+        from(ms in MessageSave,
+          where: ms.inserted_at < ^before,
+          select: [:id]
+        )
+      )
+      |> delete()
 
       calculate_next_purge(s)
     else
