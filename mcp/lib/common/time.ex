@@ -7,24 +7,36 @@ defmodule Janice.TimeSupport do
     utc_now() |> Timex.shift(milliseconds: ms(x) * -1)
   end
 
-  def duration_from_list(opts), do: list_to_duration(opts)
-
-  def from_unix(mtime) do
-    {:ok, dt} = DateTime.from_unix(mtime)
-    Timex.shift(dt, microseconds: 1) |> Timex.shift(microseconds: -1)
-  end
-
-  def list_to_duration(opts) when is_list(opts) do
-    # since there wasn't a capability with Timex.Duration, that I could
-    # find after hours of research, we use multiple Timex functions to
-    # create the Duration
+  def duration(opts) when is_list(opts) do
+    # after hours of searching and not finding an existing capabiility
+    # in Timex we'll roll our own consisting of multiple Timex functions.
     ~U[0000-01-01 00:00:00Z]
     |> Timex.shift(Keyword.take(opts, valid_duration_opts()))
     |> Timex.to_gregorian_microseconds()
     |> Duration.from_microseconds()
   end
 
-  def list_to_duration(_anything), do: 0
+  def duration(_anything), do: 0
+
+  def duration_ms(opts) when is_list(opts),
+    do: duration(opts) |> Duration.to_milliseconds(truncate: true)
+
+  def from_unix(mtime) do
+    {:ok, dt} = DateTime.from_unix(mtime)
+    Timex.shift(dt, microseconds: 1) |> Timex.shift(microseconds: -1)
+  end
+
+  def humanize_duration(%Duration{} = d) do
+    alias Timex.Format.Duration.Formatter
+
+    Formatter.format(d, :humanized)
+  end
+
+  def humanize_duration(_anything) do
+    alias Timex.Format.Duration.Formatter
+
+    Formatter.format(Duration.zero(), :humanized)
+  end
 
   def ms({:ms, x}) when is_number(x), do: x |> round()
   def ms({:secs, x}) when is_number(x), do: (x * 1000) |> round()

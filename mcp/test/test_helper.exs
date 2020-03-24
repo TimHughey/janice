@@ -1,12 +1,19 @@
-Thermostat.delete_all(:dangerous)
-Dutycycle.delete_all(:dangerous)
-SwitchGroup.delete_all(:dangerous)
-Switch.delete_all(:dangerous)
-Switch.Alias.delete_all(:dangerous)
-Switch.Device.delete_all(:dangerous)
-PulseWidth.delete_all(:dangerous)
-Sensor.delete_all(:dangerous)
-Remote.delete_all(:dangerous)
+#
+# before running tests delete everything in the database
+#
+[
+  Thermostat,
+  MessageSave,
+  Dutycycle,
+  SwitchGroup,
+  Switch,
+  Switch.Alias,
+  Switch.Device,
+  PulseWidth,
+  Sensor,
+  Remote
+]
+|> JanTest.delete_all()
 
 #
 # ExUnit.configure(

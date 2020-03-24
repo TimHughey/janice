@@ -16,9 +16,11 @@ defmodule Switch.Device do
 
   import Ecto.Query, only: [from: 2]
   import Janice.Common.DB, only: [name_regex: 0]
+  import Janice.TimeSupport, only: [from_unix: 1, ttl_check: 4, utc_now: 0]
+  import Mqtt.Client, only: [publish_cmd: 1]
 
-  alias Janice.TimeSupport
-  alias __MODULE__
+  alias Mqtt.SetSwitch
+  alias Switch.{Alias, Device, Command}
 
   @timestamps_opts [type: :utc_datetime_usec]
 
@@ -33,9 +35,9 @@ defmodule Switch.Device do
 
     field(:dev_latency_us, :integer)
     field(:ttl_ms, :integer, default: 60_000)
-    field(:discovered_at, :utc_datetime_usec)
-    field(:last_cmd_at, :utc_datetime_usec)
     field(:last_seen_at, :utc_datetime_usec)
+    field(:last_cmd_at, :utc_datetime_usec)
+    field(:discovered_at, :utc_datetime_usec)
 
     embeds_one :log_opts, LogOpts do
       field(:log, :boolean, default: false)
@@ -44,9 +46,9 @@ defmodule Switch.Device do
       field(:dev_latency, :boolean, default: false)
     end
 
-    has_many(:cmds, Switch.Command, foreign_key: :device_id, references: :id)
+    has_many(:cmds, Command, foreign_key: :device_id, references: :id)
 
-    has_many(:aliases, Switch.Alias, foreign_key: :device_id, references: :id)
+    has_many(:aliases, Alias, foreign_key: :device_id, references: :id)
 
     timestamps()
   end
@@ -55,6 +57,23 @@ defmodule Switch.Device do
     for %Device{} = x <- list do
       upsert(x, x)
     end
+  end
+
+  def add_cmd(%Device{} = sd, sw_alias, %DateTime{} = dt)
+      when is_binary(sw_alias) do
+    sd = reload(sd)
+    %Command{refid: refid} = Command.add(sd, sw_alias, dt)
+
+    {rc, sd} = upsert(sd, last_cmd_at: dt)
+
+    cmd_query = from(c in Command, where: c.refid == ^refid)
+
+    if rc == :ok,
+      do:
+        {:ok,
+         reload(sd)
+         |> Repo.preload(cmds: cmd_query)},
+      else: {rc, sd}
   end
 
   def delete_all(:dangerous) do
@@ -81,6 +100,8 @@ defmodule Switch.Device do
     |> Repo.preload(:aliases)
   end
 
+  def log?(%Device{log_opts: %{log: log}}), do: log
+
   def pio_count(device) when is_binary(device) do
     sd = find(device)
 
@@ -89,26 +110,62 @@ defmodule Switch.Device do
       else: Enum.count(Map.get(sd, :states))
   end
 
+  # function header
   def pio_state(device, pio, opts \\ [])
+
+  def pio_state(device, pio, opts)
       when is_binary(device) and
              is_integer(pio) and
              pio >= 0 and
              is_list(opts) do
     sd = find(device)
-    new_state = Keyword.get(opts, :state, nil)
 
-    cond do
-      is_nil(sd) ->
-        {:not_found, device}
+    if is_nil(sd), do: {:not_found, device}, else: pio_state(sd, pio, opts)
+  end
 
-      is_nil(new_state) ->
-        actual_pio_state(:get, sd, pio, opts)
+  def pio_state(%Device{} = sd, pio, opts)
+      when is_integer(pio) and
+             pio >= 0 and
+             is_list(opts) do
+    actual_pio_state(sd, pio, opts)
+  end
 
-      is_boolean(new_state) ->
-        actual_pio_state(:set, sd, pio, opts)
+  def record_cmd(%Device{} = sd, %Alias{name: sw_alias}, opts)
+      when is_list(opts) do
+    publish = true
 
-      true ->
-        {:bad_args, {:pio_state, :state_must_be_boolean, new_state}}
+    sd = reload(sd)
+
+    with %{state: state, pio: pio} <-
+           Keyword.get(opts, :cmd_map, {:bad_args, opts}),
+         {:ok, %Device{device: device} = sd} <-
+           add_cmd(sd, sw_alias, utc_now()),
+         # NOTE: add_cmd/3 returns the Device with the new Command preloaded
+         {:cmd, %Command{refid: refid} = cmd} <- {:cmd, hd(sd.cmds)},
+         {:refid, true} <- {:refid, is_binary(refid)},
+         {:publish, true} <- {:publish, publish} do
+      rc =
+        SetSwitch.new_cmd(device, %{pio: pio, state: state}, refid, opts)
+        |> publish_cmd()
+
+      log?(sd) &&
+        Logger.info([
+          "record_cmd() rc: ",
+          inspect(rc, pretty: true),
+          "cmd: ",
+          inspect(cmd, pretty: true)
+        ])
+
+      {:pending,
+       [
+         position: state,
+         refid: refid,
+         pub_rc: rc
+       ]}
+    else
+      error ->
+        Logger.warn(["record_cmd() error: ", inspect(error, pretty: true)])
+        {:error, [error]}
     end
   end
 
@@ -147,15 +204,19 @@ defmodule Switch.Device do
         # NOTE: the second map passed to Map.merge/2 replaces duplicate
         #       keys which is the intended behavior in this instance.
         %{
-          discovered_at: TimeSupport.from_unix(mtime),
-          last_cmd_at: TimeSupport.utc_now(),
-          last_seen_at: TimeSupport.utc_now()
+          discovered_at: from_unix(mtime),
+          last_cmd_at: utc_now(),
+          last_seen_at: utc_now()
         }
       )
 
-    # return the reading with :processed to the the results of the update
-    # to signal to other modules the reading has been processed
+    # return reading:
+    #   1. add the upsert results to the map (processed: {rc, res}) to signal
+    #      other modules in the pipeline that the reading was processed
+    #   2. send the reading to Command.ack_if_needed/1 to handle tracking
+    #      of the command
     Map.put(r, :processed, upsert(%Device{}, changes))
+    |> Command.ack_if_needed()
   end
 
   def upsert(%{processed: _anything} = r),
@@ -176,6 +237,7 @@ defmodule Switch.Device do
       :states,
       :dev_latency_us,
       :last_seen_at,
+      :last_cmd_at,
       :updated_at,
       :ttl_ms
     ]
@@ -203,14 +265,14 @@ defmodule Switch.Device do
     |> check_result(x, __ENV__)
   end
 
-  defp actual_pio_state(:get, %Device{device: device} = sd, pio, opts) do
+  defp actual_pio_state(%Device{device: device} = sd, pio, opts) do
     alias Switch.Device.State
 
     find_fn = fn %State{pio: p} -> p == pio end
 
     with %Device{states: states, last_seen_at: seen_at, ttl_ms: ttl_ms} <- sd,
          %State{state: state} <- Enum.find(states, find_fn) do
-      TimeSupport.ttl_check(seen_at, state, ttl_ms, opts)
+      ttl_check(seen_at, state, ttl_ms, opts)
     else
       _anything ->
         {:bad_pio, {device, pio}}
@@ -284,12 +346,19 @@ defmodule Switch.Device do
   defp caller(%{function: {func, arity}}),
     do: [Atom.to_string(func), "/", Integer.to_string(arity)]
 
+  # defp log?(%Device{log_opts: opts}), do: Keyword.get(opts, :log, false)
+
   defp preload_unacked_cmds(sd, limit \\ 1)
        when is_integer(limit) and limit >= 1 do
     alias Switch.Command
 
     Repo.preload(sd,
-      cmds: from(sc in Command, where: sc.acked == false, limit: ^limit)
+      cmds:
+        from(sc in Command,
+          where: sc.acked == false,
+          order_by: [desc: sc.inserted_at],
+          limit: ^limit
+        )
     )
   end
 

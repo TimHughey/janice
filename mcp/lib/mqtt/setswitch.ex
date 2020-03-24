@@ -7,6 +7,8 @@ defmodule Mqtt.SetSwitch do
 
   @setswitch_cmd "set.switch"
 
+  def new_cmd(device, states, refid, opts \\ [])
+
   @doc ~S"""
   Create a setswitch command with all map values required set to appropriate values
 
@@ -17,7 +19,8 @@ defmodule Mqtt.SetSwitch do
     ...> (cmd_time > 0) and Map.has_key?(c, :states)
     true
   """
-  def new_cmd(device, states, refid, opts \\ [])
+
+  def new_cmd(device, states, refid, opts)
       when is_binary(device) and is_list(states) and is_binary(refid) and
              is_list(opts),
       do: %{
@@ -28,4 +31,9 @@ defmodule Mqtt.SetSwitch do
         refid: refid,
         ack: Keyword.get(opts, :ack, true)
       }
+
+  # if a single state map is passed wrap it in a list and call new_cmd/4 again
+  def new_cmd(device, state, refid, opts)
+      when is_map(state),
+      do: new_cmd(device, [state], refid, opts)
 end

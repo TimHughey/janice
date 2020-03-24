@@ -85,7 +85,7 @@ defmodule TimeSupportTest do
   end
 
   test "can create a Duration from a list of opts" do
-    d = TimeSupport.list_to_duration(minutes: 1, seconds: 1)
+    d = TimeSupport.duration(minutes: 1, seconds: 1)
 
     assert Duration.to_seconds(d, truncate: true) == 61
   end

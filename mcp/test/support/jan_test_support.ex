@@ -3,6 +3,14 @@ defmodule JanTest do
 
   alias Janice.TimeSupport
 
+  import Ecto.Query, only: [from: 2]
+
+  def delete_all(mods) when is_list(mods) do
+    for mod <- mods do
+      from(x in mod, where: x.id > 0) |> Repo.delete_all()
+    end
+  end
+
   def base_ext(name, num),
     do: %{
       host: host(name, num),

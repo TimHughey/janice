@@ -15,13 +15,18 @@ defmodule SwitchCmd do
     only: [
       all: 1,
       all: 2,
-      delete_all: 2,
       one: 1,
       preload: 2,
       update: 1
     ]
 
-  import Janice.TimeSupport, only: [before_time: 2, ms: 1, utc_now: 0]
+  import Janice.TimeSupport,
+    only: [
+      duration: 1,
+      utc_now: 0,
+      utc_shift: 1
+    ]
+
   import Mqtt.Client, only: [publish_cmd: 1]
 
   alias Fact.RunMetric
@@ -121,7 +126,13 @@ defmodule SwitchCmd do
     lower_limit = utc_now() |> Timex.shift(days: -1)
 
     # compute the date / time of what is considered an orphan
-    oldest = utc_now() |> Timex.shift(milliseconds: ms(opts.older_than) * -1)
+    oldest =
+      Map.get(opts, :older_than)
+      |> duration()
+      |> Duration.invert()
+      |> utc_shift()
+
+    #   oldest = utc_now() |> Timex.shift(milliseconds: ms(opts.older_than) * -1)
 
     ack_at = utc_now()
 
@@ -239,12 +250,12 @@ defmodule SwitchCmd do
     |> one()
   end
 
-  def purge_acked_cmds(%{older_than: older_than} = opts) do
-    # use purge_timeout configuration if available
-    # otherwise, default to reasonable default
-    timeout = Map.get(opts, :purge_timeout, {:ms, 100}) |> ms()
-
-    before = before_time(:utc_now, older_than)
+  def purge_acked_cmds(%{older_than: older_than}) do
+    before =
+      older_than
+      |> duration()
+      |> Duration.invert()
+      |> utc_shift()
 
     q =
       from(
@@ -253,7 +264,7 @@ defmodule SwitchCmd do
         where: cmd.ack_at < ^before
       )
 
-    delete_all(q, timeout: timeout) |> check_purge_acked_cmds()
+    Repo.delete_all(q) |> check_purge_acked_cmds()
   end
 
   # older_than configuration value is missing

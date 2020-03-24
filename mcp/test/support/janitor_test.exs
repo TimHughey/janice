@@ -3,6 +3,8 @@ defmodule JanitorTest do
 
   use ExUnit.Case, async: true
 
+  use Janitor
+
   # import ExUnit.CaptureLog
 
   # alias Dutycycle.Profile
@@ -44,6 +46,24 @@ defmodule JanitorTest do
     # |> Dutycycle.Server.add()
 
     :ok
+  end
+
+  test "can get Janitor counts" do
+    res = Janitor.counts()
+
+    assert is_list(res)
+    assert Keyword.has_key?(res, :orphan_count)
+    assert is_integer(Keyword.get(res, :orphan_count))
+  end
+
+  test "can get Janitor opts" do
+    opts = Janitor.opts()
+
+    assert is_list(opts)
+    assert Keyword.has_key?(opts, :switch_cmds)
+    assert Keyword.has_key?(opts, :log)
+    assert Keyword.has_key?(opts, :metrics_frequency)
+    assert Keyword.has_key?(opts, :orphan_acks)
   end
 
   test "the truth will set you free" do

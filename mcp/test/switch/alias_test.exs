@@ -74,8 +74,12 @@ defmodule SwitchAliasTest do
         add_alias: add_alias,
         sd: {sd_rc, sd},
         name: alias_name,
-        pio: 1
+        pio: alias_pio
       })
+
+    {pos_rc, initial_pos} = Device.pio_state(sd, alias_pio)
+
+    assert pos_rc in [:ok, :ttl_expired]
 
     # pio = context[:pio]
     # device_pio = if pio, do: device_pio(n, pio), else: device_pio(n, 0)
@@ -90,6 +94,7 @@ defmodule SwitchAliasTest do
      alias_name: alias_name,
      add_alias: add_alias,
      alias_pio: alias_pio,
+     initial_pos: initial_pos,
      sa: sa_res}
   end
 
@@ -130,5 +135,28 @@ defmodule SwitchAliasTest do
   } do
     assert sa_rc == :ok
     assert %Alias{} = sa
+  end
+
+  @tag alias_num: 2
+  @tag add_alias: true
+  test "can get the position of an Alias",
+       %{alias_name: name, sa: {_rc, sa}} = r do
+    {rc1, initial_pos} = Alias.position(name)
+    assert rc1 == :ok
+
+    {rc2, res} = Alias.position(name, position: not initial_pos)
+    assert rc2 == :pending
+    assert is_list(res)
+    assert is_binary(Keyword.get(res, :refid))
+
+    ack_map = %{
+      refid: Keyword.get(res, :refid),
+      pio: Map.get(sa, :pio),
+      position: not initial_pos
+    }
+
+    {ack_rc, _res} = SwitchCommandTest.simulate_cmd_ack(r, ack_map)
+
+    assert ack_rc == :ok
   end
 end

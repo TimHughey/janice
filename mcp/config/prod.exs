@@ -49,16 +49,6 @@ config :mcp,
     {Janice.Scheduler, []}
   ]
 
-config :mcp, Janitor,
-  switch_cmds: [
-    purge: true,
-    interval: {:mins, 1},
-    older_than: {:months, 3},
-    purge_timeout: {:ms, 300},
-    log: false
-  ],
-  orphan_acks: [interval: {:mins, 1}, older_than: {:mins, 1}, log: true]
-
 #
 # NOTE: uncomment to enable saving/forwarding of messages sent and/or
 #       recv'd via MQTT

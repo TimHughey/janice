@@ -17,10 +17,10 @@ defmodule MessageSave do
   import Ecto.Query, only: [from: 2]
   import Repo, only: [one!: 1]
 
-  import Janice.TimeSupport, only: [list_to_duration: 1, utc_shift: 1]
+  import Janice.TimeSupport,
+    only: [duration: 1, humanize_duration: 1, utc_shift: 1]
 
   alias Mqtt.Reading
-  alias Timex.Format.Duration.Formatter, as: DurationFormat
 
   schema "message" do
     field(:direction, :string, null: false)
@@ -38,18 +38,11 @@ defmodule MessageSave do
   def delete(%MessageSave{} = ms), do: delete([ms])
 
   def delete(list) when is_list(list) do
-    for %MessageSave{} = ms <- list do
-      GenServer.cast(MessageSave, %{action: :delete, msg: ms})
-    end
+    Janitor.empty_trash(list, mod: __MODULE__)
   end
 
   def delete_all(:dangerous) do
-    {elapsed, results} =
-      Duration.measure(fn ->
-        Repo.all(from(m in MessageSave, select: [:id])) |> delete()
-      end)
-
-    log_delete(prepend: "delete_all()", elapsed: elapsed, deleted: results)
+    Repo.all(from(m in MessageSave, select: [:id])) |> delete()
   end
 
   def init(%{autostart: autostart, opts: opts} = s) do
@@ -91,7 +84,7 @@ defmodule MessageSave do
     from(ms in MessageSave, select: count(ms.id)) |> one!()
   end
 
-  def opts, do: :sys.get_state(MessageSave) |> Map.get(:opts, [])
+  def opts, do: :sys.get_state(__MODULE__) |> Map.get(:opts, [])
 
   def opts(new_opts) when is_list(new_opts) do
     GenServer.call(MessageSave, %{
@@ -151,16 +144,6 @@ defmodule MessageSave do
       |> Map.put(:forward, Keyword.get(opts, :forward, false))
       |> Map.put(:opts, opts)
 
-    #
-    # Logger.info([
-    #   ":save_msg msg: ",
-    #   inspect(msg, pretty: true),
-    #   " inflight: ",
-    #   inspect(inflight, pretty: true),
-    #   " s: ",
-    #   inspect(s, pretty: true)
-    # ])
-
     {:noreply,
      Map.put(s, :inflight, inflight)
      |> save_msg()
@@ -168,18 +151,23 @@ defmodule MessageSave do
      |> purge_msgs()}
   end
 
-  def handle_cast(
-        %{action: :delete, msg: %MessageSave{} = ms},
-        %{opts: _opts} = s
-      ) do
-    # function to check the result of Repo.delete/1 and increment the
-    # delete counted if successful
-    inc_if_ok = fn
-      {:ok, _res} -> increment_counts(s, [:deleted])
-      {_rc, _res} -> s
-    end
+  # handle msessages that Janitor sends after emptying trash (delete)
+  def handle_cast({:trash, _mod, elapsed, results}, %{opts: opts} = s) do
+    log = get_in(opts, [:purge, :log]) && true
+    count = length(results)
+    plural = if count > 1, do: "s", else: ""
 
-    {:noreply, inc_if_ok.(Repo.delete(ms))}
+    log &&
+      Logger.info([
+        "purged ",
+        inspect(count),
+        " message",
+        plural,
+        " in ",
+        humanize_duration(elapsed)
+      ])
+
+    {:noreply, increment_counts(s, [:deleted], length(results))}
   end
 
   def handle_cast(catchall, s) do
@@ -202,9 +190,18 @@ defmodule MessageSave do
     {:noreply, s}
   end
 
+  def handle_info(catchall, %{} = s) do
+    Logger.info(["handle_info(catchall): ", inspect(catchall, pretty: true)])
+
+    {:noreply, s}
+  end
+
   defp calculate_next_purge(%{opts: opts} = s) do
-    duration = list_to_duration(get_in(opts, [:purge, :older_than]))
-    Map.put(s, :next_purge, utc_shift(duration))
+    Map.put(
+      s,
+      :next_purge,
+      get_in(opts, [:purge, :older_than]) |> duration() |> utc_shift()
+    )
   end
 
   defp changes_possible,
@@ -251,13 +248,13 @@ defmodule MessageSave do
     Map.put(s, :last_forward_rc, {:skipped})
   end
 
-  defp increment_counts(%{counts: counts} = state, inc_list)
-       when is_list(counts) and is_list(inc_list) do
+  defp increment_counts(%{counts: counts} = state, inc_list, count \\ 1)
+       when is_list(counts) and is_list(inc_list) and is_integer(count) do
     to_increment = Keyword.take(counts, inc_list)
 
     inc_fn = fn
       {k, _v}, acc ->
-        Keyword.put(acc, k, Keyword.get(acc, k, 0) + 1)
+        Keyword.put(acc, k, Keyword.get(acc, k, 0) + count)
     end
 
     new_counts = Enum.reduce(to_increment, counts, inc_fn)
@@ -300,10 +297,7 @@ defmodule MessageSave do
           " queued ",
           Integer.to_string(deleted),
           " messages for delete in ",
-          DurationFormat.format(
-            Keyword.get(r, :elapsed, Duration.zero()),
-            :humanized
-          )
+          humanize_duration(Keyword.get(r, :elapsed, Duration.zero()))
         ])
 
     r
@@ -314,8 +308,7 @@ defmodule MessageSave do
   defp purge_msgs(%{next_purge: next_purge, opts: opts} = s) do
     older_than_opts = get_in(opts, [:purge, :older_than])
 
-    before =
-      list_to_duration(older_than_opts) |> Duration.invert() |> utc_shift()
+    before = duration(older_than_opts) |> Duration.invert() |> utc_shift()
 
     if Timex.after?(Timex.now(), next_purge) do
       {elapsed, results} =

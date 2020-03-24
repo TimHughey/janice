@@ -18,7 +18,7 @@ defmodule Switch.Alias do
   import Janice.Common.DB, only: [name_regex: 0]
 
   # alias Janice.TimeSupport
-  alias __MODULE__
+  alias Switch.{Alias, Device}
 
   @timestamps_opts [type: :utc_datetime_usec]
 
@@ -59,7 +59,49 @@ defmodule Switch.Alias do
   def find(name) when is_binary(name),
     do: Repo.get_by(__MODULE__, name: name) |> Repo.preload(:device)
 
-  def upsert(l) when is_list(l), do: upsert(Enum.into(l, %{}))
+  def position(name, opts \\ [])
+
+  def position(name, opts) when is_binary(name) and is_list(opts) do
+    sa = find(name)
+
+    if is_nil(sa), do: {:not_found, name}, else: position(sa, opts)
+  end
+
+  def position(%Alias{pio: pio, device: %Device{} = sd} = sa, opts)
+      when is_list(opts) do
+    lazy = Keyword.get(opts, :lazy, true)
+    position = Keyword.get(opts, :position, nil)
+    cmd_map = %{pio: pio, state: position, initial_opts: opts}
+
+    with {:ok, curr_position} <- Device.pio_state(sd, pio),
+         # if the position opt was passed then an update is requested
+         {:position, {:opt, true}} <-
+           {:position, {:opt, is_boolean(position)}},
+
+         # the most typical scenario... lazy is true and current position
+         # does not match the requsted position
+         {:lazy, true, false} <-
+           {:lazy, lazy, position == curr_position} do
+      # the requested position does not match the current posiion so
+      # call Device.record_cmd/2 to publish the cmd to the mcr remote
+      Device.record_cmd(sd, sa, cmd_map: cmd_map)
+    else
+      {:position, {:opt, false}} ->
+        # position change not included in opts, just return current position
+        Device.pio_state(sd, pio, opts)
+
+      {:lazy, true, true} ->
+        # requested lazy and requested position matches current position
+        # nothing to do here... just return the position
+        Device.pio_state(sd, pio, opts)
+
+      {:lazy, _lazy_or_not, _true_or_false} ->
+        # regardless if lazy or not the current position does not match
+        # the requested position so change the position
+        Device.record_cmd(sd, sa, cmd_map: cmd_map)
+    end
+    |> invert_position_if_needed(sa)
+  end
 
   # upsert/1 confirms the minimum keys required and if the device to alias
   # exists
@@ -127,6 +169,9 @@ defmodule Switch.Alias do
   # PRIVATE
   #
 
+  defp caller(%{function: {func, arity}}),
+    do: [Atom.to_string(func), "/", Integer.to_string(arity)]
+
   defp changeset(x, params) when is_list(params) do
     changeset(x, Enum.into(params, %{}))
   end
@@ -191,8 +236,35 @@ defmodule Switch.Alias do
       else: x
   end
 
-  defp caller(%{function: {func, arity}}),
-    do: [Atom.to_string(func), "/", Integer.to_string(arity)]
+  #
+  # Invert Position (if required)
+
+  # handle the scenario of pure or paritial success
+  defp invert_position_if_needed(
+         {rc, position},
+         %Alias{
+           invert_state: true
+         }
+       )
+       when rc in [:ok, :ttl_expired],
+       do: not position
+
+  # handle error or unsuccesful position results by simply passing
+  # through the result
+  defp invert_position_if_needed(result, _sa),
+    do: result
+
+  # defp invert_position_if_needed(position, %SwitchState{
+  #        invert_state: true
+  #      })
+  #      when is_boolean(position),
+  #      do: not position
+  #
+  # defp invert_position_if_needed(position, %SwitchState{
+  #        invert_state: false
+  #      })
+  #      when is_boolean(position),
+  #      do: position
 
   #
   # Changeset Functions

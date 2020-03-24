@@ -34,16 +34,17 @@ config :mcp, Janice.Scheduler,
   timezone: "America/New_York"
 
 config(:mcp, Janitor,
-  log: [init: false],
   # modules to call at startup (typically to purge cmds or ack orphans)
   at_startup: [{PulseWidthCmd, :purge_cmds}],
+  log: [init: false],
+  metrics_frequency: [orphan_count: [minutes: 5]],
+  orphan_acks: [interval: [minutes: 1], older_than: [minutes: 1], log: false],
   switch_cmds: [
     purge: true,
-    interval: {:mins, 2},
-    older_than: {:weeks, 1},
+    interval: [minutes: 2],
+    older_than: [days: 30],
     log: false
-  ],
-  orphan_acks: [interval: {:mins, 1}, older_than: {:mins, 1}, log: true]
+  ]
 )
 
 config :mcp, MessageSave,
@@ -81,12 +82,19 @@ config :mcp, OTA,
 config :mcp, PulseWidthCmd,
   log: [cmd_ack: false],
   # the acked_before and sent_before lists are passed to Timex
-  # to created a shifted Timex.DateTime in UTC
+  # to create a shifted DateTime in UTC
   purge: [acked_before: [days: 1]],
   orphan: [sent_before: [seconds: 3], log: false]
 
 config :mcp, Repo,
   migration_timestamps: [type: :utc_datetime_usec],
   adapter: Ecto.Adapters.Postgres
+
+config :mcp, Switch.Device,
+  log: [cmd_ack: false],
+  # the acked_before and sent_before lists are passed to Timex
+  # to create a shifted DateTime in UTC
+  purge: [acked_before: [days: 1]],
+  orphan: [sent_before: [seconds: 3], log: false]
 
 import_config "#{Mix.env()}.exs"
