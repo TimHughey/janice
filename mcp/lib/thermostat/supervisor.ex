@@ -16,7 +16,10 @@ defmodule Thermostat.Supervisor do
   end
 
   def init(args) do
-    Logger.info(["init() args: ", inspect(args, pretty: true)])
+    log = Map.get(args, :log, %{}) |> Map.get(:init, false)
+
+    log &&
+      Logger.info(["init() args: ", inspect(args, pretty: true)])
 
     servers_to_start(args)
     |> Supervisor.init(strategy: :rest_for_one, name: __MODULE__)

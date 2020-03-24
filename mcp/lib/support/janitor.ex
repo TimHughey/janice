@@ -236,7 +236,7 @@ defmodule Janitor do
     if msg_opts_vsn == opts_vsn do
       val = Keyword.get(counts, metric, 0)
 
-      Logger.info([
+      Logger.debug([
         "metrics: would report ",
         inspect(metric),
         "=",
@@ -446,13 +446,16 @@ defmodule Janitor do
          %{opts: opts, opts_vsn: opts_vsn, startup: startup} = s,
          metric \\ :all
        ) do
-    # determine which metrics to schedule
+    #
+    # this function is invoked in two scenarios:
+    #  1. at startup to schedule all configured metric reporting
+    #  2. when each metric is reported to schedule the next report
+    #
     metrics =
       if metric == :all,
         do: Keyword.get(opts, :metrics_frequency, []),
-        else: [
+        else:
           Keyword.get(opts, :metrics_frequency, []) |> Keyword.take([metric])
-        ]
 
     for {metric, duration_opts} <- metrics do
       millis =

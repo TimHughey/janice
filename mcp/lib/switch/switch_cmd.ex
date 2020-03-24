@@ -66,7 +66,7 @@ defmodule SwitchCmd do
 
     case cmd do
       nil ->
-        Logger.warn([
+        Logger.debug([
           "refid ",
           inspect(refid, pretty: true),
           " not found, won't ack"

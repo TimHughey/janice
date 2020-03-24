@@ -59,7 +59,16 @@ defmodule Mqtt.Client do
   end
 
   def init(s) when is_map(s) do
-    Logger.info(["init() state: ", inspect(s, pretty: true)])
+    #
+    ## HACK: clean up opts
+    #
+    log =
+      get_env(:mcp, Mqtt.Client, [])
+      |> Keyword.get(:log, [])
+      |> Keyword.get(:init, false)
+
+    log &&
+      Logger.info(["init() state: ", inspect(s, pretty: true)])
 
     s = Map.put_new(s, :runtime_metrics, false)
 
@@ -78,7 +87,7 @@ defmodule Mqtt.Client do
 
       s = Map.merge(s, new_state)
 
-      Logger.info(["MQTT via tortoise ", inspect(mqtt_pid)])
+      Logger.debug(["MQTT via tortoise ", inspect(mqtt_pid)])
 
       {:ok, s}
     else
@@ -228,7 +237,7 @@ defmodule Mqtt.Client do
 
   def handle_cast({:connected}, s) do
     s = Map.put(s, :connected, true)
-    Logger.info(["mqtt endpoint connected"])
+    Logger.debug(["mqtt endpoint connected"])
 
     # subscribe to the report feed
     feed = get_env(:mcp, :feeds, []) |> Keyword.get(:rpt, nil)

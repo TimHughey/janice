@@ -16,7 +16,7 @@ defmodule Dutycycle.Supervisor do
   end
 
   def init(args) do
-    Logger.info(["init() args: ", inspect(args, pretty: true)])
+    Logger.debug(["init() args: ", inspect(args, pretty: true)])
 
     servers_to_start(args)
     |> Supervisor.init(strategy: :one_for_one, name: __MODULE__)

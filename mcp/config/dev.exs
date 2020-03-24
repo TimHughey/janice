@@ -39,7 +39,7 @@ config :mcp,
     # {Misc.Supervisors, []}
   ],
   protocol_supervisors: [
-    {Fact.Supervisor, %{}},
+    {Fact.Supervisor, %{log: [init: false]}},
     {Mqtt.Supervisor, %{autostart: true}}
   ],
   support_workers: [
@@ -88,7 +88,8 @@ config :mcp, Mqtt.Client,
       {Tortoise.Transport.Tcp, host: "jophiel.wisslanding.com", port: 1883},
     keep_alive: 15
   ],
-  timesync: [frequency: {:mins, 1}, loops: 5, forever: true, log: false]
+  timesync: [frequency: {:mins, 1}, loops: 5, forever: true, log: false],
+  log: [init: false]
 
 config :mcp, Mqtt.Inbound,
   additional_message_flags: [

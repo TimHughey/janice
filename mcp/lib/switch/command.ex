@@ -55,18 +55,29 @@ defmodule Switch.Command do
           processed: {:ok, %Device{}}
         } = r
       ) do
-    with %Command{sent_at: sent_at} = cmd <- find_refid(refid),
-         changes <- [
-           rt_latency_us: Timex.diff(recv_dt, sent_at, :microsecond),
-           acked: true,
-           ack_at: utc_now()
-         ],
+    #
+    # base list of changes
+    changes = [acked: true, ack_at: utc_now()]
+
+    with {:cmd, %Command{sent_at: sent_at} = cmd} <- {:cmd, find_refid(refid)},
+         latency <- Timex.diff(recv_dt, sent_at, :microsecond),
+         changes <- [rt_latency_us: latency] ++ changes,
          {:ok, %Command{} = cmd} <- update(cmd, changes) |> Janitor.untrack() do
+      #
+      # simply log then return the reading unchanged
+      # all work performed within the with conditions
+      #
       log?(cmd) &&
         Logger.info(["ack_if_needed(): ", inspect(cmd, pretty: true)])
 
       r
     else
+      # handle the exception case when the refid wasn't found
+      # NOTE:  this case should only occur when MQTT messages are forwarded
+      #        from another environment that is sending the actual commands
+      {:cmd, nil} ->
+        r
+
       error ->
         Logger.warn([
           "ack_if_needed() error: ",

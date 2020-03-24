@@ -14,7 +14,7 @@ defmodule Mqtt.Supervisor do
     }
 
   def init(args) do
-    Logger.info(["init() args: ", inspect(args, pretty: true)])
+    Logger.debug(["init() args: ", inspect(args, pretty: true)])
 
     # List all child processes to be supervised
     children = [
