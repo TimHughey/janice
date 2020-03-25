@@ -14,6 +14,29 @@ defmodule SwitchAliasTest do
   end
 
   setup context do
+    setup_context(context)
+  end
+
+  defp add_alias(%{
+         add_alias: true,
+         name: name,
+         pio: pio,
+         sd: {:ok, %Device{id: device_id}}
+       }) do
+    {rc, sa} =
+      sa_rc = Alias.upsert(%{device_id: device_id, name: name, pio: pio})
+
+    assert rc == :ok
+    assert %Alias{} = sa
+
+    sa_rc
+  end
+
+  defp add_alias(%{add_alias: _, device: _device, sd: _sd}) do
+    {:not_added, %Alias{}}
+  end
+
+  def setup_context(context) do
     num = Map.get(context, :alias_num, 0)
     num_sw_states = Map.get(context, :num_sw_states, 3)
     num_str = ["0x", Integer.to_string(num, 16)] |> IO.iodata_to_binary()
@@ -96,25 +119,6 @@ defmodule SwitchAliasTest do
      alias_pio: alias_pio,
      initial_pos: initial_pos,
      sa: sa_res}
-  end
-
-  defp add_alias(%{
-         add_alias: true,
-         name: name,
-         pio: pio,
-         sd: {:ok, %Device{id: device_id}}
-       }) do
-    {rc, sa} =
-      sa_rc = Alias.upsert(%{device_id: device_id, name: name, pio: pio})
-
-    assert rc == :ok
-    assert %Alias{} = sa
-
-    sa_rc
-  end
-
-  defp add_alias(%{add_alias: _, device: _device, sd: _sd}) do
-    {:not_added, %Alias{}}
   end
 
   @moduletag :switch_alias

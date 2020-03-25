@@ -29,7 +29,7 @@ defmodule DutycycleTest do
       comment: "with an active profile",
       device: "no_device",
       active: true,
-      log: false,
+      log: true,
       startup_delay_ms: 100,
       profiles: [
         %Dutycycle.Profile{

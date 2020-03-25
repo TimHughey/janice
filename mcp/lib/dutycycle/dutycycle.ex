@@ -533,7 +533,7 @@ defmodule Dutycycle do
        )
        when is_list(opts) do
     sw_state =
-      Switch.position(device,
+      Switch.Alias.position(device,
         position: dev_state,
         lazy: Keyword.get(opts, :lazy, true),
         ack: Keyword.get(opts, :ack, true),
@@ -541,7 +541,7 @@ defmodule Dutycycle do
       )
 
     case sw_state do
-      {:ok, position} ->
+      {rc, position} when rc in [:ok, :pending] ->
         log?(dc) && position == dev_state &&
           Logger.debug([control_device_log(dc), " position set correctly"])
 
