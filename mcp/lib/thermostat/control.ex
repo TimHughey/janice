@@ -6,12 +6,21 @@ defmodule Thermostat.Control do
   alias Thermostat.Profile
 
   def confirm_switch_position(%Thermostat{switch: switch} = t) do
-    sw_pos = Switch.position(switch)
+    sw_pos = Switch.Alias.position(switch)
     confirm_switch_position(t, sw_pos, state_to_position(t))
   end
 
+  def confirm_switch_position(%Thermostat{}, {:pending, sw_pos}) do
+    Logger.info([
+      "confirm_switch_position() switch position is pending: ",
+      inspect(sw_pos, pretty: true)
+    ])
+
+    sw_pos
+  end
+
   def confirm_switch_position(%Thermostat{}, {:ok, sw_pos} = rc, state_pos)
-      when sw_pos == state_pos,
+      when is_boolean(sw_pos) and sw_pos == state_pos,
       do: rc
 
   def confirm_switch_position(
@@ -19,7 +28,7 @@ defmodule Thermostat.Control do
         {:ok, sw_pos},
         state_pos
       )
-      when sw_pos != state_pos do
+      when is_boolean(sw_pos) and sw_pos != state_pos do
     Logger.warn([
       inspect(name),
       " switch ",
@@ -27,7 +36,7 @@ defmodule Thermostat.Control do
       " does not match state, force attempted"
     ])
 
-    Switch.position(switch,
+    Switch.Alias.position(switch,
       position: state_to_position(state_pos),
       lazy: false
     )
@@ -128,7 +137,7 @@ defmodule Thermostat.Control do
       # handle no change in state
       {:ok, t}
     else
-      Switch.position(Thermostat.switch(t),
+      Switch.Alias.position(Thermostat.switch(t),
         position: state_to_position(next_state),
         lazy: true
       )
@@ -138,7 +147,7 @@ defmodule Thermostat.Control do
   end
 
   def stop(%Thermostat{} = t) do
-    Switch.position(Thermostat.switch(t),
+    Switch.Alias.position(Thermostat.switch(t),
       position: false,
       lazy: true,
       ack: false

@@ -366,7 +366,7 @@ defmodule Thermostat.Server do
         ")"
       ])
 
-    Switch.position(t.switch, position: false, lazy: true, ack: false)
+    Switch.Alias.position(t.switch, position: false, lazy: true, ack: false)
     :ok
   end
 
@@ -448,7 +448,7 @@ defmodule Thermostat.Server do
   defp handle_stop(_msg, %{thermostat: t}) do
     {rc, nt} = Thermostat.state(t, "stopped")
 
-    Switch.position(Thermostat.switch(nt), position: false)
+    Switch.Alias.position(Thermostat.switch(nt), position: false)
 
     if rc === :ok, do: {:ok, nt}, else: {:failed, t}
   end
@@ -522,7 +522,10 @@ defmodule Thermostat.Server do
   defp server_name_atom(_), do: :no_server
 
   defp start(%{thermostat: %Thermostat{}} = s) do
-    Switch.position(Thermostat.switch(s.thermostat), position: false, lazy: true)
+    Switch.Alias.position(Thermostat.switch(s.thermostat),
+      position: false,
+      lazy: true
+    )
 
     timer = next_check_timer(s)
     {rc, t} = Thermostat.state(s.thermostat, "started")

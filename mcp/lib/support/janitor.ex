@@ -360,13 +360,22 @@ defmodule Janitor do
     orphans
   end
 
-  defp increment_orphan_count({:orphan, _res}, %{counts: counts} = s) do
-    orphan_count = Keyword.get(counts, :orphan_count, 0) + 1
+  defp increment_orphan_count(msg, state, orphans \\ 1)
+
+  defp increment_orphan_count({:orphan, _res}, %{counts: counts} = s, orphans)
+       when is_integer(orphans) do
+    orphan_count = Keyword.get(counts, :orphan_count, 0) + orphans
+
+    RunMetric.record(
+      module: "#{__MODULE__}",
+      metric: "orphan_count",
+      val: orphan_count
+    )
 
     %{s | counts: Keyword.replace!(counts, :orphan_count, orphan_count)}
   end
 
-  defp increment_orphan_count({_rc, _res}, s), do: s
+  defp increment_orphan_count({_rc, _res}, s, _orphans), do: s
 
   defp log_purge(%{opts: opts}), do: get_in(opts, [:switch_cmds, :log]) || false
 

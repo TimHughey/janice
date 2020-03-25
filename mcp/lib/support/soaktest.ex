@@ -90,8 +90,8 @@ defmodule Mcp.SoakTest do
     dev = "led1"
     led_flashes = s.led_flashes + 1
 
-    Switch.position(dev, position: true)
-    Switch.position(dev, position: false)
+    Switch.Alias.position(dev, position: true)
+    Switch.Alias.position(dev, position: false)
 
     LedFlashes.record(application: "mcp_soaktest", name: dev, val: led_flashes)
 

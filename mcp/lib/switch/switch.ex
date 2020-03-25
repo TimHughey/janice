@@ -123,6 +123,7 @@ defmodule Switch do
     end
   end
 
+  @deprecated "Replaced by Switch.Device/1"
   def external_update(%{host: host, device: device, mtime: mtime} = r) do
     result =
       :timer.tc(fn ->
@@ -163,7 +164,7 @@ defmodule Switch do
     end
   end
 
-  # REFACTOR
+  @deprecated "Replaced by Switch.Device/1"
   def external_update(catchall) do
     Logger.warn([
       "external_update() unhandled msg: ",
@@ -181,6 +182,7 @@ defmodule Switch do
     if sw, do: SwitchCmd.pending_cmds(sw, opts), else: nil
   end
 
+  @deprecated "Use Switch.Alias.position/2 instead"
   def position(name, opts \\ []) when is_binary(name) and is_list(opts),
     do: SwitchState.position(name, opts) |> SwitchGroup.position(opts)
 
