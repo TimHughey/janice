@@ -157,7 +157,7 @@ defmodule MessageSave do
     count = length(results)
     plural = if count > 1, do: "s", else: ""
 
-    log &&
+    log && count > 0 &&
       Logger.info([
         "purged ",
         inspect(count),

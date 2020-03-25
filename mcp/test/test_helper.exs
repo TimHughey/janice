@@ -5,8 +5,6 @@
   Thermostat,
   MessageSave,
   Dutycycle,
-  SwitchGroup,
-  Switch,
   Switch.Alias,
   Switch.Device,
   PulseWidth,

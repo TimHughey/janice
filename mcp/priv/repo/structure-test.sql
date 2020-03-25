@@ -459,24 +459,6 @@ ALTER SEQUENCE public.sensor_temperature_id_seq OWNED BY public.sensor_temperatu
 
 
 --
--- Name: switch; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.switch (
-    id bigint NOT NULL,
-    device character varying(40) NOT NULL,
-    dev_latency_us bigint DEFAULT 0 NOT NULL,
-    discovered_at timestamp without time zone DEFAULT timezone('utc'::text, now()),
-    last_cmd_at timestamp without time zone DEFAULT (timezone('utc'::text, now()) - '03:00:00'::interval),
-    last_seen_at timestamp without time zone DEFAULT timezone('utc'::text, now()),
-    inserted_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL,
-    log boolean DEFAULT false,
-    runtime_metrics jsonb DEFAULT '{"cmd_rt": true, "external_update": false}'::jsonb NOT NULL
-);
-
-
---
 -- Name: switch_alias; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -511,44 +493,6 @@ CREATE SEQUENCE public.switch_alias_id_seq
 --
 
 ALTER SEQUENCE public.switch_alias_id_seq OWNED BY public.switch_alias.id;
-
-
---
--- Name: switch_cmd; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.switch_cmd (
-    id bigint NOT NULL,
-    refid character varying(40) NOT NULL,
-    switch_id bigint,
-    name character varying(40),
-    acked boolean DEFAULT false NOT NULL,
-    rt_latency bigint DEFAULT 0 NOT NULL,
-    sent_at timestamp without time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
-    ack_at timestamp without time zone,
-    inserted_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL,
-    orphan boolean DEFAULT false
-);
-
-
---
--- Name: switch_cmd_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.switch_cmd_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: switch_cmd_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.switch_cmd_id_seq OWNED BY public.switch_cmd.id;
 
 
 --
@@ -627,97 +571,6 @@ CREATE SEQUENCE public.switch_device_id_seq
 --
 
 ALTER SEQUENCE public.switch_device_id_seq OWNED BY public.switch_device.id;
-
-
---
--- Name: switch_group; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.switch_group (
-    id bigint NOT NULL,
-    name character varying(50) NOT NULL,
-    description character varying(100),
-    members character varying(2048)[],
-    inserted_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
-);
-
-
---
--- Name: switch_group_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.switch_group_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: switch_group_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.switch_group_id_seq OWNED BY public.switch_group.id;
-
-
---
--- Name: switch_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.switch_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: switch_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.switch_id_seq OWNED BY public.switch.id;
-
-
---
--- Name: switch_state; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.switch_state (
-    id bigint NOT NULL,
-    switch_id bigint,
-    name character varying(40) NOT NULL,
-    description text DEFAULT 'new switch'::text,
-    pio integer DEFAULT 0 NOT NULL,
-    state boolean DEFAULT false NOT NULL,
-    ttl_ms integer DEFAULT 60000 NOT NULL,
-    inserted_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL,
-    log boolean DEFAULT false,
-    invert_state boolean DEFAULT false,
-    runtime_metrics jsonb DEFAULT '{"cmd_rt": true, "external_update": false}'::jsonb NOT NULL
-);
-
-
---
--- Name: switch_state_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.switch_state_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: switch_state_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.switch_state_id_seq OWNED BY public.switch_state.id;
 
 
 --
@@ -875,24 +728,10 @@ ALTER TABLE ONLY public.sensor_temperature ALTER COLUMN id SET DEFAULT nextval('
 
 
 --
--- Name: switch id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.switch ALTER COLUMN id SET DEFAULT nextval('public.switch_id_seq'::regclass);
-
-
---
 -- Name: switch_alias id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.switch_alias ALTER COLUMN id SET DEFAULT nextval('public.switch_alias_id_seq'::regclass);
-
-
---
--- Name: switch_cmd id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.switch_cmd ALTER COLUMN id SET DEFAULT nextval('public.switch_cmd_id_seq'::regclass);
 
 
 --
@@ -907,20 +746,6 @@ ALTER TABLE ONLY public.switch_command ALTER COLUMN id SET DEFAULT nextval('publ
 --
 
 ALTER TABLE ONLY public.switch_device ALTER COLUMN id SET DEFAULT nextval('public.switch_device_id_seq'::regclass);
-
-
---
--- Name: switch_group id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.switch_group ALTER COLUMN id SET DEFAULT nextval('public.switch_group_id_seq'::regclass);
-
-
---
--- Name: switch_state id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.switch_state ALTER COLUMN id SET DEFAULT nextval('public.switch_state_id_seq'::regclass);
 
 
 --
@@ -1042,14 +867,6 @@ ALTER TABLE ONLY public.switch_alias
 
 
 --
--- Name: switch_cmd switch_cmd_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.switch_cmd
-    ADD CONSTRAINT switch_cmd_pkey PRIMARY KEY (id);
-
-
---
 -- Name: switch_command switch_command_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1063,30 +880,6 @@ ALTER TABLE ONLY public.switch_command
 
 ALTER TABLE ONLY public.switch_device
     ADD CONSTRAINT switch_device_pkey PRIMARY KEY (id);
-
-
---
--- Name: switch_group switch_group_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.switch_group
-    ADD CONSTRAINT switch_group_pkey PRIMARY KEY (id);
-
-
---
--- Name: switch switch_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.switch
-    ADD CONSTRAINT switch_pkey PRIMARY KEY (id);
-
-
---
--- Name: switch_state switch_state_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.switch_state
-    ADD CONSTRAINT switch_state_pkey PRIMARY KEY (id);
 
 
 --
@@ -1281,34 +1074,6 @@ CREATE UNIQUE INDEX switch_alias_name_index ON public.switch_alias USING btree (
 
 
 --
--- Name: switch_cmd_ack_at_index; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX switch_cmd_ack_at_index ON public.switch_cmd USING btree (ack_at);
-
-
---
--- Name: switch_cmd_refid_index; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX switch_cmd_refid_index ON public.switch_cmd USING btree (refid);
-
-
---
--- Name: switch_cmd_sent_at_index; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX switch_cmd_sent_at_index ON public.switch_cmd USING btree (sent_at);
-
-
---
--- Name: switch_cmd_switch_id_index; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX switch_cmd_switch_id_index ON public.switch_cmd USING btree (switch_id);
-
-
---
 -- Name: switch_command_ack_at_sent_at_index; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1341,55 +1106,6 @@ CREATE INDEX switch_device_device_hash_index ON public.switch_device USING hash 
 --
 
 CREATE UNIQUE INDEX switch_device_device_index ON public.switch_device USING btree (device);
-
-
---
--- Name: switch_device_index; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX switch_device_index ON public.switch USING btree (device);
-
-
---
--- Name: switch_discovered_at_index; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX switch_discovered_at_index ON public.switch USING btree (discovered_at);
-
-
---
--- Name: switch_group_name_index; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX switch_group_name_index ON public.switch_group USING btree (name);
-
-
---
--- Name: switch_last_seen_at_index; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX switch_last_seen_at_index ON public.switch USING btree (last_seen_at);
-
-
---
--- Name: switch_state_name_index; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX switch_state_name_index ON public.switch_state USING btree (name);
-
-
---
--- Name: switch_state_switch_id_index; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX switch_state_switch_id_index ON public.switch_state USING btree (switch_id);
-
-
---
--- Name: switch_state_switch_id_pio_index; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX switch_state_switch_id_pio_index ON public.switch_state USING btree (switch_id, pio);
 
 
 --
@@ -1463,27 +1179,11 @@ ALTER TABLE ONLY public.switch_alias
 
 
 --
--- Name: switch_cmd switch_cmd_switch_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.switch_cmd
-    ADD CONSTRAINT switch_cmd_switch_id_fkey FOREIGN KEY (switch_id) REFERENCES public.switch(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
---
 -- Name: switch_command switch_command_device_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.switch_command
     ADD CONSTRAINT switch_command_device_id_fkey FOREIGN KEY (device_id) REFERENCES public.switch_device(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
---
--- Name: switch_state switch_state_switch_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.switch_state
-    ADD CONSTRAINT switch_state_switch_id_fkey FOREIGN KEY (switch_id) REFERENCES public.switch(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
@@ -1498,5 +1198,5 @@ ALTER TABLE ONLY public.thermostat_profile
 -- PostgreSQL database dump complete
 --
 
-INSERT INTO public."schema_migrations" (version) VALUES (20171217150128), (20171224164529), (20171224225113), (20171228191703), (20171229001359), (20171231182344), (20180101153253), (20180102171624), (20180102175335), (20180217212153), (20180218021213), (20180222165118), (20180222184042), (20180305193804), (20180307143400), (20180517201719), (20180708221600), (20180709181021), (20190308124055), (20190316032007), (20190317155502), (20190320124824), (20190416130912), (20190417011910), (20191018110319), (20191022013914), (20200105131440), (20200115151705), (20200116024319), (20200127033742), (20200128032134), (20200210202655), (20200212175538), (20200212183409), (20200213192845), (20200215173921), (20200217154954), (20200302001850), (20200302155853), (20200309213120), (20200311130709), (20200313132136), (20200314125818), (20200314144615), (20200314152346), (20200314233840), (20200320022913);
+INSERT INTO public."schema_migrations" (version) VALUES (20171217150128), (20171224164529), (20171224225113), (20171228191703), (20171229001359), (20171231182344), (20180101153253), (20180102171624), (20180102175335), (20180217212153), (20180218021213), (20180222165118), (20180222184042), (20180305193804), (20180307143400), (20180517201719), (20180708221600), (20180709181021), (20190308124055), (20190316032007), (20190317155502), (20190320124824), (20190416130912), (20190417011910), (20191018110319), (20191022013914), (20200105131440), (20200115151705), (20200116024319), (20200127033742), (20200128032134), (20200210202655), (20200212175538), (20200212183409), (20200213192845), (20200215173921), (20200217154954), (20200302001850), (20200302155853), (20200309213120), (20200311130709), (20200313132136), (20200314125818), (20200314144615), (20200314152346), (20200314233840), (20200320022913), (20200325211220);
 

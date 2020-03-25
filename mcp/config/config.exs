@@ -58,8 +58,7 @@ config :mcp, MessageSave,
 config :mcp, Mqtt.Inbound,
   additional_message_flags: [
     log_invalid_readings: true,
-    log_roundtrip_times: true,
-    switch_redesign: true
+    log_roundtrip_times: true
   ],
   periodic_log: [
     enable: false,
@@ -68,7 +67,6 @@ config :mcp, Mqtt.Inbound,
   ],
   log_reading: false,
   temperature_msgs: {Sensor, :external_update},
-  switch_msgs: {Switch, :external_update},
   remote_msgs: {Remote, :external_update},
   pwm_msgs: {PulseWidth, :external_update}
 

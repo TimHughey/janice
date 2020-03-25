@@ -120,6 +120,14 @@ defmodule Switch.Alias do
 
   def preload(anything, _opts), do: anything
 
+  def rename(name, opts) when is_binary(name) and is_list(opts) do
+    sa = find(name, opts)
+
+    if is_nil(sa),
+      do: {:not_found, name},
+      else: rename(sa, opts)
+  end
+
   def rename(%Alias{log_opts: log_opts} = x, opts) when is_list(opts) do
     name = Keyword.get(opts, :name)
 

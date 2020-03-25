@@ -38,7 +38,6 @@ defmodule Mqtt.Inbound do
       Map.put_new(s, :log_reading, config(:log_reading))
       |> Map.put_new(:messages_dispatched, 0)
       |> Map.put_new(:temperature_msgs, config(:temperature_msgs))
-      |> Map.put_new(:switch_msgs, config(:switch_msgs))
       |> Map.put_new(:remote_msgs, config(:remote_msgs))
       |> Map.put_new(:pwm_msgs, config(:pwm_msgs))
       |> Map.put_new(:periodic_log, config(:periodic_log, periodic_log_default))
@@ -174,6 +173,16 @@ defmodule Mqtt.Inbound do
     async = Keyword.get(opts, :async, true)
 
     cond do
+      # HACK:
+      #   handle the paritial implmentation of pipeline handling of
+      #   messages.  as of 2010-03-25 only switch messages are processed
+      #   using the pipeline methodology
+
+      mod == :pipeline ->
+        if async,
+          do: Task.start(Switch.Device, :upsert, [r]),
+          else: Switch.Device.upsert(r)
+
       # if msg_handler does not find a mod and function configured to
       # process the msg then try to process it locally
 
@@ -189,11 +198,6 @@ defmodule Mqtt.Inbound do
 
       # reading needs to be processed, should we do it async?
       async ->
-        # NOTE: temporary processing for redesign of Switch
-        #       set switch_redesign: true in additional msg flags to enable
-        if Map.get(r, :switch_redesign, false),
-          do: Task.start(Switch.Device, :upsert, [r])
-
         Task.start(mod, func, [r])
 
       # process msg inline
@@ -226,18 +230,18 @@ defmodule Mqtt.Inbound do
       Reading.temperature?(r) ->
         Map.get(s, :temperature_msgs, missing)
 
-      Reading.switch?(r) ->
-        Map.get(s, :switch_msgs, missing)
-
       Reading.pwm?(r) ->
         Map.get(s, :pwm_msgs, missing)
+
+      Reading.switch?(r) ->
+        {:pipeline, nil}
 
       true ->
         {nil, nil}
     end
   end
 
-  defp msg_process_locally(%{} = r) do
+  defp msg_process_locally(%{processed: false} = r) do
     cond do
       Reading.free_ram_stat?(r) ->
         Map.put_new(r, :record, r.runtime_metrics) |> FreeRamStat.record()
@@ -255,4 +259,6 @@ defmodule Mqtt.Inbound do
 
     nil
   end
+
+  defp msg_process_locally(%{processed: _}), do: nil
 end

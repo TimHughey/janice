@@ -24,27 +24,27 @@ defmodule ReefTest do
     ]
 
     for {name, i} <- Enum.with_index(switches),
-        do: SwitchState.update(sw_state_name("reef", 0, i), name: name)
+        do: Switch.Alias.rename(sw_state_name("reef", 0, i), name: name)
 
     for dc <- prod_dutycycles(), do: Dutycycle.Server.add(dc)
     :ok
   end
 
-  @tag :skip
+  # @tag :skip
   test "Reef CLI" do
     rc = Reef.status(clear_screen: false)
 
     assert :ok == rc
   end
 
-  @tag :skip
+  # @tag :skip
   test "keep_fresh()" do
     Reef.keep_fresh()
 
     assert true
   end
 
-  @tag :skip
+  # @tag :skip
   test "mix_air()" do
     Reef.air("fast")
     assert true

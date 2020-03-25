@@ -138,11 +138,12 @@ defmodule JanTest do
   ####
 
   def create_switch(num, num_pios, pos) when is_integer(num) do
-    switch_ext("switch", num, num_pios, pos) |> Switch.external_update()
+    switch_ext("switch", num, num_pios, pos) |> Switch.Device.upsert()
   end
 
   def create_switch(sub, name, num, num_pios, pos) when is_binary(name) do
     %{
+      processed: false,
       host: sub,
       name: name,
       hw: "esp32",
@@ -153,7 +154,7 @@ defmodule JanTest do
       mtime: TimeSupport.unix_now(:second),
       log: false
     }
-    |> Switch.external_update()
+    |> Switch.Device.upsert()
   end
 
   def sw_state_name(name, num, pio), do: device(name, num) <> ":#{pio}"
@@ -163,6 +164,7 @@ defmodule JanTest do
 
   def switch_ext(name, num, num_pios, pos),
     do: %{
+      processed: false,
       host: host(name, num),
       name: name("switch", num),
       hw: "esp32",

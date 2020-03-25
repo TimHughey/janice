@@ -26,10 +26,6 @@ defmodule Janitor do
     GenServer.cast(__MODULE__, {:empty_trash, trash, opts})
   end
 
-  def manual_purge(opts \\ []) when is_list(opts) do
-    GenServer.call(Janitor, {:manual_purge_cmds, opts})
-  end
-
   def opts, do: :sys.get_state(__MODULE__) |> Map.get(:opts, [])
 
   def opts(new_opts) when is_list(new_opts) do
@@ -135,14 +131,6 @@ defmodule Janitor do
      %{s | opts: new_opts, opts_vsn: Ecto.UUID.generate()}}
   end
 
-  def handle_call({:manual_purge_cmds, _opts}, _from, s) do
-    Logger.info(["manual purge requested"])
-    result = purge_sw_cmds(s)
-    Logger.info(["manually purged ", inspect(result), " switch cmds"])
-
-    {:reply, result, s}
-  end
-
   def handle_call({:counts, _opts}, _from, %{counts: counts} = s),
     do: {:reply, counts, s}
 
@@ -206,9 +194,7 @@ defmodule Janitor do
   def handle_continue({:startup}, %{opts: _opts, startup: true} = s) do
     Process.flag(:trap_exit, true)
 
-    s = schedule_orphan(s) |> schedule_purge() |> schedule_metrics()
-
-    {:noreply, Map.put(s, :startup, false)}
+    {:noreply, s |> schedule_metrics() |> Map.put(:startup, false)}
   end
 
   def handle_continue(catchall, s) do
@@ -218,30 +204,15 @@ defmodule Janitor do
   end
 
   def handle_info(
-        {:clean_orphan_acks, opts_vsn},
-        %{opts_vsn: current_opts_vsn} = s
-      ) do
-    # prevent messages queued using previous opts from executing
-    if opts_vsn == current_opts_vsn, do: clean_orphan_acks(s)
-
-    s = schedule_orphan(s)
-
-    {:noreply, s}
-  end
-
-  def handle_info(
         {:metrics, metric, msg_opts_vsn},
         %{opts_vsn: opts_vsn, counts: counts} = s
       ) do
     if msg_opts_vsn == opts_vsn do
-      val = Keyword.get(counts, metric, 0)
-
-      Logger.debug([
-        "metrics: would report ",
-        inspect(metric),
-        "=",
-        inspect(val)
-      ])
+      RunMetric.record(
+        module: "#{__MODULE__}",
+        metric: metric,
+        val: Keyword.get(counts, metric, 0)
+      )
     end
 
     s = schedule_metrics(s, metric)
@@ -268,17 +239,6 @@ defmodule Janitor do
      possible_orphan(Map.get(track, refid, :not_found), refid)
      |> increment_orphan_count(s)
      |> Map.put(:track, Map.delete(track, refid))}
-  end
-
-  def handle_info(
-        {:purge_switch_cmds, opts_vsn},
-        %{opts_vsn: current_opts_vsn} = s
-      ) do
-    if opts_vsn == current_opts_vsn, do: purge_sw_cmds(s)
-
-    s = schedule_purge(s)
-
-    {:noreply, s}
   end
 
   # quietly handle processes that :EXIT normally
@@ -342,42 +302,16 @@ defmodule Janitor do
   ## Private functions
   #
 
-  defp clean_orphan_acks(%{opts: opts}) when is_list(opts) do
-    opts = Keyword.get(opts, :orphan_acks)
-    # SwitchCmd.ack_orphans/1 expects a map
-    {orphans, nil} = SwitchCmd.ack_orphans(Enum.into(opts, %{}))
-
-    RunMetric.record(
-      module: "#{__MODULE__}",
-      metric: "orphans_acked",
-      val: orphans
-    )
-
-    if Keyword.get(opts, :log, false) do
-      orphans > 0 && Logger.info(["orphans ack'ed: [", inspect(orphans), "]"])
-    end
-
-    orphans
-  end
-
   defp increment_orphan_count(msg, state, orphans \\ 1)
 
   defp increment_orphan_count({:orphan, _res}, %{counts: counts} = s, orphans)
        when is_integer(orphans) do
     orphan_count = Keyword.get(counts, :orphan_count, 0) + orphans
 
-    RunMetric.record(
-      module: "#{__MODULE__}",
-      metric: "orphan_count",
-      val: orphan_count
-    )
-
     %{s | counts: Keyword.replace!(counts, :orphan_count, orphan_count)}
   end
 
   defp increment_orphan_count({_rc, _res}, s, _orphans), do: s
-
-  defp log_purge(%{opts: opts}), do: get_in(opts, [:switch_cmds, :log]) || false
 
   # Janitor will never make a final decision if a cmd is an orphan.  rather,
   # the owning module makes the decision.
@@ -429,28 +363,6 @@ defmodule Janitor do
     {:ok, :not_found}
   end
 
-  defp purge_sw_cmds(%{opts: opts} = s)
-       when is_map(s) do
-    purged =
-      SwitchCmd.purge_acked_cmds(
-        Keyword.get(opts, :switch_cmds)
-        |> Enum.into(%{})
-      )
-
-    RunMetric.record(
-      module: "#{__MODULE__}",
-      metric: "sw_cmds_purged",
-      val: purged
-    )
-
-    if log_purge(s) do
-      purged > 0 &&
-        Logger.info(["purged ", inspect(purged), " acked switch commands"])
-    end
-
-    purged
-  end
-
   defp schedule_metrics(
          %{opts: opts, opts_vsn: opts_vsn, startup: startup} = s,
          metric \\ :all
@@ -477,39 +389,39 @@ defmodule Janitor do
 
     s
   end
-
-  # schedule_orphan/1
-  #
-  # queues a clean orphan ack message for send after the duration specified
-  # in opts.
-  #
-  # NOTE: the opts vsn stored in the state is included in the message.
-  #       this allows for pattern matching when the message is received.
-  #       specificially, if the opts vsn in the message doesn't match the
-  #       opts vsn in the state then the message can be quietly ignored
-  #       because it was scheduled before the latest opts were set.
-  defp schedule_orphan(%{opts: opts, opts_vsn: opts_vsn, startup: startup} = s) do
-    millis =
-      if startup,
-        do: 0,
-        else: get_in(opts, [:orphan_acks, :interval]) |> duration_ms()
-
-    send_after(self(), {:clean_orphan_acks, opts_vsn}, millis)
-
-    s
-  end
-
-  defp schedule_purge(%{opts: opts, opts_vsn: opts_vsn, startup: startup} = s) do
-    # when purge is true schedule the next purge
-    if get_in(opts, [:switch_cmds, :purge]) do
-      millis =
-        if startup,
-          do: 0,
-          else: get_in(opts, [:switch_cmds, :interval]) |> duration_ms()
-
-      send_after(self(), {:purge_switch_cmds, opts_vsn}, millis)
-    end
-
-    s
-  end
 end
+
+# schedule_orphan/1
+#
+# queues a clean orphan ack message for send after the duration specified
+# in opts.
+#
+# NOTE: the opts vsn stored in the state is included in the message.
+#       this allows for pattern matching when the message is received.
+#       specificially, if the opts vsn in the message doesn't match the
+#       opts vsn in the state then the message can be quietly ignored
+#       because it was scheduled before the latest opts were set.
+# defp schedule_orphan(%{opts: opts, opts_vsn: opts_vsn, startup: startup} = s) do
+#   millis =
+#     if startup,
+#       do: 0,
+#       else: get_in(opts, [:orphan_acks, :interval]) |> duration_ms()
+#
+#   send_after(self(), {:clean_orphan_acks, opts_vsn}, millis)
+#
+#   s
+# end
+#
+# defp schedule_purge(%{opts: opts, opts_vsn: opts_vsn, startup: startup} = s) do
+#   # when purge is true schedule the next purge
+#   if get_in(opts, [:switch_cmds, :purge]) do
+#     millis =
+#       if startup,
+#         do: 0,
+#         else: get_in(opts, [:switch_cmds, :interval]) |> duration_ms()
+#
+#     send_after(self(), {:purge_switch_cmds, opts_vsn}, millis)
+#   end
+#
+#   s
+# end
