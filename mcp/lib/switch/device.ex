@@ -93,7 +93,7 @@ defmodule Switch.Device do
     if is_nil(sd), do: {:not_found, device}, else: dev_alias(sd, opts)
   end
 
-  def dev_alias(%Device{aliases: aliases} = sd, opts) when is_list(opts) do
+  def dev_alias(%Device{} = sd, opts) when is_list(opts) do
     create = Keyword.get(opts, :create, false)
     alias_name = Keyword.get(opts, :name)
     pio = Keyword.get(opts, :pio)
