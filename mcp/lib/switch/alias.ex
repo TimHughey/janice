@@ -58,7 +58,7 @@ defmodule Switch.Alias do
     |> upsert()
   end
 
-  def find(x, opts \\ [preload: false])
+  def find(x, opts \\ [preload: true])
 
   def find(id, opts) when is_integer(id) and is_list(opts),
     do: Repo.get_by(__MODULE__, id: id) |> preload(opts)
