@@ -540,6 +540,18 @@ defmodule Dutycycle do
         log: log
       )
 
+    sw_state =
+      case sw_state do
+        {rc, position} when is_list(position) ->
+          {rc, Keyword.get(position, :position)}
+
+        {rc, position} when is_boolean(position) ->
+          {rc, position}
+
+        {rc, position} ->
+          {rc, position}
+      end
+
     case sw_state do
       {rc, position} when rc in [:ok, :pending] ->
         log?(dc) && position == dev_state &&
