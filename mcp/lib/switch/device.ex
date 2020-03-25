@@ -76,26 +76,45 @@ defmodule Switch.Device do
       else: {rc, sd}
   end
 
+  def alias_from_legacy(
+        %{name: name, pio: pio, switch: %{device: device}} = legacy
+      ) do
+    extra_opts =
+      Map.take(legacy, [:description, :invert_state, :ttl_ms]) |> Enum.into([])
+
+    opts = [create: true, name: name, pio: pio] ++ extra_opts
+
+    dev_alias(device, opts)
+  end
+
   def dev_alias(device, opts) when is_binary(device) and is_list(opts) do
     sd = find(device)
 
     if is_nil(sd), do: {:not_found, device}, else: dev_alias(sd, opts)
   end
 
-  def dev_alias(%Device{} = sd, opts) when is_list(opts) do
+  def dev_alias(%Device{aliases: aliases} = sd, opts) when is_list(opts) do
     create = Keyword.get(opts, :create, false)
     alias_name = Keyword.get(opts, :name)
     pio = Keyword.get(opts, :pio)
+    {exists_rc, sa} = find_alias_by_pio(sd, pio)
+
+    check_args =
+      is_binary(alias_name) and is_integer(pio) and pio >= 0 and
+        pio < Enum.count(aliases)
 
     cond do
-      create and is_binary(alias_name) and is_integer(pio) ->
+      check_args == false ->
+        {:bad_args, sd, opts}
+
+      create and exists_rc == :ok ->
+        Alias.rename(sa, [name: alias_name] ++ opts)
+
+      create ->
         Alias.create(sd, alias_name, pio, opts)
 
-      is_binary(alias_name) and is_integer(pio) ->
-        find_alias(sd, alias_name, pio, opts)
-
       true ->
-        {:bad_args, sd, opts}
+        find_alias(sd, alias_name, pio, opts)
     end
   end
 
@@ -131,7 +150,23 @@ defmodule Switch.Device do
 
     if Enum.empty?(found),
       do: {:not_found, {alias_name, alias_pio}},
-      else: hd(found)
+      else: {:ok, hd(found)}
+  end
+
+  def find_alias_by_pio(
+        %Device{aliases: aliases},
+        alias_pio,
+        _opts \\ []
+      )
+      when is_integer(alias_pio) and alias_pio >= 0 do
+    found =
+      for %Alias{pio: pio} = x
+          when pio == alias_pio <- aliases,
+          do: x
+
+    if Enum.empty?(found),
+      do: {:not_found, {alias_pio}},
+      else: {:ok, hd(found)}
   end
 
   def log?(%Device{log_opts: %{log: log}}), do: log

@@ -58,11 +58,13 @@ defmodule Switch.Alias do
     |> upsert()
   end
 
-  def find(id) when is_integer(id),
-    do: Repo.get_by(__MODULE__, id: id) |> Repo.preload(:device)
+  def find(x, opts \\ [preload: false])
 
-  def find(name) when is_binary(name),
-    do: Repo.get_by(__MODULE__, name: name) |> Repo.preload(:device)
+  def find(id, opts) when is_integer(id) and is_list(opts),
+    do: Repo.get_by(__MODULE__, id: id) |> preload(opts)
+
+  def find(name, opts) when is_binary(name) and is_list(opts),
+    do: Repo.get_by(__MODULE__, name: name) |> preload(opts)
 
   def position(name, opts \\ [])
 
@@ -106,6 +108,58 @@ defmodule Switch.Alias do
         Device.record_cmd(sd, sa, cmd_map: cmd_map)
     end
     |> invert_position_if_needed(sa)
+  end
+
+  def preload(sa, opts \\ [preload: true])
+
+  def preload(%Alias{} = sa, opts) when is_list(opts) do
+    if Keyword.get(opts, :preload, false),
+      do: Repo.preload(sa, [:device]),
+      else: sa
+  end
+
+  def preload(anything, _opts), do: anything
+
+  def rename(%Alias{log_opts: log_opts} = x, opts) when is_list(opts) do
+    name = Keyword.get(opts, :name)
+
+    changes =
+      Keyword.take(opts, [
+        :name,
+        :description,
+        :ttl_ms,
+        :invert_state,
+        :log_opts
+      ])
+      |> Enum.into(%{})
+
+    changes =
+      if Map.has_key?(changes, :log_opts) do
+        x = Map.get(changes, :log_opts) |> Enum.into(%{})
+        new_log_opts = Map.merge(Map.from_struct(log_opts), x)
+        %{changes | log_opts: new_log_opts}
+      else
+        changes
+      end
+
+    with {:args, true} <- {:args, is_binary(name)},
+         cs <- changeset(x, changes),
+         {cs, true} <- {cs, cs.valid?},
+         {:ok, sa} <- Repo.update(cs, returning: true) do
+      {:ok, sa}
+    else
+      {:args, false} -> {:bad_args, opts}
+      {%Ecto.Changeset{} = cs, false} -> {:invalid_changes, cs}
+      error -> error
+    end
+  end
+
+  def update(name, opts) when is_binary(name) and is_list(opts) do
+    sa = find(name, opts)
+
+    if is_nil(sa),
+      do: {:not_found, name},
+      else: rename(sa, [name: name] ++ opts)
   end
 
   # upsert/1 confirms the minimum keys required and if the device to alias
