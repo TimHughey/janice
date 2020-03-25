@@ -101,7 +101,7 @@ defmodule Switch.Device do
 
     check_args =
       is_binary(alias_name) and is_integer(pio) and pio >= 0 and
-        pio < Enum.count(aliases)
+        pio < pio_count(sd)
 
     cond do
       check_args == false ->
@@ -171,12 +171,14 @@ defmodule Switch.Device do
 
   def log?(%Device{log_opts: %{log: log}}), do: log
 
+  def pio_count(%Device{states: states}), do: Enum.count(states)
+
   def pio_count(device) when is_binary(device) do
     sd = find(device)
 
     if is_nil(sd),
       do: {:not_found, device},
-      else: Enum.count(Map.get(sd, :states))
+      else: pio_count(sd)
   end
 
   # function header
