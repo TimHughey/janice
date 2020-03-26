@@ -104,7 +104,7 @@ defmodule Janitor do
     log && Logger.info(["init(): ", inspect(s, pretty: true)])
 
     if autostart == true,
-      do: {:ok, Map.put(s, :startup, true), {:continue, {:startup}}},
+      do: {:ok, Map.put(s, :starting_up, true), {:continue, {:startup}}},
       else: {:ok, s}
   end
 
@@ -194,10 +194,10 @@ defmodule Janitor do
     {:noreply, Map.put(s, :track, track)}
   end
 
-  def handle_continue({:startup}, %{opts: _opts, startup: true} = s) do
+  def handle_continue({:startup}, %{opts: _opts, starting_up: true} = s) do
     Process.flag(:trap_exit, true)
 
-    {:noreply, s |> schedule_metrics() |> Map.put(:startup, false)}
+    {:noreply, s |> schedule_metrics() |> Map.put(:starting_up, false)}
   end
 
   def handle_continue(catchall, s) do
@@ -386,7 +386,7 @@ defmodule Janitor do
   end
 
   defp schedule_metrics(
-         %{opts: opts, opts_vsn: opts_vsn, startup: startup} = s,
+         %{opts: opts, opts_vsn: opts_vsn, starting_up: startup} = s,
          metric \\ :all
        ) do
     #
