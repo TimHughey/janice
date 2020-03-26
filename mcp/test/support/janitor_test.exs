@@ -52,8 +52,12 @@ defmodule JanitorTest do
     res = Janitor.counts()
 
     assert is_list(res)
-    assert Keyword.has_key?(res, :orphan_count)
-    assert is_integer(Keyword.get(res, :orphan_count))
+    expected_keys = [:orphan_count, :switch_cmd_count]
+
+    for k <- expected_keys do
+      assert Keyword.has_key?(res, k)
+      assert is_integer(Keyword.get(res, k))
+    end
   end
 
   test "can get Janitor opts" do

@@ -37,7 +37,7 @@ config(:mcp, Janitor,
   # modules to call at startup (typically to purge cmds or ack orphans)
   at_startup: [{PulseWidthCmd, :purge_cmds}],
   log: [init: false],
-  metrics_frequency: [orphan_count: [minutes: 5]],
+  metrics_frequency: [orphan: [minutes: 5], switch_cmd: [minutes: 5]],
   orphan_acks: [interval: [minutes: 1], older_than: [minutes: 1], log: false],
   switch_cmds: [
     purge: true,

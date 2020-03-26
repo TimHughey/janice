@@ -66,7 +66,7 @@ defmodule Janitor do
     defs = [
       at_startup: [],
       log: [init: true],
-      metrics_frequency: [orphan_count: [minutes: 5]],
+      metrics_frequency: [orphan: [minutes: 5], switch_cmd: [minutes: 5]],
       orphan_acks: [interval: {:mins, 1}, older_than: {:mins, 5}, log: true],
       switch_cmds: [
         purge: true,
@@ -88,7 +88,7 @@ defmodule Janitor do
         tasks: [],
         counts:
           for k <- Keyword.get(opts, :metrics_frequency, []) |> Keyword.keys() do
-            {k, 0}
+            {count_key(k), 0}
           end,
         opts_vsn: Ecto.UUID.generate()
       })
@@ -159,8 +159,6 @@ defmodule Janitor do
         {:track, %{refid: refid} = cmd, opts},
         %{track: track} = s
       ) do
-    track = Map.put(track, refid, %{cmd: cmd, opts: opts})
-
     # Janitor expects a Keyword list of options with the key :orphan
     orphan_opts = Keyword.get(opts, :orphan, [])
 
@@ -170,16 +168,21 @@ defmodule Janitor do
       Keyword.get(orphan_opts, :sent_before, [])
       |> duration_ms()
 
-    if orphan_timeout_ms > 0,
-      do:
-        Process.send_after(self(), {:possible_orphan, refid}, orphan_timeout_ms),
-      else:
-        Logger.warn([
-          "handle_cast(:track) could not determine orphan timeout from opts: ",
-          inspect(opts, pretty: true)
-        ])
+    if orphan_timeout_ms > 0 do
+      Process.send_after(self(), {:possible_orphan, refid}, orphan_timeout_ms)
+      track = Map.put(track, refid, %{cmd: cmd, opts: opts})
 
-    {:noreply, Map.put(s, :track, track)}
+      {:noreply,
+       increment_count({:switch_cmd, nil}, s) |> Map.put(:track, track)}
+    else
+      Logger.warn([
+        "handle_cast(:track) could not determine orphan timeout from opts: ",
+        inspect(opts, pretty: true)
+      ])
+
+      # don't add the refid id to track list since no message was queued
+      {:noreply, increment_count({:switch_cmd, nil}, s)}
+    end
   end
 
   def handle_cast(
@@ -208,10 +211,12 @@ defmodule Janitor do
         %{opts_vsn: opts_vsn, counts: counts} = s
       ) do
     if msg_opts_vsn == opts_vsn do
+      count_key = count_key(metric)
+
       RunMetric.record(
         module: "#{__MODULE__}",
-        metric: metric,
-        val: Keyword.get(counts, metric, 0)
+        metric: count_key,
+        val: Keyword.get(counts, count_key, 0)
       )
     end
 
@@ -237,12 +242,20 @@ defmodule Janitor do
 
     {:noreply,
      possible_orphan(Map.get(track, refid, :not_found), refid)
-     |> increment_orphan_count(s)
+     |> increment_count(s)
      |> Map.put(:track, Map.delete(track, refid))}
   end
 
   # quietly handle processes that :EXIT normally
-  def handle_info({:EXIT, _pid, :normal}, %{} = s), do: {:noreply, s}
+  def handle_info({:EXIT, pid, :normal}, %{tasks: tasks} = s) do
+    tasks =
+      Enum.reject(tasks, fn
+        %Task{pid: search_pid} -> search_pid == pid
+        _x -> false
+      end)
+
+    {:noreply, %{s | tasks: tasks}}
+  end
 
   def handle_info({:EXIT, _pid, reason} = msg, state) do
     Logger.info([
@@ -302,16 +315,25 @@ defmodule Janitor do
   ## Private functions
   #
 
-  defp increment_orphan_count(msg, state, orphans \\ 1)
-
-  defp increment_orphan_count({:orphan, _res}, %{counts: counts} = s, orphans)
-       when is_integer(orphans) do
-    orphan_count = Keyword.get(counts, :orphan_count, 0) + orphans
-
-    %{s | counts: Keyword.replace!(counts, :orphan_count, orphan_count)}
+  defp count_key(type) when is_atom(type) do
+    [Atom.to_string(type), "_count"]
+    |> IO.iodata_to_binary()
+    |> String.to_atom()
   end
 
-  defp increment_orphan_count({_rc, _res}, s, _orphans), do: s
+  defp increment_count(msg, state, amount \\ 1)
+
+  # use the type passed to create a key and update the count
+  defp increment_count({type, _res}, %{counts: counts} = s, amount)
+       when type in [:orphan, :switch_cmd] and is_integer(amount) do
+    count_key = count_key(type)
+    new_count = Keyword.get(counts, count_key, 0) + amount
+
+    %{s | counts: Keyword.replace!(counts, count_key, new_count)}
+  end
+
+  # handle unknown count keys
+  defp increment_count({_rc, _res}, s, _orphans), do: s
 
   # Janitor will never make a final decision if a cmd is an orphan.  rather,
   # the owning module makes the decision.
