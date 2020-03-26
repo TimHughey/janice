@@ -92,7 +92,9 @@ defmodule Dutycycle do
          # active profile
          {:first_phase, {:ok, dc, active_profile, mode}} <-
            {:first_phase, next_phase(:run, dc)},
-         {:ok, {:position, true}, dc} <- control_device(dc, lazy: false) do
+         {:control_device, {rc, pos}, dc}
+         when rc in [:ok, :pending] and is_boolean(pos) <-
+           control_device(dc, lazy: false) do
       log &&
         Logger.info([
           dc_name(dc),
@@ -116,6 +118,15 @@ defmodule Dutycycle do
 
         {:failed, profile, error}
 
+      # HACK: should better handle when the device doesn't exist
+      {:first_phase, {:control_device, {:not_found, _res}, _dc} = check} ->
+        control_device_log(check)
+        {:ok, profile, check}
+
+      {:first_phase, {:control_device, _pos_res, _dc} = check} ->
+        control_device_log(check)
+        {:failed, profile, check}
+
       {:first_phase, error} ->
         Logger.warn(["next_phase() failed: ", inspect(error, pretty: true)])
 
@@ -129,6 +140,10 @@ defmodule Dutycycle do
           ])
 
         {:ok, dc, Profile.active(dc), :run}
+
+      {:control_device, _res, dc} = res ->
+        control_device_log(res)
+        {:failed, dc}
 
       error ->
         Logger.warn([
@@ -320,10 +335,12 @@ defmodule Dutycycle do
     with {%Dutycycle{} = dc, {:ok, %State{}}} <-
            State.next_phase(mode, dc, log_transition: log?(dc)),
          dc <- reload(dc),
-         {:ok, {:position, _postition}, dc} <- control_device(dc, opts) do
+         {:control_device, {rc, _pos}, dc} when rc in [:ok, :pending] <-
+           control_device(dc, opts) do
       active_profile = Profile.active(dc)
       {:ok, dc, active_profile, mode}
     else
+      {:control_device, _pos_res, _dc} = check -> control_device_log(check)
       error -> error
     end
   end
@@ -338,7 +355,7 @@ defmodule Dutycycle do
     with {%Dutycycle{}, {:ok, %State{}}} <- State.next_phase(:stop, dc),
          {:ok, %Dutycycle{}} <- deactivate(dc),
          {:reload, %Dutycycle{} = dc} <- {:reload, reload(dc)},
-         {:ok, {:position, {:ok, false}}, dc} <-
+         {:control_device, {rc, false}, dc} when rc in [:ok, :pending] <-
            control_device(dc, lazy: false) do
       {:ok, dc}
     else
@@ -347,26 +364,29 @@ defmodule Dutycycle do
         dc = reload(dc)
         {:failed, dc}
 
-      {:ok, {:position, nil}, %Dutycycle{} = dc} ->
-        {:ok, dc}
+      {:control_device, _pos_res, _dc} = check ->
+        control_device_log(check)
 
-      {:ok, {:position, true}, %Dutycycle{device: device} = dc} ->
-        Logger.warn([
-          inspect(device, pretty: true),
-          " position is true after halt"
-        ])
-
-        {:device_still_true, dc}
-
-      {:ok, {:position, {:not_found, device}}, %Dutycycle{} = dc} ->
-        Logger.warn([
-          dc_name(dc),
-          " device ",
-          inspect(device, pretty: true),
-          " does not exist at time of halt"
-        ])
-
-        {:device_not_found, dc}
+      # {:ok, {:position, nil}, %Dutycycle{} = dc} ->
+      #   {:ok, dc}
+      #
+      # {:ok, {:position, true}, %Dutycycle{device: device} = dc} ->
+      #   Logger.warn([
+      #     inspect(device, pretty: true),
+      #     " position is true after halt"
+      #   ])
+      #
+      #   {:device_still_true, dc}
+      #
+      # {:ok, {:position, {:not_found, device}}, %Dutycycle{} = dc} ->
+      #   Logger.warn([
+      #     dc_name(dc),
+      #     " device ",
+      #     inspect(device, pretty: true),
+      #     " does not exist at time of halt"
+      #   ])
+      #
+      #   {:device_not_found, dc}
 
       error ->
         Logger.warn(["halt() unhandled error: ", inspect(error, pretty: true)])
@@ -578,7 +598,31 @@ defmodule Dutycycle do
         ])
     end
 
-    {:ok, {:position, sw_state}, dc}
+    {:control_device, sw_state, dc}
+  end
+
+  defp control_device_log({:control_device, {pos_rc, _pos}, _dc} = rc)
+       when pos_rc in [:ok, :pending],
+       do: rc
+
+  defp control_device_log(
+         {:control_device, {:not_found, _pos},
+          %Dutycycle{name: name, device: device} = _dc} = rc
+       ) do
+    Logger.warn([
+      name,
+      " device ",
+      inspect(device, pretty: true),
+      " does not exist"
+    ])
+
+    rc
+  end
+
+  defp control_device_log({:control_device, pos_res, _dc} = rc) do
+    Logger.warn(["control_device_log() issue: ", inspect(pos_res, pretty: true)])
+
+    rc
   end
 
   defp control_device_log(%Dutycycle{device: device} = dc),

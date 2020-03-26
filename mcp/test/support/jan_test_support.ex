@@ -5,6 +5,184 @@ defmodule JanTest do
 
   import Ecto.Query, only: [from: 2]
 
+  defmacro __using__(_opts) do
+    quote do
+      def base_context(context) do
+        alias Switch.{Alias, Device}
+
+        base =
+          unquote(__CALLER__.module) |> Atom.to_string() |> String.downcase()
+
+        num = Map.get(context, :alias_num, 0)
+        num_sw_states = Map.get(context, :num_sw_states, 3)
+        alias_prefix = Map.get(context, :alias_prefix, "base")
+        num_str = ["0x", Integer.to_string(num, 16)] |> IO.iodata_to_binary()
+        alias_name = [alias_prefix, num_str] |> IO.iodata_to_binary()
+        add_alias = Map.get(context, :add_alias, false)
+        alias_pio = Map.get(context, :alias_pio, 1)
+
+        host = Map.get(context, :host, random_mcr())
+
+        rem_name =
+          Map.get(
+            context,
+            :name,
+            ["rem_swalias", num_str] |> IO.iodata_to_binary()
+          )
+
+        device =
+          Map.get(
+            context,
+            :device,
+            ["ds/swalias", num_str] |> IO.iodata_to_binary()
+          )
+
+        states =
+          for s <- 0..num_sw_states do
+            state = :rand.uniform(2) - 1
+            %{pio: s, state: if(state == 0, do: false, else: true)}
+          end
+
+        r = %{
+          processed: false,
+          type: "switch",
+          host: host,
+          name: rem_name,
+          hw: "esp32",
+          device: device,
+          pio_count: 3,
+          states: states,
+          vsn: "xxxxx",
+          ttl_ms: 30_000,
+          dev_latency_us: 1000,
+          mtime: TimeSupport.unix_now(:second),
+          log: false
+        }
+
+        {sd_rc, sd} =
+          sd_res =
+          if Map.get(context, :insert, true),
+            do: Device.upsert(r) |> Map.get(:processed),
+            else: nil
+
+        assert sd_rc == :ok
+        assert %Device{} = sd
+
+        sa_res =
+          add_alias(%{
+            add_alias: add_alias,
+            sd: {sd_rc, sd},
+            name: alias_name,
+            pio: alias_pio
+          })
+
+        {pos_rc, initial_pos} = Device.pio_state(sd, alias_pio)
+
+        assert pos_rc in [:ok, :ttl_expired]
+
+        # pio = context[:pio]
+        # device_pio = if pio, do: device_pio(n, pio), else: device_pio(n, 0)
+
+        {:ok,
+         r: r,
+         host: host,
+         rem_name: rem_name,
+         device: device,
+         device_id: Map.get(sd, :id),
+         sd: sd_res,
+         alias_name: alias_name,
+         add_alias: add_alias,
+         alias_pio: alias_pio,
+         initial_pos: initial_pos,
+         sa: sa_res}
+      end
+
+      defp add_alias(%{
+             add_alias: true,
+             name: name,
+             pio: pio,
+             sd: {:ok, %Switch.Device{id: device_id}}
+           }) do
+        {rc, sa} =
+          sa_rc =
+          Switch.Alias.upsert(%{device_id: device_id, name: name, pio: pio})
+
+        assert rc == :ok
+        assert %Switch.Alias{} = sa
+
+        sa_rc
+      end
+
+      defp add_alias(%{add_alias: _}) do
+        {:not_added, %Switch.Alias{}}
+      end
+
+      def need_switches(list, opts \\ [])
+          when is_list(list) and is_list(opts) do
+        unique_num = Keyword.get(opts, :unique_num, 1)
+        num_str = Integer.to_string(unique_num, 16) |> String.downcase()
+        test_grp = Keyword.get(opts, :test_group, "base")
+        sw_prefix = Keyword.get(opts, :sw_prefix, "base_sw")
+        rem_name = Keyword.get(opts, :rem_name, "rem_base")
+        pio_count = Enum.count(list)
+
+        device = [sw_prefix, "0x", num_str] |> IO.iodata_to_binary()
+
+        msg =
+          remote_msg(rem_name: rem_name, device: device, pio_count: pio_count)
+
+        {sd_rc, sd} = Switch.Device.upsert(msg) |> Map.get(:processed)
+
+        assert sd_rc == :ok
+
+        for x <- 1..pio_count do
+          pio = x - 1
+          name = Enum.at(list, pio, "beyond")
+
+          {rc, sa} =
+            Switch.Device.dev_alias(device, create: true, name: name, pio: pio)
+
+          assert rc == :ok
+          Map.get(sa, :name)
+        end
+      end
+
+      defp random_mac() do
+        # mcr.30 ae a4 f2 c2 10
+        bytes = for b <- 1..6, do: :rand.uniform(249) + 5
+
+        for b <- bytes, do: Integer.to_string(b, 16) |> String.downcase()
+      end
+
+      defp random_mcr(), do: ["mcr.", random_mac()] |> IO.iodata_to_binary()
+
+      defp remote_msg(opts) when is_list(opts) do
+        rem_name = Keyword.get(opts, :rem_name, "remote_base")
+        device = Keyword.get(opts, :device, "base_dev")
+        pio_count = Keyword.get(opts, :pio_count, 1)
+
+        %{
+          processed: false,
+          type: "switch",
+          host: random_mcr(),
+          name: rem_name,
+          hw: "esp32",
+          device: device,
+          pio_count: pio_count,
+          states:
+            for s <- 1..pio_count do
+              %{pio: s - 1, state: false}
+            end,
+          vsn: "xxxxx",
+          ttl_ms: 30_000,
+          dev_latency_us: 1000,
+          mtime: TimeSupport.unix_now(:second),
+          log: false
+        }
+      end
+    end
+  end
+
   def delete_all(mods) when is_list(mods) do
     for mod <- mods do
       from(x in mod, where: x.id > 0) |> Repo.delete_all()

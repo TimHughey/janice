@@ -2,6 +2,7 @@ defmodule DutycycleTest do
   @moduledoc false
 
   use ExUnit.Case, async: true
+  use JanTest
 
   # import ExUnit.CaptureLog
 
@@ -11,12 +12,36 @@ defmodule DutycycleTest do
   alias Dutycycle.Supervisor
   alias Janice.TimeSupport
 
+  @tag alias_prefix: "dutycycle_sw"
+
   setup do
     :ok
   end
 
+  setup context do
+    base_context(context)
+  end
+
   @moduletag :dutycycle
   setup_all do
+    need_switches(
+      [
+        "dutycycle_sw0x0",
+        "dutycycle_sw0x1",
+        "dutycycle_sw0x2",
+        "dutycycle_sw0x3",
+        "dutycycle_sw0x4",
+        "dutycycle_sw0x5",
+        "dutycycle_sw0x6",
+        "dutycycle_sw0x7",
+        "dutycycle_sw0x8",
+        "dutycycle_sw0x9",
+        "dutycycle_sw0xa"
+      ],
+      sw_prefix: "dutcycle_dev",
+      test_group: "dutycycle"
+    )
+
     range = 0..10 |> Enum.to_list()
 
     for n <- range do
@@ -59,8 +84,12 @@ defmodule DutycycleTest do
     do: "dutycycle" <> String.pad_leading(Integer.to_string(n), 3, "0")
 
   def new_dutycycle(n) do
-    num_str = String.pad_leading(Integer.to_string(n), 3, "0")
-    dev_str = "dutycycle_sw" <> num_str
+    num_str =
+      ["0x", Integer.to_string(n, 16)]
+      |> IO.iodata_to_binary()
+
+    dev_str =
+      ["dutycycle_sw", num_str] |> IO.iodata_to_binary() |> String.downcase()
 
     %Dutycycle{
       name: name_str(n),
@@ -386,7 +415,7 @@ defmodule DutycycleTest do
     Process.sleep(101)
     %State{state: second_state} = Server.dutycycle_state(dc.name)
 
-    assert :ok === rc1
+    assert :ok == rc1
     assert Timex.before?(started, TimeSupport.utc_now())
     assert first_state === "running"
     assert second_state === "idling"
@@ -449,7 +478,7 @@ defmodule DutycycleTest do
     assert is_list(res)
     assert res[:name] == name
     assert res[:active_profile] == "slow"
-    assert {:device_not_found, %Dutycycle{}} = rc2
+    assert {:ok, %Dutycycle{}} = rc2
     refute is_nil(started_at)
     # assert {:failed, {:ok, {:position, {:not_found, _}}}, %Dutycycle{}} = rc2
     assert {:ok, _profile} = rc3
