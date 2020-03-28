@@ -272,8 +272,6 @@ defmodule Janitor do
       # don't add the refid id to track list since no message was queued
       {:noreply, increment_count({:switch_cmd, nil}, s)}
     end
-
-    {:noreply, s}
   end
 
   def handle_continue(
