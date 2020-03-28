@@ -4,10 +4,9 @@ defmodule Switch.Command do
   require Logger
   use Ecto.Schema
 
-  import Application, only: [get_env: 3]
   import Ecto.Changeset
 
-  import Janice.TimeSupport, only: [utc_now: 0]
+  use Janitor
 
   alias Switch.{Command, Device}
 
@@ -62,7 +61,7 @@ defmodule Switch.Command do
     with {:cmd, %Command{sent_at: sent_at} = cmd} <- {:cmd, find_refid(refid)},
          latency <- Timex.diff(recv_dt, sent_at, :microsecond),
          changes <- [rt_latency_us: latency] ++ changes,
-         {:ok, %Command{} = cmd} <- update(cmd, changes) |> Janitor.untrack() do
+         {:ok, %Command{} = cmd} <- update(cmd, changes) |> untrack() do
       #
       # simply log then return the reading unchanged
       # all work performed within the with conditions
@@ -109,20 +108,13 @@ defmodule Switch.Command do
 
   def add(%Device{} = sd, sw_alias, %DateTime{} = dt)
       when is_binary(sw_alias) do
-    opts =
-      get_env(:mcp, Switch.Command,
-        # default config in case unset in Application env
-        orphan: [sent_before: [seconds: 5], log: true]
-      )
-      |> Keyword.put(:possible_orphaned_fn, &possible_orphan/1)
-
     Ecto.build_assoc(
       sd,
       :cmds
     )
     |> changeset(sent_at: dt, sw_alias: sw_alias, acked: false, orphan: false)
     |> Repo.insert!(returning: true)
-    |> Janitor.track(opts)
+    |> track()
   end
 
   def find_refid(refid),
@@ -163,19 +155,6 @@ defmodule Switch.Command do
   defp log_opts_changeset(schema, params) when is_map(params) do
     schema
     |> cast(params, [:log, :external_update, :cmd_rt, :dev_latency])
-  end
-
-  # if the cmd has not been acked then it is an orphan
-  def orphan(%Command{acked: false} = cmd) do
-    {:orphan, update(cmd, acked: true, ack_at: utc_now(), orphan: true)}
-  end
-
-  def orphan(%Command{acked: true} = cmd) do
-    {:acked, {:ok, cmd}}
-  end
-
-  def possible_orphan(%Command{} = cmd) do
-    cmd |> reload() |> orphan()
   end
 
   def update(refid, opts) when is_binary(refid) and is_list(opts) do

@@ -5,13 +5,82 @@ defmodule Janitor do
   use GenServer
   use Timex
 
-  import Application, only: [get_env: 3]
   import Process, only: [send_after: 3]
   import Janice.TimeSupport, only: [duration_ms: 1]
 
   alias Fact.RunMetric
 
   defmacro __using__(_opts) do
+    quote do
+      import Janice.TimeSupport, only: [utc_now: 0]
+
+      def config(key) when is_atom(key),
+        do:
+          Application.get_application(__MODULE__)
+          |> Application.get_env(__MODULE__)
+          |> Keyword.get(key, [])
+
+      def janitor_opts,
+        do:
+          :sys.get_state(unquote(__MODULE__))
+          |> Map.get(:opts, [])
+          |> Map.get(__MODULE__, [])
+
+      def janitor_opts(new_opts) when is_list(new_opts) do
+        GenServer.call(
+          unquote(__MODULE__),
+          %{action: :update_opts, mod: __MODULE__, opts: new_opts}
+        )
+      end
+
+      def orphan(%{acked: false} = cmd) do
+        {:orphan, update(cmd, acked: true, ack_at: utc_now(), orphan: true)}
+      end
+
+      def orphan(%{acked: true} = cmd) do
+        {:acked, {:ok, cmd}}
+      end
+
+      def orphan_config, do: config(:orphan)
+      def purge_config, do: config(:purge)
+
+      #
+      # NOTE:
+      #   track() and untrack() return the cmd untouched and return the
+      #   cmd unchanged
+      #
+
+      # NOTE:  callers of this function will receive the map (cmd), unchanged,
+      #        as the return value
+      def track(%{refid: _refid} = cmd, extra_opts \\ [])
+          when is_list(extra_opts) do
+        opts = config(:orphan) ++ extra_opts
+        msg = {:track, %{cmd: cmd, mod: __MODULE__, opts: opts}}
+
+        if is_nil(GenServer.whereis(unquote(__MODULE__))),
+          do: Logger.warn([unquote(__MODULE__), " not started"]),
+          else: GenServer.cast(unquote(__MODULE__), msg)
+
+        cmd
+      end
+
+      # NOTE:  callers of this function will receive whatever was passed
+      #        as parameters as the return value
+      def untrack({:ok, %{refid: _refid} = cmd} = rc) do
+        msg = {:untrack, %{cmd: cmd, mod: __MODULE__, opts: []}}
+
+        if is_nil(GenServer.whereis(unquote(__MODULE__))),
+          do: Logger.warn([unquote(__MODULE__), " not started"]),
+          else: GenServer.cast(unquote(__MODULE__), msg)
+
+        rc
+      end
+
+      # simply pass through anything we haven't pattern matched
+      def untrack(anything), do: anything
+
+      def want_janitorial_services, do: __MODULE__
+    end
   end
 
   #
@@ -36,47 +105,15 @@ defmodule Janitor do
   end
 
   #
-  # NOTE:
-  #   track() and untrack() return the cmd untouched and return the
-  #   cmd unchanged
-  #
-
-  # NOTE:  callers of this function will receive the map (cmd), unchanged,
-  #        as the return value
-  def track(%{refid: _refid} = cmd, opts) when is_list(opts) do
-    GenServer.cast(__MODULE__, {:track, cmd, opts})
-    cmd
-  end
-
-  # NOTE:  callers of this function will receive whatever was passed
-  #        as parameters as the return value
-  def untrack({:ok, %{refid: _refid} = cmd} = rc) do
-    GenServer.cast(__MODULE__, {:untrack, cmd})
-    rc
-  end
-
-  # simply pass through anything we haven't pattern matched
-  def untrack(anything), do: anything
-
-  #
   ## GenServer Start Up and Shutdown Callbacks
   #
 
   def start_link(s) do
-    defs = [
-      at_startup: [],
-      log: [init: true],
-      metrics_frequency: [orphan: [minutes: 5], switch_cmd: [minutes: 5]],
-      orphan_acks: [interval: {:mins, 1}, older_than: {:mins, 5}, log: true],
-      switch_cmds: [
-        purge: true,
-        interval: {:mins, 5},
-        older_than: {:days, 7},
-        log: true
-      ]
-    ]
+    defs = []
 
-    opts = get_env(:mcp, Janitor, defs)
+    opts =
+      Application.get_application(__MODULE__)
+      |> Application.get_env(__MODULE__, defs)
 
     # setup the overall state with the necessary keys so we can pattern
     # match in handle_* functions
@@ -86,11 +123,13 @@ defmodule Janitor do
         opts: opts,
         track: %{},
         tasks: [],
+        mods: %{},
         counts:
           for k <- Keyword.get(opts, :metrics_frequency, []) |> Keyword.keys() do
             {count_key(k), 0}
           end,
-        opts_vsn: Ecto.UUID.generate()
+        opts_vsn: Ecto.UUID.generate(),
+        starting_up: true
       })
 
     GenServer.start_link(Janitor, s, name: Janitor)
@@ -103,9 +142,13 @@ defmodule Janitor do
 
     log && Logger.info(["init(): ", inspect(s, pretty: true)])
 
-    if autostart == true,
-      do: {:ok, Map.put(s, :starting_up, true), {:continue, {:startup}}},
-      else: {:ok, s}
+    if autostart == true do
+      Process.flag(:trap_exit, true)
+
+      {:ok, s, {:continue, {:startup}}}
+    else
+      {:ok, s}
+    end
   end
 
   def terminate(reason, _state) do
@@ -156,49 +199,101 @@ defmodule Janitor do
   end
 
   def handle_cast(
-        {:track, %{refid: refid} = cmd, opts},
-        %{track: track} = s
+        {:track, %{cmd: _cmd, mod: mod, opts: _opts} = msg},
+        %{mods: _mods} = s
       ) do
-    # Janitor expects a Keyword list of options with the key :orphan
-    orphan_opts = Keyword.get(opts, :orphan, [])
+    {mod_rc, s} = ensure_mod_map(s, mod)
+
+    {:noreply, s, {:continue, {:track, msg, mod_rc}}}
+  end
+
+  def handle_cast(
+        {:untrack, %{cmd: _cmd, mod: mod, opts: _opts} = msg},
+        %{mods: _mods} = s
+      ) do
+    {mod_rc, s} = ensure_mod_map(s, mod)
+
+    {:noreply, s, {:continue, {:untrack, msg, mod_rc}}}
+  end
+
+  def handle_cast(catchall, s) do
+    Logger.warn([
+      "handle_cast(catchall) unhandled msg: ",
+      inspect(catchall, pretty: true)
+    ])
+
+    {:noreply, s}
+  end
+
+  def handle_continue(
+        {:startup},
+        %{opts: _opts, mods: _mods, starting_up: true} = s
+      ) do
+    Process.flag(:trap_exit, true)
+
+    {:noreply, schedule_metrics(s) |> Map.put(:starting_up, false)}
+  end
+
+  def handle_continue(
+        {:track, %{cmd: %{refid: refid} = cmd, mod: mod, opts: opts}, :mod_ok},
+        %{mods: mods} = s
+      ) do
+    #
+    # pattern match the state for the module for this refid
+    %{track: track} = mod_map = Map.get(mods, mod)
 
     # this function expects to find sent_before: [key: val] in opts
     # get the key and convert it to milliseconds via TimeSupport
     orphan_timeout_ms =
-      Keyword.get(orphan_opts, :sent_before, [])
+      Keyword.get(opts, :sent_before, [])
       |> duration_ms()
 
     if orphan_timeout_ms > 0 do
-      Process.send_after(self(), {:possible_orphan, refid}, orphan_timeout_ms)
+      Process.send_after(
+        self(),
+        {:possible_orphan, mod, refid},
+        orphan_timeout_ms
+      )
+
       track = Map.put(track, refid, %{cmd: cmd, opts: opts})
 
+      mod_map = Map.put(mod_map, :track, track)
+
       {:noreply,
-       increment_count({:switch_cmd, nil}, s) |> Map.put(:track, track)}
+       increment_count({:switch_cmd, nil}, s) |> Map.put(mod, mod_map)}
     else
       Logger.warn([
-        "handle_cast(:track) could not determine orphan timeout from opts: ",
+        "handle_cast(:track) could not determine orphan timeout for ",
+        inspect(mod),
+        " from opts: ",
         inspect(opts, pretty: true)
       ])
 
       # don't add the refid id to track list since no message was queued
       {:noreply, increment_count({:switch_cmd, nil}, s)}
     end
+
+    {:noreply, s}
   end
 
-  def handle_cast(
-        {:untrack, %{refid: refid} = _cmd},
-        %{track: track} = s
+  def handle_continue(
+        {:untrack, %{cmd: %{refid: refid} = _cmd, mod: mod, opts: _opts},
+         :mod_ok},
+        %{mods: mods} = s
       ) do
-    track = Map.delete(track, refid)
+    #
+    # pattern match the state for the module for this refid
+    %{track: track} = mod_map = Map.get(mods, mod)
 
-    {:noreply, Map.put(s, :track, track)}
+    mod_map = %{mod_map | track: Map.delete(track, refid)}
+
+    {:noreply, %{s | mods: Map.put(mods, mod, mod_map)}}
   end
 
-  def handle_continue({:startup}, %{opts: _opts, starting_up: true} = s) do
-    Process.flag(:trap_exit, true)
-
-    {:noreply, s |> schedule_metrics() |> Map.put(:starting_up, false)}
-  end
+  # the module was not found in the Janitor's state
+  def handle_continue({action, _msg, :error}, s)
+      when action in [:track, :untrack],
+      do: {:noreply, s}
 
   def handle_continue(catchall, s) do
     Logger.warn(["handle_continue(catchall): ", inspect(catchall, pretty: true)])
@@ -228,22 +323,37 @@ defmodule Janitor do
   # NOTE:
   #   Janitor will receive an info message for EVERY tracked cmd after the
   #   configured orphan timeout has expired.  if the refid is not found in
-  #   the track map then untrack was invoked and this is not an orphan
+  #   the track map (because untrack was invoked) this is not an orphan
   #
   #   if refid was found in the track map then this cmd is POSSIBLY an
   #   orphan so invoke the possible_orphan() function for a final decision
   def handle_info(
-        {:possible_orphan, refid},
-        %{track: track} = s
+        {:possible_orphan, mod, refid},
+        %{mods: mods} = s
       ) do
     #
-    # NOTE: Map.delete/2 silently returns an unchanged map if the requested
-    #       key does not exist
+    # pattern match the state for the module for this refid
+    %{opts: _opts, track: track} = mod_map = Map.get(mods, mod)
 
-    {:noreply,
-     possible_orphan(Map.get(track, refid, :not_found), refid)
-     |> increment_count(s)
-     |> Map.put(:track, Map.delete(track, refid))}
+    tracked = Map.get(track, refid, :not_found)
+
+    with {:refid, tracked} when is_map(tracked) <- {:refid, tracked},
+         # pattern match out the cmd and opts from the tracked refid
+         %{cmd: cmd, opts: opts} <- tracked,
+         # delete the tracked refid from the tracker map
+         # NOTE: Map.delete/2 is a noop if key doesn't exist
+         track <- Map.delete(track, refid),
+         # put the updated tracker map into the module's map
+         mod_map <- Map.put(mod_map, :track, track),
+         # perform the actual orphan check and log the results
+         orphan_rc <- apply(mod, :orphan, [cmd]) |> log_orphan_rc(opts),
+         # update the states's orphan counts (if needed) and module map
+         new_state <- increment_count(orphan_rc, s) |> Map.put(mod, mod_map) do
+      {:noreply, new_state}
+    else
+      {:refid, :not_found} ->
+        {:noreply, s}
+    end
   end
 
   # quietly handle processes that :EXIT normally
@@ -321,6 +431,22 @@ defmodule Janitor do
     |> String.to_atom()
   end
 
+  defp ensure_mod_map(%{mods: mods} = s, mod) do
+    with {:mod_known, false} <- {:mod_known, Map.has_key?(mods, mod)},
+         mods_now <- make_mod_maps(),
+         {:mod_new, true} <- {:mod_new, Map.has_key?(mods_now, mod)},
+         mods <- Map.put(mods, mod, Map.get(mods_now, mod)) do
+      {:mod_ok, %{s | mods: mods}}
+    else
+      {:mod_known, true} ->
+        {:mod_ok, s}
+
+      {:mod_new, false} ->
+        Logger.error(["module ", inspect(mod), " did not use Janitor"])
+        {:error, s}
+    end
+  end
+
   defp increment_count(msg, state, amount \\ 1)
 
   # use the type passed to create a key and update the count
@@ -335,54 +461,23 @@ defmodule Janitor do
   # handle unknown count keys
   defp increment_count({_rc, _res}, s, _orphans), do: s
 
-  # Janitor will never make a final decision if a cmd is an orphan.  rather,
-  # the owning module makes the decision.
-  defp possible_orphan(%{cmd: %{refid: refid} = cmd, opts: opts}, _refid) do
-    log = get_in(opts, [:orphan, :log]) || false
+  defp make_mod_maps do
+    {:ok, all_mods} =
+      Application.get_application(__MODULE__) |> :application.get_key(:modules)
 
-    possible_orphaned_fn =
-      Keyword.get(opts, :possible_orphaned_fn, fn x -> x end)
-
-    orphan_rc = possible_orphaned_fn.(cmd)
-
-    case orphan_rc do
-      {:orphan, {:ok, %{refid: refid}}} ->
-        log && Logger.warn(["orphaned refid ", inspect(refid, pretty: true)])
-
-      # TODO: add RunMetric
-
-      # return the actual results of module's orphan decision
-
-      {:orphan, cmd_rc} ->
-        Logger.warn([
-          "orphaned refid ",
-          inspect(refid, pretty: true),
-          " with a problem:  ",
-          inspect(cmd_rc, pretty: true)
-        ])
-
-      {:acked, _cmd_rc} ->
-        log &&
-          Logger.info(["refid ", inspect(refid, pretty: true), " already acked"])
-
-      anything ->
-        Logger.warn([
-          "possible_orphan() unhandled rc: ",
-          inspect(anything, pretty: true)
-        ])
+    for m <- all_mods,
+        function_exported?(m, :want_janitorial_services, 0),
+        into: %{} do
+      {m,
+       %{
+         opts: [
+           orphan: apply(m, :config, [:orphan]),
+           purge: apply(m, :config, [:purge])
+         ],
+         opts_vsn: Ecto.UUID.generate(),
+         track: %{}
+       }}
     end
-
-    orphan_rc
-  end
-
-  defp possible_orphan(:not_found, refid) do
-    Logger.debug([
-      "refid ",
-      inspect(refid, pretty: true),
-      " not tracked, likely acked"
-    ])
-
-    {:ok, :not_found}
   end
 
   defp schedule_metrics(
@@ -411,39 +506,44 @@ defmodule Janitor do
 
     s
   end
-end
 
-# schedule_orphan/1
-#
-# queues a clean orphan ack message for send after the duration specified
-# in opts.
-#
-# NOTE: the opts vsn stored in the state is included in the message.
-#       this allows for pattern matching when the message is received.
-#       specificially, if the opts vsn in the message doesn't match the
-#       opts vsn in the state then the message can be quietly ignored
-#       because it was scheduled before the latest opts were set.
-# defp schedule_orphan(%{opts: opts, opts_vsn: opts_vsn, startup: startup} = s) do
-#   millis =
-#     if startup,
-#       do: 0,
-#       else: get_in(opts, [:orphan_acks, :interval]) |> duration_ms()
-#
-#   send_after(self(), {:clean_orphan_acks, opts_vsn}, millis)
-#
-#   s
-# end
-#
-# defp schedule_purge(%{opts: opts, opts_vsn: opts_vsn, startup: startup} = s) do
-#   # when purge is true schedule the next purge
-#   if get_in(opts, [:switch_cmds, :purge]) do
-#     millis =
-#       if startup,
-#         do: 0,
-#         else: get_in(opts, [:switch_cmds, :interval]) |> duration_ms()
-#
-#     send_after(self(), {:purge_switch_cmds, opts_vsn}, millis)
-#   end
-#
-#   s
-# end
+  #
+  ## Logging Helpers
+  #
+  def log_orphan_rc(orphan_rc, opts) when is_list(opts) do
+    log = get_in(opts, [:orphan, :log]) || false
+
+    case orphan_rc do
+      {:orphan, {:ok, %{name: name, refid: refid}}} ->
+        log &&
+          Logger.warn([
+            "orphaned ",
+            inspect(name),
+            " refid ",
+            inspect(refid, pretty: true)
+          ])
+
+      {:orphan, {_, %{name: name, refid: refid}} = cmd_rc} ->
+        Logger.warn([
+          "orphaned ",
+          inspect(name),
+          " refid ",
+          inspect(refid, pretty: true),
+          " with a problem:  ",
+          inspect(cmd_rc, pretty: true)
+        ])
+
+      {:acked, _cmd_rc} ->
+        # command was already ack'ed, nothing to log
+        true
+
+      anything ->
+        Logger.warn([
+          "unhandled rc: ",
+          inspect(anything, pretty: true)
+        ])
+    end
+
+    orphan_rc
+  end
+end

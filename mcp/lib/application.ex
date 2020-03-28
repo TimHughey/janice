@@ -38,6 +38,12 @@ defmodule Mcp.Application do
 
     # only start the Supervisor if the database password is set
     if get_env(:mcp, Repo, []) |> has_key?(:password) do
+      Logger.info([
+        "starting supervisor (build_env: ",
+        build_env,
+        ")"
+      ])
+
       Supervisor.start_link(children, opts)
     else
       {:error, :no_db_password}

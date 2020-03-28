@@ -118,5 +118,3 @@ config :mcp, Mcp.SoakTest,
   periodic_log_first: {:mins, 30},
   periodic_log: {:mins, 15},
   flash_led: {:secs, 1}
-
-config :mcp, Switch, logCmdAck: false

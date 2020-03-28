@@ -78,21 +78,39 @@ config :mcp, OTA,
   ]
 
 config :mcp, PulseWidthCmd,
-  log: [cmd_ack: false],
-  # the acked_before and sent_before lists are passed to Timex
-  # to create a shifted DateTime in UTC
-  purge: [acked_before: [days: 1]],
-  orphan: [sent_before: [seconds: 3], log: false]
+  orphan: [
+    at_startup: true,
+    sent_before: [seconds: 1],
+    older_than: [minutes: 1],
+    log: false
+  ],
+  purge: [
+    at_startup: true,
+    interval: [minutes: 2],
+    older_than: [days: 30],
+    log: false
+  ]
 
 config :mcp, Repo,
   migration_timestamps: [type: :utc_datetime_usec],
   adapter: Ecto.Adapters.Postgres
 
-config :mcp, Switch.Device,
-  log: [cmd_ack: false],
-  # the acked_before and sent_before lists are passed to Timex
-  # to create a shifted DateTime in UTC
-  purge: [acked_before: [days: 1]],
-  orphan: [sent_before: [seconds: 3], log: false]
+config :mcp, Switch.Command,
+  # NOTE:  older_than lists are passed to Timex to create a
+  #        shifted DateTime in UTC
+  orphan: [
+    at_startup: true,
+    sent_before: [seconds: 30],
+    older_than: [minutes: 1],
+    log: false
+  ],
+  purge: [
+    at_startup: true,
+    interval: [minutes: 2],
+    older_than: [days: 30],
+    log: false
+  ]
+
+config :mcp, Switch.Device, log: [cmd_ack: false]
 
 import_config "#{Mix.env()}.exs"

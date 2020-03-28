@@ -3,8 +3,6 @@ defmodule JanitorTest do
 
   use ExUnit.Case, async: true
 
-  use Janitor
-
   # import ExUnit.CaptureLog
 
   # alias Dutycycle.Profile
