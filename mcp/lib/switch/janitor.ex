@@ -19,12 +19,20 @@ defmodule Janitor do
           Application.get_env(:mcp, __MODULE__)
           |> Keyword.get(key, [])
 
-      def janitor_opts,
-        do:
+      def janitor_opts do
+        from_config = Application.get_env(:mcp, __MODULE__)
+
+        mods =
           :sys.get_state(unquote(__MODULE__))
           |> Map.get(:mods, %{})
-          |> Map.get(__MODULE__, %{})
+
+        if Map.has_key?(mods, __MODULE__) do
+          Map.get(mods, __MODULE__, %{})
           |> Map.get(:opts, [])
+        else
+          from_config
+        end
+      end
 
       def janitor_opts(new_opts) when is_list(new_opts) do
         GenServer.call(

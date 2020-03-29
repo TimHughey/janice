@@ -3,7 +3,7 @@ defmodule ReefTest do
 
   use ExUnit.Case, async: false
 
-  import JanTest, only: [create_switch: 5, sw_state_name: 3]
+  use JanTest
 
   setup do
     :ok
@@ -11,8 +11,6 @@ defmodule ReefTest do
 
   @moduletag :reef
   setup_all do
-    create_switch("reef", "reef", 0, 8, false)
-
     switches = [
       "mix_pump",
       "mix_air",
@@ -23,8 +21,7 @@ defmodule ReefTest do
       "mixtank_heater"
     ]
 
-    for {name, i} <- Enum.with_index(switches),
-        do: Switch.Alias.rename(sw_state_name("reef", 0, i), name: name)
+    need_switches(switches, sw_prefix: "reef_dev", test_group: "reef")
 
     for dc <- prod_dutycycles(), do: Dutycycle.Server.add(dc)
     :ok

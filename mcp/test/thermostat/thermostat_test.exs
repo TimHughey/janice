@@ -4,8 +4,9 @@ defmodule ThermostatTest do
   use ExUnit.Case, async: true
 
   import ExUnit.CaptureLog
+  use JanTest
 
-  import JanTest, only: [create_switch: 5, create_temp_sensor: 4, device: 2]
+  import JanTest, only: [create_temp_sensor: 4]
 
   alias Thermostat.Profile
   alias Thermostat.Server
@@ -16,6 +17,13 @@ defmodule ThermostatTest do
 
   @moduletag :thermostat
   setup_all do
+    sw_aliases = make_sw_alias_names("thermostat", 14)
+
+    need_switches(sw_aliases,
+      sw_prefix: "thermost_dev",
+      test_group: "thermostat"
+    )
+
     new_ths = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 99]
     for n <- new_ths, do: new_thermostat(n) |> Thermostat.add()
 
@@ -30,8 +38,7 @@ defmodule ThermostatTest do
     sensor = "thermostat" <> num_str
     follow_sensor = "thermostat_follow" <> num_str
 
-    create_switch("thermostat", "thermostat", n, 2, false)
-    sw_name = device("thermostat", n) <> ":0"
+    sw_name = make_sw_alias_name("thermostat", n)
 
     create_temp_sensor("thermostat", sensor, n, tc: 24.0)
     create_temp_sensor("thermostat_follow", follow_sensor, n, tc: 25.0)

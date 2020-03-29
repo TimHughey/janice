@@ -107,8 +107,7 @@ config :mcp, Repo,
   pool_size: 10
 
 config :mcp, Switch.Command,
-  # NOTE:  older_than lists are passed to Timex to create a
-  #        shifted DateTime in UTC
+  # NOTE:  Timex.shift/2 is used to convert sent_before into a UTC Datetime
   orphan: [
     at_startup: true,
     sent_before: [seconds: 1],

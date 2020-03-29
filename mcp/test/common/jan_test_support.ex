@@ -117,6 +117,32 @@ defmodule JanTest do
         {:not_added, %Switch.Alias{}}
       end
 
+      def dev_num_str(n, opts \\ [iodata: false]) when is_integer(n) do
+        str_list = [
+          "0x",
+          Integer.to_string(n, 16) |> String.pad_leading(3, "0")
+        ]
+
+        if Keyword.get(opts, :iodata, false),
+          do: IO.iodata_to_binary(str_list),
+          else: str_list
+      end
+
+      def make_sw_alias_name(prefix, num \\ 0)
+          when is_binary(prefix) and is_integer(num) and num >= 0 do
+        [prefix, "_", dev_num_str(num, iodata: true)] |> IO.iodata_to_binary()
+      end
+
+      def make_sw_alias_names(prefix, count \\ 1)
+          when is_binary(prefix) and is_integer(count) and count >= 1 do
+        names =
+          for x <- 0..count do
+            make_sw_alias_name(prefix, x)
+          end
+
+        if length(names) == 1, do: hd(names), else: names
+      end
+
       def need_switches(list, opts \\ [])
           when is_list(list) and is_list(opts) do
         unique_num = Keyword.get(opts, :unique_num, 1)

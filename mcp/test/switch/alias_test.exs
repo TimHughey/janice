@@ -73,6 +73,21 @@ defmodule SwitchAliasTest do
     assert Switch.Command.acked?(refid) == true
   end
 
+  @tag alias_num: 4
+  @tag add_alias: true
+  test "can get and set the position of an Alias with lazy: false",
+       %{alias_name: name, sa: {_rc, _sa}} = _r do
+    {rc1, initial_pos} = Alias.position(name)
+    assert rc1 == :ok
+
+    {rc2, res} = Alias.position(name, position: initial_pos, lazy: false)
+    assert rc2 == :pending
+    assert is_list(res)
+
+    refid = Keyword.get(res, :refid)
+    assert is_binary(refid)
+  end
+
   defp add_alias(%{
          add_alias: true,
          name: name,
