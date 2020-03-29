@@ -145,7 +145,6 @@ defmodule Janitor do
       Map.merge(s, %{
         autostart: Map.get(s, :autostart, false),
         opts: opts,
-        track: %{},
         tasks: [],
         mods: %{},
         counts:
@@ -314,10 +313,9 @@ defmodule Janitor do
 
       track = Map.put(track, refid, %{cmd: cmd, opts: opts})
 
-      mod_map = Map.put(mod_map, :track, track)
+      s = %{s | mods: %{mods | mod => %{mod_map | track: track}}}
 
-      {:noreply,
-       increment_count({:switch_cmd, nil}, s) |> Map.put(mod, mod_map)}
+      {:noreply, increment_count({:switch_cmd, nil}, s)}
     else
       Logger.warn([
         "handle_cast(:track) could not determine orphan timeout for ",
@@ -340,9 +338,8 @@ defmodule Janitor do
     # pattern match the state for the module for this refid
     %{track: track} = mod_map = Map.get(mods, mod)
 
-    mod_map = %{mod_map | track: Map.delete(track, refid)}
-
-    {:noreply, %{s | mods: Map.put(mods, mod, mod_map)}}
+    {:noreply,
+     %{s | mods: %{mods | mod => %{mod_map | track: Map.delete(track, refid)}}}}
   end
 
   # the module was not found in the Janitor's state
@@ -397,9 +394,10 @@ defmodule Janitor do
       ) do
     #
     # pattern match the state for the module for this refid
+    # Logger.info([":possible_orphan mods: ", inspect(mods, pretty: true)])
     %{opts: _opts, track: track} = mod_map = Map.get(mods, mod)
 
-    tracked = Map.get(track, refid, :not_found)
+    tracked = Map.get(track, refid, :not_tracked)
 
     with {:refid, tracked} when is_map(tracked) <- {:refid, tracked},
          # pattern match out the cmd and opts from the tracked refid
@@ -415,7 +413,16 @@ defmodule Janitor do
          new_state <- increment_count(orphan_rc, s) |> Map.put(mod, mod_map) do
       {:noreply, new_state}
     else
-      {:refid, :not_found} ->
+      {:refid, :not_tracked} = rc ->
+        Logger.info([
+          "possible_orphan() ",
+          inspect(mod),
+          " ",
+          inspect(rc, pretty: true),
+          " ",
+          inspect(refid, pretty: true)
+        ])
+
         {:noreply, s}
     end
   end
@@ -586,26 +593,19 @@ defmodule Janitor do
   ## Logging Helpers
   #
   def log_orphan_rc(orphan_rc, opts) when is_list(opts) do
-    Logger.info(["opts: ", inspect(opts, pretty: true)])
     log = get_in(opts, [:orphan, :log]) || false
 
     case orphan_rc do
-      {:orphan, {:ok, %{name: name, refid: refid}}} ->
+      {:orphan, {:ok, %{refid: refid}}} ->
         log &&
           Logger.warn([
-            "orphaned ",
-            inspect(name),
-            " refid ",
+            "orphaned refid ",
             inspect(refid, pretty: true)
           ])
 
-      {:orphan, {_, %{name: name, refid: refid}} = cmd_rc} ->
+      {:orphan, {_, %{}} = cmd_rc} ->
         Logger.warn([
-          "orphaned ",
-          inspect(name),
-          " refid ",
-          inspect(refid, pretty: true),
-          " with a problem:  ",
+          "orphaned with a problem:  ",
           inspect(cmd_rc, pretty: true)
         ])
 
