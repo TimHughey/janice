@@ -85,13 +85,6 @@ config :mcp, Fact.Influx,
   scheme: "http",
   writer: Instream.Writer.Line
 
-config :mcp, Repo,
-  username: "jan_test",
-  password: "jan_test",
-  database: "jan_test",
-  hostname: "live.db.wisslanding.com",
-  pool_size: 10
-
 config :mcp, PulseWidthCmd,
   orphan: [
     at_startup: true,
@@ -105,6 +98,13 @@ config :mcp, PulseWidthCmd,
     older_than: [days: 30],
     log: false
   ]
+
+config :mcp, Repo,
+  username: "jan_test",
+  password: "jan_test",
+  database: "jan_test",
+  hostname: "live.db.wisslanding.com",
+  pool_size: 10
 
 config :mcp, Switch.Command,
   # NOTE:  older_than lists are passed to Timex to create a

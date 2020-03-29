@@ -22,8 +22,9 @@ defmodule Janitor do
       def janitor_opts,
         do:
           :sys.get_state(unquote(__MODULE__))
+          |> Map.get(:mods, %{})
+          |> Map.get(__MODULE__, %{})
           |> Map.get(:opts, [])
-          |> Map.get(__MODULE__, [])
 
       def janitor_opts(new_opts) when is_list(new_opts) do
         GenServer.call(
@@ -40,12 +41,19 @@ defmodule Janitor do
         {:acked, {:ok, cmd}}
       end
 
-      def orphan_list do
+      def orphan_list(opts \\ []) when is_list(opts) do
         import Ecto.Query, only: [from: 2]
         import Janice.TimeSupport, only: [utc_shift_past: 1]
 
+        # sent before passed as an option will override the app env config
+        # if not passed in then grab it from the config
+        # finally, as a last resort use the hardcoded value
         sent_before_opts =
-          orphan_config() |> Keyword.get(:sent_before, seconds: 31)
+          Keyword.get(
+            opts,
+            :sent_before,
+            orphan_config(:sent_before, seconds: 31)
+          )
 
         before = utc_shift_past(sent_before_opts)
 
@@ -60,7 +68,9 @@ defmodule Janitor do
       #
       ## Config
       #
-      def orphan_config, do: config(:orphan)
+      def orphan_config(key, defs) when is_atom(key),
+        do: config(:orphan) |> Keyword.get(key, defs)
+
       def purge_config, do: config(:purge)
 
       #
@@ -181,6 +191,7 @@ defmodule Janitor do
   ## GenServer callbacks
   #
 
+  # update Janitor opts
   def handle_call(
         %{action: :update_opts, opts: new_opts},
         _from,
@@ -194,6 +205,29 @@ defmodule Janitor do
 
     {:reply, {:ok, [was: was_rc, is: is_rc]},
      %{s | opts: new_opts, opts_vsn: Ecto.UUID.generate()}}
+  end
+
+  # update module which used Janitor
+  def handle_call(
+        %{action: :update_opts, mod: update_mod, opts: new_opts},
+        _from,
+        %{mods: mods, opts: _opts} = s
+      ) do
+    keys_to_return = Keyword.keys(new_opts)
+
+    with %{track: _, opts: opts} = mod <- Map.get(mods, update_mod),
+         new_opts <- DeepMerge.deep_merge(opts, new_opts),
+         was_rc <- Keyword.take(opts, keys_to_return),
+         is_rc <- Keyword.take(new_opts, keys_to_return),
+         mods <- %{
+           mods
+           | mod => %{mod | opts: new_opts, opts_vsn: Ecto.UUID.generate()}
+         } do
+      {:reply, {:ok, [was: was_rc, is: is_rc]}, %{s | mods: mods}}
+    else
+      _anything ->
+        {:reply, {:failed, %{mod: update_mod, mods: mods}}}
+    end
   end
 
   def handle_call({:counts, _opts}, _from, %{counts: counts} = s),

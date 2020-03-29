@@ -62,10 +62,8 @@ defmodule JanitorTest do
     opts = Janitor.opts()
 
     assert is_list(opts)
-    assert Keyword.has_key?(opts, :switch_cmds)
     assert Keyword.has_key?(opts, :log)
     assert Keyword.has_key?(opts, :metrics_frequency)
-    assert Keyword.has_key?(opts, :orphan_acks)
   end
 
   test "the truth will set you free" do

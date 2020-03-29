@@ -60,6 +60,7 @@ defmodule Switch.Command do
 
     with {:cmd, %Command{sent_at: sent_at} = cmd} <- {:cmd, find_refid(refid)},
          latency <- Timex.diff(recv_dt, sent_at, :microsecond),
+         _ignore <- record_cmd_rt_metric(cmd, latency),
          changes <- [rt_latency_us: latency] ++ changes,
          {:ok, %Command{} = cmd} <- update(cmd, changes) |> untrack() do
       #
@@ -195,6 +196,20 @@ defmodule Switch.Command do
       else: {:invalid_changes, cs}
   end
 
+  defp record_cmd_rt_metric(%Command{sw_alias: device}, latency) do
+    alias Fact.RunMetric
+
+    RunMetric.record(
+      module: "#{__MODULE__}",
+      metric: "sw_cmd_rt_latency_us",
+      device: device,
+      val: latency
+    )
+  end
+
+  #
+  ## Changeset Helpers
+  #
   defp cast_changes,
     do: [:sw_alias, :acked, :orphan, :refid, :rt_latency_us, :sent_at, :ack_at]
 

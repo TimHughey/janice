@@ -207,6 +207,13 @@ defmodule SwitchCommandTest do
     assert is_list(list)
   end
 
+  test "can get Janitor opts specific to Switch.Command" do
+    opts = Command.janitor_opts()
+
+    assert is_list(opts)
+    assert Keyword.has_key?(opts, :orphan)
+  end
+
   @tag sd_num: 2
   @tag insert: true
   test "can get list of orphans (at least one)", %{
@@ -224,9 +231,9 @@ defmodule SwitchCommandTest do
     assert length(sd.cmds)
     assert is_binary(hd(sd.cmds) |> Map.get(:refid))
 
-    Process.sleep(1200)
+    Process.sleep(10)
 
-    list = Command.orphan_list()
+    list = Command.orphan_list(sent_before: [milliseconds: 9])
 
     assert is_list(list)
     assert length(list) >= 1
