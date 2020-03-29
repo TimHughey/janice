@@ -17,7 +17,7 @@ defmodule Switch.Alias do
   import Janice.Common.DB, only: [name_regex: 0]
 
   # alias Janice.TimeSupport
-  alias Switch.{Alias, Device}
+  alias Switch.{Alias, Command, Device}
 
   @timestamps_opts [type: :utc_datetime_usec]
 
@@ -108,6 +108,7 @@ defmodule Switch.Alias do
         Device.record_cmd(sd, sa, cmd_map: cmd_map)
     end
     |> invert_position_if_needed(sa)
+    |> Command.ack_immediate_if_needed(opts)
   end
 
   def preload(sa, opts \\ [preload: true])

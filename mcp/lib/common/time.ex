@@ -18,6 +18,10 @@ defmodule Janice.TimeSupport do
 
   def duration(_anything), do: 0
 
+  def duration_invert(opts) when is_list(opts) do
+    duration(opts) |> Duration.invert()
+  end
+
   def duration_ms(opts) when is_list(opts),
     do: duration(opts) |> Duration.to_milliseconds(truncate: true)
 
@@ -84,6 +88,9 @@ defmodule Janice.TimeSupport do
   def utc_shift(%Duration{} = d), do: utc_now() |> Timex.shift(duration: d)
 
   def utc_shift(_anything), do: utc_now()
+
+  def utc_shift_past(opts) when is_list(opts),
+    do: utc_now() |> Timex.shift(duration: duration_invert(opts))
 
   defp valid_duration_opts,
     do: [

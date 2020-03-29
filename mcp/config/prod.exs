@@ -95,12 +95,42 @@ config :mcp, Fact.Influx,
   scheme: "http",
   writer: Instream.Writer.Line
 
+config :mcp, PulseWidthCmd,
+  orphan: [
+    at_startup: true,
+    sent_before: [seconds: 1],
+    older_than: [minutes: 1],
+    log: false
+  ],
+  purge: [
+    at_startup: true,
+    interval: [minutes: 2],
+    older_than: [days: 30],
+    log: false
+  ]
+
 config :mcp, Repo,
   database: "jan_prod",
   username: "jan_prod",
   password: "** set in prod.secret.exs",
   hostname: "** set in prod.secret.exs",
   pool_size: 20
+
+config :mcp, Switch.Command,
+  # NOTE:  older_than lists are passed to Timex to create a
+  #        shifted DateTime in UTC
+  orphan: [
+    at_startup: true,
+    sent_before: [seconds: 12],
+    older_than: [minutes: 1],
+    log: false
+  ],
+  purge: [
+    at_startup: true,
+    interval: [minutes: 2],
+    older_than: [days: 30],
+    log: false
+  ]
 
 run_strategy = {Quantum.RunStrategy.All, [:"mcp-prod@jophiel.wisslanding.com"]}
 

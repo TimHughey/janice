@@ -16,8 +16,7 @@ defmodule Janitor do
 
       def config(key) when is_atom(key),
         do:
-          Application.get_application(__MODULE__)
-          |> Application.get_env(__MODULE__)
+          Application.get_env(:mcp, __MODULE__)
           |> Keyword.get(key, [])
 
       def janitor_opts,
@@ -41,6 +40,25 @@ defmodule Janitor do
         {:acked, {:ok, cmd}}
       end
 
+      def orphan_list do
+        import Ecto.Query, only: [from: 2]
+        import Janice.TimeSupport, only: [utc_shift_past: 1]
+
+        sent_before_opts =
+          orphan_config() |> Keyword.get(:sent_before, seconds: 31)
+
+        before = utc_shift_past(sent_before_opts)
+
+        from(x in __MODULE__,
+          where:
+            x.acked == false and x.orphan == false and x.inserted_at <= ^before
+        )
+        |> Repo.all()
+      end
+
+      #
+      ## Config
+      #
       def orphan_config, do: config(:orphan)
       def purge_config, do: config(:purge)
 
@@ -62,6 +80,10 @@ defmodule Janitor do
           else: GenServer.cast(unquote(__MODULE__), msg)
 
         cmd
+      end
+
+      def track_list(cmds) when is_list(cmds) do
+        for cmd <- cmds, do: track(cmd)
       end
 
       # NOTE:  callers of this function will receive whatever was passed
@@ -111,9 +133,7 @@ defmodule Janitor do
   def start_link(s) do
     defs = []
 
-    opts =
-      Application.get_application(__MODULE__)
-      |> Application.get_env(__MODULE__, defs)
+    opts = Application.get_env(:mcp, __MODULE__, defs)
 
     # setup the overall state with the necessary keys so we can pattern
     # match in handle_* functions
@@ -229,10 +249,32 @@ defmodule Janitor do
         {:startup},
         %{opts: _opts, mods: _mods, starting_up: true} = s
       ) do
-    Process.flag(:trap_exit, true)
+    check_mods = startup_orphan_check_modules()
 
-    {:noreply, schedule_metrics(s) |> Map.put(:starting_up, false)}
+    {:noreply, schedule_metrics(s),
+     {:continue, {:startup_orphan_check, check_mods}}}
   end
+
+  def handle_continue(
+        {:startup_orphan_check, _empty_list = []},
+        %{opts: _opts, mods: _mods, starting_up: true} = s
+      ) do
+    {:noreply, s, {:continue, {:startup_complete}}}
+  end
+
+  def handle_continue(
+        {:startup_orphan_check, [check_mod | rest]},
+        %{opts: _opts, mods: _mods, starting_up: true} = s
+      )
+      when is_atom(check_mod) do
+    orphans = apply(check_mod, :orphan_list, [])
+    apply(check_mod, :track_list, [orphans])
+
+    {:noreply, s, {:continue, {:startup_orphan_check, rest}}}
+  end
+
+  def handle_continue({:startup_complete}, %{starting_up: true} = s),
+    do: {:noreply, %{s | starting_up: false}}
 
   def handle_continue(
         {:track, %{cmd: %{refid: refid} = cmd, mod: mod, opts: opts}, :mod_ok},
@@ -460,8 +502,7 @@ defmodule Janitor do
   defp increment_count({_rc, _res}, s, _orphans), do: s
 
   defp make_mod_maps do
-    {:ok, all_mods} =
-      Application.get_application(__MODULE__) |> :application.get_key(:modules)
+    {:ok, all_mods} = :application.get_key(:mcp, :modules)
 
     for m <- all_mods,
         function_exported?(m, :want_janitorial_services, 0),
@@ -503,6 +544,18 @@ defmodule Janitor do
     end
 
     s
+  end
+
+  defp startup_orphan_check_modules do
+    has_config? = fn
+      x when is_list(x) -> get_in(x, [:orphan, :at_startup])
+      _x -> false
+    end
+
+    for {k, v} <- Application.get_all_env(:mcp),
+        is_list(v),
+        has_config?.(v),
+        do: k
   end
 
   #

@@ -17,6 +17,62 @@ defmodule SwitchAliasTest do
     setup_context(context)
   end
 
+  @moduletag :switch_alias
+  setup_all do
+    # test aliases are setup for each test individually
+    :ok
+  end
+
+  @tag alias_num: 1
+  @tag add_alias: true
+  test "can add a new alias", %{
+    sa: {sa_rc, sa}
+  } do
+    assert sa_rc == :ok
+    assert %Alias{} = sa
+  end
+
+  @tag alias_num: 2
+  @tag add_alias: true
+  test "can get and set the position of an Alias",
+       %{alias_name: name, sa: {_rc, sa}} = r do
+    {rc1, initial_pos} = Alias.position(name)
+    assert rc1 == :ok
+
+    {rc2, res} = Alias.position(name, position: not initial_pos)
+    assert rc2 == :pending
+    assert is_list(res)
+    assert is_binary(Keyword.get(res, :refid))
+
+    ack_map = %{
+      refid: Keyword.get(res, :refid),
+      pio: Map.get(sa, :pio),
+      position: not initial_pos
+    }
+
+    {ack_rc, _res} = SwitchCommandTest.simulate_cmd_ack(r, ack_map)
+
+    assert ack_rc == :ok
+  end
+
+  @tag alias_num: 3
+  @tag add_alias: true
+  test "can get and set the position of an Alias without mcr remote ack",
+       %{alias_name: name, sa: {_rc, _sa}} = _r do
+    {rc1, initial_pos} = Alias.position(name)
+    assert rc1 == :ok
+
+    {rc2, res} = Alias.position(name, position: not initial_pos, ack: false)
+    assert rc2 == :pending
+    assert is_list(res)
+
+    refid = Keyword.get(res, :refid)
+    assert is_binary(refid)
+
+    # because ack: false the command should be acked
+    assert Switch.Command.acked?(refid) == true
+  end
+
   defp add_alias(%{
          add_alias: true,
          name: name,
@@ -119,48 +175,5 @@ defmodule SwitchAliasTest do
      alias_pio: alias_pio,
      initial_pos: initial_pos,
      sa: sa_res}
-  end
-
-  @moduletag :switch_alias
-  setup_all do
-    # new_sws = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 99]
-    #
-    # for s <- new_sws do
-    #   create_switch(s, 8, false)
-    # end
-
-    :ok
-  end
-
-  @tag alias_num: 1
-  @tag add_alias: true
-  test "can add a new alias", %{
-    sa: {sa_rc, sa}
-  } do
-    assert sa_rc == :ok
-    assert %Alias{} = sa
-  end
-
-  @tag alias_num: 2
-  @tag add_alias: true
-  test "can get the position of an Alias",
-       %{alias_name: name, sa: {_rc, sa}} = r do
-    {rc1, initial_pos} = Alias.position(name)
-    assert rc1 == :ok
-
-    {rc2, res} = Alias.position(name, position: not initial_pos)
-    assert rc2 == :pending
-    assert is_list(res)
-    assert is_binary(Keyword.get(res, :refid))
-
-    ack_map = %{
-      refid: Keyword.get(res, :refid),
-      pio: Map.get(sa, :pio),
-      position: not initial_pos
-    }
-
-    {ack_rc, _res} = SwitchCommandTest.simulate_cmd_ack(r, ack_map)
-
-    assert ack_rc == :ok
   end
 end

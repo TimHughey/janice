@@ -45,7 +45,7 @@ defmodule Switch.Command do
   # the single parameter is the reading that has been processed by
   # Device.upsert/1
 
-  # the return from this function is the reading passed in unchanged
+  # this function returns the reading passed in unchanged
   def ack_if_needed(
         %{
           cmdack: true,
@@ -100,11 +100,32 @@ defmodule Switch.Command do
     unhandled
   end
 
-  def ack_now(refid, opts \\ []) do
-    %{cmdack: true, refid: refid, msg_recv_dt: utc_now()}
-    |> Map.merge(Enum.into(opts, %{}))
-    |> ack_if_needed()
+  def ack_immediate_if_needed({:pending, res} = rc, opts)
+      when is_list(res) and is_list(opts) do
+    #
+    # if ack: false (mcr expected to ack) then immediately ack
+    #
+    unless Keyword.get(opts, :ack, true) do
+      cmd = Keyword.get(res, :refid) |> find_refid()
+
+      if cmd do
+        %Command{device: sd, refid: refid} = cmd
+
+        %{
+          cmdack: true,
+          refid: refid,
+          msg_recv_dt: utc_now(),
+          processed: {:ok, sd}
+        }
+        |> Map.merge(Enum.into(opts, %{}))
+        |> ack_if_needed()
+      end
+    end
+
+    rc
   end
+
+  def ack_immediate_if_needed(rc, _opts), do: rc
 
   def add(%Device{} = sd, sw_alias, %DateTime{} = dt)
       when is_binary(sw_alias) do
@@ -117,8 +138,10 @@ defmodule Switch.Command do
     |> track()
   end
 
-  def find_refid(refid),
+  def find_refid(refid) when is_binary(refid),
     do: Repo.get_by(__MODULE__, refid: refid) |> Repo.preload([:device])
+
+  def find_refid(nil), do: nil
 
   def log?(%Command{log_opts: %__MODULE__.LogOpts{log: log}}), do: log
 

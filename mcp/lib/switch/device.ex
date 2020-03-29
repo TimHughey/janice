@@ -207,31 +207,25 @@ defmodule Switch.Device do
 
     sd = reload(sd)
 
-    with %{state: state, pio: pio} <-
-           Keyword.get(opts, :cmd_map, {:bad_args, opts}),
+    cmd_map = Keyword.get(opts, :cmd_map, {:bad_args, opts})
+
+    with %{state: state, pio: pio} <- cmd_map,
+         # add the command and pass initial_opts which may contain ack: false
          {:ok, %Device{device: device} = sd} <-
            add_cmd(sd, sw_alias, utc_now()),
          # NOTE: add_cmd/3 returns the Device with the new Command preloaded
          {:cmd, %Command{refid: refid} = cmd} <- {:cmd, hd(sd.cmds)},
          {:refid, true} <- {:refid, is_binary(refid)},
-         {:publish, true} <- {:publish, publish} do
-      rc =
-        SetSwitch.new_cmd(device, %{pio: pio, state: state}, refid, opts)
-        |> publish_cmd()
-
-      log?(sd) &&
-        Logger.info([
-          "record_cmd() rc: ",
-          inspect(rc, pretty: true),
-          "cmd: ",
-          inspect(cmd, pretty: true)
-        ])
-
+         {:publish, true} <- {:publish, publish},
+         state_map <- %{pio: pio, state: state},
+         msg <- SetSwitch.new_cmd(device, state_map, refid, opts),
+         pub_rc <- publish_cmd(msg),
+         _ignore <- log_record_cmd({sd, pub_rc, cmd}) do
       {:pending,
        [
          position: state,
          refid: refid,
-         pub_rc: rc
+         pub_rc: pub_rc
        ]}
     else
       error ->
@@ -432,6 +426,22 @@ defmodule Switch.Device do
         )
     )
   end
+
+  #
+  ## Logging
+  #
+  defp log_record_cmd({%Device{} = sd, rc, cmd}) do
+    log?(sd) &&
+      Logger.info([
+        "record_cmd() rc: ",
+        inspect(rc, pretty: true),
+        "cmd: ",
+        inspect(cmd, pretty: true)
+      ])
+  end
+
+  defp log_record_cmd(anything),
+    do: Logger.warn(["bad args: ", inspect(anything, pretty: true)])
 
   #
   # Changeset Functions

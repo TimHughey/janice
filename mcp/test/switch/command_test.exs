@@ -6,7 +6,7 @@ defmodule SwitchCommandTest do
   # import ExUnit.CaptureLog
 
   alias Janice.TimeSupport
-  alias Switch.Device
+  alias Switch.{Command, Device}
 
   setup do
     :ok
@@ -199,6 +199,37 @@ defmodule SwitchCommandTest do
 
     assert rc == :ok
     assert %Device{} = res
+  end
+
+  test "can get list (even if empty) of orphans" do
+    list = Command.orphan_list()
+
+    assert is_list(list)
+  end
+
+  @tag sd_num: 2
+  @tag insert: true
+  test "can get list of orphans (at least one)", %{
+    r: _r,
+    sd: {_rc, %Device{last_cmd_at: _last_cmd_at} = sd}
+  } do
+    {rc, sd} = Device.add_cmd(sd, "cmd_test", TimeSupport.utc_now())
+
+    assert rc == :ok
+    assert %Device{} = sd
+
+    sd = Device.reload(sd)
+
+    assert Ecto.assoc_loaded?(sd.cmds)
+    assert length(sd.cmds)
+    assert is_binary(hd(sd.cmds) |> Map.get(:refid))
+
+    Process.sleep(1200)
+
+    list = Command.orphan_list()
+
+    assert is_list(list)
+    assert length(list) >= 1
   end
 
   test "the truth will set you free" do
