@@ -123,7 +123,7 @@ config :mcp, Switch.Command,
     at_startup: true,
     sent_before: [seconds: 12],
     older_than: [minutes: 1],
-    log: false
+    log: true
   ],
   purge: [
     at_startup: true,
