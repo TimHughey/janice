@@ -272,13 +272,11 @@ defmodule Janitor do
         %{opts: _opts, mods: _mods, starting_up: true} = s
       )
       when is_atom(check_mod) do
-    log?(s, :init) &&
-      Logger.info(["checking ", inspect(check_mod), " for orphans"])
-
-    orphans = apply(check_mod, :orphan_list, [])
-
-    log?(s, :init) &&
-      Logger.info(["found orphans: ", inspect(orphans, pretty: true)])
+    #
+    # invoke the module to generate a possible orphan list
+    orphans =
+      apply(check_mod, :orphan_list, [])
+      |> log_startup_possible_orphans(check_mod, s)
 
     apply(check_mod, :track_list, [orphans])
 
@@ -413,16 +411,7 @@ defmodule Janitor do
          new_state <- increment_count(orphan_rc, s) |> Map.put(mod, mod_map) do
       {:noreply, new_state}
     else
-      {:refid, :not_tracked} = rc ->
-        Logger.info([
-          "possible_orphan() ",
-          inspect(mod),
-          " ",
-          inspect(rc, pretty: true),
-          " ",
-          inspect(refid, pretty: true)
-        ])
-
+      {:refid, :not_tracked} ->
         {:noreply, s}
     end
   end
@@ -621,5 +610,45 @@ defmodule Janitor do
     end
 
     orphan_rc
+  end
+
+  defp log_startup_possible_orphans(orphans, check_mod, %{opts: _opts} = s)
+       when is_list(orphans) do
+    orphan_count = Enum.count(orphans)
+
+    cond do
+      orphan_count > 0 ->
+        log?(s, :init) && orphan_count > 0 &&
+          Logger.info([
+            "detected ",
+            inspect(orphan_count),
+            " possible orphan(s) for ",
+            inspect(check_mod)
+          ])
+
+      orphan_count == 0 ->
+        Logger.info([
+          "no possible orphans detected for ",
+          inspect(check_mod)
+        ])
+
+      true ->
+        true
+    end
+
+    # return the orphans passed in for pipeline use
+    orphans
+  end
+
+  defp log_startup_possible_orphans(anything, check_mod, %{opts: _opts} = s) do
+    log?(s, :init) &&
+      Logger.warn([
+        inspect(check_mod),
+        " should be an orphan list: ",
+        inspect(anything, pretty: true)
+      ])
+
+    # return an empty list to prevent pipeline failure
+    []
   end
 end
