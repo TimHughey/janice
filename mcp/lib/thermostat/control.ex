@@ -25,7 +25,7 @@ defmodule Thermostat.Control do
 
   def confirm_switch_position(
         %Thermostat{name: name, switch: switch},
-        {:ok, sw_pos},
+        {:ok, sw_pos} = rc,
         state_pos
       )
       when is_boolean(sw_pos) and sw_pos != state_pos do
@@ -33,7 +33,11 @@ defmodule Thermostat.Control do
       inspect(name),
       " switch ",
       inspect(switch),
-      " does not match state, force attempted"
+      " ",
+      inspect(sw_pos, pretty: true),
+      " != ",
+      inspect(rc, pretty: true),
+      " (force attempted)"
     ])
 
     Switch.Alias.position(switch,
