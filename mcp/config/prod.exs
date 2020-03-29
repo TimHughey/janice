@@ -100,13 +100,13 @@ config :mcp, PulseWidthCmd,
     at_startup: true,
     sent_before: [seconds: 1],
     older_than: [minutes: 1],
-    log: false
+    log: true
   ],
   purge: [
     at_startup: true,
     interval: [minutes: 2],
     older_than: [days: 30],
-    log: false
+    log: true
   ]
 
 config :mcp, Repo,
@@ -166,7 +166,5 @@ config :mcp, Mcp.SoakTest,
   periodic_log_first: {:mins, 30},
   periodic_log: {:hrs, 1},
   flash_led: {:secs, 3}
-
-config :mcp, Switch, logCmdAck: false
 
 import_config "prod.secret.exs"
