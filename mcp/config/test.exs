@@ -92,12 +92,11 @@ config :mcp, Repo,
   hostname: "live.db.wisslanding.com",
   pool_size: 10
 
-config :mcp, Switch.Command,
-  # NOTE:  older_than lists are passed to Timex to create a
-  #        shifted DateTime in UTC
+config :mcp, PulseWidthCmd,
   orphan: [
     at_startup: true,
     sent_before: [seconds: 1],
+    older_than: [minutes: 1],
     log: false
   ],
   purge: [
@@ -105,6 +104,21 @@ config :mcp, Switch.Command,
     interval: [minutes: 2],
     older_than: [days: 30],
     log: false
+  ]
+
+config :mcp, Switch.Command,
+  # NOTE:  older_than lists are passed to Timex to create a
+  #        shifted DateTime in UTC
+  orphan: [
+    at_startup: true,
+    sent_before: [seconds: 1],
+    log: true
+  ],
+  purge: [
+    at_startup: true,
+    interval: [minutes: 2],
+    older_than: [days: 30],
+    log: true
   ]
 
 config :mcp, Janice.Scheduler,

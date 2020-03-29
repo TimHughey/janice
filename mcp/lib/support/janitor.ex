@@ -51,7 +51,8 @@ defmodule Janitor do
 
         from(x in __MODULE__,
           where:
-            x.acked == false and x.orphan == false and x.inserted_at <= ^before
+            x.acked == false and x.orphan == false and x.inserted_at <= ^before,
+          preload: [:device]
         )
         |> Repo.all()
       end
@@ -117,6 +118,9 @@ defmodule Janitor do
     GenServer.cast(__MODULE__, {:empty_trash, trash, opts})
   end
 
+  def log?(%{opts: opts}, category) when is_atom(category),
+    do: Keyword.get(opts, :log, []) |> Keyword.get(category, true)
+
   def opts, do: :sys.get_state(__MODULE__) |> Map.get(:opts, [])
 
   def opts(new_opts) when is_list(new_opts) do
@@ -157,10 +161,8 @@ defmodule Janitor do
 
   # when autostart is true leverage handle_continue() to complete
   # startup activities
-  def init(%{autostart: autostart, opts: opts} = s) do
-    log = get_in(opts, [:log, :init]) || false
-
-    log && Logger.info(["init(): ", inspect(s, pretty: true)])
+  def init(%{autostart: autostart, opts: _opts} = s) do
+    log?(s, :init) && Logger.info(["init(): ", inspect(s, pretty: true)])
 
     if autostart == true do
       Process.flag(:trap_exit, true)
@@ -171,8 +173,9 @@ defmodule Janitor do
     end
   end
 
-  def terminate(reason, _state) do
-    Logger.info(["terminating with reason ", inspect(reason, pretty: true)])
+  def terminate(reason, s) do
+    log?(s, :init) &&
+      Logger.info(["terminating with reason ", inspect(reason, pretty: true)])
   end
 
   #
@@ -251,6 +254,9 @@ defmodule Janitor do
       ) do
     check_mods = startup_orphan_check_modules()
 
+    log?(s, :init) &&
+      Logger.info(["will check ", inspect(check_mods), " for orphans"])
+
     {:noreply, schedule_metrics(s),
      {:continue, {:startup_orphan_check, check_mods}}}
   end
@@ -267,14 +273,23 @@ defmodule Janitor do
         %{opts: _opts, mods: _mods, starting_up: true} = s
       )
       when is_atom(check_mod) do
+    log?(s, :init) &&
+      Logger.info(["checking ", inspect(check_mod), " for orphans"])
+
     orphans = apply(check_mod, :orphan_list, [])
+
+    log?(s, :init) &&
+      Logger.info(["found orphans: ", inspect(orphans, pretty: true)])
+
     apply(check_mod, :track_list, [orphans])
 
     {:noreply, s, {:continue, {:startup_orphan_check, rest}}}
   end
 
-  def handle_continue({:startup_complete}, %{starting_up: true} = s),
-    do: {:noreply, %{s | starting_up: false}}
+  def handle_continue({:startup_complete}, %{starting_up: true} = s) do
+    log?(s, :init) && Logger.info(["startup complete"])
+    {:noreply, %{s | starting_up: false}}
+  end
 
   def handle_continue(
         {:track, %{cmd: %{refid: refid} = cmd, mod: mod, opts: opts}, :mod_ok},
@@ -331,9 +346,18 @@ defmodule Janitor do
   end
 
   # the module was not found in the Janitor's state
-  def handle_continue({action, _msg, :error}, s)
-      when action in [:track, :untrack],
-      do: {:noreply, s}
+  def handle_continue({action, msg, :error}, s)
+      when action in [:track, :untrack] do
+    Logger.error([
+      "handle_continue(",
+      inspect(action),
+      ", ",
+      inspect(msg, pretty: true),
+      ")"
+    ])
+
+    {:noreply, s}
+  end
 
   def handle_continue(catchall, s) do
     Logger.warn(["handle_continue(catchall): ", inspect(catchall, pretty: true)])
@@ -562,6 +586,7 @@ defmodule Janitor do
   ## Logging Helpers
   #
   def log_orphan_rc(orphan_rc, opts) when is_list(opts) do
+    Logger.info(["opts: ", inspect(opts, pretty: true)])
     log = get_in(opts, [:orphan, :log]) || false
 
     case orphan_rc do
