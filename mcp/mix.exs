@@ -25,7 +25,7 @@ defmodule Mcp.Mixfile do
   def project do
     [
       app: :mcp,
-      version: "0.1.62",
+      version: "0.1.64",
       elixir: "~> 1.10",
       deps: deps(),
       releases: releases(),
@@ -135,6 +135,7 @@ defmodule Mcp.Mixfile do
 
   defp args do
     [
+      version: "#{project() |> Keyword.get(:version)}",
       build_env: "#{Mix.env()}",
       git_vsn: "#{git_describe()}"
     ]

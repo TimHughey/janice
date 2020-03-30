@@ -5,6 +5,7 @@ defmodule Janitor do
   use GenServer
   use Timex
 
+  use Config.Helper
   import Process, only: [send_after: 3]
   import Janice.TimeSupport, only: [duration_ms: 1]
 
@@ -12,12 +13,8 @@ defmodule Janitor do
 
   defmacro __using__(_opts) do
     quote do
+      use Config.Helper
       import Janice.TimeSupport, only: [utc_now: 0]
-
-      def config(key) when is_atom(key),
-        do:
-          Application.get_env(:mcp, __MODULE__)
-          |> Keyword.get(key, [])
 
       def janitor_opts do
         from_config = Application.get_env(:mcp, __MODULE__)
@@ -136,9 +133,6 @@ defmodule Janitor do
     GenServer.cast(__MODULE__, {:empty_trash, trash, opts})
   end
 
-  def log?(%{opts: opts}, category) when is_atom(category),
-    do: Keyword.get(opts, :log, []) |> Keyword.get(category, true)
-
   def opts, do: :sys.get_state(__MODULE__) |> Map.get(:opts, [])
 
   def opts(new_opts) when is_list(new_opts) do
@@ -179,7 +173,7 @@ defmodule Janitor do
   # when autostart is true leverage handle_continue() to complete
   # startup activities
   def init(%{autostart: autostart, opts: _opts} = s) do
-    log?(s, :init) && Logger.info(["init(): ", inspect(s, pretty: true)])
+    log?(s, :init_args) && Logger.info(["init(): ", inspect(s, pretty: true)])
 
     if autostart == true do
       Process.flag(:trap_exit, true)
@@ -670,7 +664,7 @@ defmodule Janitor do
 
       orphan_count == 0 ->
         Logger.info([
-          "no possible orphans detected for ",
+          "no orphans detected for ",
           inspect(check_mod)
         ])
 

@@ -33,11 +33,11 @@ config :mcp, Janice.Scheduler,
   run_strategy: Quantum.RunStrategy.Local,
   timezone: "America/New_York"
 
-config(:mcp, Janitor,
-  # modules to call at startup (typically to purge cmds or ack orphans)
-  log: [init: true],
+config :mcp, Janitor,
+  log: [init: true, init_args: false],
   metrics_frequency: [orphan: [minutes: 5], switch_cmd: [minutes: 5]]
-)
+
+config :mcp, Janitor.Supervisor, log: [init: true, init_args: false]
 
 config :mcp, MessageSave,
   log: [init: false],

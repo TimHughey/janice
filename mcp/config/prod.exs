@@ -17,6 +17,7 @@ config :mcp,
   # listed in startup order
   sup_tree: [
     {Repo, []},
+    {Janitor.Supervisor, %{autostart: true}},
     :core_supervisors,
     # TODO: once the Supervisors below are implemented remove the following
     #       specific list of supervisors
@@ -37,9 +38,7 @@ config :mcp,
     {Fact.Supervisor, %{}},
     {Mqtt.Supervisor, %{autostart: true}}
   ],
-  support_workers: [
-    {Janitor, %{autostart: true}}
-  ],
+  support_workers: [],
   worker_supervisors: [
     # DynamicSupervisors
     {Dutycycle.Supervisor, %{start_workers: true}},

@@ -17,6 +17,7 @@ config :mcp,
   # listed in startup order
   sup_tree: [
     {Repo, []},
+    {Janitor.Supervisor, %{autostart: true}},
     :core_supervisors,
     # TODO: once the Supervisors below are implemented remove the following
     #       specific list of supervisors
@@ -38,7 +39,7 @@ config :mcp,
     {Mqtt.Supervisor, %{autostart: true}}
   ],
   support_workers: [
-    {Janitor, %{autostart: true}}
+    # {Janitor, %{autostart: true}}
   ],
   worker_supervisors: [
     # DynamicSupervisors
@@ -89,8 +90,7 @@ config :mcp, PulseWidthCmd,
   orphan: [
     at_startup: true,
     sent_before: [seconds: 1],
-    older_than: [minutes: 1],
-    log: false
+    log: true
   ],
   purge: [
     at_startup: true,
@@ -115,7 +115,7 @@ config :mcp, Switch.Command,
   ],
   purge: [
     at_startup: true,
-    interval: [minutes: 2],
+    schedule: {:extended, "33 */3 * * *"},
     older_than: [days: 30],
     log: true
   ]
@@ -125,7 +125,7 @@ config :mcp, Janice.Scheduler,
     # Every minute
     {:touch,
      [
-       schedule: {:cron, "* * * * *"},
+       schedule: {:extended, "* * * * *"},
        task: {Janice.Jobs, :touch_file, ["/tmp/janice-test.touch"]},
        run_strategy: Quantum.RunStrategy.Local
      ]}

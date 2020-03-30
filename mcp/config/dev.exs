@@ -22,6 +22,7 @@ config :mcp,
   # listed in startup order
   sup_tree: [
     {Repo, []},
+    {Janitor.Supervisor, %{autostart: true}},
     :core_supervisors,
     # TODO: once the Supervisors below are implemented remove the following
     #       specific list of supervisors
@@ -42,9 +43,7 @@ config :mcp,
     {Fact.Supervisor, %{log: [init: false]}},
     {Mqtt.Supervisor, %{autostart: true}}
   ],
-  support_workers: [
-    {Janitor, %{autostart: true}}
-  ],
+  support_workers: [],
   worker_supervisors: [
     # DynamicSupervisors
     {Dutycycle.Supervisor, %{start_workers: false}},
@@ -94,6 +93,19 @@ config :mcp, Mqtt.Client,
 config :mcp, Mqtt.Inbound,
   additional_message_flags: [
     switch_redesign: true
+  ]
+
+config :mcp, PulseWidthCmd,
+  orphan: [
+    at_startup: true,
+    sent_before: [seconds: 10],
+    log: true
+  ],
+  purge: [
+    at_startup: true,
+    interval: [minutes: 2],
+    older_than: [days: 30],
+    log: false
   ]
 
 config :mcp, Repo,
