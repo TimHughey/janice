@@ -128,7 +128,7 @@ config :mcp, Switch.Command,
     at_startup: true,
     interval: [minutes: 2],
     older_than: [days: 30],
-    log: false
+    log: true
   ]
 
 run_strategy = {Quantum.RunStrategy.All, [:"mcp-prod@jophiel.wisslanding.com"]}

@@ -1,3 +1,0 @@
-2,main grow,production,t,i2c_am2315,ts_chamber1_sec,80,shroom1_heat,20000,i2c_am2315,93,shroom1_stir,0.5,shroom1_fresh_air,3240000,360000,2017-04-09 15:08:04.849271,2017-04-09 15:08:04.849336,15000,shroom1_mist,t,f,t,t,2376000,60000
-4,test chamber,-- FOR TESTING ONLY --,f,ts_shroom1,ts_curetank,85,buzzer,20000,rh_simulate,90,buzzer,0.5,buzzer,900000,600000,2017-04-21 23:25:18.965296,2017-04-21 23:25:18.965398,20000,buzzer,t,t,t,t,1200000,120000
-3,womb,dark and warm,f,ts_chamber2_pri,ts_chamber2_sec,80,shroom2_heat,15000,foobar,90,shroom2_stir,0.2,buzzer,900000,300000,2017-04-18 18:07:18.779692,2017-04-18 18:07:18.779692,30000,buzzer,t,f,f,t,1200000,120000

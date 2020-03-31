@@ -96,14 +96,15 @@ config :mcp, PulseWidthCmd,
     at_startup: true,
     interval: [minutes: 2],
     older_than: [days: 30],
-    log: false
+    log: true
   ]
 
 config :mcp, Repo,
   username: "jan_test",
   password: "jan_test",
   database: "jan_test",
-  hostname: "live.db.wisslanding.com",
+  port: 15432,
+  hostname: "test.db.wisslanding.com",
   pool_size: 10
 
 config :mcp, Switch.Command,

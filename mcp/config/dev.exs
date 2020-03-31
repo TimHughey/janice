@@ -112,8 +112,8 @@ config :mcp, Repo,
   database: "jan_dev",
   username: "jan_dev",
   password: "jan_dev",
-  # hostname: "127.0.0.1",
-  hostname: "live.db.wisslanding.com",
+  port: 15432,
+  hostname: "dev.db.wisslanding.com",
   pool_size: 10
 
 config :mcp, Switch.Command,
@@ -128,7 +128,7 @@ config :mcp, Switch.Command,
     at_startup: true,
     interval: [minutes: 2],
     older_than: [days: 30],
-    log: false
+    log: true
   ]
 
 config :mcp, Janice.Scheduler,

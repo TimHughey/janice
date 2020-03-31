@@ -9,6 +9,8 @@ defmodule Config.Helper do
         |> Keyword.get(key, [])
       end
 
+      def log?(opts) when is_list(opts), do: Keyword.get(opts, :log, true)
+
       def log?(category, default)
           when is_atom(category) and is_boolean(default) do
         Application.get_application(__MODULE__)

@@ -39,6 +39,7 @@ defmodule Janitor do
       end
 
       def orphan(%{acked: false} = cmd) do
+        cmd = reload(cmd)
         {:orphan, update(cmd, acked: true, ack_at: utc_now(), orphan: true)}
       end
 
@@ -70,13 +71,40 @@ defmodule Janitor do
         |> Repo.all()
       end
 
-      #
-      ## Config
-      #
-      def orphan_config(key, defs) when is_atom(key),
-        do: config(:orphan) |> Keyword.get(key, defs)
+      def purge(opts \\ []) when is_list(opts) do
+        opts = Keyword.merge(config(:purge) |> Keyword.get(:opts, []), opts)
 
-      def purge_config, do: config(:purge)
+        dryrun = Keyword.get(opts, :dryrun, false)
+
+        trash = purge_list(opts)
+
+        if dryrun do
+          log?(opts) &&
+            Logger.info([
+              "DRY RUN >> found ",
+              inspect(Enum.count(trash)),
+              " trash items for ",
+              inspect(__MODULE__)
+            ])
+
+          {:dryrun, [trash: trash]}
+        else
+          Janitor.empty_trash(trash, [mod: __MODULE__] ++ opts)
+          {:purge_queued, [trash: trash]}
+        end
+      end
+
+      def purge_list(opts \\ []) when is_list(opts) do
+        import Ecto.Query, only: [from: 2]
+
+        older = older_than(opts)
+
+        from(x in __MODULE__,
+          where: x.inserted_at <= ^older,
+          preload: [:device]
+        )
+        |> Repo.all()
+      end
 
       #
       # NOTE:
@@ -117,7 +145,39 @@ defmodule Janitor do
       # simply pass through anything we haven't pattern matched
       def untrack(anything), do: anything
 
+      #
+      ## Config Helpers
+      #
+      def orphan_config(key, defs) when is_atom(key),
+        do: config(:orphan) |> Keyword.get(key, defs)
+
+      def purge_config(key, defs) when is_atom(key),
+        do: config(:purge) |> Keyword.get(key, defs)
+
+      #
+      ## Janitor looks at all loaded modules for those that define
+      #  this function.  If this function exists Janitor will provide
+      #  janitorial services for that module.
       def want_janitorial_services, do: __MODULE__
+
+      #
+      ## Private
+      #
+      def older_than(opts \\ [older_than: [months: 3]]) when is_list(opts) do
+        import Janice.TimeSupport, only: [utc_shift_past: 1]
+
+        # :older_than passed as an option will override the app env config
+        # if not passed in then grab it from the config
+        # finally, as a last resort use the hardcoded value
+        older_than_opts =
+          Keyword.get(
+            opts,
+            :older_than,
+            purge_config(:older_than, months: 3)
+          )
+
+        utc_shift_past(older_than_opts)
+      end
     end
   end
 
@@ -128,6 +188,10 @@ defmodule Janitor do
   def counts(opts \\ []) when is_list(opts) do
     GenServer.call(__MODULE__, {:counts, opts})
   end
+
+  #
+  # opts:
+  #  mod:  Module the trash belongs to
 
   def empty_trash(trash, opts \\ []) when is_list(trash) and is_list(opts) do
     GenServer.cast(__MODULE__, {:empty_trash, trash, opts})
@@ -494,20 +558,12 @@ defmodule Janitor do
     {:noreply, s}
   end
 
-  def handle_info({_ref, {:trash, mod, _elapsed, results} = msg}, %{} = s) do
-    if is_nil(mod) or is_binary(mod) do
-      Logger.info([
-        "empty_trash() mod: ",
-        inspect(mod),
-        " count: ",
-        inspect(length(results))
-      ])
-    else
-      # if mod is an alive GenServer then cast the message to report the results
-      if is_nil(GenServer.whereis(mod)),
-        do: false,
-        else: GenServer.cast(mod, msg)
-    end
+  def handle_info({_ref, {:trash, mod, _elapsed, trash} = msg}, %{} = s) do
+    log_trash_count(s, {mod, trash})
+
+    # send the actual results to the mod passed to empty trash
+    # NOTE: GenServer.cast/2 handles unknown mods, pids
+    GenServer.cast(mod, msg)
 
     {:noreply, s}
   end
@@ -574,6 +630,9 @@ defmodule Janitor do
        }}
     end
   end
+
+  defp modmap_from_state(%{mods: mods}, mod),
+    do: Map.get(mods, mod, %{opts: []})
 
   defp schedule_metrics(
          %{opts: opts, opts_vsn: opts_vsn, starting_up: startup} = s,
@@ -687,4 +746,46 @@ defmodule Janitor do
     # return an empty list to prevent pipeline failure
     []
   end
+
+  # log_from_trash is passed the state
+  defp log_trash_count(
+         %{mods: _, counts: _, starting_up: _} = s,
+         {mod, _trash} = args
+       ) do
+    opts =
+      modmap_from_state(s, mod) |> Map.get(:opts, []) |> Keyword.get(:purge, [])
+
+    log_trash_count(opts, args)
+  end
+
+  defp log_trash_count(opts, {mod, trash}) when is_list(opts) do
+    cond do
+      # leave logging up to the GenServer (if the mod is a GenServer)
+      is_pid(GenServer.whereis(mod)) ->
+        true
+
+      log?(opts) and is_list(trash) ->
+        Logger.info([
+          "emptied ",
+          inspect(Enum.count(trash)),
+          " trash items for ",
+          inspect(mod)
+        ])
+
+      true ->
+        Logger.warn([
+          "emptied trash for ",
+          inspect(mod),
+          " with odd results ",
+          inspect(trash, pretty: true)
+        ])
+    end
+  end
+
+  defp log_trash_count(anything, {_mod, _trash}),
+    do:
+      Logger.warn([
+        "log_trash_count() unmatched: ",
+        inspect(anything, pretty: true)
+      ])
 end

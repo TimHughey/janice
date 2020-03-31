@@ -90,16 +90,22 @@ defmodule Reef do
 
     dcs = for name <- [rmp(), rma(), rmrf(), ato()], do: dc_status(name, opts)
     ths = for name <- [swmt(), display_tank()], do: th_status(name, opts)
-    ss = for name <- [dt_sensor()], do: sensor_status(name)
+    ss = for name <- [dt_sensor(), swmt_sensor()], do: sensor_status(name)
 
-    all = dcs ++ ths ++ ss
+    all = dcs ++ ths
 
-    Scribe.print(all,
-      data: [
-        {"Subsystem", :subsystem},
-        {"Status", :status},
-        {"Active", :active}
-      ]
+    :ok =
+      Scribe.print(all,
+        data: [
+          {"Subsystem", :subsystem},
+          {"Status", :status},
+          {"Active", :active}
+        ]
+      )
+      |> IO.puts()
+
+    Scribe.print(ss,
+      data: [{"Sensor", :subsystem}, {"Temperature", :status}]
     )
     |> IO.puts()
   end
@@ -209,7 +215,7 @@ defmodule Reef do
     %{
       subsystem: name,
       status: temp_format.(name),
-      active: "n/a"
+      active: "-"
     }
   end
 
@@ -217,7 +223,7 @@ defmodule Reef do
     do: %{
       subsystem: name,
       status: THS.profiles(name, opts) |> THP.name(),
-      active: "n/a"
+      active: "-"
     }
 
   # constants
@@ -230,4 +236,5 @@ defmodule Reef do
   defp rmp, do: "mix pump"
   defp standby, do: "standby"
   defp swmt, do: "mix tank"
+  defp swmt_sensor, do: "mixtank"
 end

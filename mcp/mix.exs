@@ -25,7 +25,7 @@ defmodule Mcp.Mixfile do
   def project do
     [
       app: :mcp,
-      version: "0.1.64",
+      version: "0.1.65",
       elixir: "~> 1.10",
       deps: deps(),
       releases: releases(),
@@ -108,7 +108,11 @@ defmodule Mcp.Mixfile do
         "ecto.migrate",
         "ecto.dump --dump-path priv/repo/structure-#{Mix.env()}.sql"
       ],
-      "ecto.setup": ["ecto.create", "ecto.load", "ecto.migrate"],
+      "ecto.setup": [
+        "ecto.create",
+        "ecto.load --dump-path priv/repo/structure-prod.sql",
+        "ecto.migrate"
+      ],
       "ecto.reset": [
         "ecto.drop",
         "ecto.create",
