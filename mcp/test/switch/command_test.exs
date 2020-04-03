@@ -4,6 +4,8 @@ defmodule SwitchCommandTest do
   use Timex
   use ExUnit.Case, async: true
 
+  use JanTest
+
   # import ExUnit.CaptureLog
 
   alias Janice.TimeSupport
@@ -71,88 +73,6 @@ defmodule SwitchCommandTest do
     # device_pio = if pio, do: device_pio(n, pio), else: device_pio(n, 0)
 
     {:ok, r: r, host: host, name: name, device: device, sd: sd}
-  end
-
-  # command msgs to remotes (mcr) do NOT include key cmdack
-  # rather they include:
-  #   1. cmd:   "set.switch"
-  #   2. ack:   boolean (true = respond with cmdack: true)
-  #   3. refid: the UUID of this command
-  #
-  # NOTE: although not required as of 2020-03-22, the this test does
-  #       include host: <mcr id> and name: <mcr name> for future enhancements
-  def cmd_msg(%{
-        device: switch,
-        host: host,
-        name: rem_name,
-        refid: refid,
-        states: states
-      }) do
-    %{
-      cmd: "set.switch",
-      mtime: TimeSupport.unix_now(:second),
-      switch: switch,
-      states: states,
-      refid: refid,
-      ack: true,
-      host: host,
-      name: rem_name
-    }
-  end
-
-  # switch command ack (from mcr remote) include the key cmdack
-  def ack_msg(%{
-        device: device,
-        host: host,
-        name: rem_name,
-        refid: refid,
-        states: states,
-        type: msg_type
-      }) do
-    %{
-      processed: false,
-      cmdack: true,
-      dev_latency_us: :rand.uniform(5000) + 10_000,
-      device: device,
-      host: host,
-      mtime: TimeSupport.unix_now(:second),
-      latency_us: :rand.uniform(20_000) + 10_000,
-      name: rem_name,
-      pio_count: length(states),
-      read_us: :rand.uniform(3000) + 10_000,
-      refid: refid,
-      states: [%{pio: 0, state: false}, %{pio: 1, state: true}],
-      type: msg_type,
-      write_us: :rand.uniform(1000) + 10_000,
-      msg_recv_dt: TimeSupport.utc_now(),
-      log: false
-    }
-  end
-
-  def simulate_cmd_ack(%{device: _device, host: _host, rem_name: name} = r, %{
-        refid: refid,
-        pio: pio,
-        position: position
-      }) do
-    # simulate the ack from the mcr device:
-    #  1. grab required keys from the reading in the context
-    #  2. add remaining required keys
-    #  3. create the ack_msg
-    #  4. send to Device.upsert/1 for processing
-    base_map = Map.take(r, [:device, :host]) |> Map.put(:name, name)
-
-    msg =
-      Map.merge(base_map, %{
-        refid: refid,
-        states: [%{pio: pio, state: position}],
-        type: "switch"
-      })
-      |> ack_msg()
-
-    %{processed: {rc, res}} = Device.upsert(msg)
-
-    assert rc == :ok
-    {rc, res}
   end
 
   @moduletag :switch_command

@@ -5,6 +5,8 @@ defmodule SwitchAliasTest do
 
   # import ExUnit.CaptureLog
 
+  use JanTest
+
   alias Janice.TimeSupport
   alias Switch.Alias
   alias Switch.Device
@@ -50,7 +52,7 @@ defmodule SwitchAliasTest do
       position: not initial_pos
     }
 
-    {ack_rc, _res} = SwitchCommandTest.simulate_cmd_ack(r, ack_map)
+    {ack_rc, _res} = simulate_cmd_ack(r, ack_map)
 
     assert ack_rc == :ok
   end
