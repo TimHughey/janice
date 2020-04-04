@@ -231,6 +231,13 @@ defmodule JanTest do
         end
       end
 
+      def random_float do
+        a = :rand.uniform(25)
+        b = :rand.uniform(100)
+
+        a + b * 0.1
+      end
+
       defp random_mac() do
         # mcr.30 ae a4 f2 c2 10
         bytes = for b <- 1..6, do: :rand.uniform(249) + 5
@@ -294,6 +301,11 @@ defmodule JanTest do
 
         assert rc == :ok
         {rc, res}
+      end
+
+      def simulate_msg(msg) do
+        %{payload: msg, topic: "test/mcr/f/report", direction: :in}
+        |> Mqtt.Inbound.process(async: false)
       end
     end
   end

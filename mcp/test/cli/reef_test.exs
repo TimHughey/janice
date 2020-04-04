@@ -24,6 +24,13 @@ defmodule ReefTest do
     need_switches(switches, sw_prefix: "reef_dev", test_group: "reef")
 
     for dc <- prod_dutycycles(), do: Dutycycle.Server.add(dc)
+
+    sensors = ["display_tank", "mixtank"]
+
+    for sensor <- sensors do
+      create_temp_sensor(name: sensor)
+    end
+
     :ok
   end
 
@@ -45,6 +52,37 @@ defmodule ReefTest do
   test "mix_air()" do
     Reef.air("fast")
     assert true
+  end
+
+  test "can invoke water_change_begin" do
+    {rc, res} = Reef.water_change_begin(interactive: false)
+    assert rc == :failed
+    assert tuple_size(res) > 1
+  end
+
+  defp base(:msg) do
+    import Janice.TimeSupport, only: [unix_now: 1, utc_now: 0]
+
+    %{
+      host: random_mcr(),
+      name: "reef:display",
+      hw: "esp32",
+      vsn: "b4edefc",
+      mtime: unix_now(:second),
+      msg_recv_dt: utc_now(),
+      log: false
+    }
+  end
+
+  defp create_temp_sensor(opts) do
+    name = Keyword.get(opts, :name)
+    tc = Keyword.get(opts, :tc, random_float())
+
+    sensor = %{type: "temp", device: name, tc: tc}
+
+    Map.merge(base(:msg), sensor)
+    |> Msgpax.pack!(iodata: false)
+    |> simulate_msg()
   end
 
   defp profile(:keep_fresh),

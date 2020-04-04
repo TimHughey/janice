@@ -43,6 +43,14 @@ defmodule Reef do
   def air_resume,
     do: dc_resume(rma())
 
+  def clean(start \\ true) do
+    if start do
+      halt_ato()
+    else
+      resume_ato()
+    end
+  end
+
   def heat_standby do
     [
       {swmt(), swmt() |> THS.activate_profile(standby())},
@@ -141,14 +149,50 @@ defmodule Reef do
 
   def utility_pump_off, do: rmp() |> dc_halt()
 
-  def water_change_begin do
-    rmp() |> halt()
-    rma() |> halt()
-    ato() |> halt()
-    swmt() |> THS.activate_profile(standby())
-    display_tank() |> THS.activate_profile(standby())
+  def water_change_begin(opts \\ [check_diff: true, interactive: true])
 
-    status()
+  def water_change_begin(:help) do
+    IO.puts(water_change_begin_help())
+  end
+
+  def water_change_begin(opts) when is_list(opts) do
+    check_diff = Keyword.get(opts, :check_diff, true)
+    allowed_diff = Keyword.get(opts, :allowed_diff, 0.5)
+    interactive = Keyword.get(opts, :interactive, true)
+
+    mixtank_temp = Sensor.fahrenheit(name: "mixtank", since_secs: 30)
+    display_temp = Sensor.fahrenheit(name: "display_tank", since_secs: 30)
+
+    temp_diff = abs(mixtank_temp - display_temp)
+
+    if temp_diff > allowed_diff and check_diff do
+      if interactive do
+        IO.puts("--> WARNING <--")
+
+        IO.puts([
+          " Mixtank and Display Tank variance greater than ",
+          Float.to_string(allowed_diff)
+        ])
+
+        IO.puts([
+          " Display Tank: ",
+          Float.round(display_temp, 1) |> Float.to_string(),
+          "   Mixtank: ",
+          Float.round(mixtank_temp, 1) |> Float.to_string()
+        ])
+      end
+
+      {:failed, {:temp_diff, temp_diff}}
+    else
+      rmp() |> halt()
+      rma() |> halt()
+      ato() |> halt()
+      swmt() |> THS.activate_profile(standby())
+      display_tank() |> THS.activate_profile(standby())
+
+      status()
+      {:ok}
+    end
   end
 
   def water_change_end do
@@ -237,4 +281,32 @@ defmodule Reef do
   defp standby, do: "standby"
   defp swmt, do: "mix tank"
   defp swmt_sensor, do: "mixtank"
+
+  # help text
+  defp water_change_begin_help do
+    ~S"""
+    Water Change Begin Help
+
+      usage: water_change_begin(opts :: [Keyword.t])
+
+      Options:
+
+        check_diff: Boolean.t
+          Default:  true
+
+          Check the difference between the Display Tank and Mixtank before
+          beginning water change.  If the difference is less than or equal to
+          allowed difference then proceed.  If the difference is greater than
+          the allowed difference water change is not started.
+
+        allowed_diff: Float.t
+          Default: 0.5
+
+          The allowed temperature difference between the Display Tank and Mixtank.
+
+      Examples:
+        water_change_begin(check_diff: false)
+        water_change_begin(allowed_diff: 0.9)
+    """
+  end
 end
