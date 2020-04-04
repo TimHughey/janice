@@ -91,7 +91,7 @@ void mcrMQTTin::core(void *data) {
         mcrCmd_t_ptr cmd_ptr(cmd);
 
         if (cmd_ptr == nullptr) {
-          ESP_LOGW(TAG, "unable could not create cmd from feed %s",
+          ESP_LOGW(TAG, "could not create cmd from feed %s",
                    msg->topic->c_str());
         } else if (cmd->recent() && cmd->forThisHost()) {
           cmd->process();

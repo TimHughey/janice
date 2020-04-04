@@ -148,7 +148,12 @@ void mcrCmd::translateExternalDeviceID(const char *replacement) {
 
   // update the internal dev ID (originally external ID)
   auto pos = _internal_dev_id.find(mcr_name);
-  _internal_dev_id.replace(pos, mcr_name.length(), replacement);
+
+  if (pos == string::npos) {
+    // didn't find the name of this host, not for us
+  } else {
+    _internal_dev_id.replace(pos, mcr_name.length(), replacement);
+  }
 }
 
 const unique_ptr<char[]> mcrCmd::debug() {
