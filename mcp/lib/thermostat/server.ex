@@ -4,6 +4,8 @@ defmodule Thermostat.Server do
   require Logger
   use GenServer
 
+  use Switch
+
   alias Thermostat.Control
   alias Thermostat.Profile
 
@@ -366,7 +368,7 @@ defmodule Thermostat.Server do
         ")"
       ])
 
-    Switch.Alias.position(t.switch, position: false, lazy: true, ack: false)
+    sw_position(t.switch, position: false, lazy: true, ack: false)
     :ok
   end
 
@@ -448,7 +450,7 @@ defmodule Thermostat.Server do
   defp handle_stop(_msg, %{thermostat: t}) do
     {rc, nt} = Thermostat.state(t, "stopped")
 
-    Switch.Alias.position(Thermostat.switch(nt), position: false)
+    sw_position(Thermostat.switch(nt), position: false)
 
     if rc === :ok, do: {:ok, nt}, else: {:failed, t}
   end
@@ -522,7 +524,7 @@ defmodule Thermostat.Server do
   defp server_name_atom(_), do: :no_server
 
   defp start(%{thermostat: %Thermostat{}} = s) do
-    Switch.Alias.position(Thermostat.switch(s.thermostat),
+    sw_position(Thermostat.switch(s.thermostat),
       position: false,
       lazy: true
     )

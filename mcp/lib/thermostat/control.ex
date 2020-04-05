@@ -2,69 +2,36 @@ defmodule Thermostat.Control do
   @moduledoc false
 
   require Logger
+  use Switch
 
   alias Thermostat.Profile
 
   def confirm_switch_position(%Thermostat{name: name, switch: switch} = t) do
-    {sw_rc, sw_pos} = pos_rc = Switch.Alias.position(switch)
     state_pos = state_to_position(t)
 
-    cond do
-      # best and most typical case:  the switch position and state position match
-      sw_rc == :ok and is_boolean(sw_pos) and sw_pos == state_pos ->
-        pos_rc
+    {sw_rc, _pos_rc} =
+      pos_rc = sw_position(switch, position: state_pos, ensure: true)
 
-      # the confirm switch position check coincided with a recent switch
-      # position change.  do nothing, next device check will handle if there's
-      # actually a problem.
-      sw_rc == :pending ->
-        Logger.info([
-          inspect(name, pretty: true),
-          " switch position is pending, check deferred ",
-          inspect(pos_rc, pretty: true)
-        ])
+    if sw_rc in [:ok, :pending] do
+      # switch position was good or is now set
+      true
+    else
+      # some kind of issue occurred, log it
+      error = %{
+        error: :unhandled,
+        device: switch,
+        state_pos: state_pos,
+        pos_rc: pos_rc
+      }
 
-        pos_rc
-
-      # potential problem, switch reports position is different than
-      # the expected position based on state
-      sw_rc == :ok and is_boolean(sw_pos) and sw_pos != state_pos ->
-        error = %{
-          error: :mismatch,
-          device: switch,
-          state_pos: state_pos,
-          pos_rc: pos_rc
-        }
-
-        Logger.warn([
-          inspect(name, pretty: true),
-          " forcing switch position ",
-          inspect(error, pretty: true)
-        ])
-
-        Switch.Alias.position(switch,
-          position: state_pos,
-          lazy: false
-        )
-
-      # catch all:  unfortunately there isn't anything we can do about the
-      # mismatch so log it and store the error in the state
-      true ->
-        error = %{
-          error: :unhandled,
-          device: switch,
-          state_pos: state_pos,
-          pos_rc: pos_rc
-        }
-
-        Logger.warn([
-          inspect(name, prety: true),
-          " unhandled switch position mismatch ",
-          inspect(error, pretty: true)
-        ])
-
-        error
+      Logger.warn([
+        inspect(name, prety: true),
+        " confirm switch position error\n",
+        inspect(error, pretty: true)
+      ])
     end
+
+    pos_rc
   end
 
   def current_val(%Thermostat{sensor: sensor}) do
@@ -144,7 +111,7 @@ defmodule Thermostat.Control do
       # handle no change in state
       {:ok, t}
     else
-      Switch.Alias.position(Thermostat.switch(t),
+      sw_position(Thermostat.switch(t),
         position: state_to_position(next_state),
         lazy: true
       )
@@ -154,7 +121,7 @@ defmodule Thermostat.Control do
   end
 
   def stop(%Thermostat{} = t) do
-    Switch.Alias.position(Thermostat.switch(t),
+    sw_position(Thermostat.switch(t),
       position: false,
       lazy: true,
       ack: false

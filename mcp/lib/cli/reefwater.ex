@@ -157,7 +157,7 @@ defmodule Reef do
 
   def water_change_begin(opts) when is_list(opts) do
     check_diff = Keyword.get(opts, :check_diff, true)
-    allowed_diff = Keyword.get(opts, :allowed_diff, 0.5)
+    allowed_diff = Keyword.get(opts, :allowed_diff, 0.8)
     interactive = Keyword.get(opts, :interactive, true)
 
     mixtank_temp = Sensor.fahrenheit(name: "mixtank", since_secs: 30)
@@ -300,7 +300,7 @@ defmodule Reef do
           the allowed difference water change is not started.
 
         allowed_diff: Float.t
-          Default: 0.5
+          Default: 0.8
 
           The allowed temperature difference between the Display Tank and Mixtank.
 
