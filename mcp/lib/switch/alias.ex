@@ -106,6 +106,12 @@ defmodule Switch.Alias do
         # regardless if lazy or not the current position does not match
         # the requested position so change the position
         Device.record_cmd(sd, sa, cmd_map: cmd_map)
+
+      {:ttl_expired, _pos} = rc ->
+        rc
+
+      catchall ->
+        catchall
     end
     |> invert_position_if_needed(sa)
     |> Command.ack_immediate_if_needed(opts)

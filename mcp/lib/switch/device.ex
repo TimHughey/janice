@@ -19,7 +19,6 @@ defmodule Switch.Device do
   import Janice.TimeSupport, only: [from_unix: 1, ttl_check: 4, utc_now: 0]
   import Mqtt.Client, only: [publish_cmd: 1]
 
-  alias Mqtt.SetSwitch
   alias Switch.{Alias, Device, Command}
 
   @timestamps_opts [type: :utc_datetime_usec]
@@ -203,7 +202,7 @@ defmodule Switch.Device do
 
   def record_cmd(%Device{} = sd, %Alias{name: sw_alias}, opts)
       when is_list(opts) do
-    publish = true
+    import Mqtt.SetSwitch, only: [create_cmd: 4]
 
     sd = reload(sd)
 
@@ -211,14 +210,14 @@ defmodule Switch.Device do
 
     with %{state: state, pio: pio} <- cmd_map,
          # add the command and pass initial_opts which may contain ack: false
-         {:ok, %Device{device: device} = sd} <-
+         {:ok, %Device{device: _device} = sd} <-
            add_cmd(sd, sw_alias, utc_now()),
          # NOTE: add_cmd/3 returns the Device with the new Command preloaded
          {:cmd, %Command{refid: refid} = cmd} <- {:cmd, hd(sd.cmds)},
          {:refid, true} <- {:refid, is_binary(refid)},
-         {:publish, true} <- {:publish, publish},
          state_map <- %{pio: pio, state: state},
-         msg <- SetSwitch.new_cmd(device, state_map, refid, opts),
+         msg <- create_cmd(sd, cmd, state_map, opts),
+         # msg <- SetSwitch.new_cmd(device, state_map, refid, opts),
          pub_rc <- publish_cmd(msg),
          _ignore <- log_record_cmd({sd, pub_rc, cmd}) do
       {:pending,
@@ -230,7 +229,8 @@ defmodule Switch.Device do
     else
       error ->
         Logger.warn(["record_cmd() error: ", inspect(error, pretty: true)])
-        {:error, [error]}
+
+        {:failed, error}
     end
   end
 

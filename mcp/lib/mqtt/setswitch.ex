@@ -5,7 +5,29 @@ defmodule Mqtt.SetSwitch do
 
   alias Janice.TimeSupport
 
+  alias Switch.{Device, Command}
+
   @setswitch_cmd "set.switch"
+
+  def create_cmd(
+        %Device{device: device, host: host},
+        %Command{refid: refid},
+        %{pio: _pio, state: _state} = state_map,
+        opts
+      )
+      when is_list(opts) do
+    import Janice.TimeSupport, only: [unix_now: 1]
+
+    %{
+      cmd: @setswitch_cmd,
+      mtime: unix_now(:second),
+      host: host,
+      switch: device,
+      states: state_map,
+      refid: refid,
+      ack: Keyword.get(opts, :ack, true)
+    }
+  end
 
   def new_cmd(device, states, refid, opts \\ [])
 
