@@ -69,8 +69,6 @@ pwmDev::pwmDev(mcrDevAddr_t &num) : mcrDev(num) {
   ledc_channel_.gpio_num = gpio_pin_;
   ledc_channel_.channel = mapNumToChannel(num);
 
-  configureChannel();
-
   setDescription(pwmDevDesc(num));
 
   snprintf(id.get(), pwm_max_id_len_, "pwm/self.%s", pwmDevDesc(num));
@@ -108,8 +106,15 @@ bool pwmDev::updateDuty(uint32_t duty) {
   duty_ = duty;
 
   writeStart();
-  esp_rc = ledc_set_duty_and_update(ledc_channel_.speed_mode,
-                                    ledc_channel_.channel, duty_, 0);
+  // esp_rc = ledc_set_duty_and_update(ledc_channel_.speed_mode,
+  // ledc_channel_.channel, duty_, 0);
+
+  // esp_rc =
+  //     ledc_set_duty(ledc_channel_.speed_mode, ledc_channel_.channel, duty_);
+
+  ledc_set_duty(ledc_channel_.speed_mode, ledc_channel_.channel, duty_);
+
+  esp_rc = ledc_update_duty(ledc_channel_.speed_mode, ledc_channel_.channel);
 
   writeStop();
 

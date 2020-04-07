@@ -126,7 +126,7 @@ void mcrI2c::command(void *data) {
       // of the write -- not just the duration on the bus
       dev->writeStart();
 
-      ESP_LOGI(tagCommand(), "received cmd for %s", dev->id().c_str());
+      ESP_LOGD(tagCommand(), "received cmd for %s", dev->id().c_str());
       set_rc = setMCP23008(*cmd, dev);
 
       dev->writeStop();
@@ -170,7 +170,7 @@ bool mcrI2c::commandAck(cmdSwitch_t &cmd) {
              cmd.debug().get());
   }
 
-  ESP_LOGI(tagCommand(), "completed cmd: %s", cmd.debug().get());
+  ESP_LOGD(tagCommand(), "completed cmd: %s", cmd.debug().get());
 
   if (elapsed > 100000) { // 100ms
     float elapsed_ms = (float)(elapsed / 1000.0);
@@ -457,7 +457,7 @@ bool mcrI2c::detectDevicesOnBus(int bus) {
         } else { // device was not known, must add
           i2cDev_t *new_dev = new i2cDev(dev);
 
-          ESP_LOGI(tagDiscover(), "new (%p) %s", (void *)new_dev,
+          ESP_LOGD(tagDiscover(), "new (%p) %s", (void *)new_dev,
                    dev.debug().get());
           addDevice(new_dev);
         }
@@ -484,7 +484,7 @@ bool mcrI2c::detectMultiplexer(const int max_attempts) {
   _use_multiplexer = hwConfig::legacy() | hwConfig::haveMultiplexer();
 
   if (_use_multiplexer && detectDevice(&_multiplexer_dev)) {
-    ESP_LOGI(tagEngine(), "will use TCA9548A i2c multiplexer");
+    ESP_LOGD(tagEngine(), "will use TCA9548A i2c multiplexer");
   } else {
     _use_multiplexer = false;
   }
@@ -544,11 +544,11 @@ mcrI2c_t *mcrI2c::instance() {
 uint32_t mcrI2c::maxBuses() { return _max_buses; }
 bool mcrI2c::pinReset() {
 
-  ESP_LOGI(tagEngine(), "pulling reset pin low");
+  ESP_LOGD(tagEngine(), "pulling reset pin low");
   gpio_set_level(RST_PIN, 0); // pull the pin low to reset i2c devices
-  delay(1000);                // give plenty of time for all devices to reset
+  delay(250);                 // give plenty of time for all devices to reset
   gpio_set_level(RST_PIN, 1); // bring all devices online
-  ESP_LOGI(tagEngine(), "pulling reset pin high");
+  ESP_LOGD(tagEngine(), "pulling reset pin high");
 
   return true;
 }

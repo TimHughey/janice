@@ -47,7 +47,7 @@ public:
   mcrDev() {} // all values are defaulted in definition of class(es)
 
   mcrDev(mcrDevAddr_t &addr);
-  mcrDev(const std::string &id, mcrDevAddr_t &addr);
+  mcrDev(const string_t &id, mcrDevAddr_t &addr);
   // mcrDev(const mcrDev_t &dev); // copy constructor
   virtual ~mcrDev(); // base class will handle deleting the reading, if needed
 
@@ -68,12 +68,12 @@ public:
 
   void setID(const std::string &new_id);
   void setID(char *new_id);
-  const std::string &id() const { return _id; };
+  const string_t &id() const { return _id; };
 
   // description of device
   void setDescription(const std::string &desc) { _desc = desc; };
   void setDescription(const char *desc) { _desc = desc; };
-  const std::string &description() const { return _desc; };
+  const string_t &description() const { return _desc; };
   virtual const char *externalName() const { return _id.c_str(); };
 
   void setReading(Reading_t *reading);

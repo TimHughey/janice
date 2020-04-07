@@ -277,7 +277,9 @@ public:
   }
 
   // justSeenDevice():
-  //    will return true and call justSeen() If the device was found
+  //    looks in known devices for the device.  if found, calls justSeen() on
+  //    the device and returns it
+  //
   DEV *justSeenDevice(DEV &dev) {
     auto *found_dev = findDevice(dev.id());
 

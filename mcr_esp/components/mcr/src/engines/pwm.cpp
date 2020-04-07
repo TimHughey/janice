@@ -75,7 +75,7 @@ void pwmEngine::command(void *data) {
     if (cmd->matchExternalDevID() == false) {
       continue;
     } else {
-      ESP_LOGI(tagCommand(), "recv'd cmd: %s", cmd->debug().get());
+      ESP_LOGD(tagCommand(), "recv'd cmd: %s", cmd->debug().get());
     }
 
     pwmDev_t *dev = findDevice(cmd->internalDevID());
@@ -98,7 +98,7 @@ void pwmEngine::command(void *data) {
       //            (float)(bus_wait / 1000.0));
       // }
 
-      ESP_LOGI(tagCommand(), "processing cmd for: %s", dev->id().c_str());
+      ESP_LOGD(tagCommand(), "processing cmd for: %s", dev->id().c_str());
 
       dev->writeStart();
       set_rc = dev->updateDuty(cmd->duty());
@@ -141,7 +141,7 @@ bool pwmEngine::commandAck(cmdPWM_t &cmd) {
   }
 
   float elapsed_ms = (float)(cmd.latency_us() / 1000.0);
-  ESP_LOGI(tagCommand(), "cmd took %0.3fms for: %s", elapsed_ms,
+  ESP_LOGD(tagCommand(), "cmd took %0.3fms for: %s", elapsed_ms,
            dev->debug().get());
 
   if (elapsed_ms > 100.0) {
@@ -205,7 +205,7 @@ void pwmEngine::discover(void *data) {
         ESP_LOGV(tagDiscover(), "already know %s", found->debug().get());
       } else {
         pwmDev_t *new_dev = new pwmDev(dev);
-        ESP_LOGI(tagDiscover(), "new (%p) %s", (void *)new_dev,
+        ESP_LOGD(tagDiscover(), "new (%p) %s", (void *)new_dev,
                  dev.debug().get());
 
         new_dev->setMissingSeconds(60);
@@ -287,7 +287,7 @@ bool pwmEngine::configureTimer() {
   timer_rc = ledc_timer_config(&ledc_timer);
 
   if (timer_rc == ESP_OK) {
-    ESP_LOGI(tagEngine(), "ledc timer configured");
+    ESP_LOGD(tagEngine(), "ledc timer configured");
     return true;
   } else {
     ESP_LOGE(tagEngine(), "ledc timer [%s]", esp_err_to_name(timer_rc));
