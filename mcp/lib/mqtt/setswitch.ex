@@ -23,7 +23,7 @@ defmodule Mqtt.SetSwitch do
       mtime: unix_now(:second),
       host: host,
       switch: device,
-      states: state_map,
+      states: [state_map],
       refid: refid,
       ack: Keyword.get(opts, :ack, true)
     }
