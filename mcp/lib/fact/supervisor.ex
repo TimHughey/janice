@@ -18,7 +18,7 @@ defmodule Fact.Supervisor do
     Supervisor.init(children, opts)
   end
 
-  def start_link(arg) do
-    Supervisor.start_link(__MODULE__, arg, name: __MODULE__)
+  def start_link(args) when is_list(args) do
+    Supervisor.start_link(__MODULE__, Enum.into(args, %{}), name: __MODULE__)
   end
 end

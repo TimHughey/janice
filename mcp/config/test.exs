@@ -2,11 +2,6 @@
 # and its dependencies with the aid of the Mix.Config module.
 use Mix.Config
 
-# useful functions
-# must be set to variables since this is not a module
-seconds = fn x -> x * 1000 end
-minutes = fn x -> seconds.(60 * x) end
-
 config :mcp,
   feeds: [
     cmd: {"test/mcr/f/command", 1},
@@ -14,40 +9,11 @@ config :mcp,
   ]
 
 config :mcp,
-  # listed in startup order
-  sup_tree: [
-    {Repo, []},
-    {Janitor.Supervisor, %{autostart: true}},
-    :core_supervisors,
-    # TODO: once the Supervisors below are implemented remove the following
-    #       specific list of supervisors
-    :protocol_supervisors,
-    :support_workers,
-    :worker_supervisors,
-    :misc_workers
-  ],
-  core_supervisors: [
-    # TODO: implement the Supervisors below to create a 'proper'
-    #       supervision tree to isolate restarts after crash
-    # {Protocols.Supervisor, []},
-    # {Support.Supervisor, []},
-    # {Workers.Supervisor, []},
-    # {Misc.Supervisors, []}
-  ],
-  protocol_supervisors: [
-    {Fact.Supervisor, %{}},
-    {Mqtt.Supervisor, %{autostart: true}}
-  ],
-  support_workers: [
-    # {Janitor, %{autostart: true}}
-  ],
+  # overrides from config.exs
   worker_supervisors: [
     # DynamicSupervisors
-    {Dutycycle.Supervisor, %{start_workers: false}},
-    {Thermostat.Supervisor, %{start_workers: false}}
-  ],
-  misc_workers: [
-    {Janice.Scheduler, []}
+    {Dutycycle.Supervisor, [start_workers: false]},
+    {Thermostat.Supervisor, [start_workers: false]}
   ]
 
 #

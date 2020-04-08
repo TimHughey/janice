@@ -12,7 +12,7 @@ config :logger,
     [application: :swarm, level_lower_than: :error]
   ]
 
-config :scribe, style: Scribe.Style.Psql
+config :scribe, style: Scribe.Style.GithubMarkdown
 
 # General application configuration
 config :mcp,
@@ -24,7 +24,55 @@ config :mcp,
   feeds: [
     cmd: {"dev/mcr/f/command", 1},
     rpt: {"dev/mcr/f/report", 0}
+  ],
+  # Supervision Tree and Initial Opts (listed in startup order)
+  sup_tree: [
+    {Repo, []},
+    {Janitor.Supervisor, []},
+    :core_supervisors,
+    # TODO: once the Supervisors below are implemented remove the following
+    #       specific list of supervisors
+    :protocol_supervisors,
+    :support_workers,
+    :worker_supervisors,
+    :misc_workers,
+    :agnus
+  ],
+  core_supervisors: [
+    # TODO: implement the Supervisors below to create a 'proper'
+    #       supervisom tree that does not restart servers uncessary
+    # {Protocols.Supervisor, []},
+    # {Support.Supervisor, []},
+    # {Workers.Supervisor, []},
+    # {Misc.Supervisors, []}
+  ],
+  protocol_supervisors: [
+    {Fact.Supervisor, [log: [init: false, init_args: false]]},
+    {Mqtt.Supervisor, []}
+  ],
+  support_workers: [],
+  worker_supervisors: [
+    # DynamicSupervisors
+    {Dutycycle.Supervisor, [start_workers: true]},
+    {Thermostat.Supervisor, [start_workers: true]}
+  ],
+  misc_workers: [
+    {Janice.Scheduler, []}
+  ],
+  agnus: [
+    {Agnus.Supervisor, []}
   ]
+
+config :mcp, Agnus.DayInfo,
+  log: [init: false, init_args: false],
+  tz: "America/New_York",
+  api: [
+    url: "https://api.sunrise-sunset.org",
+    lat: 40.2108,
+    lng: -74.011
+  ]
+
+config :mcp, Agnus.Supervisor, log: [init: false, init_args: false]
 
 config :mcp, Mcp.Application, log: [init: false]
 

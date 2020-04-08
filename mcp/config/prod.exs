@@ -13,41 +13,6 @@ config :mcp,
     rpt: {"prod/mcr/f/report", 0}
   ]
 
-config :mcp,
-  # listed in startup order
-  sup_tree: [
-    {Repo, []},
-    {Janitor.Supervisor, %{autostart: true}},
-    :core_supervisors,
-    # TODO: once the Supervisors below are implemented remove the following
-    #       specific list of supervisors
-    :protocol_supervisors,
-    :support_workers,
-    :worker_supervisors,
-    :misc_workers
-  ],
-  core_supervisors: [
-    # TODO: implement the Supervisors below to create a 'proper'
-    #       supervisom tree that does not restart servers uncessary
-    # {Protocols.Supervisor, []},
-    # {Support.Supervisor, []},
-    # {Workers.Supervisor, []},
-    # {Misc.Supervisors, []}
-  ],
-  protocol_supervisors: [
-    {Fact.Supervisor, %{}},
-    {Mqtt.Supervisor, %{autostart: true}}
-  ],
-  support_workers: [],
-  worker_supervisors: [
-    # DynamicSupervisors
-    {Dutycycle.Supervisor, %{start_workers: true}},
-    {Thermostat.Supervisor, %{start_workers: true}}
-  ],
-  misc_workers: [
-    {Janice.Scheduler, []}
-  ]
-
 #
 # NOTE: uncomment to enable saving/forwarding of messages sent and/or
 #       recv'd via MQTT

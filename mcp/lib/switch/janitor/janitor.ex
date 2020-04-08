@@ -219,7 +219,7 @@ defmodule Janitor do
     # match in handle_* functions
     s =
       Map.merge(s, %{
-        autostart: Map.get(s, :autostart, false),
+        autostart: Map.get(s, :autostart, true),
         opts: opts,
         tasks: [],
         mods: %{},

@@ -83,8 +83,8 @@ defmodule Dutycycle.Supervisor do
     do:
       Logger.warn(["start_child() bad args: ", inspect(catchall, pretty: true)])
 
-  def start_link(args) do
-    Supervisor.start_link(__MODULE__, args, name: __MODULE__)
+  def start_link(args) when is_list(args) do
+    Supervisor.start_link(__MODULE__, Enum.into(args, %{}), name: __MODULE__)
   end
 
   defp servers_to_start(%{start_workers: true} = args) do

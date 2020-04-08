@@ -45,7 +45,7 @@ defmodule MessageSave do
     Repo.all(from(m in MessageSave, select: [:id])) |> delete()
   end
 
-  def init(%{autostart: autostart, opts: opts} = s) do
+  def init(%{opts: opts} = s) do
     log = Keyword.get(opts, :log, []) |> Keyword.get(:init, true)
 
     log &&
@@ -53,7 +53,7 @@ defmodule MessageSave do
 
     delete_all = get_in(opts, [:purge, :all_at_startup])
 
-    if autostart and delete_all == true,
+    if Map.get(s, :autostart, true) and delete_all == true,
       do: {:ok, s, {:continue, {:delete_all}}},
       else: {:ok, s}
   end

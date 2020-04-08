@@ -29,7 +29,13 @@ defmodule Mqtt.Supervisor do
     Supervisor.init(children, opts)
   end
 
-  def start_link(arg) do
-    Supervisor.start_link(__MODULE__, arg, name: __MODULE__)
+  def start_link(args) when is_list(args) do
+    Supervisor.start_link(
+      __MODULE__,
+      Map.merge(Enum.into(args, %{}), %{
+        autostart: Keyword.get(args, :autostart, true)
+      }),
+      name: __MODULE__
+    )
   end
 end

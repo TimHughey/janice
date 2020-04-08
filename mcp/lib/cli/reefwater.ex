@@ -82,6 +82,7 @@ defmodule Reef do
   def pump_resume, do: dc_resume(rmp())
 
   def rodi_boost, do: dc_activate_profile(rmrf(), "boost")
+  def rodi_final_fill, do: dc_activate_profile(rmrf(), "final fill")
   def rodi_halt, do: dc_halt(rmrf())
 
   def mix_standby do

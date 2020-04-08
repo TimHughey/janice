@@ -25,7 +25,7 @@ defmodule Mcp.Mixfile do
   def project do
     [
       app: :mcp,
-      version: "0.1.68",
+      version: "0.1.70",
       elixir: "~> 1.10",
       deps: deps(),
       releases: releases(),
@@ -49,7 +49,8 @@ defmodule Mcp.Mixfile do
       extra_applications: [
         :logger,
         :runtime_tools,
-        :parse_trans
+        :parse_trans,
+        :httpoison
       ]
     ]
   end
@@ -76,7 +77,7 @@ defmodule Mcp.Mixfile do
       {:instream, "~> 0.17"},
       {:hackney, "~> 1.1"},
       {:poolboy, "~> 1.5"},
-      {:httpoison, "~> 1.0"},
+      {:httpoison, "~> 1.6"},
       {:postgrex, ">= 0.0.0"},
       {:ecto_sql, "~> 3.1"},
       {:tortoise, "~> 0.9"},

@@ -1,4 +1,4 @@
-defmodule Janitor.Supervisor do
+defmodule Agnus.Supervisor do
   @moduledoc false
 
   require Logger
@@ -10,6 +10,8 @@ defmodule Janitor.Supervisor do
     log?(:init_args, true) &&
       Logger.info(["init() args: ", inspect(args, pretty: true)])
 
+    # pass along the same args to the workers
+
     to_start = workers(args)
 
     log?(:init, true) &&
@@ -20,9 +22,9 @@ defmodule Janitor.Supervisor do
   end
 
   # supervisors are always autostarted
-  def start_link(args) when is_list(args) do
-    Supervisor.start_link(__MODULE__, Enum.into(args, %{}), name: __MODULE__)
+  def start_link(args) do
+    Supervisor.start_link(__MODULE__, args, name: __MODULE__)
   end
 
-  defp workers(args), do: [{Janitor, args}]
+  defp workers(args), do: [{Agnus.DayInfo, args}]
 end
