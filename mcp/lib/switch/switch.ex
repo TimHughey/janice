@@ -30,17 +30,31 @@ defmodule Switch do
   ## Public API
   #
 
-  def aliases do
+  def aliases(mode \\ :print) do
     import Ecto.Query, only: [from: 2]
 
     cols = [{"Name", :name}, {"Status", :status}, {"Position", :position}]
 
-    for %Switch.Alias{name: name} <-
-          from(x in Switch.Alias, order_by: x.name) |> Repo.all() do
-      {rc, position} = Switch.position(name)
-      %{name: name, status: rc, position: position}
+    aliases =
+      for %Switch.Alias{name: name} <-
+            from(x in Switch.Alias, order_by: x.name) |> Repo.all() do
+        {rc, position} = Switch.position(name)
+        %{name: name, status: rc, position: position}
+      end
+
+    case mode do
+      :print ->
+        Scribe.print(aliases, data: cols)
+
+      :browse ->
+        Scribe.console(aliases, data: cols)
+
+      :raw ->
+        aliases
+
+      true ->
+        Enum.count(aliases)
     end
-    |> Scribe.console(data: cols)
   end
 
   def position(name, opts \\ []) when is_binary(name) and is_list(opts) do

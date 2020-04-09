@@ -189,6 +189,10 @@ defmodule Janitor do
     GenServer.call(__MODULE__, {:counts, opts})
   end
 
+  def reset_orphan_count(opts \\ []) when is_list(opts) do
+    GenServer.call(__MODULE__, %{action: :reset_orphan_count, opts: opts})
+  end
+
   #
   # opts:
   #  mod:  Module the trash belongs to
@@ -256,6 +260,18 @@ defmodule Janitor do
   #
   ## GenServer callbacks
   #
+
+  def handle_call(
+        %{action: :reset_orphan_count, opts: _opts},
+        _from,
+        %{
+          counts: counts
+        } = s
+      ) do
+    counts = Keyword.put(counts, :orphan_count, 0)
+
+    {:reply, counts, %{s | counts: counts}}
+  end
 
   # update Janitor opts
   def handle_call(

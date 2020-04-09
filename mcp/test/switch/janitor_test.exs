@@ -58,6 +58,13 @@ defmodule JanitorTest do
     end
   end
 
+  test "can reset Janitor orphan count" do
+    res = Janitor.reset_orphan_count()
+
+    assert is_list(res)
+    assert Keyword.get(res, :orphan_count) == 0
+  end
+
   test "can get Janitor opts" do
     opts = Janitor.opts()
 

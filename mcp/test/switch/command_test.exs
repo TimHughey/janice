@@ -179,7 +179,7 @@ defmodule SwitchCommandTest do
         end)
 
       assert rc == :ok
-      if Duration.to_microseconds(elapsed) < 750, do: Process.sleep(20)
+      if Duration.to_microseconds(elapsed) < 750, do: Process.sleep(10)
     end
 
     {rc, res} = Command.purge(older_than: [seconds: 1, milliseconds: 200])
