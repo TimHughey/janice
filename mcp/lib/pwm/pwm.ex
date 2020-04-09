@@ -7,23 +7,6 @@ defmodule PulseWidth do
   use Timex
   use Ecto.Schema
 
-  import Ecto.Changeset,
-    only: [
-      cast: 3,
-      validate_required: 2,
-      validate_format: 3,
-      validate_number: 3,
-      unique_constraint: 3
-    ]
-
-  import Ecto.Query, only: [from: 2]
-
-  import Janice.Common.DB, only: [name_regex: 0]
-  import Janice.TimeSupport, only: [from_unix: 1, ttl_expired?: 2, utc_now: 0]
-  import Mqtt.Client, only: [publish_cmd: 1]
-
-  alias Mqtt.SetPulseWidth
-
   schema "pwm" do
     field(:name, :string)
     field(:description, :string)
@@ -53,6 +36,8 @@ defmodule PulseWidth do
   end
 
   def add(%{device: device, host: _host, mtime: mtime} = r) do
+    import Janice.TimeSupport, only: [from_unix: 1]
+
     keys = [:device, :host, :duty, :duty_max, :duty_min]
 
     pwm = %PulseWidth{
@@ -114,6 +99,8 @@ defmodule PulseWidth do
   def add(catchall), do: {:bad_args, catchall}
 
   def add_cmd(%PulseWidth{} = pwm, %DateTime{} = dt) do
+    import Ecto.Query, only: [from: 2]
+
     cmd = PulseWidthCmd.add(pwm, dt)
 
     {rc, pwm} = update(pwm, last_cmd_at: dt)
@@ -126,6 +113,8 @@ defmodule PulseWidth do
   end
 
   def delete_all(:dangerous) do
+    import Ecto.Query, only: [from: 2]
+
     for pwm <- from(pwm in PulseWidth, select: [:id]) |> Repo.all() do
       Repo.delete(pwm)
     end
@@ -182,6 +171,8 @@ defmodule PulseWidth do
           msg_recv_dt: msg_recv_at
         } = r
       ) do
+    import Janice.TimeSupport, only: [from_unix: 1]
+
     set =
       Enum.into(Map.take(r, external_changes()), []) ++
         [last_seen_at: msg_recv_at, reading_at: from_unix(mtime)]
@@ -250,6 +241,17 @@ defmodule PulseWidth do
     do: changeset(pwm, Enum.into(params, %{}))
 
   defp changeset(pwm, params) when is_map(params) do
+    import Ecto.Changeset,
+      only: [
+        cast: 3,
+        validate_required: 2,
+        validate_format: 3,
+        validate_number: 3,
+        unique_constraint: 3
+      ]
+
+    import Janice.Common.DB, only: [name_regex: 0]
+
     pwm
     |> cast(params, possible_changes())
     |> validate_required(required_changes())
@@ -268,6 +270,8 @@ defmodule PulseWidth do
   end
 
   defp duty_read(opts) do
+    import Janice.TimeSupport, only: [ttl_expired?: 2]
+
     pwm = %PulseWidth{duty: duty, ttl_ms: ttl_ms} = Keyword.get(opts, :pwm)
 
     if ttl_expired?(last_seen_at(pwm), ttl_ms),
@@ -282,7 +286,6 @@ defmodule PulseWidth do
     {rc, pwm} = update(pwm, duty: duty)
 
     if rc == :ok do
-      opts = [cmd_map: %{duty: duty}] ++ opts
       record_cmd(pwm, opts) |> duty_read()
     else
       {rc, pwm}
@@ -291,25 +294,17 @@ defmodule PulseWidth do
 
   defp last_seen_at(%PulseWidth{last_seen_at: x}), do: x
 
-  defp record_cmd(%PulseWidth{log: log} = pwm, opts) when is_list(opts) do
-    publish = Keyword.get(opts, :publish, true)
-    duty = Keyword.get(opts, :cmd_map) |> Map.get(:duty)
+  defp record_cmd(%PulseWidth{} = pwm, opts) when is_list(opts) do
+    import Janice.TimeSupport, only: [utc_now: 0]
+    import Mqtt.Client, only: [publish_cmd: 1]
+    import Mqtt.SetPulseWidth, only: [create_cmd: 3]
 
-    with {:ok, %PulseWidth{device: device} = pwm} <- add_cmd(pwm, utc_now()),
+    with {:ok, %PulseWidth{} = pwm} <- add_cmd(pwm, utc_now()),
          {:cmd, %PulseWidthCmd{} = cmd} <- {:cmd, hd(pwm.cmds)},
-         {:refid, refid} <- {:refid, Map.get(cmd, :refid)},
-         {:publish, true} <- {:publish, publish} do
-      rc = SetPulseWidth.new_cmd(device, duty, refid, opts) |> publish_cmd()
-
-      log &&
-        Logger.info([
-          "record_cmd() rc: ",
-          inspect(rc, pretty: true),
-          "cmd: ",
-          inspect(cmd, pretty: true)
-        ])
-
-      [pwm: pwm] ++ opts
+         cmd_opts <- Keyword.take(opts, [:duty, :fade_ms, :ack]),
+         cmd <- create_cmd(pwm, cmd, cmd_opts),
+         pub_rc <- publish_cmd(cmd) do
+      [pwm: pwm, pub_rc: pub_rc] ++ opts
     else
       error ->
         Logger.warn(["record_cmd() error: ", inspect(error, pretty: true)])
