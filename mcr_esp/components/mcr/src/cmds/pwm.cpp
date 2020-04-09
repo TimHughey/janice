@@ -16,6 +16,7 @@ cmdPWM::cmdPWM(JsonDocument &doc, elapsedMicros &e) : mcrCmd(doc, e, "device") {
   translateExternalDeviceID("self");
 
   _duty = doc["duty"].as<uint32_t>();
+  _fade_ms = doc["fade_ms"].as<uint32_t>();
 
   _create_elapsed.freeze();
 }

@@ -75,7 +75,7 @@ public:
   uint32_t dutyMin() { return duty_min_; };
   gpio_num_t gpioPin() { return gpio_pin_; };
 
-  bool updateDuty(uint32_t duty);
+  bool updateDuty(uint32_t duty, uint32_t fade_ms);
 
   const char *externalName();
   esp_err_t lastRC() { return last_rc_; };

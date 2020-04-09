@@ -100,10 +100,8 @@ void pwmDev::configureChannel() {
   last_rc_ = ledc_channel_config(&ledc_channel_);
 }
 
-bool pwmDev::updateDuty(uint32_t duty) {
+bool pwmDev::updateDuty(uint32_t duty, uint32_t fade_ms) {
   auto esp_rc = ESP_OK;
-
-  duty_ = duty;
 
   writeStart();
   // esp_rc = ledc_set_duty_and_update(ledc_channel_.speed_mode,
@@ -112,11 +110,17 @@ bool pwmDev::updateDuty(uint32_t duty) {
   // esp_rc =
   //     ledc_set_duty(ledc_channel_.speed_mode, ledc_channel_.channel, duty_);
 
-  ledc_set_duty(ledc_channel_.speed_mode, ledc_channel_.channel, duty_);
+  // ledc_set_duty(ledc_channel_.speed_mode, ledc_channel_.channel, duty_);
+  //
+  // esp_rc = ledc_update_duty(ledc_channel_.speed_mode, ledc_channel_.channel);
 
-  esp_rc = ledc_update_duty(ledc_channel_.speed_mode, ledc_channel_.channel);
+  esp_rc = ledc_set_fade_time_and_start(ledc_channel_.speed_mode,
+                                        ledc_channel_.channel, duty, fade_ms,
+                                        LEDC_FADE_NO_WAIT);
 
   writeStop();
+
+  duty_ = duty;
 
   return (esp_rc == ESP_OK) ? true : false;
 }

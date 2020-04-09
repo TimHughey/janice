@@ -41,12 +41,14 @@ typedef class cmdPWM cmdPWM_t;
 class cmdPWM : public mcrCmd {
 private:
   uint32_t _duty;
+  uint32_t _fade_ms;
 
 public:
   cmdPWM(JsonDocument &doc, elapsedMicros &parse);
   cmdPWM(const cmdPWM_t *cmd) : mcrCmd{cmd}, _duty(cmd->_duty){};
 
   uint32_t duty() { return _duty; };
+  uint32_t fade_ms() { return _fade_ms; };
 
   bool IRAM_ATTR process();
 

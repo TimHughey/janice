@@ -85,23 +85,10 @@ void pwmEngine::command(void *data) {
 
       trackSwitchCmd(true);
 
-      // needBus();
-      // ESP_LOGV(tagCommand(), "attempting to aquire bux mutex...");
-      // elapsedMicros bus_wait;
-      // takeBus();
-
-      // if (bus_wait < 500) {
-      //   ESP_LOGV(tagCommand(), "acquired bus mutex (%lluus)",
-      //            (uint64_t)bus_wait);
-      // } else {
-      //   ESP_LOGW(tagCommand(), "acquire bus mutex took %0.2fms",
-      //            (float)(bus_wait / 1000.0));
-      // }
-
       ESP_LOGD(tagCommand(), "processing cmd for: %s", dev->id().c_str());
 
       dev->writeStart();
-      set_rc = dev->updateDuty(cmd->duty());
+      set_rc = dev->updateDuty(cmd->duty(), cmd->fade_ms());
       dev->writeStop();
 
       if (set_rc) {
