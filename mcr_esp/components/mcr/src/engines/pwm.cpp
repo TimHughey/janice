@@ -145,7 +145,7 @@ void pwmEngine::core(void *task_data) {
     return;
   }
 
-  ledc_fade_func_install(0);
+  ledc_fade_func_install(ESP_INTR_FLAG_LOWMED);
 
   ESP_LOGV(tagEngine(), "waiting for normal ops...");
   Net::waitForNormalOps();
