@@ -6,9 +6,8 @@
 #include <driver/adc.h>
 #include <esp_adc_cal.h>
 #include <esp_attr.h>
-#include <esp_event.h>
+#include <esp_event_loop.h>
 #include <esp_log.h>
-#include <esp_netif.h>
 #include <esp_system.h>
 #include <esp_wifi.h>
 #include <freertos/FreeRTOS.h>

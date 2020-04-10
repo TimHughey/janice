@@ -3,7 +3,7 @@
 #include <string>
 
 #include <esp_attr.h>
-#include <esp_event.h>
+#include <esp_event_loop.h>
 #include <esp_log.h>
 #include <esp_system.h>
 #include <esp_wifi.h>
@@ -53,7 +53,7 @@ void Net::acquiredIP(void *event_data) {
   wifi_ap_record_t ap;
 
   tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip_info_);
-  tcpip_adapter_get_dns_info(TCPIP_ADAPTER_IF_STA, ESP_NETIF_DNS_MAIN,
+  tcpip_adapter_get_dns_info(TCPIP_ADAPTER_IF_STA, TCPIP_ADAPTER_DNS_MAIN,
                              &primary_dns_);
 
   uint8_t *dns_ip = (uint8_t *)&(primary_dns_.ip);
@@ -232,7 +232,7 @@ void Net::init() {
   if (init_rc_ == ESP_OK)
     return;
 
-  esp_netif_init();
+  ::tcpip_adapter_init();
 
   rc = ::esp_event_loop_create_default();
   checkError(__PRETTY_FUNCTION__, rc); // never returns if rc != ESP_OK
