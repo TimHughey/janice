@@ -46,7 +46,7 @@ config :mcp, Mqtt.Inbound,
   ]
 
 config :mcp, Fact.Influx,
-  database: "merc_repo",
+  database: "jan_prod",
   host: "** set in prod.secret.exs",
   auth: [
     method: :basic,
