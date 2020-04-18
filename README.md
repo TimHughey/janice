@@ -1,8 +1,10 @@
 # Janice
 
-As of 2017-12-20
+As of 2020-04-18
 
-Janice provides system for collecting sensor data, controlling switches
+__JANICE__ has been retired in favor of [Helen](https://github.com/TimHughey/helen.git) and [Ruth](https://github.com/TimHughey/ruth.git).  __Helen__ and __Ruth__ provide the same overall functionality as __JANICE__ just in different repositories.  
+
+Janice provides a system for collecting sensor data, controlling switches
 and making making data available via a web interface and through a timeseries
 database.
 
